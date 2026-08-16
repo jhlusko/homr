@@ -14,7 +14,9 @@ from homr.transformer.structured_notation import (
     empty_slur_slots,
 )
 from homr.transformer.vocabulary import EncodedSymbol
+from training.transformer.training_vocabulary import token_lines_to_str
 from training.omr_datasets.notation_sidecar import (
+    round_trips,
     SidecarMismatch,
     attach_sidecar,
     sidecar_path,
@@ -141,8 +143,6 @@ class TestGuards(unittest.TestCase):
             self.assertEqual(tokens.read_text(encoding="utf-8"), "original contents")
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestSchemaVersioning(unittest.TestCase):
@@ -205,3 +205,46 @@ class TestSchemaVersioning(unittest.TestCase):
 
             with self.assertRaises(SidecarMismatch):
                 attach_sidecar(tokens, [EncodedSymbol("note_8", "C5")])
+
+
+class TestRoundTripCheck(unittest.TestCase):
+    """A converter should find a mismatch while it can still drop the example.
+
+    attach_sidecar refuses a count mismatch rather than attaching one note's beams to
+    another. Without a check at conversion, that refusal surfaces inside a DataLoader
+    worker partway through training - which is where 282 PDMX examples would have landed.
+    """
+
+    def _write(self, tmp: str, annotated: int) -> Path:
+        notation = NoteNotation(
+            beam_levels=empty_beam_levels(), stem=StemDirection.UP, slurs=empty_slur_slots()
+        )
+        symbols = [
+            EncodedSymbol("note_8", "C5", notation=notation if i < annotated else None)
+            for i in range(2)
+        ]
+        tokens = Path(tmp) / "sample.txt"
+        tokens.write_text(token_lines_to_str(symbols), encoding="utf-8")
+        write_sidecar(tokens, symbols)
+        return tokens
+
+    def test_a_matching_pair_round_trips(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertTrue(round_trips(self._write(tmp, annotated=2)))
+
+    def test_a_mismatched_pair_does_not(self) -> None:
+        # One note-bearing symbol carries no notation, so the counts disagree.
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertFalse(round_trips(self._write(tmp, annotated=1)))
+
+    def test_a_token_file_with_no_sidecar_round_trips(self) -> None:
+        # Absence is a valid state - it means the dataset predates the labels.
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "bare.txt"
+            tokens.write_text(token_lines_to_str([EncodedSymbol("note_8", "C5")]), encoding="utf-8")
+
+            self.assertTrue(round_trips(tokens))
+
+
+if __name__ == "__main__":
+    unittest.main()

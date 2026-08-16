@@ -125,6 +125,25 @@ def attach_sidecar(token_path: str | Path, symbols: Sequence[EncodedSymbol]) -> 
     return declared
 
 
+def round_trips(token_path: str | Path) -> bool:
+    """Whether this token file and its sidecar agree about which symbols carry notation.
+
+    The count guard in attach_sidecar refuses a mismatch rather than attaching one note's
+    beams to another - which is right, and means a mismatched pair raises inside a
+    DataLoader worker partway through training rather than at conversion. A converter
+    should find out while it can still drop the example.
+
+    A pair with no sidecar round-trips trivially: absence is a valid state.
+    """
+    from training.transformer.training_vocabulary import read_tokens  # noqa: PLC0415
+
+    try:
+        attach_sidecar(token_path, read_tokens(str(token_path)))
+    except (SidecarMismatch, OSError, ValueError):
+        return False
+    return True
+
+
 def _is_note_bearing(symbol: EncodedSymbol) -> bool:
     """Symbols a note in the source can become, and only those.
 

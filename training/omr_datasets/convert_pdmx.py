@@ -32,7 +32,7 @@ from training.omr_datasets.convert_musetrainer import (
 )
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_window import extract_window, measure_count
-from training.omr_datasets.notation_sidecar import write_sidecar
+from training.omr_datasets.notation_sidecar import round_trips, write_sidecar
 from training.transformer.training_vocabulary import (
     calc_ratio_of_tuplets,
     check_token_lines,
@@ -241,6 +241,16 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
                             # Eligible now that the image is rendered from the source:
                             # the beams and stems in the picture are the score's own.
                             write_sidecar(tok_path, tokens)
+                            if not round_trips(tok_path):
+                                # Writer and reader disagree about which symbols are
+                                # note-bearing, so the labels cannot be trusted to sit on
+                                # the right notes. Drop the example here rather than let
+                                # it raise inside a DataLoader worker mid-training.
+                                for path in (img_path, tok_path, tok_path + ".notation.json"):
+                                    Path(path).unlink(missing_ok=True)
+                                window_start = end
+                                window_idx += 1
+                                continue
                             rel_img = str(Path(img_path).relative_to(git_root))
                             rel_tok = str(Path(tok_path).relative_to(git_root))
                             results.append(rel_img + "," + rel_tok + "\n")

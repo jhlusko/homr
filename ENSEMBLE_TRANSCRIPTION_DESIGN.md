@@ -2287,6 +2287,44 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.31 PDMX, converted from source
+
+10,000 files in, 3,671 skipped, **35,800 usable examples with notation labels** and
+2,501,759 annotated notes - more than twice what OSSQ carries. The skips are the filters
+working: an empty final bar, a final bar of rests, fewer than 96 sounding notes, or a
+part count that disagrees with the parser.
+
+27.30 predicted from the symbolic files what the built labels should look like, and they
+match:
+
+```
+                     OSSQ        PDMX
+annotated notes    1,136,351   2,501,759
+level-2 hooks         14,880      58,911     ~4x, and 27.30 predicted 2.8x density
+level-4 hooks             99         353
+level-5 anything           0          48
+slur slot 1 starts   141,377      29,967     far fewer, as predicted
+slur placement       143,925      30,483     ~50% of slur events in both
+ties (start)          31,198      74,687
+```
+
+The hook figures are the point of doing this. Hooks are the heads' weakest class and the
+clearest case of information only the image carries, and PDMX has roughly four times as
+many - including 353 at level 4, where OSSQ's entire training split held 99, and 48 notes
+at level 5, where OSSQ had none at all.
+
+**One real defect, caught by the audit.** 282 examples (0.8%) had a sidecar whose count
+disagreed with its token file: notation for 16 symbols where the token file yields 17
+note-bearing ones. The count guard refuses those rather than attaching one note's beams to
+another - correctly - but it refuses them *inside a DataLoader worker*, partway through a
+training run.
+
+So conversion now verifies the round trip before indexing an example, and drops the pair
+if it fails. The existing index was filtered rather than rebuilt, which costs 282 examples
+and saves an hour. The underlying cause is a symbol that is note-bearing but carries no
+notation, which PDMX's window cutter can produce and OSSQ's whole-part extraction cannot -
+worth understanding, but not at the price of leaving a trap in the training set.
+
 ### 27.30 Is OSSQ representative? For beams yes, for slurs not at all
 
 Every number in this work comes from 122 string quartets - one instrumentation, one
