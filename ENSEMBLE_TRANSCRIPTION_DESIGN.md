@@ -2336,6 +2336,23 @@ stated" into a caught bug. Had the prediction not been made, that line would hav
 a fact about the corpus - and the slur-side heads would have stayed untrainable for a
 reason nobody was looking for.
 
+**The corrected run, against the same predictions:**
+
+```
+examples          42,088     restored; 4 crop mismatches, 24 pipeline refusals
+slur placement    above 85,879, below 58,046      predicted ~146,000, actual 143,925
+ties              start 31,198, stop 31,195, start_and_stop 4,992
+collapsed slurs   6,626 in train, 720 in valid    sidecars keep both endpoints
+```
+
+Placement is within 2% of what 27.22's alignment predicted for this split - 178,433
+recoverable corpus-wide, of which train is about 82% - which is the confirmation that the
+join transfers what it measured rather than merely aligning. Ties are symmetric to within
+three events in thirty-one thousand.
+
+`slur.slot.1.side` and `slur.slot.2.side` now have targets for the first time, so the
+manifest should declare nine heads rather than seven.
+
 ### 27.28 The stem head and the rule are complementary, not redundant
 
 27.27 read as a case for deleting the stem head: two sources, the same accuracy, so keep
