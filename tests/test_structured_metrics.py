@@ -10,6 +10,7 @@ from homr.transformer.structured_notation import (
     empty_slur_slots,
 )
 from training.transformer.structured_metrics import (
+    Evaluation,
     PerClassReport,
     beam_level_report,
     exact_vector_accuracy,
@@ -183,6 +184,58 @@ class TestSlurSpans(unittest.TestCase):
         ]
 
         self.assertEqual(slur_span_report(notation, notation, slots=2).f1, 1.0)
+
+
+
+
+class TestEvaluationAccumulates(unittest.TestCase):
+    def _pair(self, beam: BeamLevelState) -> tuple[list, list]:
+        return [_note(beam)], [_note(BeamLevelState.BEGIN)]
+
+    def test_counts_add_up_across_sequences(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+
+        for _ in range(3):
+            evaluation.observe(*self._pair(BeamLevelState.BEGIN))
+
+        self.assertEqual(evaluation.sequences, 3)
+        self.assertEqual(evaluation.vectors_total, 3)
+        self.assertEqual(evaluation.exact_vector_rate, 1.0)
+
+    def test_a_wrong_sequence_pulls_the_rate_down(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+
+        evaluation.observe(*self._pair(BeamLevelState.BEGIN))
+        evaluation.observe(*self._pair(BeamLevelState.END))
+
+        self.assertEqual(evaluation.exact_vector_rate, 0.5)
+
+    def test_per_class_support_pools_rather_than_resetting(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+
+        for _ in range(4):
+            evaluation.observe(*self._pair(BeamLevelState.BEGIN))
+
+        support = sum(m.support for m in evaluation.per_level[1].classes.values())
+        self.assertEqual(support, 4)
+
+    def test_a_slur_cannot_span_two_sequences(self) -> None:
+        # Pooling positions across staves first would let a slur opened on one staff
+        # close on the next, inventing spans that are not on any page.
+        opened = [_note(slurs=((SlurEvent.START, SlurSide.ABOVE),))]
+        closed = [_note(slurs=((SlurEvent.STOP, SlurSide.ABOVE),))]
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+
+        evaluation.observe(opened, opened)
+        evaluation.observe(closed, closed)
+
+        self.assertEqual(evaluation.slur_spans.true_positive, 0)
+
+    def test_the_report_survives_an_empty_evaluation(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+
+        self.assertIn("0 sequence", evaluation.describe())
+        self.assertEqual(evaluation.to_dict()["sequences"], 0)
 
 
 if __name__ == "__main__":

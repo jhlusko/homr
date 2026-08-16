@@ -1968,6 +1968,11 @@ So about a fifth of this corpus's beaming appears genuinely not derivable by any
 rule, and that residue is what the beam heads are for. Gate C should be judged against
 the half-bar baseline, not the strict one.
 
+**The figures in this section are superseded by 27.16.** They came from a script that was
+not kept, so they cannot be re-derived; the committed tool measures the whole corpus and
+each split, and puts the number higher. The conclusion - that the residue is real and is
+what the heads are for - survives; the exact percentage here does not.
+
 The measurement also caught a labelling bug: the extractor was marking rests FLAG at their
 applicable levels. A rest has no stem and therefore no beam or flag, so every eighth rest
 in the corpus was entering the beam heads' training signal as a positive. Fixed, and the
@@ -2076,6 +2081,54 @@ these heads learn anything, it is because the representation already carried it.
 instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. Install
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
+
+### 27.16 The Gate C baseline, per split
+
+27.12's number came from a throwaway script. `training/omr_datasets/beam_baseline.py` is
+the same measurement committed, and it disagrees with the recorded figure - so the
+recorded figure goes.
+
+Corpus-wide, 121 scores, 905,560 beamable notes:
+
+```
+automatic beaming matches the engraving   758,855   83.8%
+exceptions the rule does not predict      146,705   16.2%
+```
+
+against 79.4% before. Two differences account for most of it. The committed tool measures
+whole scores rather than systemwise segments - a segment cuts at a system break, which
+cuts beam groups and restarts the divisions and time-signature context, and the rule
+scored 91.9% on a sample of segments purely from that fragmentation. And it counts one
+decision per stem rather than per notehead, so a chord no longer counts its beam three
+times. The exact composition of the old 20-score sample cannot be recovered, so the gap
+is not fully reconciled; the committed number is the one to quote because it can be
+re-derived.
+
+Per split, which is the part that matters for Gate C:
+
+```
+split        scores   beamable notes   rule matches   exceptions
+train            99          738,239          83.8%        16.2%
+valid            11           85,549          87.0%        13.0%
+test_synth       11           81,772          80.3%        19.7%
+all             121          905,560          83.8%        16.2%
+```
+
+**The baseline moves 6.7 points between splits.** A head evaluated on `test_synth` faces
+a 80.3% baseline, not the 83.8% corpus figure - quoting the corpus number against a
+test-split result would hand the head 3.5 points it did not earn. Gate C should compare
+against the baseline on whatever split the head is scored on, which is why the tool takes
+`--split`.
+
+The disagreement profile is the same one 27.12 described and is the reason to believe the
+residue is editorial rather than a rule still missing: `begin -> continue` (27,495) and
+`continue -> begin` (27,095) are nearly equal, as are `continue -> end` (25,658) and
+`end -> continue` (25,275). A rule with a systematic offset would push one way. This
+pushes both ways in almost equal measure, which is what per-instance choice looks like.
+
+One score, `sq7362818`, is assigned a scanned split but no synthetic one, so 121 of the
+122 synthetic scores are measured. That is the manifest working as intended rather than a
+gap.
 
 ### 27.7 Known gaps
 

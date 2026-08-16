@@ -206,3 +206,91 @@ def slur_span_report(
         metrics.false_positive += len(got - want)
         metrics.false_negative += len(want - got)
     return metrics
+
+
+def _merge(into: ClassMetrics, other: ClassMetrics) -> None:
+    into.true_positive += other.true_positive
+    into.false_positive += other.false_positive
+    into.false_negative += other.false_negative
+
+
+@dataclass
+class Evaluation:
+    """Every measure, accumulated across a whole evaluation set.
+
+    Sequences are added one at a time because the sequence-level measures - exact beam
+    vectors, slur spans - only mean anything within one staff. Pooling positions from
+    different staves first would let a slur opened on one close on another.
+    """
+
+    beam_levels: int
+    slur_slots: int
+    per_level: dict[int, PerClassReport] = field(default_factory=dict)
+    hooks: ClassMetrics = field(default_factory=ClassMetrics)
+    stems: PerClassReport = field(default_factory=PerClassReport)
+    slur_spans: ClassMetrics = field(default_factory=ClassMetrics)
+    vectors_matching: int = 0
+    vectors_total: int = 0
+    sequences: int = 0
+
+    def observe(self, predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]) -> None:
+        self.sequences += 1
+        for level in range(1, self.beam_levels + 1):
+            report = self.per_level.setdefault(level, PerClassReport())
+            for name, metrics in beam_level_report(predicted, actual, level).classes.items():
+                _merge(report.classes.setdefault(name, ClassMetrics()), metrics)
+
+        matching, total = exact_vector_accuracy(predicted, actual, self.beam_levels)
+        self.vectors_matching += matching
+        self.vectors_total += total
+
+        _merge(self.hooks, hook_report(predicted, actual, self.beam_levels))
+        _merge(self.slur_spans, slur_span_report(predicted, actual, self.slur_slots))
+        for name, metrics in stem_report(predicted, actual).classes.items():
+            _merge(self.stems.classes.setdefault(name, ClassMetrics()), metrics)
+
+    @property
+    def exact_vector_rate(self) -> float:
+        return self.vectors_matching / self.vectors_total if self.vectors_total else 0.0
+
+    def describe(self) -> str:
+        lines = [f"{self.sequences:,} sequence(s)", ""]
+        for level in sorted(self.per_level):
+            report = self.per_level[level]
+            if report.classes:
+                lines.append(f"beam level {level}: {report.describe()}")
+        lines.append(
+            f"exact beam vector: {self.exact_vector_rate:.3f} "
+            f"({self.vectors_matching:,}/{self.vectors_total:,})"
+        )
+        lines.append(
+            f"hooks: F1={self.hooks.f1:.3f} P={self.hooks.precision:.3f} "
+            f"R={self.hooks.recall:.3f} (n={self.hooks.support:,})"
+        )
+        lines.append(f"stems: {self.stems.describe()}")
+        lines.append(
+            f"slur spans: F1={self.slur_spans.f1:.3f} P={self.slur_spans.precision:.3f} "
+            f"R={self.slur_spans.recall:.3f} (n={self.slur_spans.support:,})"
+        )
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "sequences": self.sequences,
+            "beam_levels": {
+                str(level): {
+                    "macro_f1": report.macro_f1,
+                    "micro_accuracy": report.micro_accuracy,
+                    "support": sum(m.support for m in report.classes.values()),
+                }
+                for level, report in sorted(self.per_level.items())
+            },
+            "exact_beam_vector": {
+                "rate": self.exact_vector_rate,
+                "matching": self.vectors_matching,
+                "total": self.vectors_total,
+            },
+            "hooks": {"f1": self.hooks.f1, "support": self.hooks.support},
+            "stems": {"macro_f1": self.stems.macro_f1, "micro": self.stems.micro_accuracy},
+            "slur_spans": {"f1": self.slur_spans.f1, "support": self.slur_spans.support},
+        }
