@@ -190,7 +190,9 @@ def build(
                     unconvertible[refused.reason] += 1
                     continue
                 if tokens is not None:
-                    examples.append(Example(image, tokens, score_id, assigned))
+                    examples.append(
+                        Example(link_image(image, out_dir, stem), tokens, score_id, assigned)
+                    )
 
     print(f"{len(examples)} examples written to {out_dir}")
     if unbuilt:
@@ -205,6 +207,26 @@ def build(
         listed = ", ".join(f"{reason} x{count}" for reason, count in unconvertible.most_common(6))
         print(f"  {total} parts skipped: homr's token pipeline refused them ({listed})")
     return examples
+
+
+def link_image(crop: Path, out_dir: Path, stem: str) -> Path:
+    """A comma-free path to the crop, beside its token file.
+
+    homr's index format is one `image,token_file` pair per line, split on the comma. OSSQ
+    files every score under `Lastname,_Firstname` - all 47 composer directories in this
+    corpus - so every crop path contains a comma and no line of the index can be parsed:
+    the loader takes the wrong side of the split and opens a path that does not exist.
+
+    Rewriting the shared index format would touch every corpus homr trains on, so instead
+    the dataset gets its own name for each crop, matching its token file's stem. A symlink
+    rather than a copy: 42,000 staff images are not worth duplicating to work around a
+    delimiter.
+    """
+    link = out_dir / f"{stem}.png"
+    if link.is_symlink() or link.exists():
+        link.unlink()
+    link.symlink_to(crop.resolve())
+    return link
 
 
 def crop_numbers(crops: Path, score_id: str, page: int, system: int) -> set[int]:

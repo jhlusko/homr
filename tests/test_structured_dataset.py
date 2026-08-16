@@ -18,6 +18,7 @@ from homr.transformer.structured_notation import (
 from homr.transformer.vocabulary import EncodedSymbol
 from training.architecture.transformer.structured_losses import IGNORE_INDEX
 from training.omr_datasets.notation_sidecar import write_sidecar
+from training.architecture.transformer.structured_heads import head_names
 from training.transformer.structured_dataset import (
     StructuredNotationDataset,
     target_names,
@@ -165,6 +166,21 @@ class TestUnreadableImagesStayInStep(unittest.TestCase):
             StructuredNotationDataset(_TwoEntryInner(entries, served), 2, 1)[0]
 
         self.assertEqual(served, [1])
+
+
+class TestHeadAndTargetNamesAgree(unittest.TestCase):
+    """The manifest declares heads by one name, the evaluation filters by another.
+
+    write_manifest records `head_names`; evaluate_structured_heads keeps only the targets
+    the manifest supports, using `target_names`. If the two ever disagreed the
+    intersection would be empty and the evaluation would score nothing at all, reporting
+    a clean empty result rather than an error.
+    """
+
+    def test_the_two_lists_are_the_same(self) -> None:
+        for levels, slots in ((1, 1), (2, 1), (4, 2), (6, 6)):
+            with self.subTest(levels=levels, slots=slots):
+                self.assertEqual(sorted(head_names(levels, slots)), sorted(target_names(levels, slots)))
 
 
 if __name__ == "__main__":

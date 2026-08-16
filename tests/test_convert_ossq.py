@@ -7,6 +7,7 @@ from training.omr_datasets.convert_ossq import (
     CROP_NAME,
     Example,
     UnconvertibleStaff,
+    link_image,
     build,
     crop_numbers,
     extract_part,
@@ -314,6 +315,67 @@ class TestBackupPastMeasureStart(unittest.TestCase):
                 self.fail("a part the parser refuses must not abort the whole conversion")
 
         self.assertEqual(examples, [])
+
+
+class TestIndexPathsAreParsable(unittest.TestCase):
+    """Every OSSQ path contains a comma, and the index format splits on commas.
+
+    Scores live under `Lastname,_Firstname` - all 47 composer directories in this corpus -
+    so an index line naming a crop directly cannot be parsed: the loader takes the wrong
+    side of the split and opens a path that does not exist.
+    """
+
+    def test_the_indexed_path_has_no_comma_in_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            out.mkdir()
+            crop = Path(tmp) / "Andrée,_Elfrida" / "sq1:0001:0001:1.png"
+            crop.parent.mkdir(parents=True)
+            crop.write_bytes(b"")
+
+            link = link_image(crop, out, "sq1_0001_0001_1")
+
+        self.assertNotIn(",", str(link.name))
+
+    def test_the_link_resolves_to_the_original_crop(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            out.mkdir()
+            crop = Path(tmp) / "Composer,_A" / "sq1:0001:0001:1.png"
+            crop.parent.mkdir(parents=True)
+            crop.write_bytes(b"pixels")
+
+            link = link_image(crop, out, "sq1_0001_0001_1")
+
+            self.assertEqual(link.read_bytes(), b"pixels")
+
+    def test_relinking_an_existing_name_does_not_fail(self) -> None:
+        # Conversions get re-run into the same directory.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            out.mkdir()
+            crop = Path(tmp) / "c.png"
+            crop.write_bytes(b"")
+
+            link_image(crop, out, "same")
+            link = link_image(crop, out, "same")
+
+            self.assertTrue(link.is_symlink())
+
+    def test_a_built_index_line_splits_into_exactly_two_paths(self) -> None:
+        # The property the loader depends on, checked end to end rather than on the name.
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _dataset(root, [1, 2, 3])
+            examples = build(root, out, track="synthetic")
+            index = out / "index.txt"
+            write_index(examples, index)
+
+            lines = index.read_text(encoding="utf-8").splitlines()
+
+        self.assertTrue(lines)
+        for line in lines:
+            self.assertEqual(len(line.split(",")), 2, line)
 
 
 if __name__ == "__main__":
