@@ -1572,8 +1572,8 @@ cannot predict, against 27.12's question of whether half was reachable. What fol
 that, in order of what the result actually licenses:
 
 ```
-9   a converged run          the losses were still falling at three epochs, so the
-                             numbers in 27.21 are a floor rather than a result
+9   a converged run          done (27.26): twelve epochs buys about a point over
+                             three, and the stem head does not beat a beam-grouped rule
 10  re-convert the corpus    the built dataset is v1 sidecars: no slur placement (27.20,
                              27.22) and no ties (27.24). Both are label changes, so both
                              need the conversion re-run - once, not twice, since it is
@@ -2272,6 +2272,60 @@ The sidecar schema goes to v2 and the reader accepts v1. The 42,000 sidecars alr
 predate tie extraction, and decoding them as "no tie" is correct rather than lossy: the
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
+
+### 27.26 The converged run: three epochs was already most of the way
+
+Item 9 asked whether 27.21's numbers were a floor. They were, but a shallow one: twelve
+epochs buys about a point.
+
+```
+                              3 epochs   12 epochs
+mean loss                       0.9675      0.8617
+exact beam vector                0.920       0.923
+beam level 1 macro F1            0.929       0.931
+beam level 2 macro F1            0.818       0.836
+beam level 3 macro F1            0.879       0.879
+hooks F1                         0.790       0.794
+slur spans F1                    0.916       0.917
+exceptions the head recovers     78.7%       79.8%
+```
+
+The loss was still falling at epoch 12 (0.8650 -> 0.8617), so this is not fully converged
+either - but the gradient of *usefulness* against epochs is now clearly flat. Further
+training is not where the remaining error is.
+
+**Gate C, converged:**
+
+```
+                  head right   head wrong
+  rule right        59,874        3,615
+  rule wrong         9,355        2,373
+
+rule accuracy 84.4%    head accuracy 92.0%
+exceptions recovered   79.8%   (9,355 notes)
+agreements lost         5.7%   (3,615 notes)
+```
+
+**The stem head is a different story, and 27.23's suspicion was right.** The evaluation now
+reports direction-only accuracy, which is the figure comparable to the baseline:
+
+```
+pitch alone, per note (what a label file implies)     91.4%
+the trained head, up/down only                        94.3%
+pitch and voice, one direction per beam group         95.7%
+```
+
+So the head buys 2.9 points over what the labels already imply, and sits 1.4 points *below*
+a rule that knows where the beam groups are. That is not a head earning its place.
+
+**And there is now a better option than either.** The beam heads predict beam grouping at
+0.923 exact-vector accuracy, which is most of what the 95.7% rule needs. Deriving stem
+direction from *predicted* beams plus pitch is very likely to beat the stem head, needs no
+parameters at all, and is testable immediately with what already exists - `stem_baseline.py`
+takes its grouping from a beam vector, and the beam heads produce beam vectors.
+
+The negative result is worth as much as the positive one: beams needed a head because 18%
+of them are not derivable, and stems appear not to, because 95.7% of them are.
 
 ### 27.23 Stem direction is mostly a rule, and the head has not yet beaten it
 
