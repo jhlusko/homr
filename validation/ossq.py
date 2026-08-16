@@ -66,6 +66,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import NamedTuple
 
+from training.omr_datasets.ossq_splits import SPLIT_NAMES, load_split_manifest
 from validation.ned_benchmark import Sample, run_benchmark, update_ned_scores
 from validation.tools import TOOLS
 
@@ -262,8 +263,23 @@ def get_ossq_samples(
     root: Path,
     track: str,
     score_filter: str | None = None,
+    split: str | None = None,
 ) -> list[Sample]:
-    """Build one Sample per page: merged system MusicXML plus the rendered page image."""
+    """Build one Sample per page: merged system MusicXML plus the rendered page image.
+
+    split restricts to the scores the published manifest assigns to that split for this
+    track (training/omr_datasets/ossq_splits.py). Reporting a number without it mixes
+    scores the model may later train on into the same figure as held-out ones.
+    """
+    split_scores: set[str] | None = None
+    if split is not None:
+        manifest = load_split_manifest()
+        manifest.check_no_leakage()
+        split_scores = manifest.scores_in(split, track)
+        print(
+            f"Split {split!r} ({track}): {len(split_scores)} scores;"
+            f" manifest sha256 {manifest.digest[:12]}"
+        )
     samples: list[Sample] = []
     missing_images = 0
     materialized = 0
@@ -284,6 +300,8 @@ def get_ossq_samples(
             by_score.setdefault(key.score_id, []).append(key)
 
         for score_id, keys in sorted(by_score.items()):
+            if split_scores is not None and score_id not in split_scores:
+                continue
             # Pagination guard, synthetic only. There the page indices come from the
             # MusicXML layout and the images from rendering that same score, but they are
             # separate pipeline steps and a different MuseScore repaginates: 4.6.5 lays
@@ -373,6 +391,15 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--split",
+        choices=list(SPLIT_NAMES),
+        default=None,
+        help=(
+            "Restrict to the scores the published OSSQ split manifest assigns to this "
+            "split for the chosen track. Omit to score the whole corpus."
+        ),
+    )
+    parser.add_argument(
         "--score",
         type=str,
         default=None,
@@ -444,7 +471,7 @@ def main() -> None:
         )
         return
 
-    samples = get_ossq_samples(args.dataset_root, args.track, args.score)
+    samples = get_ossq_samples(args.dataset_root, args.track, args.score, args.split)
     run_benchmark(
         samples,
         TOOLS[args.tool],

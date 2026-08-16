@@ -1,0 +1,844 @@
+{
+  "schemaVersion": "homr.ossq-split.v1",
+  "source": {
+    "repository": "https://github.com/MALerLab/sqomr",
+    "commit": "4926e6988e5389cacc7e4989939b5e0c49df5e34",
+    "metadataDir": "metadata/comp_ossq_v2.4.1_unique_vocabs_256",
+    "note": "Score-level splits published with the OSSQ-OMR benchmark. Adopted verbatim so results stay comparable with the paper."
+  },
+  "segmentCounts": {
+    "train": 13480,
+    "valid": 1610,
+    "test_synth": 945,
+    "test_scanned": 959
+  },
+  "scores": {
+    "sq10307350": {
+      "path": "Haydn,_Joseph/String_Quartet_in_F_major,_Hob.III73,_Op.74_No.2",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq10313029": {
+      "path": "Haydn,_Joseph/String_Quartet_in_G_minor,_Hob.III74,_Op.74_No.3_(The_Horseman)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq10328092": {
+      "path": "Haydn,_Joseph/String_Quartet_in_E-flat_major,_Hob.III20,_Op.9_No.2",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq10372717": {
+      "path": "Haydn,_Joseph/String_Quartet_in_C_major,_Hob.III72,_Op.74_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq10381459": {
+      "path": "Haydn,_Joseph/String_Quartet_in_G_major,_Hob.III21,_Op.9_No.3",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq10406164": {
+      "path": "Gouvy,_Théodore/String_Quartet,_Op.16_No.1",
+      "tracks": {
+        "synthetic": "valid"
+      }
+    },
+    "sq10414906": {
+      "path": "Haydn,_Joseph/String_Quartet_in_D_minor,_Hob.III22,_Op.9_No.4",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq10490761": {
+      "path": "Saint-Georges,_Joseph_Bologne/String_Quartet_in_D_major,_Op.1_No.6",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq10502527": {
+      "path": "Beethoven,_Ludwig_van/Grosse_Fuge_in_B-flat_major,_Op.133",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq10517302": {
+      "path": "Stanford,_Charles_Villiers/String_Quartet_No.1,_Op.44",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq10527526": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.12,_Op.127",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq10675759": {
+      "path": "Borodin,_Alexander/String_Quartet_No.2",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq11154985": {
+      "path": "Busoni,_Ferruccio/String_Quartet_No.1,_Op.19,_BV_208",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq11164006": {
+      "path": "Cherubini,_Luigi/String_Quartet_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq11539384": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.13_in_B♭_major,_Op.130",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq12113164": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.2_in_D_major,_K.155134a",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq12536479": {
+      "path": "Nielsen,_Carl/String_Quartet_No.1,_Op.13",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq12701461": {
+      "path": "Hoffmeister,_Franz_Anton/String_Quartet_No.9_in_D_major",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq12772795": {
+      "path": "Haydn,_Joseph/String_Quartet_in_D_minor,_Hob.III76,_Op.76_No.2",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq13744399": {
+      "path": "Arriaga,_Juan_Crisóstomo_de/String_Quartet_No.1_in_D_minor",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq14387632": {
+      "path": "Beach,_Amy/String_Quartet,_Op._89",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq14720995": {
+      "path": "Glinka,_Mikhail/String_Quartet",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq15049456": {
+      "path": "Haydn,_Joseph/String_Quartet_in_G_major,_Hob.III75,_Op.76_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq15230467": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.1_in_G_major,_K.8073f",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq15624112": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.23_in_F_major,_K.590",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq15730717": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.22_in_B-flat_major,_K.589",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq16138966": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.21_in_D_major,_K.575",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7070319": {
+      "path": "Mayer,_Emilie/String_Quartet_in_G_minor,_Op.14",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7070781": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.18_in_A_major,_K.464_(Op._10,_No._5)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7075297": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.18_in_A_major,_K.464_(Op._10,_No._5)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7078259": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.18_in_A_major,_K.464_(Op._10,_No._5)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7082029": {
+      "path": "Mayer,_Emilie/String_Quartet_in_G_minor,_Op.14",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7093885": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.18_in_A_major,_K.464_(Op._10,_No._5)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7095930": {
+      "path": "Mayer,_Emilie/String_Quartet_in_G_minor,_Op.14",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7103818": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.14_in_G_major,_K.387_(Op._10,_No._1)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7108150": {
+      "path": "Brahms,_Johannes/String_Quartet_No.1,_Op.51_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7114183": {
+      "path": "Haydn,_Joseph/String_Quartet_in_B_minor,_Hob.III68,_Op.64_No.2",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7123582": {
+      "path": "Haydn,_Joseph/String_Quartet_in_B-flat_major,_Hob.III67,_Op.64_No.3",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7127785": {
+      "path": "Haydn,_Joseph/String_Quartet_in_C_major,_Hob.III65,_Op.64_No.1",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq7158117": {
+      "path": "Janáček,_Leoš/String_Quartet_No.1_“Kreutzer_Sonata”",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7224846": {
+      "path": "Mendelssohn,_Felix/String_Quartet_No.1,_Op.12",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7236909": {
+      "path": "Mayer,_Emilie/String_Quartet_in_G_minor,_Op.14",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7249986": {
+      "path": "Haydn,_Joseph/String_Quartet_in_G_major,_Hob.III66,_Op.64,_No.4",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7267316": {
+      "path": "Janáček,_Leoš/String_Quartet_No.2_“Intimate_Letters”",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7284122": {
+      "path": "Haydn,_Joseph/String_Quartet_in_D_major,_Hob.III63,_Op.64_No.5",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7294793": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.15_in_D_minor,_K.421417b_(Op._10,_No._2)",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq7295726": {
+      "path": "Bartók,_Béla/String_Quartet_No.1,_Op.7_(Sz.40)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7300376": {
+      "path": "Haydn,_Joseph/String_Quartet_in_E-flat_major,_Hob.III64,_Op.64_No.6",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7302602": {
+      "path": "Brahms,_Johannes/String_Quartet_No.2,_Op.51_No.2",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq7302710": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.16_in_E-flat_major,_K.428421b_(Op._10,_No._4)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7313978": {
+      "path": "Andrée,_Elfrida/String_Quartet_in_A_major",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7330550": {
+      "path": "Carreño,_Teresa/String_Quartet",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7353137": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.17_in_B-flat_major,_K.458_(Op._10,_No._3)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7354505": {
+      "path": "Indy,_Vincent_d’/String_Quartet_No.1,_Op.35",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq7358579": {
+      "path": "Glazunov,_Alexander/String_Quartet_No.1,_Op.1",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq7358708": {
+      "path": "Fauré,_Gabriel/String_Quartet,_Op.121",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7362818": {
+      "path": "Elgar,_Edward/String_Quartet,_Op.83",
+      "tracks": {
+        "scanned": "train"
+      }
+    },
+    "sq7383977": {
+      "path": "Arriaga,_Juan_Crisóstomo_de/String_Quartet_No.3_in_E-flat_Major",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7384409": {
+      "path": "Kalliwoda,_Johann_Wenzel/String_Quartet_No.3,_Op.90",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7397765": {
+      "path": "Schubert,_Franz/String_Quartet_in_D_minor,_D.810,_Op.14_(“Death_and_the_Maiden”)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7434431": {
+      "path": "Gounod,_Charles/String_Quartet_No.3_in_A_minor",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7471661": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.19_in_C_major,_K.465_(Op._10,_No._6)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7483523": {
+      "path": "Smetana,_Bedřich/String_Quartet_No.1",
+      "tracks": {
+        "synthetic": "valid"
+      }
+    },
+    "sq7524617": {
+      "path": "Krzyżanowska,_Halina/String_Quartet,_Op.44",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7541288": {
+      "path": "Müller-Hermann,_Johanna/String_Quartet,_Op.6",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7551068": {
+      "path": "Maier,_Amanda/String_Quartet_in_A_major",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7555331": {
+      "path": "Smyth,_Ethel/String_Quartet_in_E_minor",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7556360": {
+      "path": "Mayer,_Emilie/String_Quartet_in_E_minor",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7577795": {
+      "path": "Hensel,_Fanny_(Mendelssohn)/String_Quartet_in_E-flat_major,_Op._277",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7588853": {
+      "path": "Mayer,_Emilie/String_Quartet_in_D_Major",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq7648382": {
+      "path": "Schubert,_Franz/String_Quartet_in_C_minor,_D.703",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq7872392": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.9,_Op.59_No.3",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8071278": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.1,_Op.18_No.1",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq8075304": {
+      "path": "Haydn,_Joseph/String_Quartet_in_E-flat_major,_Hob.III31,_Op.20_No.1",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq8088531": {
+      "path": "Haydn,_Joseph/String_Quartet_in_C_major,_Hob.III32,_Op.20_No.2",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8437280": {
+      "path": "Saint-Georges,_Joseph_Bologne/String_Quartet_in_C_minor,_Op.1_No.4",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq8437358": {
+      "path": "Saint-Georges,_Joseph_Bologne/String_Quartet_in_C_major,_Op.1_No.1",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq8438840": {
+      "path": "Saint-Georges,_Joseph_Bologne/String_Quartet_in_E-flat_major,_Op.1_No.2",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq8438915": {
+      "path": "Saint-Georges,_Joseph_Bologne/String_Quartet_in_G_minor,_Op.1_No.3",
+      "tracks": {
+        "synthetic": "test_synth"
+      }
+    },
+    "sq8438999": {
+      "path": "Saint-Georges,_Joseph_Bologne/String_Quartet_in_G_minor,_Op.1_No.5",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq8454356": {
+      "path": "Boccherini,_Luigi/String_Quartet_in_A_major,_G.213_(Op.39)",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq8455808": {
+      "path": "Haydn,_Joseph/String_Quartet_in_G_minor,_Hob.III33,_Op.20_No.3",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8461409": {
+      "path": "Haydn,_Joseph/String_Quartet_in_B-flat_major_(“La_Chasse”),_Hob._III1,_Op.1_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8482283": {
+      "path": "Ravel,_Maurice/String_Quartet_in_F_major",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8509238": {
+      "path": "Haydn,_Joseph/String_Quartet_in_D_major,_Hob.III34,_Op.20_No.4",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8556926": {
+      "path": "Haydn,_Joseph/String_Quartet_in_B-flat_major,_Hob.III5,_Op.1_No.5",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8561633": {
+      "path": "Mendelssohn,_Felix/String_Quartet_No._6_in_F_Minor,_Op.80",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8623643": {
+      "path": "Mendelssohn,_Felix/String_Quartet_No.4_in_E_minor,_Op.44_No.2",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8630159": {
+      "path": "Schulhoff,_Erwin/String_Quartet_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8661306": {
+      "path": "Debussy,_Claude/String_Quartet_in_G_minor,_Op.10",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8741475": {
+      "path": "Bartók,_Béla/String_Quartet_No.2,_Op.17_(Sz.67)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8796660": {
+      "path": "Haydn,_Joseph/String_Quartet_in_A_major,_Hob.III36,_Op.20_No.6",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8806134": {
+      "path": "Haydn,_Joseph/String_Quartet_in_C_major,_Hob.III6,_Op.1_No.6",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq8806746": {
+      "path": "Haydn,_Joseph/String_Quartet_in_D_major,_Hob.III3,_Op.1_No.3",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8806881": {
+      "path": "Haydn,_Joseph/String_Quartet_in_E-flat_major,_Hob.III2,_Op.1_No.2",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq8807040": {
+      "path": "Haydn,_Joseph/String_Quartet_in_F_minor,_Hob.III35,_Op.20_No.5",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8807667": {
+      "path": "Haydn,_Joseph/String_Quartet_in_G_major,_Hob.III4,_Op.1_No.4",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq8811375": {
+      "path": "Borodin,_Alexander/String_Quartet_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8812200": {
+      "path": "Wolf,_Hugo/Italian_Serenade",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8818128": {
+      "path": "Mayer,_Emilie/String_Quartet_in_A_Major",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq8823783": {
+      "path": "Wolf,_Hugo/String_Quartet",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8853405": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.2,_Op.18_No.2",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8885439": {
+      "path": "Dvořák,_Antonín/String_Quartet_No.12,_Op.96_(“American”)",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8885571": {
+      "path": "Mendelssohn,_Felix/String_Quartet_No.2,_Op.13",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq8907120": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.3,_Op.18_No.3",
+      "tracks": {
+        "scanned": "valid",
+        "synthetic": "valid"
+      }
+    },
+    "sq8913219": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.4,_Op.18_No.4",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8928855": {
+      "path": "Brahms,_Johannes/String_Quartet_No.3,_Op.67",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8938822": {
+      "path": "Bridge,_Frank/String_Quartet_No.1,_H.70",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq8940236": {
+      "path": "Reger,_Max/String_Quartet_No.1,_Op.54_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9010547": {
+      "path": "Schumann,_Robert/String_Quartet_No.1,_Op.41_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9071492": {
+      "path": "Moeran,_Ernest_John/String_Quartet_in_A_minor",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9094235": {
+      "path": "Bridge,_Frank/String_Quartet_No.2,_H.115",
+      "tracks": {
+        "synthetic": "train"
+      }
+    },
+    "sq9137469": {
+      "path": "Dvořák,_Antonín/String_Quartet_No.10,_Op.51",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9146376": {
+      "path": "Haydn,_Joseph/String_Quartet_in_A_major,_Hob.III24,_Op.9_No.6",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq9199617": {
+      "path": "Mozart,_Wolfgang_Amadeus/String_Quartet_No.4_in_C_major,_K.157",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9396439": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.5,_Op.18_No.5",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9529900": {
+      "path": "Schumann,_Robert/String_Quartet_No.3,_Op.41_No.3",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9608209": {
+      "path": "Strauss,_Richard/String_Quartet_in_A_major,_Op.2",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9631717": {
+      "path": "Grieg,_Edvard/String_Quartet_No.1,_Op.27",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq9719026": {
+      "path": "Beethoven,_Ludwig_van/String_Quartet_No.6,_Op.18_No.6",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    },
+    "sq9790696": {
+      "path": "Delius,_Frederick/String_Quartet_in_E_minor",
+      "tracks": {
+        "scanned": "test_scanned",
+        "synthetic": "test_synth"
+      }
+    },
+    "sq9961690": {
+      "path": "Haydn,_Joseph/String_Quartet_in_C_major,_Hob.III19,_Op.9_No.1",
+      "tracks": {
+        "scanned": "train",
+        "synthetic": "train"
+      }
+    }
+  }
+}
