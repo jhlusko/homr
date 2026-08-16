@@ -123,5 +123,24 @@ class TestRoundTrip(unittest.TestCase):
         self.assertEqual(_manifest().to_dict()["schemaVersion"], SCHEMA_VERSION)
 
 
+
+
+class TestEveryHeadHasAClassList(unittest.TestCase):
+    """A head the manifest cannot describe cannot be declared.
+
+    _classes_for raises on an unknown head rather than guessing, which is right - the
+    hash it produces is what lets a consumer detect that a head's classes were reordered
+    under it. But it means adding a head without adding its class list breaks manifest
+    writing entirely, which is how tie.state first surfaced.
+    """
+
+    def test_the_architecture_and_the_manifest_agree_on_the_head_set(self) -> None:
+        from training.architecture.transformer.structured_heads import head_names
+
+        for name in head_names(4, 2):
+            with self.subTest(head=name):
+                self.assertTrue(vocabulary_hash(name), f"{name} has no class list")
+
+
 if __name__ == "__main__":
     unittest.main()

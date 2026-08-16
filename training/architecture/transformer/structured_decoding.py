@@ -29,17 +29,20 @@ from homr.transformer.structured_notation import (
     SLUR_EVENT_CLASSES,
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
+    TIE_CLASSES,
     BeamLevelState,
     NoteNotation,
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
 )
 from training.architecture.transformer.structured_heads import (
     BEAM_HEAD,
     SLUR_EVENT_HEAD,
     SLUR_SIDE_HEAD,
     STEM_HEAD,
+    TIE_HEAD,
 )
 from training.architecture.transformer.structured_losses import IGNORE_INDEX
 
@@ -143,6 +146,7 @@ def _note(
         beam_levels=tuple(beams),
         stem=_lookup(indices, STEM_HEAD, row, column, STEM_CLASSES, StemDirection.UNKNOWN),
         slurs=tuple(slurs),
+        tie=_lookup(indices, TIE_HEAD, row, column, TIE_CLASSES, TieState.NONE),
     )
 
 

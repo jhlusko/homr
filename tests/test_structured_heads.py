@@ -31,6 +31,7 @@ class TestHeadNames(unittest.TestCase):
                 "beam.level.1",
                 "beam.level.2",
                 "stem.direction",
+                "tie.state",
                 "slur.slot.1.event",
                 "slur.slot.1.side",
             ],
@@ -79,7 +80,9 @@ class TestStructuredNotationHeads(unittest.TestCase):
     def test_a_zero_head_configuration_is_still_valid(self) -> None:
         heads = StructuredNotationHeads(dim=8, beam_levels=0, slur_slots=0)
 
-        self.assertEqual(list(heads(torch.zeros(1, 2, 8))), ["stem.direction"])
+        # Beams and slurs are configurable to zero; stem and tie are not per-slot, so
+        # they remain.
+        self.assertEqual(list(heads(torch.zeros(1, 2, 8))), ["stem.direction", "tie.state"])
 
     def test_negative_configuration_is_rejected(self) -> None:
         with self.assertRaises(ValueError):

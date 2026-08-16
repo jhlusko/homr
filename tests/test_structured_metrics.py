@@ -6,6 +6,7 @@ from homr.transformer.structured_notation import (
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
     empty_beam_levels,
     empty_slur_slots,
 )
@@ -17,6 +18,7 @@ from training.transformer.structured_metrics import (
     hook_report,
     slur_endpoint_pairs,
     slur_side_report,
+    tie_report,
     slur_span_report,
     stem_report,
 )
@@ -321,6 +323,61 @@ class TestSlurSides(unittest.TestCase):
         evaluation.observe([_note()], [_note()])
 
         self.assertNotIn("slur sides", evaluation.describe())
+
+
+
+
+class TestTies(unittest.TestCase):
+    """Tie state is scored on every note, unlike slur direction.
+
+    NONE is a real prediction rather than a silent source - the engraving says plainly
+    whether a note is tied - so it is counted. That makes the classes extremely
+    unbalanced, roughly 67,000 tie events against a million notes, which is what the macro
+    average exists for.
+    """
+
+    def _tied(self, tie: TieState) -> NoteNotation:
+        return NoteNotation(
+            beam_levels=empty_beam_levels(),
+            stem=StemDirection.UNKNOWN,
+            slurs=empty_slur_slots(),
+            tie=tie,
+        )
+
+    def test_a_correct_tie_scores(self) -> None:
+        tied = [self._tied(TieState.START)]
+
+        self.assertEqual(tie_report(tied, tied).macro_f1, 1.0)
+
+    def test_untied_notes_are_counted(self) -> None:
+        # Unlike a slur side, "no tie" is something the engraving states.
+        notes = [self._tied(TieState.NONE)]
+
+        report = tie_report(notes, notes)
+
+        self.assertEqual(sum(m.support for m in report.classes.values()), 1)
+
+    def test_a_head_predicting_none_everywhere_is_caught_by_the_macro(self) -> None:
+        predicted = [self._tied(TieState.NONE)] * 100
+        actual = [self._tied(TieState.NONE)] * 99 + [self._tied(TieState.START)]
+
+        report = tie_report(predicted, actual)
+
+        self.assertGreater(report.micro_accuracy, 0.98)
+        self.assertLess(report.macro_f1, 0.55)
+
+    def test_an_untrained_head_is_not_reported_as_a_result(self) -> None:
+        # Predicting NONE everywhere against a mostly-untied corpus would look excellent.
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+        evaluation.observe([self._tied(TieState.NONE)], [self._tied(TieState.NONE)])
+
+        self.assertNotIn("ties:", evaluation.describe())
+
+    def test_a_trained_head_is_reported(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+        evaluation.observe([self._tied(TieState.START)], [self._tied(TieState.START)])
+
+        self.assertIn("ties:", evaluation.describe())
 
 
 if __name__ == "__main__":

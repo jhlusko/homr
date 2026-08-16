@@ -87,6 +87,7 @@ class TestStructuredHeadsWiring(unittest.TestCase):
                 "slur.slot.1.event",
                 "slur.slot.1.side",
                 "stem.direction",
+                "tie.state",
             ],
         )
 

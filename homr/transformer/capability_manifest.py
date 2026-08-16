@@ -32,6 +32,7 @@ from homr.transformer.structured_notation import (
     SLUR_EVENT_CLASSES,
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
+    TIE_CLASSES,
 )
 
 SCHEMA_VERSION = "homr.capability-manifest.v1"
@@ -47,6 +48,8 @@ def _classes_for(head: str) -> tuple[str, ...]:
         return tuple(str(state) for state in BEAM_LEVEL_CLASSES)
     if head == "stem.direction":
         return tuple(str(state) for state in STEM_CLASSES)
+    if head == "tie.state":
+        return tuple(str(state) for state in TIE_CLASSES)
     if head.endswith(".event"):
         return tuple(str(state) for state in SLUR_EVENT_CLASSES)
     if head.endswith(".side"):

@@ -174,6 +174,22 @@ def stem_report(
     return report
 
 
+def tie_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
+) -> PerClassReport:
+    """Tie state over every note, including the ones with no tie.
+
+    NONE is scored here, unlike UNSPECIFIED for a slur side, because it is a real
+    prediction rather than a silent source: the engraving says plainly whether a note is
+    tied. That makes the classes extremely unbalanced - roughly 67,000 tie events against
+    a million notes - which is exactly what the macro average is for.
+    """
+    report = PerClassReport()
+    for left, right in zip(predicted, actual, strict=True):
+        report.observe(str(left.tie), str(right.tie))
+    return report
+
+
 def slur_side_report(
     predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation], slots: int
 ) -> PerClassReport:
@@ -255,6 +271,7 @@ class Evaluation:
     stems: PerClassReport = field(default_factory=PerClassReport)
     slur_spans: ClassMetrics = field(default_factory=ClassMetrics)
     slur_sides: PerClassReport = field(default_factory=PerClassReport)
+    ties: PerClassReport = field(default_factory=PerClassReport)
     vectors_matching: int = 0
     vectors_total: int = 0
     sequences: int = 0
@@ -274,6 +291,8 @@ class Evaluation:
         _merge(self.slur_spans, slur_span_report(predicted, actual, self.slur_slots))
         for name, metrics in slur_side_report(predicted, actual, self.slur_slots).classes.items():
             _merge(self.slur_sides.classes.setdefault(name, ClassMetrics()), metrics)
+        for name, metrics in tie_report(predicted, actual).classes.items():
+            _merge(self.ties.classes.setdefault(name, ClassMetrics()), metrics)
         for name, metrics in stem_report(predicted, actual).classes.items():
             _merge(self.stems.classes.setdefault(name, ClassMetrics()), metrics)
 
@@ -329,6 +348,11 @@ class Evaluation:
         # scoring nothing rather than a capability that does not exist.
         if any(metrics.support for metrics in self.slur_sides.classes.values()):
             lines.append(f"slur sides (above/below): {self.slur_sides.describe()}")
+        # A tie head that has never been trained predicts NONE everywhere and would score
+        # a flattering micro against a corpus that is mostly untied, so this is reported
+        # only when something actually predicted a tie.
+        if any(name != "none" and metrics.support for name, metrics in self.ties.classes.items()):
+            lines.append(f"ties: {self.ties.describe()}")
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, object]:
@@ -354,6 +378,12 @@ class Evaluation:
                 "direction_only": self.stem_direction_accuracy,
             },
             "slur_spans": {"f1": self.slur_spans.f1, "support": self.slur_spans.support},
+            "ties": {
+                "macro_f1": self.ties.macro_f1,
+                "support": sum(
+                    m.support for name, m in self.ties.classes.items() if name != "none"
+                ),
+            },
             "slur_sides": {
                 "macro_f1": self.slur_sides.macro_f1,
                 "support": sum(m.support for m in self.slur_sides.classes.values()),

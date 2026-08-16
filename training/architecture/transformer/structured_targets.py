@@ -28,6 +28,7 @@ from homr.transformer.structured_notation import (
     SLUR_EVENT_CLASSES,
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
+    TIE_CLASSES,
     BeamLevelState,
     NoteNotation,
     SlurSide,
@@ -39,6 +40,7 @@ from training.architecture.transformer.structured_heads import (
     SLUR_EVENT_HEAD,
     SLUR_SIDE_HEAD,
     STEM_HEAD,
+    TIE_HEAD,
 )
 from training.architecture.transformer.structured_losses import IGNORE_INDEX
 
@@ -46,6 +48,7 @@ _BEAM_INDEX = {state: index for index, state in enumerate(BEAM_LEVEL_CLASSES)}
 _STEM_INDEX = {state: index for index, state in enumerate(STEM_CLASSES)}
 _EVENT_INDEX = {state: index for index, state in enumerate(SLUR_EVENT_CLASSES)}
 _SIDE_INDEX = {state: index for index, state in enumerate(SLUR_SIDE_CLASSES)}
+_TIE_INDEX = {state: index for index, state in enumerate(TIE_CLASSES)}
 
 
 def build_targets(
@@ -76,6 +79,7 @@ def build_targets(
 def _target_names(beam_levels: int, slur_slots: int) -> list[str]:
     names = [BEAM_HEAD.format(level=level) for level in range(1, beam_levels + 1)]
     names.append(STEM_HEAD)
+    names.append(TIE_HEAD)
     for slot in range(1, slur_slots + 1):
         names.append(SLUR_EVENT_HEAD.format(slot=slot))
         names.append(SLUR_SIDE_HEAD.format(slot=slot))
@@ -100,6 +104,10 @@ def _fill_note(
 
     if notation.stem != StemDirection.UNKNOWN:
         targets[STEM_HEAD][row, column] = _STEM_INDEX[notation.stem]
+
+    # Always supervised, like a slur event: most notes are not tied, and "no tie" is a
+    # real prediction rather than an absence of one.
+    targets[TIE_HEAD][row, column] = _TIE_INDEX[notation.tie]
 
     for slot in range(1, slur_slots + 1):
         event, side = notation.slurs[slot - 1]
