@@ -122,11 +122,12 @@ class TestExtractWindow(unittest.TestCase):
 
 
 class TestEmptyFinalMeasure(unittest.TestCase):
-    """A trailing bar with no notes is what a truncated or unfinished score looks like.
+    """A trailing bar with nothing sounding is what a truncated score looks like.
 
-    Judged on notes rather than rests: a final bar of rests is a real musical ending, an
-    empty one is an export artefact. PDMX is large enough that a cheap well-formedness
-    proxy is worth more than the scores it costs.
+    A bar of rests counts as empty too. In a hand-engraved edition that could be a real
+    ending, but PDMX is user-submitted MuseScore files, and in that population a trailing
+    bar of rests is far more likely to be an abandoned edit than a deliberate ending on
+    silence. The filter follows the corpus rather than the engraving convention.
     """
 
     def test_a_part_ending_on_an_empty_bar_is_caught(self) -> None:
@@ -139,9 +140,20 @@ class TestEmptyFinalMeasure(unittest.TestCase):
 
         self.assertFalse(has_empty_final_measure([part]))
 
-    def test_a_final_bar_of_rests_is_a_real_ending(self) -> None:
+    def test_a_final_bar_of_rests_is_also_excluded(self) -> None:
         rest = '<measure number="2"><note><rest/><duration>4</duration></note></measure>'
         part = _part(_measure(1) + rest)
+
+        self.assertTrue(has_empty_final_measure([part]))
+
+    def test_a_final_bar_mixing_rests_and_notes_is_kept(self) -> None:
+        # Something still sounds in it, so the score reached its end.
+        mixed = (
+            '<measure number="2"><note><rest/><duration>2</duration></note>'
+            "<note><pitch><step>C</step><octave>5</octave></pitch>"
+            "<duration>2</duration></note></measure>"
+        )
+        part = _part(_measure(1) + mixed)
 
         self.assertFalse(has_empty_final_measure([part]))
 

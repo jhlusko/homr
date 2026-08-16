@@ -63,17 +63,23 @@ def _read_mxl(path: Path) -> str:
 
 
 def has_empty_final_measure(parts: list[ET.Element]) -> bool:
-    """Whether any part ends on a measure with no notes.
+    """Whether any part ends on a bar with nothing sounding in it.
 
     A trailing empty bar is what an unfinished or badly truncated score looks like -
     MuseScore leaves one behind on export from an incomplete edit - and PDMX is large
     enough that a cheap well-formedness proxy is worth more than the scores it costs.
-    Judged on notes rather than on rests: a final bar of rests is a real musical ending,
-    an empty one is an artefact.
+
+    A bar of rests counts as empty too. In a hand-engraved edition that could be a real
+    ending, but PDMX is user-submitted MuseScore files, and in that population a trailing
+    bar of rests is far more likely to be an abandoned edit than a piece that deliberately
+    ends on silence. The filter follows the corpus rather than the engraving convention.
     """
     for part in parts:
         measures = part.findall("measure")
-        if measures and not measures[-1].findall("note"):
+        if not measures:
+            continue
+        notes = measures[-1].findall("note")
+        if not notes or all(note.find("rest") is not None for note in notes):
             return True
     return False
 
