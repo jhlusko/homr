@@ -49,6 +49,7 @@ class Crosstab:
     rule_wrong_head_wrong: int = 0
     skipped_examples: int = 0
     joined_examples: int = 0
+    chord_members_skipped: int = 0
 
     @property
     def notes(self) -> int:
@@ -133,14 +134,20 @@ def segment_for(tokens: Path, dataset_root: Path) -> tuple[Path, int] | None:
     return None
 
 
-def rule_vectors(part: ET.Element) -> list[tuple[BeamLevelState, ...]]:
-    """The rule's beam vector for every note of one part, in document order.
+def rule_vectors(part: ET.Element) -> list[tuple[tuple[BeamLevelState, ...], bool]]:
+    """The rule's beam vector for every note of one part, with whether it is a chord member.
 
-    Chord members are included so this lines up with the labels, which carry one entry per
-    <note>: the group's decision is taken once on the chord's first note and repeated on
-    the rest, because they share a stem and therefore share the beam.
+    Chord members are carried so this lines up with the labels, which have one entry per
+    <note>, but they are flagged so the caller can decline to score them. They have to be
+    excluded, for a reason that is about markup rather than music: MusicXML writes <beam>
+    only on a chord's first note - 1,703 chord members in a 600-segment sample, not one of
+    them carrying a beam element - so the extractor labels every one of them FLAG while
+    the rule repeats the leader's BEGIN or END. Scoring them would manufacture a
+    disagreement on roughly one flagged note in twenty that is a notation convention, not
+    an engraving exception, and `beam_baseline.py` already counts one decision per stem
+    for the same reason.
     """
-    vectors: list[tuple[BeamLevelState, ...]] = []
+    vectors: list[tuple[tuple[BeamLevelState, ...], bool]] = []
     divisions, (beats, beat_type) = 1, DEFAULT_TIME
 
     for measure in part.findall("measure"):
@@ -155,12 +162,13 @@ def rule_vectors(part: ET.Element) -> list[tuple[BeamLevelState, ...]]:
 
         onsets: dict[str, int] = {}
         by_voice: dict[str, list[BeamableNote]] = {}
-        # Where each note element's vector belongs, and which chord leader it follows.
-        slots: list[tuple[str, int]] = []
+        # Where each note element's vector belongs, which chord leader it follows, and
+        # whether it is itself a chord member.
+        slots: list[tuple[str, int, bool]] = []
         for note in measure.findall("note"):
             voice = note.findtext("voice") or "1"
             if note.find("chord") is not None and by_voice.get(voice):
-                slots.append((voice, len(by_voice[voice]) - 1))
+                slots.append((voice, len(by_voice[voice]) - 1, True))
                 continue
             duration_text = note.findtext("duration")
             duration = int(duration_text) if duration_text and duration_text.isdigit() else 0
@@ -173,7 +181,7 @@ def rule_vectors(part: ET.Element) -> list[tuple[BeamLevelState, ...]]:
                     is_rest=note.find("rest") is not None,
                 )
             )
-            slots.append((voice, len(by_voice[voice]) - 1))
+            slots.append((voice, len(by_voice[voice]) - 1, False))
             onsets[voice] = onset + duration
 
         beat = beat_divisions(beats, beat_type, divisions)
@@ -181,8 +189,8 @@ def rule_vectors(part: ET.Element) -> list[tuple[BeamLevelState, ...]]:
         computed = {
             voice: automatic_beams(notes, beat, wide) for voice, notes in by_voice.items()
         }
-        for voice, index in slots:
-            vectors.append(computed[voice][index])
+        for voice, index, is_chord_member in slots:
+            vectors.append((computed[voice][index], is_chord_member))
     return vectors
 
 
@@ -208,8 +216,8 @@ def compare(predictions: Path, dataset_root: Path, levels: int) -> Crosstab:
 
         rules = rule_vectors(parts[part_index])
         beamable = [
-            vector
-            for vector in rules
+            (vector, is_chord_member)
+            for vector, is_chord_member in rules
             if any(state != BeamLevelState.NOT_APPLICABLE for state in vector[:levels])
         ]
         reference = record["reference"]
@@ -221,7 +229,13 @@ def compare(predictions: Path, dataset_root: Path, levels: int) -> Crosstab:
             continue
 
         crosstab.joined_examples += 1
-        for rule, truth, head in zip(beamable, reference, record["predicted"], strict=True):
+        for (rule, is_chord_member), truth, head in zip(
+            beamable, reference, record["predicted"], strict=True
+        ):
+            if is_chord_member:
+                # Aligned but not scored - see rule_vectors.
+                crosstab.chord_members_skipped += 1
+                continue
             engraved = tuple(truth[:levels])
             crosstab.observe(
                 tuple(str(s) for s in rule[:levels]) == engraved,

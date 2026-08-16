@@ -76,13 +76,13 @@ class TestRuleVectors(unittest.TestCase):
 
         self.assertEqual(len(vectors), 2)
 
-    def test_a_chord_member_repeats_its_leaders_decision(self) -> None:
-        # The labels carry one entry per <note>, so the rule must too - and a chord shares
-        # one stem, so sharing the beam is also what the engraving does.
+    def test_a_chord_member_is_carried_but_marked(self) -> None:
+        # Carried so the vectors line up with the labels, which have one entry per <note>;
+        # marked so it can be left out of the scoring.
         vectors = rule_vectors(_part(EIGHTH + CHORD_EIGHTH + EIGHTH))
 
         self.assertEqual(len(vectors), 3)
-        self.assertEqual(vectors[0], vectors[1])
+        self.assertEqual([is_chord for _, is_chord in vectors], [False, True, False])
 
     def test_a_chord_member_does_not_advance_the_onset(self) -> None:
         # If it did, the chord's notes would be spread across beats and the rule would
@@ -90,7 +90,7 @@ class TestRuleVectors(unittest.TestCase):
         plain = rule_vectors(_part(EIGHTH * 2))
         chorded = rule_vectors(_part(EIGHTH + CHORD_EIGHTH + EIGHTH))
 
-        self.assertEqual(chorded[2], plain[1])
+        self.assertEqual(chorded[2][0], plain[1][0])
 
 
 class TestSegmentLookup(unittest.TestCase):
@@ -168,6 +168,60 @@ class TestJoinSafety(unittest.TestCase):
         self.assertEqual(crosstab.joined_examples, 0)
         self.assertEqual(crosstab.skipped_examples, 1)
         self.assertEqual(crosstab.notes, 0)
+
+
+class TestChordMembersAreNotScored(unittest.TestCase):
+    """MusicXML writes <beam> only on a chord's first note.
+
+    So the extractor labels every chord member FLAG while the rule repeats the leader's
+    BEGIN or END. Scoring them manufactures a disagreement on about one flagged note in
+    twenty that is a markup convention rather than an engraving exception - and
+    beam_baseline already counts one decision per stem for the same reason, so including
+    them here would make the two tools' "rule accuracy" disagree.
+    """
+
+    def _run(self, tmp: str) -> Crosstab:
+        root = Path(tmp)
+        segments = root / "scores" / "C" / "W" / "musicxml" / "unaligned"
+        segments.mkdir(parents=True)
+        part = _part(EIGHTH + CHORD_EIGHTH + EIGHTH)
+        body = f"<score-partwise>{ET.tostring(part, encoding='unicode')}</score-partwise>"
+        (segments / "sq1:0001:0001.musicxml").write_text(body, encoding="utf-8")
+
+        # The chord member is labelled FLAG, as MusicXML's markup implies.
+        flag = [str(BeamLevelState.FLAG)] + [str(BeamLevelState.NOT_APPLICABLE)] * (LEVELS - 1)
+        begin = [str(BeamLevelState.BEGIN)] + [str(BeamLevelState.NOT_APPLICABLE)] * (LEVELS - 1)
+        end = [str(BeamLevelState.END)] + [str(BeamLevelState.NOT_APPLICABLE)] * (LEVELS - 1)
+        reference = [begin, flag, end]
+
+        predictions = root / "predictions.jsonl"
+        predictions.write_text(
+            json.dumps(
+                {
+                    "tokens": str(root / "sq1_0001_0001_1.txt"),
+                    "positions": [0, 1, 2],
+                    "reference": reference,
+                    "predicted": reference,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return compare(predictions, root, LEVELS)
+
+    def test_the_chord_member_is_counted_out_not_scored(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            crosstab = self._run(tmp)
+
+        self.assertEqual(crosstab.joined_examples, 1)
+        self.assertEqual(crosstab.chord_members_skipped, 1)
+        self.assertEqual(crosstab.notes, 2)
+
+    def test_it_does_not_show_up_as_the_rule_being_wrong(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            crosstab = self._run(tmp)
+
+        self.assertEqual(crosstab.rule_wrong_head_right + crosstab.rule_wrong_head_wrong, 0)
 
 
 if __name__ == "__main__":
