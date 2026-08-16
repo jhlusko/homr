@@ -1953,8 +1953,32 @@ round - and pulls the single part out of it. Parts are taken in document order, 
 top-to-bottom on the page and therefore exactly how the crops are numbered, so the
 correspondence is positional and checkable rather than inferred through a second format.
 
-**The step**: run the synthetic partwise cropping (`yolo_detect_staves`,
-`yolo_crop_staves`), then `convert_ossq.py`.
+**The step**: the synthetic track had never had *any* of its YOLO chain run - only
+PDF-to-images - so partwise crops need the whole sequence, not just the last two stages:
+`yolo_detect_systems`, `yolo_crop_systems` (confidence 0.45), `yolo_detect_staff_heights`,
+`yolo_resize_systems`, `yolo_detect_staves`, `yolo_crop_staves` (confidence 0.7), then
+`convert_ossq.py`. Note `yolo_crop_systems` writes to `images/<track>/cropped/`, not
+`systemwise/`; `yolo_resize_systems` is what produces `systemwise/`. Its 13,244 synthetic
+crops match the segment count from 27.8 exactly, which is the check that the chain is
+aligned with the symbolic side.
+
+**A guard the converter needed.** The crop-to-part pairing is positional - crop *n* is the
+*n*th part in document order, both being top-to-bottom on the page - and that holds only
+if the detector found exactly the staves that are there. 27.14 measured that it does not:
+scans over-detect, reporting five, six, seven or nine staves in a four-part system, and
+detection can equally miss one. Either direction shifts the numbering, so a system whose
+second staff was missed yields crops 1, 2, 3 against four parts and crop 2 is part 3 -
+every pair from the gap onward being a plausible staff image with another staff's beams.
+
+`convert_ossq.py` now requires the crop numbers to be exactly 1..len(parts) and skips the
+system whole otherwise, counting "no crops at all" separately from "crops disagree with
+the parts" because the first means run the cropping and the second means no rerun will
+help. Filling in what is present would keep the good pairs and corrupt the rest; a smaller
+clean training set beats a larger one with unfindable label errors in it.
+
+That is the third correspondence bug of this kind - after the decoder-output alignment and
+the loader's image substitution (27.15) - and the same shape each time: two sequences,
+neither malformed alone, paired by position, with no check that the pairing holds.
 
 ### 27.12 How much beaming is derivable without looking at the page
 
