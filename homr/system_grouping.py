@@ -96,10 +96,12 @@ def _normalized_gaps(staffs: Sequence[Staff]) -> list[float]:
 def _candidate_groupings(count: int, staves_per_system: int) -> list[tuple[tuple[int, ...], ...]]:
     """Ways to cut `count` staves into systems of `staves_per_system`.
 
-    Exactly one system may come up short, at the top or the bottom of the page. That
-    covers a page whose first or last system is genuinely incomplete, and equally a
-    system one of whose staves detection missed - both leave a short group at an edge,
-    and neither should stop the rest of the page from being read.
+    Exactly one system may come up short, and it may sit anywhere on the page. A short
+    system at an edge is the page's own incomplete first or last one; a short system in
+    the middle is a complete one that staff detection came up a staff on. Both are
+    common - on one quartet score the bracket rows read [4, 4, 3, 4, 4] and [4, 3, 4, 4,
+    4] on consecutive pages - and restricting the short system to the edges would leave
+    the whole page unreadable for the sake of one missing staff.
     """
     size = staves_per_system
     if size < 1 or count < size:
@@ -108,22 +110,20 @@ def _candidate_groupings(count: int, staves_per_system: int) -> list[tuple[tuple
     if full < constants.min_systems_for_geometric_grouping:
         return []
 
-    def tile(offset: int, short_first: int) -> tuple[tuple[int, ...], ...]:
+    def tile(short_at: int | None) -> tuple[tuple[int, ...], ...]:
         groups: list[tuple[int, ...]] = []
-        if short_first:
-            groups.append(tuple(range(short_first)))
-        start = offset
-        while start + size <= count:
-            groups.append(tuple(range(start, start + size)))
-            start += size
-        if start < count:
-            groups.append(tuple(range(start, count)))
+        start = 0
+        for position in range(full + 1):
+            length = remainder if position == short_at else size
+            if length == 0 or start >= count:
+                continue
+            groups.append(tuple(range(start, start + length)))
+            start += length
         return tuple(groups)
 
     if remainder == 0:
-        return [tile(0, 0)]
-    # Short group at the back, or short group at the front.
-    return [tile(0, 0), tile(remainder, remainder)]
+        return [tile(None)]
+    return [tile(position) for position in range(full + 1)]
 
 
 def _evaluate(

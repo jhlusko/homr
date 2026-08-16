@@ -120,6 +120,30 @@ class TestOtherLayouts(unittest.TestCase):
         self.assertTrue(result.confident)
         self.assertEqual([len(g) for g in result.best.groups], [4, 4, 4, 4, 2])
 
+    def test_a_system_short_in_the_middle_of_the_page_is_allowed(self) -> None:
+        # Staff detection missing one staff out of a complete system leaves a short
+        # system nowhere near a page edge. Observed on consecutive pages of the same
+        # quartet, where the bracket rows read [4, 4, 3, 4, 4] and [4, 3, 4, 4, 4].
+        gaps = (
+            [4.0, 4.0, 4.0, 9.0]  # system 1
+            + [4.0, 4.0, 4.0, 9.0]  # system 2
+            + [4.0, 4.0, 9.0]  # system 3, one staff missing
+            + [4.0, 4.0, 4.0, 9.0]  # system 4
+            + [4.0, 4.0, 4.0]  # system 5
+        )
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual(result.best.staves_per_system, 4)
+        self.assertEqual([len(g) for g in result.best.groups], [4, 4, 3, 4, 4])
+
+    def test_a_system_short_at_the_front_is_allowed(self) -> None:
+        gaps = [4.0, 4.0, 9.0] + [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual([len(g) for g in result.best.groups], [3, 4, 4, 4, 4])
+
     def test_a_partition_that_splits_bracketed_staves_is_refused(self) -> None:
         # Claim a bracket across every boundary the geometric answer wants to cut.
         hostile = {(2, 3), (6, 7), (10, 11), (14, 15)}

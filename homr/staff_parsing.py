@@ -149,20 +149,18 @@ def _ensure_same_number_of_staffs(staffs: list[MultiStaff]) -> list[MultiStaff]:
     if len(row_lengths) == 1 and next(iter(row_lengths)) > 1:
         return staffs
     flat_staffs = _flatten_staffs(staffs)
+    # Ask page geometry before the periodic signature. Once the rows disagree, that
+    # signature is unreliable in both directions on the same score: on one page it reads
+    # a constant is_grandstaff sequence and settles on period 1, collapsing every voice
+    # into one part; on the next, a single staff wrongly flagged as a grand staff makes
+    # period 2 tile after trimming three staffs away, which is just as wrong and loses
+    # music besides. Geometry is measuring the thing that actually defines a system, so
+    # it goes first - and because it declines when the gaps do not separate, the periodic
+    # path below still handles every page it was written for.
+    geometric = _group_by_geometry(flat_staffs, staffs)
+    if geometric is not None:
+        return geometric
     core = _find_periodic_core(flat_staffs)
-    if core is None or core[0] == 1:
-        # Both of these end with one staff per system, which reads the page as a single
-        # part containing every staff's music in sequence. Period 1 means the
-        # is_grandstaff signature carried no information: either the page really is one
-        # staff per system, or it is an ensemble of same-type single staffs where that
-        # flag is constant and period 1 fits vacuously (see _find_periodic_core). No core
-        # at all means no period tiled the page, and the fallback below breaks every row
-        # apart, which lands in the same place. Page geometry can tell a genuine solo
-        # part from a collapsed ensemble; it only overrules when the gaps actually
-        # separate, so an unclear page keeps the behaviour below.
-        geometric = _group_by_geometry(flat_staffs, staffs)
-        if geometric is not None:
-            return geometric
     if core is not None:
         period, front_trim, back_trim = core
         if front_trim > 0:
