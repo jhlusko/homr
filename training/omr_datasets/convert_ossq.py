@@ -79,6 +79,15 @@ def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str
     finally:
         scratch.unlink(missing_ok=True)
 
+    if len(voices) > 1:
+        # music_xml_file_to_tokens yields one entry per staff, not per musical voice, so
+        # more than one here means this part is written on a grand staff. The training
+        # unit is a single staff and there is one crop for it, so flattening would pair
+        # one staff's picture with two staves' tokens. Quartet parts are never like this,
+        # which is why it is refused rather than handled.
+        print(f"  skipped {stem}: part is on {len(voices)} staves, but a crop shows one")
+        return None
+
     symbols = [symbol for voice in voices for measure in voice for symbol in measure]
     if not symbols:
         return None
