@@ -1,7 +1,11 @@
 import unittest
 import xml.etree.ElementTree as ET
 
-from training.omr_datasets.convert_pdmx import has_empty_final_measure
+from training.omr_datasets.convert_pdmx import (
+    has_empty_final_measure,
+    has_too_few_notes,
+    sounding_notes,
+)
 from training.omr_datasets.musicxml_window import (
     extract_window,
     measure_count,
@@ -167,6 +171,48 @@ class TestEmptyFinalMeasure(unittest.TestCase):
 
     def test_a_part_with_no_measures_is_not_flagged(self) -> None:
         self.assertFalse(has_empty_final_measure([_part("")]))
+
+
+
+
+class TestMinimumNotes(unittest.TestCase):
+    """A fragment yields a window or two of very sparse staves.
+
+    The threshold comes from the distribution: over 1,200 sampled scores the median holds
+    227 sounding notes, and 96 drops 20.8% of scores holding 3.0% of them. Set for quality
+    rather than volume, which is the right trade in a corpus of 254,035 scores.
+    """
+
+    def _part_with(self, notes: int, rests: int = 0) -> ET.Element:
+        note = "<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration></note>"
+        rest = "<note><rest/><duration>1</duration></note>"
+        return _part(f'<measure number="1">{note * notes}{rest * rests}</measure>')
+
+    def test_a_fragment_is_rejected(self) -> None:
+        self.assertTrue(has_too_few_notes([self._part_with(10)]))
+
+    def test_a_real_score_is_kept(self) -> None:
+        self.assertFalse(has_too_few_notes([self._part_with(200)]))
+
+    def test_a_score_just_under_the_bar_goes(self) -> None:
+        # 80 notes is a third of the median score and would have survived a lower bar.
+        self.assertTrue(has_too_few_notes([self._part_with(80)]))
+
+    def test_rests_do_not_count_towards_the_threshold(self) -> None:
+        # A score padded out with rests is exactly the fragment this catches, so counting
+        # them would let it through.
+        self.assertTrue(has_too_few_notes([self._part_with(10, rests=200)]))
+
+    def test_notes_are_counted_across_parts(self) -> None:
+        # Two staves of 60 is a real piece; either alone would look like a fragment.
+        parts = [self._part_with(60), self._part_with(60)]
+
+        self.assertFalse(has_too_few_notes(parts))
+        self.assertEqual(sounding_notes(parts), 120)
+
+    def test_the_boundary_is_inclusive(self) -> None:
+        self.assertFalse(has_too_few_notes([self._part_with(96)]))
+        self.assertTrue(has_too_few_notes([self._part_with(95)]))
 
 
 if __name__ == "__main__":

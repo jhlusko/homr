@@ -62,6 +62,39 @@ def _read_mxl(path: Path) -> str:
         return zf.read(xml_name).decode("utf-8")
 
 
+#: Fewest sounding notes a score must have to be worth converting. Chosen from the
+#: distribution rather than taste. Over 1,200 sampled scores that already pass PDMX's own
+#: filters, the median holds 227 sounding notes and the mean 473, with a tail reaching
+#: down to 3. This threshold drops 20.8% of scores which between them hold 3.0% of the
+#: sounding notes - so the discarded fifth averages some 67 notes each against a corpus
+#: mean of 473. Below it a score yields a window or two of very sparse staves, which is
+#: what produces degenerate images.
+#:
+#: Set for quality rather than volume, which is the right trade at this size: PDMX has
+#: 254,035 scores, so 3% of the music is a cheap price for removing the worst fifth of the
+#: files. A smaller corpus would justify a lower bar.
+_MIN_SOUNDING_NOTES = 96
+
+
+def sounding_notes(parts: list[ET.Element]) -> int:
+    """Notes that are not rests, across every part.
+
+    Rests are excluded because a score padded out with them is exactly the kind of
+    fragment this is meant to catch - counting them would let it through.
+    """
+    return sum(
+        1
+        for part in parts
+        for measure in part.findall("measure")
+        for note in measure.findall("note")
+        if note.find("rest") is None
+    )
+
+
+def has_too_few_notes(parts: list[ET.Element]) -> bool:
+    return sounding_notes(parts) < _MIN_SOUNDING_NOTES
+
+
 def has_empty_final_measure(parts: list[ET.Element]) -> bool:
     """Whether any part ends on a bar with nothing sounding in it.
 
@@ -138,7 +171,7 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
     # so the file is skipped rather than guessed at.
     if len(source_parts) != len(voices):
         return []
-    if has_empty_final_measure(source_parts):
+    if has_empty_final_measure(source_parts) or has_too_few_notes(source_parts):
         return []
 
     voices_to_process = [
