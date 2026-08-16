@@ -2336,6 +2336,24 @@ The general shape of that mistake is worth naming: a head, its targets, its loss
 manifest entry were all built, and the one missing piece was the measurement. Nothing
 failed; there was simply a blank where a result should have been.
 
+**Re-scored with it, the slur-side heads work:**
+
+```
+slur sides (above/below)   macro F1 0.925   micro 0.927
+  above  F1 0.938 (n=10,173)
+  below  F1 0.913 (n=7,295)
+```
+
+That is a capability which had no targets at all two runs ago, and it is the payoff for
+the whole placement chain: 27.20 finding it absent, 27.22 verifying the join at 484 of 484
+parts, 27.29 catching the silent transfer no-op, and this run declaring the head. 17,468
+supervised endpoints, and the two directions score within 2.5 points of each other, so the
+head is not simply predicting the commoner one.
+
+Worth noting what this does *not* establish. Placement is stated on about half of slurs
+(27.30), so the head is scored only where an engraver bothered to say - and whether the
+unstated half is genuinely ambiguous or merely unlabelled is not something this measures.
+
 ### 27.31 PDMX, converted from source
 
 10,000 files in, 3,671 skipped, **35,800 usable examples with notation labels** and
