@@ -29,6 +29,7 @@ import torch
 
 from homr.transformer.capability_manifest import CapabilityManifest
 from homr.transformer.structured_notation import BeamLevelState, NoteNotation
+from training.architecture.transformer.structured_heads import STEM_HEAD
 from training.architecture.transformer.structured_decoding import (
     decode_predictions,
     decode_reference,
@@ -46,7 +47,7 @@ def evaluate(
     beam_levels: int,
     slur_slots: int,
     device: str = "cpu",
-    sink: Callable[[Sequence[NoteNotation], Sequence[NoteNotation]], None] | None = None,
+    sink: Callable[..., None] | None = None,
     all_targets: Sequence[str] | None = None,
 ) -> Evaluation:
     """Run the set and accumulate every measure.
@@ -75,18 +76,23 @@ def evaluate(
 
         predicted = decode_predictions(logits, targets, beam_levels, slur_slots)
         reference = decode_reference(targets, beam_levels, slur_slots)
+        # How sure the stem head is, per position. An arbiter needs a reason to prefer one
+        # source over the other, and the head's own softmax is the only signal it carries.
+        stem_confidence = (
+            torch.softmax(logits[STEM_HEAD], dim=-1).max(dim=-1).values.tolist()
+            if STEM_HEAD in logits
+            else None
+        )
         # One staff at a time: the sequence-level measures only mean anything within a
         # staff, and pooling first would let a slur opened on one close on another.
-        for got, want in zip(predicted, reference, strict=True):
+        for row, (got, want) in enumerate(zip(predicted, reference, strict=True)):
             evaluation.observe(got, want)
             if sink is not None:
-                sink(got, want)
+                sink(got, want, stem_confidence[row] if stem_confidence else None)
     return evaluation
 
 
-def dump_predictions(
-    batches: Any, beam_levels: int, handle: Any
-) -> Callable[[Sequence[NoteNotation], Sequence[NoteNotation]], None]:
+def dump_predictions(batches: Any, beam_levels: int, handle: Any) -> Callable[..., None]:
     """A sink that writes one JSON record per staff, named by its token file.
 
     Aggregates cannot answer the question Gate C actually turns on - whether the head is
@@ -102,7 +108,9 @@ def dump_predictions(
     position = 0
 
     def write(
-        predicted: Sequence[NoteNotation], reference: Sequence[NoteNotation]
+        predicted: Sequence[NoteNotation],
+        reference: Sequence[NoteNotation],
+        stem_confidence: list[float] | None = None,
     ) -> None:
         nonlocal position
         if position >= len(entries):
@@ -114,8 +122,24 @@ def dump_predictions(
                 state != BeamLevelState.NOT_APPLICABLE for state in note.beam_levels[:beam_levels]
             )
         ]
+        # Stems are supervised on a different set of notes from beams - a quarter note
+        # has a stem and no beam - so they are their own parallel list rather than folded
+        # into the beam rows.
+        directional = ("up", "down")
+        stems = [
+            (index, str(note.stem), str(predicted[index].stem))
+            for index, note in enumerate(reference)
+            if str(note.stem) in directional
+        ]
         record = {
             "tokens": entries[position]["tokens"],
+            "stem_reference": [actual for _, actual, _ in stems],
+            "stem_predicted": [got for _, _, got in stems],
+            "stem_confidence": (
+                [round(stem_confidence[index], 4) for index, _, _ in stems]
+                if stem_confidence
+                else []
+            ),
             "positions": [index for index, _ in supervised],
             "reference": [
                 [str(s) for s in note.beam_levels[:beam_levels]] for _, note in supervised
