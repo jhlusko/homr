@@ -4,19 +4,24 @@ import torch
 
 from homr.transformer.structured_notation import (
     BeamLevelState,
+    NoteNotation,
     SlurEvent,
     SlurSide,
     StemDirection,
     empty_beam_levels,
     empty_slur_slots,
 )
+from homr.transformer.vocabulary import EncodedSymbol
 from training.architecture.transformer.structured_heads import StructuredNotationHeads
 from training.architecture.transformer.structured_losses import (
     IGNORE_INDEX,
     structured_loss,
 )
-from training.architecture.transformer.structured_targets import build_targets
-from training.omr_datasets.structured_notation_parser import NoteNotation
+from training.architecture.transformer.structured_targets import (
+    build_targets,
+    notation_positions,
+)
+from training.transformer.training_vocabulary import to_decoder_branches
 
 
 def _note(
@@ -168,3 +173,53 @@ class TestLossIntegration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDecoderAlignment(unittest.TestCase):
+    """Targets must sit at the same indices to_decoder_branches uses, or every label
+    lands one position away from the note it describes."""
+
+    def _symbols(self) -> list:
+
+        return [
+            EncodedSymbol("clef_G2"),
+            EncodedSymbol("note_8", "C5", notation=_note(_beams(BeamLevelState.BEGIN))),
+            EncodedSymbol("barline"),
+        ]
+
+    def test_bos_and_eos_carry_no_notation(self) -> None:
+        positions = notation_positions(self._symbols(), length=8)
+
+        self.assertIsNone(positions[0])  # BOS
+        self.assertIsNone(positions[4])  # EOS, after three symbols
+
+    def test_a_symbol_lands_at_its_own_index(self) -> None:
+        positions = notation_positions(self._symbols(), length=8)
+
+        # BOS at 0, so the note at symbol index 1 sits at position 2.
+        self.assertIsNone(positions[1])
+        self.assertIsNotNone(positions[2])
+        self.assertIsNone(positions[3])
+
+    def test_padding_carries_no_notation(self) -> None:
+        positions = notation_positions(self._symbols(), length=8)
+
+        self.assertEqual(positions[5:], [None, None, None])
+
+    def test_the_layout_matches_the_real_decoder_branches(self) -> None:
+        # The check that stops the two definitions drifting: whichever positions the
+        # branch tensors treat as real tokens are the ones notation may occupy.
+        symbols = self._symbols()
+        branches = to_decoder_branches(symbols)
+        length = int(branches.rhythms.shape[-1])
+        positions = notation_positions(symbols, length)
+
+        self.assertEqual(len(positions), length)
+        annotated = [i for i, n in enumerate(positions) if n is not None]
+        # Every annotated index must be a real token, never padding.
+        self.assertTrue(all(bool(branches.mask[i]) for i in annotated))
+
+    def test_a_sequence_longer_than_the_window_is_truncated(self) -> None:
+        positions = notation_positions(self._symbols(), length=2)
+
+        self.assertEqual(len(positions), 2)

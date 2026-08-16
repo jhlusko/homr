@@ -29,9 +29,11 @@ from homr.transformer.structured_notation import (
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
     BeamLevelState,
+    NoteNotation,
     SlurSide,
     StemDirection,
 )
+from homr.transformer.vocabulary import EncodedSymbol
 from training.architecture.transformer.structured_heads import (
     BEAM_HEAD,
     SLUR_EVENT_HEAD,
@@ -39,7 +41,6 @@ from training.architecture.transformer.structured_heads import (
     STEM_HEAD,
 )
 from training.architecture.transformer.structured_losses import IGNORE_INDEX
-from training.omr_datasets.structured_notation_parser import NoteNotation
 
 _BEAM_INDEX = {state: index for index, state in enumerate(BEAM_LEVEL_CLASSES)}
 _STEM_INDEX = {state: index for index, state in enumerate(STEM_CLASSES)}
@@ -105,3 +106,24 @@ def _fill_note(
         targets[SLUR_EVENT_HEAD.format(slot=slot)][row, column] = _EVENT_INDEX[event]
         if side != SlurSide.UNSPECIFIED:
             targets[SLUR_SIDE_HEAD.format(slot=slot)][row, column] = _SIDE_INDEX[side]
+
+
+def notation_positions(
+    symbols: Sequence["EncodedSymbol"], length: int
+) -> list[NoteNotation | None]:
+    """Line notation up with the decoder's token positions.
+
+    to_decoder_branches lays a sequence out as BOS, the symbols, EOS, then padding, and
+    the targets must sit at exactly those indices or every label lands one place from the
+    note it describes. Mirroring the layout here - rather than assuming the caller
+    offsets correctly - keeps the two definitions together, and the test compares this
+    against the real branch tensors so they cannot drift apart.
+
+    BOS, EOS and padding carry no notation, and neither do symbols that are not notes.
+    """
+    positions: list[NoteNotation | None] = [None]
+    positions.extend(symbol.notation for symbol in symbols)
+    positions.append(None)
+    if len(positions) < length:
+        positions.extend([None] * (length - len(positions)))
+    return positions[:length]
