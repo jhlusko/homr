@@ -26,12 +26,12 @@ import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import torch
 from torch import nn
 
 from homr.transformer.capability_manifest import build as build_manifest
-from homr.transformer.configs import Config
 from training.architecture.transformer.checkpoint_loading import load_checkpoint
 from training.architecture.transformer.structured_heads import head_names
 from training.architecture.transformer.structured_losses import (
@@ -117,7 +117,9 @@ def train_epoch(
 
 def write_manifest(
     path: Path,
-    config: Config,
+    # Duck-typed like capability_manifest.build: only the limits and head counts are
+    # read, so a test can pass a stand-in without constructing the whole Config.
+    config: Any,
     trained: tuple[str, ...],
     model_revision: str,
     training_revision: str,
