@@ -3,6 +3,7 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from training.transformer.training_vocabulary import read_tokens, to_decoder_branches
 from training.omr_datasets.convert_ossq import (
     CROP_NAME,
     Example,
@@ -376,6 +377,75 @@ class TestIndexPathsAreParsable(unittest.TestCase):
         self.assertTrue(lines)
         for line in lines:
             self.assertEqual(len(line.split(",")), 2, line)
+
+
+ARTICULATED_NOTE = """
+  <note>
+    <pitch><step>C</step><octave>5</octave></pitch>
+    <duration>2</duration><voice>1</voice><type>quarter</type>
+    <notations>
+      <articulations><accent/></articulations>
+      <fermata/>
+      <ornaments><trill-mark/></ornaments>
+    </notations>
+  </note>
+"""
+
+
+def _articulated_dataset(root: Path) -> None:
+    """A note carrying accent, fermata and trill at once.
+
+    homr encodes articulations as one token per combination, and this combination is not
+    in the vocabulary.
+    """
+    work = root / "scores" / "Composer" / "Work"
+    segments = work / "musicxml" / "unaligned"
+    segments.mkdir(parents=True)
+    body = (
+        '<score-partwise version="3.1">'
+        '<part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>'
+        '<part id="P1"><measure number="1">'
+        "<attributes><divisions>2</divisions></attributes>"
+        + ARTICULATED_NOTE
+        + "</measure></part></score-partwise>"
+    )
+    (segments / f"{KNOWN_SCORE}:0001:0002.musicxml").write_text(body, encoding="utf-8")
+    crops = work / "images" / "synthetic" / "partwise"
+    crops.mkdir(parents=True)
+    (crops / CROP_NAME.format(score=KNOWN_SCORE, page=1, system=2, part=1)).write_bytes(b"")
+
+
+class TestWrittenFilesCanActuallyBeLoaded(unittest.TestCase):
+    """Conversion must not write a token file the training loader cannot read.
+
+    token_lines_to_str only touches rhythm and pitch. The loader goes on through
+    to_decoder_branches for articulations, lifts, slurs and positions, and a gap there
+    surfaces inside a DataLoader worker partway through training - long after the
+    conversion reported success.
+    """
+
+    def test_an_unencodable_articulation_is_caught_at_conversion(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _articulated_dataset(root)
+
+            examples = build(root, out, track="synthetic")
+
+            self.assertEqual(examples, [])
+            # Nothing half-written left behind for a later run to pick up.
+            self.assertEqual(list(out.glob("*.txt")), [])
+
+    def test_everything_written_survives_a_load(self) -> None:
+        # The property the guard exists to provide, checked on a healthy corpus.
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _dataset(root, [1, 2, 3])
+
+            examples = build(root, out, track="synthetic")
+
+            self.assertTrue(examples)
+            for example in examples:
+                to_decoder_branches(read_tokens(str(example.tokens)))
 
 
 if __name__ == "__main__":

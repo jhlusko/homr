@@ -30,7 +30,7 @@ from pathlib import Path
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.ossq_splits import load_split_manifest
-from training.transformer.training_vocabulary import token_lines_to_str
+from training.transformer.training_vocabulary import to_decoder_branches, token_lines_to_str
 
 #: <score>:<page>:<system>:<part>.png, with the part 1-based from the top of the system.
 CROP_NAME = "{score}:{page:04d}:{system:04d}:{part}.png"
@@ -125,6 +125,13 @@ def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str
 
     try:
         lines = token_lines_to_str(symbols)
+        # Not redundant with the line above. token_lines_to_str only touches the rhythm
+        # and pitch vocabularies; the loader goes on to encode articulations, lifts, slurs
+        # and positions through to_decoder_branches, and a gap in any of those raises
+        # inside a DataLoader worker mid-training rather than here. Writing a file the
+        # loader cannot read is the failure worth preventing, so the check is the loader's
+        # own.
+        to_decoder_branches(symbols)
     except KeyError as missing:
         raise UnconvertibleStaff(str(missing).strip("'")) from missing
 
