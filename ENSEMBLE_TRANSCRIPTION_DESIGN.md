@@ -1585,8 +1585,10 @@ that, in order of what the result actually licenses:
 15  a tie head               ties are distinguishable now (27.24) but nothing predicts
                              them; needs the same treatment the slur sides just had
 16  lieder sidecars          one call added; the corpus has not been downloaded
-17  the scanned track        no head has seen it; 27.14 measured its layout only, and
-                             27.11's crop guard has to be re-measured there first
+17  the scanned track        no head has seen it. Its pipeline stopped at
+                             resize_systems, so no staff detection exists and 27.11's
+                             crop guard cannot be measured there until it does -
+                             running now
 18  test_synth               held back deliberately - it is the one split that has not
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
