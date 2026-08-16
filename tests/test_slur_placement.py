@@ -1,8 +1,12 @@
+import tempfile
 import unittest
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from training.omr_datasets.slur_placement import (
     Alignment,
+    PlacementIndex,
+    apply_placements,
     is_visible,
     note_signature,
     part_placements,
@@ -116,6 +120,112 @@ class TestAlignmentReport(unittest.TestCase):
     def test_an_empty_report_does_not_divide_by_zero(self) -> None:
         self.assertEqual(Alignment().rate, 0.0)
         self.assertIn("0", Alignment().describe())
+
+
+
+
+SEG_TEMPLATE = (
+    '<score-partwise><part id="P1"><measure number="1">{notes}</measure></part>'
+    "</score-partwise>"
+)
+
+
+def _slurred(step: str, number: str = "1", kind: str = "start") -> str:
+    return (
+        f'<note><pitch><step>{step}</step><octave>5</octave></pitch>'
+        f"<duration>1</duration><type>eighth</type>"
+        f'<notations><slur type="{kind}" number="{number}"/></notations></note>'
+    )
+
+
+class TestPlacementIndex(unittest.TestCase):
+    """Slices are precomputed per segment rather than consumed as a running cursor.
+
+    A cursor would have to advance for every segment whether or not it gets converted - a
+    system skipped for a crop mismatch still occupies notes in the score - and one missed
+    advance would shift every later placement onto the wrong note.
+    """
+
+    def _score(self, root: Path, aligned: bool = True) -> Path:
+        work = root / "scores" / "C" / "W"
+        segments = work / "musicxml" / "unaligned"
+        segments.mkdir(parents=True)
+        whole_notes = _slurred("C") + _slurred("D", kind="stop") + _slurred("E")
+        placement = whole_notes.replace('type="start" number="1"', 'type="start" number="1" placement="above"')
+        (work / "sq1.musicxml").write_text(SEG_TEMPLATE.format(notes=placement), encoding="utf-8")
+
+        first = _slurred("C") + _slurred("D", kind="stop")
+        second = _slurred("E") if aligned else _slurred("G")
+        (segments / "sq1:0001:0001.musicxml").write_text(
+            SEG_TEMPLATE.format(notes=first), encoding="utf-8"
+        )
+        (segments / "sq1:0001:0002.musicxml").write_text(
+            SEG_TEMPLATE.format(notes=second), encoding="utf-8"
+        )
+        return work
+
+    def test_each_segment_gets_its_own_slice(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            work = self._score(Path(tmp))
+
+            index = PlacementIndex(work, "sq1", work / "sq1.musicxml")
+
+            self.assertEqual(index.aligned_parts, 1)
+            self.assertEqual(len(index.for_segment(1, 1, 0)), 2)
+            self.assertEqual(len(index.for_segment(1, 2, 0)), 1)
+
+    def test_the_slice_carries_the_placement(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            work = self._score(Path(tmp))
+
+            index = PlacementIndex(work, "sq1", work / "sq1.musicxml")
+
+            self.assertEqual(index.for_segment(1, 1, 0)[0], {"1": "above"})
+
+    def test_a_part_that_does_not_align_contributes_nothing(self) -> None:
+        # A wrong placement is worse than none: it trains a head to read direction off
+        # the wrong note.
+        with tempfile.TemporaryDirectory() as tmp:
+            work = self._score(Path(tmp), aligned=False)
+
+            index = PlacementIndex(work, "sq1", work / "sq1.musicxml")
+
+            self.assertEqual(index.aligned_parts, 0)
+            self.assertEqual(index.skipped_parts, 1)
+            self.assertIsNone(index.for_segment(1, 1, 0))
+
+
+class TestApplyPlacements(unittest.TestCase):
+    def test_placement_is_written_onto_the_matching_slur(self) -> None:
+        part = ET.fromstring(f"<part><measure>{_slurred('C')}</measure></part>")
+
+        applied = apply_placements(part, [{"1": "below"}])
+
+        self.assertEqual(applied, 1)
+        self.assertEqual(part.find(".//slur").get("placement"), "below")
+
+    def test_a_slur_number_that_does_not_match_is_left_alone(self) -> None:
+        # Numbering survives segmentation, so a mismatch means the join is wrong, not
+        # that the placement belongs to whichever slur happens to be there.
+        part = ET.fromstring(f"<part><measure>{_slurred('C', number='2')}</measure></part>")
+
+        applied = apply_placements(part, [{"1": "below"}])
+
+        self.assertEqual(applied, 0)
+        self.assertIsNone(part.find(".//slur").get("placement"))
+
+    def test_a_length_disagreement_applies_nothing(self) -> None:
+        part = ET.fromstring(f"<part><measure>{_slurred('C')}</measure></part>")
+
+        self.assertEqual(apply_placements(part, [{}, {"1": "above"}]), 0)
+
+    def test_an_existing_placement_is_not_overwritten(self) -> None:
+        notes = _slurred("C").replace('number="1"', 'number="1" placement="above"')
+        part = ET.fromstring(f"<part><measure>{notes}</measure></part>")
+
+        apply_placements(part, [{"1": "below"}])
+
+        self.assertEqual(part.find(".//slur").get("placement"), "above")
 
 
 if __name__ == "__main__":

@@ -1574,14 +1574,25 @@ that, in order of what the result actually licenses:
 ```
 9   a converged run          the losses were still falling at three epochs, so the
                              numbers in 27.21 are a floor rather than a result
-10  slur placement           27.20 - the side heads have no labels at all, and
-                             recovering them means joining the original scores by note
-11  the scanned track        no head has seen it; 27.14 measured its layout only, and
+10  re-convert the corpus    the built dataset is v1 sidecars: no slur placement (27.20,
+                             27.22) and no ties (27.24). Both are label changes, so both
+                             need the conversion re-run - once, not twice, since it is
+                             ~25 minutes and the schema bump is already in place.
+11  heads for what that      slur side, now that placement exists; a tie head, now that
+    unlocks                  ties are distinguishable. Both need 10 first.
+12  the scanned track        no head has seen it; 27.14 measured its layout only, and
                              27.11's crop guard has to be re-measured there first
-12  test_synth              held back deliberately - it is the one split that has not
+13  test_synth               held back deliberately - it is the one split that has not
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
 ```
+
+**What does and does not need a re-conversion.** The seven heads trained in 27.21 read
+beam levels, stem and slur slots, and none of those moved: the extractor always read only
+`<slur>` and never `<tied>`, so the slur slots were already tie-free, and the token-level
+conflation of tie and slur never reached the sidecar. Ties and placement are *additions*.
+So the converged run in item 9 is unaffected and was allowed to finish; only a head that
+consumes the new fields needs the data rebuilt.
 
 Two things are worth carrying forward from how items 4's sub-items went. Both bugs found
 in the wiring were *correspondence* bugs - targets one position out from the decoder's
@@ -2189,6 +2200,36 @@ is still emitted and finite so B0 stays comparable.
 instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. Install
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
+
+### 27.24 Ties are not slurs, and the labels could not tell them apart
+
+homr's label vocabulary has three slur values - `slurStart`, `slurStop`,
+`slurStart_slurStop` - and `<tied>` emits the same ones as `<slur>`. So a tie is
+indistinguishable from a slur in a token file, though they are different objects: a tie
+joins two notations of one pitch into a single sounding note, while a slur groups distinct
+pitches under one phrase.
+
+This is not a rare edge. In an 800-segment sample of 72,817 notes:
+
+```
+slur starts              9,115
+tie starts               2,764     23% of all slur-like markings
+notes carrying both        741     collapsed into one field
+```
+
+Scaled to the corpus that is roughly 45,700 ties labelled as slurs - a fidelity error in
+the *existing* slur field, independent of the new heads.
+
+`TieState` needs no slot machinery, unlike slurs: a tie joins one pitch to the same pitch,
+so two ties cannot be open on one note of a voice without being the same tie. It is read
+from `<tied>` rather than `<tie>` - both appear in MusicXML, the first is the notated
+object and the second the sounding instruction, and it is the notation that is on the page
+for a model to see.
+
+The sidecar schema goes to v2 and the reader accepts v1. The 42,000 sidecars already built
+predate tie extraction, and decoding them as "no tie" is correct rather than lossy: the
+field was absent from the writer, not from the file. An unrecognised schema is still
+refused.
 
 ### 27.23 Stem direction is mostly a rule, and the head has not yet beaten it
 

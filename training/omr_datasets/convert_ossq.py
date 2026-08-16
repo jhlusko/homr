@@ -30,6 +30,7 @@ from pathlib import Path
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.ossq_splits import load_split_manifest
+from training.omr_datasets.slur_placement import PlacementIndex, apply_placements
 from training.transformer.training_vocabulary import to_decoder_branches, token_lines_to_str
 
 #: <score>:<page>:<system>:<part>.png, with the part 1-based from the top of the system.
@@ -91,10 +92,21 @@ class UnconvertibleStaff(RuntimeError):
         self.reason = reason
 
 
-def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str) -> Path | None:
+def _write_example(
+    segment_path: Path,
+    part_index: int,
+    out_dir: Path,
+    stem: str,
+    placements: list[dict[str, str]] | None = None,
+) -> Path | None:
     """Tokenise one part of one system; returns the token file, or None if it is empty."""
     segment = ET.parse(segment_path).getroot()  # noqa: S314
     single = extract_part(segment, part_index)
+    if placements:
+        # 27.20: the round-trip that produced these segments dropped slur placement, so it
+        # is put back from the original score before tokenising. Writing it into the XML
+        # means the ordinary extractor reads direction the way it always would.
+        apply_placements(single, placements)
 
     scratch = out_dir / f"{stem}.musicxml"
     scratch.write_text(
@@ -169,6 +181,7 @@ def build(
     examples: list[Example] = []
     unbuilt = 0
     mismatched = 0
+    placement_index: dict[str, PlacementIndex] = {}
     unconvertible: collections.Counter[str] = collections.Counter()
     for work in sorted((dataset_root / "scores").glob("*/*")):
         segments = sorted((work / "musicxml" / "unaligned").glob("*.musicxml"))
@@ -186,13 +199,25 @@ def build(
             if present != set(range(1, len(parts) + 1)):
                 mismatched += len(parts)
                 continue
+            if score_id not in placement_index:
+                whole = work / f"{score_id}.musicxml"
+                placement_index[score_id] = (
+                    PlacementIndex(work, score_id, whole) if whole.is_file() else None
+                )
+            index = placement_index[score_id]
+
             for part_index in range(len(parts)):
                 image = crops / CROP_NAME.format(
                     score=score_id, page=int(page), system=int(system), part=part_index + 1
                 )
                 stem = f"{score_id}_{page}_{system}_{part_index + 1}"
+                placements = (
+                    index.for_segment(int(page), int(system), part_index) if index else None
+                )
                 try:
-                    tokens = _write_example(segment_path, part_index, out_dir, stem)
+                    tokens = _write_example(
+                        segment_path, part_index, out_dir, stem, placements
+                    )
                 except UnconvertibleStaff as refused:
                     unconvertible[refused.reason] += 1
                     continue

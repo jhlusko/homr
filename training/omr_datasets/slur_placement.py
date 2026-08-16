@@ -196,6 +196,95 @@ def measure(dataset_root: Path, track: str, split: str | None, limit: int = 0) -
     return alignment
 
 
+class PlacementIndex:
+    """Slur placement for every segment of one score, or nothing if it cannot be trusted.
+
+    Built per score rather than consumed as a running cursor. A cursor would have to
+    advance for every segment whether or not that segment gets converted - a system
+    skipped for a crop mismatch still occupies notes in the score - and one forgotten
+    advance would shift every placement after it onto the wrong note. Precomputing the
+    slices removes the ordering dependency entirely.
+
+    A part whose segments do not align note for note contributes nothing. Placement is an
+    enrichment; a wrong one is worse than none, because it trains a head to read direction
+    off the wrong note.
+    """
+
+    def __init__(self, work: Path, score_id: str, whole: Path) -> None:
+        self.slices: dict[tuple[int, int, int], list[dict[str, str]]] = {}
+        self.aligned_parts = 0
+        self.skipped_parts = 0
+        self._build(work, score_id, whole)
+
+    def _build(self, work: Path, score_id: str, whole: Path) -> None:
+        try:
+            whole_parts = ET.parse(whole).getroot().findall("part")  # noqa: S314
+        except (ET.ParseError, OSError):
+            return
+        segments = segments_of(work, score_id)
+        if not segments:
+            return
+
+        for part_index, whole_part in enumerate(whole_parts):
+            expected = part_signature(whole_part)
+            found, _ = concatenated(segments, part_index)
+            if len(expected) != len(found) or expected != found:
+                self.skipped_parts += 1
+                continue
+
+            self.aligned_parts += 1
+            placements = part_placements(whole_part)
+            offset = 0
+            for path in segments:
+                try:
+                    parts = ET.parse(path).getroot().findall("part")  # noqa: S314
+                except ET.ParseError:
+                    continue
+                if part_index >= len(parts):
+                    continue
+                length = len(part_signature(parts[part_index]))
+                page, system = (int(field) for field in path.stem.split(":")[1:])
+                self.slices[(page, system, part_index)] = placements[offset : offset + length]
+                offset += length
+
+    def for_segment(self, page: int, system: int, part_index: int) -> list[dict[str, str]] | None:
+        return self.slices.get((page, system, part_index))
+
+
+def apply_placements(part: ET.Element, placements: list[dict[str, str]]) -> int:
+    """Write placement onto a single part's slurs, in place; returns how many landed.
+
+    Applied to the extracted MusicXML rather than to the parsed notation, so the ordinary
+    extractor reads direction the way it always would and nothing downstream needs to know
+    this happened.
+
+    Visible notes only, matching how the alignment was established. Numbering survives
+    segmentation, so a note's slur is matched to the whole score's by its own number
+    rather than by ordering within the note.
+    """
+    applied = 0
+    notes = [
+        note
+        for measure in part.findall("measure")
+        for note in measure.findall("note")
+        if is_visible(note)
+    ]
+    if len(notes) != len(placements):
+        # The slice was cut from an aligned part, so a disagreement here means the part
+        # was re-extracted differently. Refuse rather than apply a shifted mapping.
+        return 0
+    for note, stated in zip(notes, placements, strict=True):
+        if not stated:
+            continue
+        for notations in note.findall("notations"):
+            for slur in notations.findall("slur"):
+                placement = stated.get(slur.get("number") or "1")
+                if placement and not slur.get("placement"):
+                    slur.set("placement", placement)
+                    applied += 1
+    return applied
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--dataset-root", type=Path, required=True)
