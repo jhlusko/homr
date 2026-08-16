@@ -1,0 +1,208 @@
+"""
+Metrics for the beam, stem and slur heads.
+
+Accuracy over every position is close to meaningless here. Most notes carry no beams, most
+notes are not slur endpoints, and a head that answered NONE everywhere would score well on
+all three tasks while having learned nothing. So each measure below is restricted to the
+positions where its question is actually asked, and the rare classes are reported
+separately rather than averaged away.
+
+Three shapes of measure, for three different failure modes:
+
+  per-class F1        catches a head that has collapsed onto the majority class - macro
+                      across classes, so a class with a few hundred examples counts as
+                      much as one with hundreds of thousands.
+  exact vector match  catches a head that is right about each level independently and
+                      wrong about the note. A beam vector is one engraving decision;
+                      getting three levels of four right does not render.
+  endpoint pairing    catches a slur head that emits plausible starts and stops which do
+                      not join up. A span is the unit that means something, not its ends.
+
+The beam figures also come with the automatic-beaming baseline alongside, because the
+question Gate C asks is not whether a head is accurate but whether it beats what a rule
+already gives for free.
+"""
+
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+
+from homr.transformer.structured_notation import (
+    BeamLevelState,
+    NoteNotation,
+    SlurEvent,
+    StemDirection,
+)
+
+
+@dataclass
+class ClassMetrics:
+    true_positive: int = 0
+    false_positive: int = 0
+    false_negative: int = 0
+
+    @property
+    def support(self) -> int:
+        return self.true_positive + self.false_negative
+
+    @property
+    def precision(self) -> float:
+        predicted = self.true_positive + self.false_positive
+        return self.true_positive / predicted if predicted else 0.0
+
+    @property
+    def recall(self) -> float:
+        return self.true_positive / self.support if self.support else 0.0
+
+    @property
+    def f1(self) -> float:
+        p, r = self.precision, self.recall
+        return 2 * p * r / (p + r) if p + r else 0.0
+
+
+@dataclass
+class PerClassReport:
+    classes: dict[str, ClassMetrics] = field(default_factory=dict)
+
+    def observe(self, predicted: str, actual: str) -> None:
+        for name in (predicted, actual):
+            self.classes.setdefault(name, ClassMetrics())
+        if predicted == actual:
+            self.classes[actual].true_positive += 1
+        else:
+            self.classes[predicted].false_positive += 1
+            self.classes[actual].false_negative += 1
+
+    @property
+    def macro_f1(self) -> float:
+        """Averaged over classes that actually occur, so a rare class counts fully.
+
+        Classes with no support are left out rather than scored 0, which would let the
+        figure depend on how many classes the vocabulary happens to define.
+        """
+        present = [m for m in self.classes.values() if m.support]
+        return sum(m.f1 for m in present) / len(present) if present else 0.0
+
+    @property
+    def micro_accuracy(self) -> float:
+        correct = sum(m.true_positive for m in self.classes.values())
+        total = sum(m.support for m in self.classes.values())
+        return correct / total if total else 0.0
+
+    def describe(self) -> str:
+        rows = sorted(self.classes.items(), key=lambda kv: -kv[1].support)
+        listed = "  ".join(f"{name}:F1={m.f1:.3f}(n={m.support})" for name, m in rows if m.support)
+        return f"macro F1 {self.macro_f1:.3f}  micro {self.micro_accuracy:.3f}  {listed}"
+
+
+def beam_level_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation], level: int
+) -> PerClassReport:
+    """One level's states, over the notes whose duration can carry that level.
+
+    Notes the level does not apply to are excluded rather than counted as correct
+    NOT_APPLICABLE, which the rhythm token already determines.
+    """
+    report = PerClassReport()
+    for left, right in zip(predicted, actual, strict=True):
+        expected = right.beam_levels[level - 1]
+        if expected == BeamLevelState.NOT_APPLICABLE:
+            continue
+        report.observe(str(left.beam_levels[level - 1]), str(expected))
+    return report
+
+
+def exact_vector_accuracy(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation], levels: int
+) -> tuple[int, int]:
+    """(notes whose whole beam vector matches, notes where either side beams anything).
+
+    A beam vector is one engraving decision. Three levels right out of four does not
+    render, so partial credit would flatter a head that never gets a note wholly right.
+    """
+    matching = comparable = 0
+    for left, right in zip(predicted, actual, strict=True):
+        first = tuple(left.beam_levels[:levels])
+        second = tuple(right.beam_levels[:levels])
+        if all(s == BeamLevelState.NOT_APPLICABLE for s in first + second):
+            continue
+        comparable += 1
+        matching += first == second
+    return matching, comparable
+
+
+def hook_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation], levels: int
+) -> ClassMetrics:
+    """Hooks specifically, pooled across levels.
+
+    They are rare, they are what MuseScore's BeamMode discards, and they are the clearest
+    case of information only the image carries - so they get their own figure rather than
+    disappearing into a macro average.
+    """
+    hooks = {BeamLevelState.FORWARD_HOOK, BeamLevelState.BACKWARD_HOOK}
+    metrics = ClassMetrics()
+    for left, right in zip(predicted, actual, strict=True):
+        for level in range(levels):
+            got, want = left.beam_levels[level], right.beam_levels[level]
+            if got == want and want in hooks:
+                metrics.true_positive += 1
+                continue
+            # Not an elif chain: a backward hook where the engraving has a forward one is
+            # both a missed hook and an invented one, and charging only the miss would
+            # hide a head that has the right idea and the wrong direction.
+            if want in hooks:
+                metrics.false_negative += 1
+            if got in hooks:
+                metrics.false_positive += 1
+    return metrics
+
+
+def stem_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
+) -> PerClassReport:
+    """Stem direction, over notes whose reference states one.
+
+    UNKNOWN marks a source that does not say, so scoring it would measure the dataset
+    rather than the model.
+    """
+    report = PerClassReport()
+    for left, right in zip(predicted, actual, strict=True):
+        if right.stem == StemDirection.UNKNOWN:
+            continue
+        report.observe(str(left.stem), str(right.stem))
+    return report
+
+
+def slur_endpoint_pairs(notation: Sequence[NoteNotation], slot: int) -> set[tuple[int, int]]:
+    """(start, stop) index pairs for the spans one slot actually closes.
+
+    Endpoints alone are the wrong unit: a head can emit a plausible start and a plausible
+    stop that do not belong to each other and score well on both. A span is what means
+    something, so a start with no stop contributes nothing here and shows up as a miss.
+    """
+    pairs: set[tuple[int, int]] = set()
+    open_at: int | None = None
+    for index, note in enumerate(notation):
+        event = note.slurs[slot - 1][0]
+        if event in (SlurEvent.START, SlurEvent.START_AND_STOP):
+            if event == SlurEvent.START_AND_STOP and open_at is not None:
+                pairs.add((open_at, index))
+            open_at = index
+        elif event == SlurEvent.STOP and open_at is not None:
+            pairs.add((open_at, index))
+            open_at = None
+    return pairs
+
+
+def slur_span_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation], slots: int
+) -> ClassMetrics:
+    """Complete spans matched by both endpoints, pooled across slots."""
+    metrics = ClassMetrics()
+    for slot in range(1, slots + 1):
+        got = slur_endpoint_pairs(predicted, slot)
+        want = slur_endpoint_pairs(actual, slot)
+        metrics.true_positive += len(got & want)
+        metrics.false_positive += len(got - want)
+        metrics.false_negative += len(want - got)
+    return metrics
