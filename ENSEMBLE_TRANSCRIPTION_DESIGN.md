@@ -2158,6 +2158,35 @@ instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. I
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
 
+### 27.17 Slurs that cross a system break
+
+The training unit is one system's staff, so the symbolic segment behind it is cut at
+system breaks - and a slur crossing one arrives in the next segment with no start.
+
+The extractor was dropping those stops, which labelled the note as carrying no slur on a
+crop that plainly shows a slur ending on it. The asymmetry is what gives it away: the
+other half of the same crossing, a start whose stop is in the next system, was already
+recorded as a START and merely reported at `close()`. Only the stops were discarded.
+
+Measured over 600 real segments, 56,553 notes:
+
+```
+unmatched stops (start is in the previous system)   291
+unclosed starts (stop is in the next system)        293
+slot overflow                                         0
+```
+
+The near-equality is the confirmation that these are the two halves of the same
+crossings. Scaled to the corpus's 13,244 segments that is roughly 6,400 notes - and they
+are not scattered, they sit at the start of systems, so the head would have learned that
+slurs never end near the left edge of a staff. That is a learnable, wrong bias rather
+than noise, which is what makes 0.5% of notes worth fixing.
+
+Unmatched stops are still counted in `Findings` - that is how the crossings are measured -
+but they are no longer a reason to discard the label. Note this does not make the *span*
+complete: the endpoint-pair metric will see a stop with no start within the crop and score
+no span, which is right, because within one staff image there is no span to find.
+
 ### 27.16 The Gate C baseline, per split
 
 27.12's number came from a throwaway script. `training/omr_datasets/beam_baseline.py` is
