@@ -259,6 +259,12 @@ class Sample:
         self.sample_id = sample_id
         self.kern_text = kern_text
         self.image_path = image_path
+        # Defaults matter: run_benchmark reads both before the tool has necessarily
+        # written them - on the failure path, and for any batch_run that returns without
+        # marking every sample. Without them that read raises AttributeError, which is
+        # then reported as if the tool itself had failed.
+        self.raw_output = ""
+        self.error = ""
 
     def set_success(self, raw_output: str) -> None:
         self.raw_output = raw_output
@@ -407,11 +413,13 @@ def run_benchmark(
 
         print(f"All batch done in {(time.perf_counter() - start_time):.1f}s, ")
     else:
-        # Single-sample mode.
+        # Single-sample mode. Unlike batch_run, a plain tool returns its output instead
+        # of writing it back onto the sample, so store it here - otherwise every sample
+        # is scored against an output nobody ever recorded.
         for sample in active:
             try:
                 with _sample_timeout():
-                    tool(sample.kern_text, sample.image_path)
+                    sample.set_success(tool(sample.kern_text, sample.image_path))
                     _record_success(
                         sample.sample_id,
                         sample.kern_text,
@@ -431,7 +439,9 @@ def run_benchmark(
                     db,
                     verbose,
                     e,
-                    actual_text=sample.raw_output,
+                    # Empty when the tool itself raised: there is no output to store, and
+                    # NULL is what --update uses to skip unrescorable samples.
+                    actual_text=sample.raw_output or None,
                 )
 
     if db is not None:
