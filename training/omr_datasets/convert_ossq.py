@@ -21,6 +21,7 @@ score cannot drift between splits by being moved.
 # flake8: noqa: T201
 
 import argparse
+import collections
 import copy
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -64,6 +65,20 @@ def extract_part(segment: ET.Element, part_index: int) -> ET.Element:
     return single
 
 
+class UnrepresentableRhythm(RuntimeError):
+    """A duration homr's rhythm vocabulary has no token for.
+
+    27.10 found 256th notes unrepresentable; tuplets produce more of the same, because a
+    tuplet factor scales the base duration into values the vocabulary never enumerated
+    (`note_72` is the first one this corpus hits). There is no correct token to write, and
+    inventing one would put a symbol in the labels that the model can never predict.
+
+    Raised rather than swallowed at the point of failure so the converter can skip the
+    staff and count it. Left uncaught it kills the whole conversion on the first such
+    score - which it did, producing no index at all.
+    """
+
+
 def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str) -> Path | None:
     """Tokenise one part of one system; returns the token file, or None if it is empty."""
     segment = ET.parse(segment_path).getroot()  # noqa: S314
@@ -92,8 +107,13 @@ def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str
     if not symbols:
         return None
 
+    try:
+        lines = token_lines_to_str(symbols)
+    except KeyError as missing:
+        raise UnrepresentableRhythm(str(missing).strip("'")) from missing
+
     tokens = out_dir / f"{stem}.txt"
-    tokens.write_text(token_lines_to_str(symbols), encoding="utf-8")
+    tokens.write_text(lines, encoding="utf-8")
     write_sidecar(tokens, symbols)
     return tokens
 
@@ -126,6 +146,7 @@ def build(
     examples: list[Example] = []
     unbuilt = 0
     mismatched = 0
+    unrepresentable: collections.Counter[str] = collections.Counter()
     for work in sorted((dataset_root / "scores").glob("*/*")):
         segments = sorted((work / "musicxml" / "unaligned").glob("*.musicxml"))
         crops = work / "images" / track / "partwise"
@@ -147,7 +168,11 @@ def build(
                     score=score_id, page=int(page), system=int(system), part=part_index + 1
                 )
                 stem = f"{score_id}_{page}_{system}_{part_index + 1}"
-                tokens = _write_example(segment_path, part_index, out_dir, stem)
+                try:
+                    tokens = _write_example(segment_path, part_index, out_dir, stem)
+                except UnrepresentableRhythm as unknown:
+                    unrepresentable[str(unknown)] += 1
+                    continue
                 if tokens is not None:
                     examples.append(Example(image, tokens, score_id, assigned))
 
@@ -159,6 +184,10 @@ def build(
         )
     if mismatched:
         print(f"  {mismatched} parts skipped: staff crops do not match the parts (see below)")
+    if unrepresentable:
+        total = sum(unrepresentable.values())
+        listed = ", ".join(f"{token} x{count}" for token, count in unrepresentable.most_common(6))
+        print(f"  {total} parts skipped: rhythm outside homr's vocabulary ({listed})")
     return examples
 
 

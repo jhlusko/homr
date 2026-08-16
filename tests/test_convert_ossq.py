@@ -6,6 +6,7 @@ from pathlib import Path
 from training.omr_datasets.convert_ossq import (
     CROP_NAME,
     Example,
+    UnrepresentableRhythm,
     build,
     crop_numbers,
     extract_part,
@@ -192,6 +193,74 @@ class TestBuildRefusesMismatchedSystems(unittest.TestCase):
             examples = build(root, out, track="synthetic")
 
         self.assertEqual(examples, [])
+
+
+# 16 * 9/2 = 72, and homr's rhythm vocabulary has no note_72. The <tuplet> marker is
+# required: the parser only applies the time-modification once a tuplet has been started.
+TUPLET_NOTE = """
+  <note>
+    <pitch><step>C</step><octave>5</octave></pitch>
+    <duration>1</duration><voice>1</voice><type>16th</type>
+    <time-modification><actual-notes>9</actual-notes><normal-notes>2</normal-notes>
+    </time-modification>
+    <notations><tuplet type="start"/></notations>
+  </note>
+"""
+
+
+def _tuplet_dataset(root: Path) -> None:
+    """A part whose tuplet scales a duration outside homr's rhythm vocabulary."""
+    work = root / "scores" / "Composer" / "Work"
+    segments = work / "musicxml" / "unaligned"
+    segments.mkdir(parents=True)
+    body = (
+        '<score-partwise version="3.1">'
+        '<part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>'
+        '<part id="P1"><measure number="1">'
+        "<attributes><divisions>2</divisions></attributes>"
+        + TUPLET_NOTE * 7
+        + "</measure></part></score-partwise>"
+    )
+    (segments / f"{KNOWN_SCORE}:0001:0002.musicxml").write_text(body, encoding="utf-8")
+    crops = work / "images" / "synthetic" / "partwise"
+    crops.mkdir(parents=True)
+    name = CROP_NAME.format(score=KNOWN_SCORE, page=1, system=2, part=1)
+    (crops / name).write_bytes(b"")
+
+
+class TestUnrepresentableRhythms(unittest.TestCase):
+    """A duration homr has no token for must lose one staff, not the whole conversion.
+
+    27.10 found 256th notes unrepresentable and tuplets produce more of the same. Left
+    uncaught this killed the run on the first such score and wrote no index at all, so
+    every downstream step failed on a missing file rather than on the real cause.
+    """
+
+    def test_the_conversion_survives_and_reports_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _tuplet_dataset(root)
+
+            try:
+                examples = build(root, out, track="synthetic")
+            except UnrepresentableRhythm:
+                self.fail("an unrepresentable rhythm must not abort the whole conversion")
+
+        self.assertEqual(examples, [])
+
+    def test_healthy_staves_alongside_it_still_convert(self) -> None:
+        # The point of skipping rather than aborting: one bad part must not cost the rest
+        # of the corpus.
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _tuplet_dataset(root)
+            _dataset(root / "other", [1, 2, 3])
+
+            examples = build(root, out, track="synthetic")
+            healthy = build(root / "other", out, track="synthetic")
+
+        self.assertEqual(examples, [])
+        self.assertEqual(len(healthy), 3)
 
 
 if __name__ == "__main__":
