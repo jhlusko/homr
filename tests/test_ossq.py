@@ -8,7 +8,9 @@ from validation.ossq import (
     PageKey,
     _materialize_whole_measure_rests,
     _merge_systems_into_page,
+    _segment_dir,
     _segments_by_page,
+    get_ossq_samples,
 )
 
 
@@ -70,7 +72,7 @@ class TestSegmentDiscovery(unittest.TestCase):
             ):
                 (unaligned / f"{name}.musicxml").write_text(_system_xml([""]), encoding="utf-8")
 
-            pages = _segments_by_page(Path(tmp))
+            pages = _segments_by_page(Path(tmp), "synthetic")
 
         self.assertEqual(sorted(pages), [PageKey("sq1", 1), PageKey("sq2", 1)])
         self.assertEqual(
@@ -190,3 +192,55 @@ class TestMaterializeWholeMeasureRests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTracks(unittest.TestCase):
+    """The two tracks read different directories, because only one of them has page
+    indices that mean the same thing on both sides of the comparison."""
+
+    def test_synthetic_reads_the_unaligned_segments(self) -> None:
+        work = Path("/x/scores/Composer/Work")
+        self.assertEqual(_segment_dir(work, "synthetic"), work / "musicxml" / "unaligned")
+
+    def test_scanned_reads_the_aligned_segments(self) -> None:
+        work = Path("/x/scores/Composer/Work")
+        self.assertEqual(
+            _segment_dir(work, "scanned"), work / "musicxml" / "scanned" / "systemwise"
+        )
+
+    def _build_corpus(self, tmp: Path, track: str, pages: int, images: int) -> None:
+        work = tmp / "scores" / "Composer" / "Work"
+        segments = _segment_dir(work, track)
+        segments.mkdir(parents=True)
+        images_dir = work / "images" / track / "original"
+        images_dir.mkdir(parents=True)
+        for page in range(1, pages + 1):
+            (segments / f"sq1:{page:04d}:0001.musicxml").write_text(
+                _system_xml([_ATTRS_4_4 + _QUARTER] * 4), encoding="utf-8"
+            )
+        for page in range(1, images + 1):
+            (images_dir / f"sq1:{page:04d}.png").write_bytes(b"")
+
+    def test_scanned_tolerates_more_images_than_segments(self) -> None:
+        # Front matter and blank pages carry no systems, so a scanned score legitimately
+        # has more page images than pages with segments. The pagination guard exists for
+        # the synthetic track, where that mismatch means a repaginated render instead.
+        with tempfile.TemporaryDirectory() as tmp:
+            self._build_corpus(Path(tmp), "scanned", pages=4, images=9)
+            samples = get_ossq_samples(Path(tmp), "scanned")
+
+        self.assertEqual(len(samples), 4)
+
+    def test_synthetic_refuses_the_same_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self._build_corpus(Path(tmp), "synthetic", pages=4, images=9)
+            with self.assertRaises(SystemExit):
+                get_ossq_samples(Path(tmp), "synthetic")
+
+    def test_a_missing_alignment_stage_says_so(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "scores").mkdir()
+            with self.assertRaises(SystemExit) as ctx:
+                get_ossq_samples(Path(tmp), "scanned")
+
+        self.assertIn("align_systems_lmxe", str(ctx.exception))

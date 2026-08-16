@@ -38,17 +38,24 @@ up if both were made by the same MuseScore. They are paired by filename, which m
 repaginated render is silently scored against the wrong music - see the pagination guard
 in get_ossq_samples.
 
-Synthetic track only
---------------------
---track scanned is rejected on purpose. The per-system MusicXML and metadata are
-indexed by the SYNTHETIC page layout: for every work checked, the highest page index in
-metadata/unaligned equals the synthetic page count, never the scanned one (Arriaga No.3
-has 56 synthetic pages, 144 scanned images, and metadata topping out at page 56).
-Scanned pages are a different edition with their own pagination, and mapping them to
-symbolic content needs the alignment stage of omr-data-preprocessor, which produces
-artifacts this repository does not have. Scoring scanned images against synthetic-indexed
-ground truth would silently compare unrelated music, so it is refused rather than
-approximated.
+The two tracks
+--------------
+The synthetic track reads musicxml/unaligned/, whose page and system indices come from
+the same MuseScore layout that produced the renders.
+
+The scanned track reads musicxml/<track>/systemwise/, which omr-data-preprocessor's
+align_systems_lmxe step writes. Scanned pages are a different edition with their own
+pagination - Arriaga No.3 has 56 synthetic pages against 144 scanned images - so the
+symbolic content cannot be paired with them by page number. That step pairs them
+positionally instead: it sorts the systems YOLO detected in the scanned images, sorts
+the symbolic segments, requires the two counts to match exactly, and zips them, so the
+Nth scanned system is the Nth system of the score. The result is the same per-system
+MusicXML this module already consumes, renamed to scanned page and system indices.
+
+Running against unaligned/ with scanned images is therefore not "the scanned track" -
+it would score page 5 of one edition against page 5 of another. That is what the
+--track scanned refusal used to prevent, and what requiring the aligned directory
+prevents now.
 """
 
 import argparse
@@ -89,17 +96,29 @@ class PageKey(NamedTuple):
         return f"{self.score_id}:{self.page:04d}.png"
 
 
-def _work_dirs(root: Path) -> list[Path]:
-    """Every <composer>/<work> directory that has both segments and page renders."""
+def _segment_dir(work_dir: Path, track: str) -> Path:
+    """Where this track's per-system MusicXML lives.
+
+    The synthetic renders share their layout with the symbolic source, so the unaligned
+    segments index them directly. The scanned renders are a different edition and only
+    line up after align_systems_lmxe has paired them positionally, which writes here.
+    """
+    if track == "synthetic":
+        return work_dir / "musicxml" / "unaligned"
+    return work_dir / "musicxml" / track / "systemwise"
+
+
+def _work_dirs(root: Path, track: str) -> list[Path]:
+    """Every <composer>/<work> directory that has this track's segments."""
     scores_root = root / "scores"
     if not scores_root.is_dir():
         raise SystemExit(
             f"{scores_root} not found - pass --dataset-root pointing at an ossq-omr checkout."
         )
-    return sorted(d for d in scores_root.glob("*/*") if (d / "musicxml" / "unaligned").is_dir())
+    return sorted(d for d in scores_root.glob("*/*") if _segment_dir(d, track).is_dir())
 
 
-def _segments_by_page(work_dir: Path) -> dict[PageKey, list[Path]]:
+def _segments_by_page(work_dir: Path, track: str) -> dict[PageKey, list[Path]]:
     """Map each page to its system MusicXML files, ordered by system index.
 
     A work directory can hold more than one score_id: two multi-movement works in the
@@ -107,7 +126,7 @@ def _segments_by_page(work_dir: Path) -> dict[PageKey, list[Path]]:
     on the id keeps those apart instead of merging two movements onto one page number.
     """
     pages: dict[PageKey, list[tuple[int, Path]]] = {}
-    for path in (work_dir / "musicxml" / "unaligned").glob("*.musicxml"):
+    for path in _segment_dir(work_dir, track).glob("*.musicxml"):
         match = _SEGMENT_RE.match(path.stem)
         if match is None:
             continue
@@ -254,30 +273,35 @@ def get_ossq_samples(
 
     work_dirs = [
         d
-        for d in _work_dirs(root)
+        for d in _work_dirs(root, track)
         if score_filter is None or score_filter.lower() in str(d).lower()
     ]
     for work_dir in work_dirs:
         image_dir = work_dir / "images" / track / "original"
-        pages = _segments_by_page(work_dir)
+        pages = _segments_by_page(work_dir, track)
         by_score: dict[str, list[PageKey]] = {}
         for key in pages:
             by_score.setdefault(key.score_id, []).append(key)
 
         for score_id, keys in sorted(by_score.items()):
-            # Pagination guard. Page indices come from the MusicXML layout, the images
-            # from rendering that same score - but only if both were produced by the
-            # same MuseScore. They are separate pipeline steps, and a different
-            # MuseScore version repaginates: 4.6.5 lays the Ravel quartet out over 56
-            # pages where the version behind the repo's tracked MusicXML used 47. The
-            # filenames still line up, so page 5 would be scored against a page 5 of
-            # different music - silently, and with a plausible-looking NED. Refuse the
-            # whole score instead.
-            rendered = len(list(image_dir.glob(f"{score_id}:*.png")))
-            expected = max(key.page for key in keys)
-            if rendered and rendered != expected:
-                repaginated.append((score_id, expected, rendered))
-                continue
+            # Pagination guard, synthetic only. There the page indices come from the
+            # MusicXML layout and the images from rendering that same score, but they are
+            # separate pipeline steps and a different MuseScore repaginates: 4.6.5 lays
+            # the Ravel quartet out over 56 pages where the version behind the repo's
+            # tracked MusicXML used 47. The filenames still line up, so page 5 would be
+            # scored against a page 5 of different music, silently and with a plausible
+            # NED. Refuse the whole score instead.
+            #
+            # The scanned track needs no such check and would fail it: its segments were
+            # named after the scanned images they were aligned to, so the pairing holds
+            # by construction, and its page count legitimately exceeds the segments' -
+            # front matter and blank pages carry no systems and so no segments.
+            if track == "synthetic":
+                rendered = len(list(image_dir.glob(f"{score_id}:*.png")))
+                expected = max(key.page for key in keys)
+                if rendered and rendered != expected:
+                    repaginated.append((score_id, expected, rendered))
+                    continue
             # One meter state per score, folded forward in page order. Every page of the
             # score is assembled even when its render is missing or it is later dropped
             # by --limit, so a skipped page cannot desynchronise the meter of the pages
@@ -319,6 +343,14 @@ def get_ossq_samples(
                 f"    [{score_id}] reference {expected} pages, {rendered} rendered", file=sys.stderr
             )
     if not samples:
+        if track != "synthetic" and not work_dirs:
+            raise SystemExit(
+                f"No {track} segments found. This track needs omr-data-preprocessor's"
+                f" alignment stage, which writes musicxml/{track}/systemwise/ - run"
+                f" ossq_step_001.sh's {track} cropping steps and then"
+                f" 'align_systems_lmxe.py -t {track}'. Without it there is nothing that"
+                " pairs these images with symbolic content."
+            )
         raise SystemExit("No samples found - check --dataset-root, --track and --score.")
     return samples
 
@@ -335,7 +367,10 @@ def main() -> None:
         "--track",
         choices=["synthetic", "scanned"],
         default="synthetic",
-        help="Which page renders to score (default: synthetic; scanned is not supported).",
+        help=(
+            "Which page renders to score (default: synthetic). scanned requires "
+            "omr-data-preprocessor's alignment stage to have been run."
+        ),
     )
     parser.add_argument(
         "--score",
@@ -396,15 +431,6 @@ def main() -> None:
     )
     args = parser.parse_args()
     output_db = args.output or f"ossq-{args.track}_{args.tool}.db"
-
-    if args.track == "scanned":
-        raise SystemExit(
-            "--track scanned is not supported: ossq-omr's per-system MusicXML is indexed by"
-            " the synthetic page layout, and the scanned track is a different edition with"
-            " its own pagination. Aligning the two requires the alignment stage of"
-            " omr-data-preprocessor; without it, scanned pages would be scored against"
-            " unrelated music. See this module's docstring."
-        )
 
     # Kern ground truth is what polish-scores/smb use; ossq's reference is MusicXML, so
     # the kern parser is never reached and there is no --kern-parser option here.
