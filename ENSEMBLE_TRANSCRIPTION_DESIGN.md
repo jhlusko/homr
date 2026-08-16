@@ -2297,6 +2297,37 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.33 The scanned crop guard costs nothing either, and why I expected otherwise
+
+27.14 found homr over-detecting staves on scans - five, six, seven and nine parts where
+the music has four - so the expectation going into this was that 27.11's crop guard would
+be expensive on the scanned track and might make it unusable. Measured over 5,623 scanned
+systems:
+
+```
+detections match the part count   5,611   99.8%
+mismatch (system skipped)            12    0.2%
+  -3: 8    -4: 2    +1: 2
+```
+
+Against synthetic's 99.9%. The guard costs essentially nothing on either track.
+
+**The prediction was wrong because it conflated two different detectors.** 27.14 measured
+homr's own segmentation and system grouping working on a *full scanned page* - finding the
+staves, and deciding which belong to one system. What the crop guard depends on is
+omr-data-preprocessor's YOLO staff detector working on a system that has *already* been
+located, cropped out and resized to a target staff height. The second problem is far more
+constrained than the first, and scanning noise that defeats page-level grouping does not
+much trouble a detector looking at one isolated system.
+
+So "scans are harder" is true of the layout stage and not of this one, and the two should
+not have been reasoned about as a single quantity. The eight systems where only one staff
+was found, and the two where none was, are the real scanning failures - twelve in 5,623.
+
+This clears the way for converting the scanned track with the same guard, and it means the
+27.14 over-detection figure should be quoted as a property of page-level grouping rather
+than of scanned data in general.
+
 ### 27.32 The v2 retrain: nine heads, and the hooks move
 
 Trained on the re-converted OSSQ (27.29), the manifest declares **nine heads rather than
