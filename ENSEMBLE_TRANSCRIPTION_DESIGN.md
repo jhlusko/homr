@@ -1832,13 +1832,26 @@ MuseScore version rather than a fact asserted here.
 
 ### 27.7 Known gaps
 
-- Incomplete systems are dropped rather than repaired. On repaired pages that discard is
-  the entire residual error: `pred/ref` token ratio 0.81-0.85 against 1.01 on clean
-  pages, about 10% NED. Recovering it means inferring the missing voice slot from the
-  internal gap pattern and teaching `parse_staffs` to index by slot rather than position.
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are
   the cases where geometry declines - overlapping duplicate staff detections, too few
-  systems to read - rather than decides wrongly.
+  systems to read - rather than decides wrongly. Measured before incomplete-system
+  recovery landed; due a re-measure.
+- Incomplete systems are now recovered where the spacing says which voice is absent, and
+  still dropped where it does not. A voice missing between two detected staffs shows up
+  as an internal gap of about two ordinary gaps plus a staff height; one missing from a
+  system's top or bottom shows up as an oversized boundary to the neighbouring system
+  (19.26 unit sizes against a typical 9.15 on the page this was traced on). A short
+  system at the very end of a page has neither, so it is still dropped.
+
+  On the 60-page set, mean 5.19% -> 3.99%, 9 pages improved and none worse. Of the 11
+  pages that were truncated, 7 recovered: their mean NED 12.21% -> 5.72% and their mean
+  `pred/ref` token ratio 0.82 -> 0.94. That ratio is the load-bearing number - it says
+  the recovered systems' music is being read, not that the metric got easier. It does not
+  return to 1.01 because the missing staff is still missing: one voice genuinely has no
+  music for that system.
+
+  End to end across both layout changes, on the same 60 pages: mean 16.34% -> 4.09%,
+  layout-broken 12 -> 0, median unchanged at 2.70%, all 60 pages producing output.
 - The scanned benchmark has not been run; only its pipeline is validated end to end on
   one score (168 detected systems against 168 symbolic segments, aligning to scanned
   pages 3-58, matching that score's curated `3:58` range).
