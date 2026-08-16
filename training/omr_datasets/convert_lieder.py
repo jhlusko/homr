@@ -26,6 +26,7 @@ from training.omr_datasets.musescore_svg import (
     get_position_from_multiple_svg_files,
 )
 from training.omr_datasets.music_xml_parser import Measure, music_xml_file_to_tokens
+from training.omr_datasets.notation_sidecar import write_sidecar
 from training.transformer.training_vocabulary import (
     calc_ratio_of_tuplets,
     token_lines_to_str,
@@ -505,6 +506,12 @@ def _split_file_into_staffs(
             selected_measures = strip_naturals(selected_measures)
             tokens_content = token_lines_to_str(selected_measures)
             write_text_to_file(tokens_content, token_file_name)
+            # Lieder renders its SVG and its MusicXML from the same source .mscx, so the
+            # staff image shows the score's own engraving and beam, stem and slur labels
+            # taken from that MusicXML describe the picture. That is not true of every
+            # corpus - see 27.25 - so the sidecar is written here deliberately rather than
+            # by every converter that happens to use this parser.
+            write_sidecar(token_file_name, selected_measures)
             result.append(
                 str(Path(staff_image_file_name).relative_to(git_root))
                 + ","
