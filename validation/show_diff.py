@@ -206,15 +206,17 @@ def main() -> None:
         ).fetchone()
         if row is not None:
             kern_text, actual_text = row
-            if kern_text:
-                dest = out / "expected.krn"
-                dest.write_text(kern_text, encoding="utf-8")
-                print(f"Wrote {dest}")  # noqa: T201
-            if actual_text:
-                stripped = actual_text.lstrip()
+            for text, stem in ((kern_text, "expected"), (actual_text, "actual")):
+                if not text:
+                    continue
+                # The ground-truth column holds kern for most datasets but MusicXML for
+                # MusicXML-ground-truth ones (ossq), so pick the extension from the
+                # content rather than assuming .krn - otherwise the exported reference
+                # opens in nothing.
+                stripped = text.lstrip()
                 is_kern = stripped.startswith("**") or "\t**kern" in stripped[:200]
-                dest = out / ("actual.krn" if is_kern else "actual.musicxml")
-                dest.write_text(actual_text, encoding="utf-8")
+                dest = out / f"{stem}{'.krn' if is_kern else '.musicxml'}"
+                dest.write_text(text, encoding="utf-8")
                 print(f"Wrote {dest}")  # noqa: T201
 
         dataset = args.dataset or _detect_dataset(db_path)

@@ -193,3 +193,49 @@ class TestUnreliableArticulation(unittest.TestCase):
         with_flag = compute_ned(kern, pred, ignore_unreliable_articulation=True)
 
         self.assertGreater(with_flag.articulation_ned, 0.0)
+
+
+def _one_part_xml(steps: str) -> str:
+    notes = "".join(
+        f"<note><pitch><step>{step}</step><octave>4</octave></pitch>"
+        f"<duration>1</duration><type>quarter</type><voice>1</voice><staff>1</staff></note>"
+        for step in steps
+    )
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<score-partwise version="3.1">'
+        '<part-list><score-part id="P1"><part-name>P1</part-name></score-part></part-list>'
+        '<part id="P1"><measure number="1">'
+        "<attributes><divisions>1</divisions><key><fifths>0</fifths></key>"
+        "<time><beats>4</beats><beat-type>4</beat-type></time>"
+        "<clef><sign>G</sign><line>2</line></clef></attributes>"
+        f"{notes}</measure></part></score-partwise>"
+    )
+
+
+class TestMusicXmlGroundTruth(unittest.TestCase):
+    """The ground-truth side accepts MusicXML, not only **kern (used by validation/ossq)."""
+
+    def test_identical_musicxml_on_both_sides_scores_zero(self) -> None:
+        xml = _one_part_xml("CDEF")
+
+        result = compute_ned(xml, xml)
+
+        self.assertEqual(result.ned, 0.0)
+        self.assertEqual(result.distance, 0)
+        self.assertGreater(result.kern_len, 0)
+
+    def test_musicxml_ground_truth_still_penalises_a_wrong_pitch(self) -> None:
+        result = compute_ned(_one_part_xml("CDEF"), _one_part_xml("CDEG"))
+
+        self.assertGreater(result.ned, 0.0)
+        self.assertGreater(result.pitch_ned, 0.0)
+        self.assertEqual(result.rhythm_ned, 0.0)
+
+    def test_kern_ground_truth_against_musicxml_prediction_is_unaffected(self) -> None:
+        # The mixed kern/MusicXML case is what smb and polish-scores rely on; detecting
+        # the format per side must not have changed it.
+        result = compute_ned("**kern\n*M4/4\n*clefG2\n4c\n4d\n4e\n4f\n*-\n", _one_part_xml("CDEF"))
+
+        self.assertEqual(result.pitch_ned, 0.0)
+        self.assertEqual(result.rhythm_ned, 0.0)

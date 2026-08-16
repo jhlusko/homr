@@ -1,5 +1,9 @@
 """
-NED scoring: given a kern ground truth and tool output, compute a NedResult.
+NED scoring: given a ground truth and tool output, compute a NedResult.
+
+Both sides may be **kern or MusicXML; the format is detected independently per side
+(_is_xml), so datasets that publish symbolic ground truth only as MusicXML - e.g. ossq -
+are scored without a lossy conversion to kern first.
 
 Supports two scoring backends:
   - Native token-based comparison (fast, kern-specific component breakdown)
@@ -321,38 +325,49 @@ def _is_xml(text: str) -> bool:
     return stripped.startswith("<?xml") or "<score-partwise" in stripped[:500]
 
 
-def _pred_parts(raw_output: str, kern_parser: str, xml_parser: str) -> list[list[EncodedSymbol]]:
-    """Parse tool output (MusicXML or **kern) into per-part token lists.
+def _side_parts(text: str, kern_parser: str, xml_parser: str) -> list[list[EncodedSymbol]]:
+    """Parse one side of the comparison (MusicXML or **kern) into per-part token lists.
 
-    MusicXML is parsed with xml_parser; **kern is parsed directly with kern_parser
-    - no intermediate kern->XML conversion.
+    The format is auto-detected: MusicXML is parsed with xml_parser after grand-staff
+    splitting, **kern directly with kern_parser - no intermediate kern->XML conversion.
+
+    Both the ground truth and the tool output go through this same function, which is
+    what makes a MusicXML ground truth sound (see _parse_output). A dataset whose
+    ground truth is MusicXML rather than kern is then normalised by exactly the same
+    steps as MusicXML tool output - _split_grand_staff, strip_naturals,
+    _strip_position - so any artefact of the XML tokeniser appears identically on both
+    sides and cancels out of the edit distance instead of being charged to the tool as
+    a recognition error. Mixing the two (kern-parsed reference against XML-parsed
+    prediction) is fine because the two parsers target the same EncodedSymbol
+    vocabulary, but it does not have that cancellation property.
     """
-    if _is_xml(raw_output):
-        xml_text = _split_grand_staff(raw_output)
+    if _is_xml(text):
+        xml_text = _split_grand_staff(text)
         raw = _xml_parts_from_text(xml_text, xml_parser)
         return [_strip_position(strip_naturals(p)) for p in raw]
-    raw = _kern_parts(raw_output, kern_parser)
+    raw = _kern_parts(text, kern_parser)
     return [_strip_position([t for chord in sort_token_chords(p) for t in chord]) for p in raw]
 
 
 def _parse_output(
-    kern_text: str,
+    gt_text: str,
     raw_output: str,
     kern_parser: str = "native",
     xml_parser: str = "native",
     ignore_unreliable_articulation: bool = False,
 ) -> tuple[list[list[EncodedSymbol]], list[list[EncodedSymbol]]]:
-    """Parse ground-truth kern and tool raw output into aligned per-part token lists.
+    """Parse ground truth and tool raw output into aligned per-part token lists.
+
+    gt_text may be **kern (smb, polish-scores) or MusicXML (ossq) - the format is
+    detected per side, so a dataset that only publishes symbolic ground truth as
+    MusicXML needs no lossy conversion to kern first.
 
     ignore_unreliable_articulation: see "Known ground-truth reliability exceptions"
     above - opt-in only, set by callers benchmarking datasets with confirmed-unreliable
     articulation ground truth.
     """
-    kern_raw = _kern_parts(kern_text, kern_parser)
-    gt_parts = [
-        _strip_position([t for chord in sort_token_chords(p) for t in chord]) for p in kern_raw
-    ]
-    pred_parts = _pred_parts(raw_output, kern_parser, xml_parser)
+    gt_parts = _side_parts(gt_text, kern_parser, xml_parser)
+    pred_parts = _side_parts(raw_output, kern_parser, xml_parser)
     if ignore_unreliable_articulation:
         gt_parts = _strip_articulation_from_parts(gt_parts)
         pred_parts = _strip_articulation_from_parts(pred_parts)
@@ -531,16 +546,18 @@ def _alignment_events(
 
 
 def compute_ned(
-    kern_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
+    gt_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
 ) -> NedResult:
-    """Compute OMR-NED between kern ground truth and tool output (MusicXML or **kern).
+    """Compute OMR-NED between ground truth and tool output.
+
+    Both sides may be MusicXML or **kern; each format is detected independently.
 
     ignore_unreliable_articulation: see "Known ground-truth reliability exceptions" above.
     """
-    kern_parts, pred_parts = _parse_output(
-        kern_text, raw_output, ignore_unreliable_articulation=ignore_unreliable_articulation
+    gt_parts, pred_parts = _parse_output(
+        gt_text, raw_output, ignore_unreliable_articulation=ignore_unreliable_articulation
     )
-    return _ned_from_parts(kern_parts, pred_parts)
+    return _ned_from_parts(gt_parts, pred_parts)
 
 
 # ---------------------------------------------------------------------------
@@ -576,23 +593,47 @@ def _musicdiff_register_once() -> None:
         )
 
 
+def _musicdiff_parse_xml_text(xml_text: str) -> object:
+    """Parse MusicXML text into a music21 object via a temp file (music21 needs a path
+    to pick the MusicXML reader reliably)."""
+    import music21 as m21  # noqa: PLC0415
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".musicxml", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(xml_text)
+        path = f.name
+    try:
+        return m21.converter.parse(path, forceSource=True)
+    finally:
+        os.remove(path)
+
+
 def _musicdiff_parse_scores(
-    kern_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
+    gt_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
 ) -> tuple:
-    """Parse kern ground truth and tool output into music21 Score objects.
+    """Parse ground truth and tool output into music21 Score objects.
+
+    Either side may be MusicXML or **kern; the format is detected per side, so this
+    mode supports MusicXML-ground-truth datasets (ossq) as well as kern ones.
 
     For kern predictions, acceptSyntaxErrors=True lets converter21 repair malformed
     measure durations (e.g. notes that don't fill a bar) rather than failing outright.
     Each repaired error is counted as an additional edit-distance unit via
     AnnScore.num_syntax_errors_fixed, so they are penalised without completely
-    breaking the alignment.
+    breaking the alignment. It is deliberately NOT applied to the ground truth: a
+    reference that does not parse is a dataset bug that should surface, not be
+    silently repaired and then charged to the tool.
 
     ignore_unreliable_articulation: see "Known ground-truth reliability exceptions" above.
     """
     import music21 as m21  # noqa: PLC0415
 
-    with contextlib.redirect_stderr(io.StringIO()):
-        gt_raw = m21.converter.parse(kern_text, format="humdrum")
+    if _is_xml(gt_text):
+        gt_raw = _musicdiff_parse_xml_text(gt_text)
+    else:
+        with contextlib.redirect_stderr(io.StringIO()):
+            gt_raw = m21.converter.parse(gt_text, format="humdrum")
     if isinstance(gt_raw, m21.stream.Opus):
         gt_raw = gt_raw.scores[0] if gt_raw.scores else m21.stream.Score()
     gt_score: m21.stream.Score = (
@@ -600,15 +641,7 @@ def _musicdiff_parse_scores(
     )
 
     if _is_xml(raw_output):
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".musicxml", delete=False, encoding="utf-8"
-        ) as f:
-            f.write(raw_output)
-            pred_path = f.name
-        try:
-            pred_raw = m21.converter.parse(pred_path, forceSource=True)
-        finally:
-            os.remove(pred_path)
+        pred_raw = _musicdiff_parse_xml_text(raw_output)
     else:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".krn", delete=False, encoding="utf-8"
@@ -633,7 +666,7 @@ def _musicdiff_parse_scores(
 
 
 def _musicdiff_ned_for_sample(
-    kern_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
+    gt_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
 ) -> NedResult:
     """Compute OMR-NED using musicdiff's full structural comparison (DetailLevel.Default).
 
@@ -648,7 +681,7 @@ def _musicdiff_ned_for_sample(
     from musicdiff.comparison import Comparison  # noqa: PLC0415
 
     gt_score, pred_score = _musicdiff_parse_scores(
-        kern_text, raw_output, ignore_unreliable_articulation
+        gt_text, raw_output, ignore_unreliable_articulation
     )
 
     ann_gt: AnnScore = AnnScore(gt_score)
@@ -678,7 +711,7 @@ def _musicdiff_ned_for_sample(
 
 
 def _musicdiff_detailed_ned_for_sample(
-    kern_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
+    gt_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
 ) -> NedResult:
     """Compute OMR-NED with per-component breakdown using multiple musicdiff DetailLevel runs.
 
@@ -703,7 +736,7 @@ def _musicdiff_detailed_ned_for_sample(
     from musicdiff.detaillevel import DetailLevel  # noqa: PLC0415
 
     gt_score, pred_score = _musicdiff_parse_scores(
-        kern_text, raw_output, ignore_unreliable_articulation
+        gt_text, raw_output, ignore_unreliable_articulation
     )
 
     def _compare(dl: int) -> tuple[int, int, int, int]:
