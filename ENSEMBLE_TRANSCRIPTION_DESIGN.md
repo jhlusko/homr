@@ -2204,16 +2204,20 @@ pitch entirely (upper voice up, lower down). The middle line comes from the clef
 whole rule needs only pitch and clef - both of which homr already predicts. On `valid`:
 
 ```
-pitch-and-voice rule, per note                     102,725 / 112,051   91.7%
-same rule, one direction per engraved beam group   107,211 / 112,051   95.7%
+pitch alone (what a label file carries)            102,402 / 112,051   91.4%
+pitch and voice (needs the MusicXML)               102,725 / 112,051   91.7%
+and one direction per engraved beam group          107,211 / 112,051   95.7%
 ```
 
-The second is an upper bound rather than a rule homr could apply unaided - it uses the
-engraved beams to decide where a group starts - but it is the fair statement of what a
-rule *can* do, because real engraving sets one direction per beam, not per note.
+Voice is worth 0.3 points and is not in a label file anyway - symbols are ordered by
+position within a measure and never say which voice they belong to - so 91.4% is the
+honest figure for "already implied by the labels". The third line is an upper bound rather
+than a rule homr could apply unaided, since it uses the engraved beams to fix the groups,
+but it is the fair statement of what a rule *can* do, because real engraving sets one
+direction per beam and not per note.
 
-**So stem direction is 91.7% derivable from what homr already outputs, and the trained
-head's 94.9% micro is not a like-for-like comparison.** That micro includes
+**So stem direction is 91.4% implicit in the labels as they stand, and the trained head's
+94.9% micro is not a like-for-like comparison.** That micro includes
 `NOT_APPLICABLE` - rests and whole notes, which have no stem at all, which the rhythm
 token already determines, and which the rule never attempts. `Evaluation` now reports
 `stem direction only (up/down)` for exactly this comparison, and the converged run will be

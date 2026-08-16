@@ -1,5 +1,5 @@
 """
-How much of stem direction is already implicit in what homr outputs?
+How much of stem direction is already implicit in a label file?
 
 The beam heads have a baseline to clear (`beam_baseline.py`, 82% corpus-wide), and the
 stem head has none - 27.21 reports macro F1 0.719 against nothing at all. That is the
@@ -13,16 +13,19 @@ The rule engravers use, and the one implemented here:
   - where two voices share a staff the convention overrides pitch entirely - upper voice
     up, lower voice down - which is why voice is checked first.
 
-The middle line comes from the clef, so this needs no more than the pitch and clef homr
-already predicts. That is the point: everything here is derivable from tokens homr emits
-today, so whatever it scores is the part of stem direction that is *not* new information,
-and only the remainder justifies a head.
+Three variants are reported, because they need different amounts of information and only
+the first is a fair statement of what a label file already implies:
 
-A second, more generous rule is reported alongside. Real engraving sets one direction per
-beam group rather than per note, so the strict per-note rule is charged for every beamed
-run that crosses the middle line. Grouping by the engraved beams removes that, at the cost
-of using information the strict rule does not have - it is an upper bound on what a rule
-could do, not a rule homr could apply unaided.
+  pitch alone           what a token file carries - rhythm, pitch, clef, position. Voice
+                        is *not* in it: symbols are ordered by position within a measure
+                        and never say which voice they belong to.
+  pitch and voice       needs the MusicXML, and turns out to be worth 0.3 points, because
+                        quartet parts are overwhelmingly single-voice.
+  and beam grouping     an upper bound rather than a rule: real engraving sets one
+                        direction per beam group, not per note, so the per-note rule is
+                        charged for every beamed run that crosses the middle line. Using
+                        the engraved beams to fix the groups is information the other two
+                        do not have.
 """
 
 # flake8: noqa: T201
@@ -116,7 +119,12 @@ def _predict(position: int) -> StemDirection:
     return StemDirection.DOWN if position >= 0 else StemDirection.UP
 
 
-def measure_part(part: ET.Element, strict: StemBaseline, grouped: StemBaseline) -> None:
+def measure_part(
+    part: ET.Element,
+    strict: StemBaseline,
+    grouped: StemBaseline,
+    pitch_only: StemBaseline | None = None,
+) -> None:
     middle = middle_line("G", _CLEF_LINE["G"])
 
     for measure in part.findall("measure"):
@@ -146,6 +154,11 @@ def measure_part(part: ET.Element, strict: StemBaseline, grouped: StemBaseline) 
             else:
                 predicted = _predict(position)
             strict.observe(predicted, actual)
+            if pitch_only is not None:
+                # No voice: the token format orders symbols by position within a measure
+                # and never says which voice a symbol belongs to, so this is what is
+                # actually derivable from a label file rather than from MusicXML.
+                pitch_only.observe(_predict(position), actual)
 
             beams = [(b.text or "").strip() for b in note.findall("beam")]
             run.append((position, actual))
@@ -166,16 +179,16 @@ def measure_part(part: ET.Element, strict: StemBaseline, grouped: StemBaseline) 
                 grouped.observe(predicted, actual)
 
 
-def measure(paths: list[Path]) -> tuple[StemBaseline, StemBaseline]:
-    strict, grouped = StemBaseline(), StemBaseline()
+def measure(paths: list[Path]) -> tuple[StemBaseline, StemBaseline, StemBaseline]:
+    strict, grouped, pitch_only = StemBaseline(), StemBaseline(), StemBaseline()
     for path in paths:
         try:
             root = ET.parse(path).getroot()  # noqa: S314
         except ET.ParseError:
             continue
         for part in root.findall("part"):
-            measure_part(part, strict, grouped)
-    return strict, grouped
+            measure_part(part, strict, grouped, pitch_only)
+    return strict, grouped, pitch_only
 
 
 def score_files(dataset_root: Path, track: str, split: str | None) -> list[Path]:
@@ -206,9 +219,10 @@ def main() -> None:
         paths = paths[: args.limit]
     print(f"{len(paths)} score file(s), split={args.split or 'all'}")
 
-    strict, grouped = measure(paths)
-    print(strict.describe("pitch-and-voice rule, per note"))
-    print(grouped.describe("same rule, one direction per engraved beam group"))
+    strict, grouped, pitch_only = measure(paths)
+    print(pitch_only.describe("pitch alone, per note (what a label file carries)"))
+    print(strict.describe("pitch and voice, per note (needs MusicXML)"))
+    print(grouped.describe("pitch, voice and engraved beam grouping (upper bound)"))
 
 
 if __name__ == "__main__":
