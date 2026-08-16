@@ -2273,6 +2273,48 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.28 The stem head and the rule are complementary, not redundant
+
+27.27 read as a case for deleting the stem head: two sources, the same accuracy, so keep
+the free one. The crosstab says otherwise.
+
+```
+                  rule right   rule wrong
+  head right      100,542        4,491
+  head wrong        4,506        1,690
+```
+
+They fail on almost disjoint notes. The head rescues 4,491 of the rule's mistakes - 72.7%
+of them - the rule rescues 4,506 of the head's, and only 1,690 notes of 111,229 defeat
+both. An oracle choosing per note would score **98.5%** against 94.4% for either alone.
+
+**This is the second time in this work that equal totals hid opposite behaviour**, after
+Gate C. It is worth stating as a rule of thumb: when two sources agree on a headline
+number, that is the moment to look at the crosstab, not the moment to pick one.
+
+That still left the question of whether the gap is *reachable* - an oracle needs the
+answer. It is, from the head's own softmax. Tuned on half the staves and reported on the
+other half, because a threshold chosen on the notes it is quoted against reports the
+tuning, and `test_synth` is reserved:
+
+```
+                              reporting half (60,927 notes)
+head alone                                 94.39%
+rule alone                                 94.41%
+head if confidence >= 0.9                  95.92%    head used on 82.7% of notes
+head if beam-group margin <= 2             95.27%    head used on 31.4%
+either signal                              95.60%
+oracle                                     98.57%
+```
+
+**Confidence arbitration is worth 1.5 points over either source.** So the stem head stays,
+but its role changes: it is not the stem predictor, it is the second opinion on a rule
+that handles most notes. The margin signal - how far a beam group's extreme notehead sits
+from the middle line, which is exactly what the rule thresholds on - is weaker and largely
+redundant with confidence.
+
+2.6 points of oracle headroom remain unclaimed, which is where a better arbiter would go.
+
 ### 27.27 The stem head can be replaced by a rule over its own beam predictions
 
 27.26 proposed it; this measures it. Stem direction derived from the *predicted* beam
@@ -2287,9 +2329,10 @@ grouped by predicted beams      94.4%     no parameters
 grouped by reference beams      94.9%     upper bound, perfect grouping
 ```
 
-**The rule matches the head and edges past it.** The head is not adding anything the beam
-predictions plus a middle-line rule do not already give, which is what 27.23 suspected and
-27.26 predicted.
+**The rule matches the head and edges past it.** On totals the head is not adding anything
+the beam predictions plus a middle-line rule do not already give - but see 27.28, where
+the crosstab shows this conclusion is wrong: the two fail on disjoint notes, and an
+arbiter between them beats both.
 
 The gap between predicted and reference grouping is 0.5 points, so the derived figure will
 improve as the beam heads do - it inherits their accuracy instead of competing with it.
