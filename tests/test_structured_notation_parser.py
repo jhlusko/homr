@@ -167,11 +167,29 @@ class TestSlurSlots(unittest.TestCase):
         self.assertEqual(notes[1].slurs[0][0], SlurEvent.START_AND_STOP)
         self.assertTrue(findings.clean)
 
-    def test_an_unmatched_stop_is_reported_not_attached(self) -> None:
+    def test_a_stop_whose_start_is_in_the_previous_system_is_still_a_stop(self) -> None:
+        # Segments are cut at system breaks, so a slur crossing one arrives here with no
+        # start. The crop shows a slur ending on this note; labelling it NONE would teach
+        # the head that slurs never end near the left edge of a staff. Measured at 291 of
+        # 56,553 notes over 600 segments, against 293 unclosed starts - the two halves of
+        # the same crossings, and the starts were already kept.
         notes, findings = parse_part(_part(_note(notations="<slur type='stop' number='1'/>")))
 
+        self.assertEqual(notes[0].slurs[0][0], SlurEvent.STOP)
+        # Still reported: it is how the crossings are counted, it just is not a reason to
+        # discard the label.
         self.assertEqual(findings.unmatched_stops, 1)
-        self.assertEqual(notes[0].slurs[0][0], SlurEvent.NONE)
+
+    def test_an_orphan_stop_does_not_hold_its_slot_open(self) -> None:
+        # It closes nothing, so the slot must be free for the next span on the staff.
+        notes, _ = parse_part(
+            _part(
+                _note(notations="<slur type='stop' number='1'/>")
+                + _note(notations="<slur type='start' number='2'/>")
+            )
+        )
+
+        self.assertEqual(notes[1].slurs[0][0], SlurEvent.START)
 
     def test_an_unclosed_start_is_reported(self) -> None:
         _, findings = parse_part(_part(_note(notations="<slur type='start' number='1'/>")))

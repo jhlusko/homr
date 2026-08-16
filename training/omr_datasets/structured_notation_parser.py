@@ -185,8 +185,19 @@ class _SlurSlots:
             if kind == "stop":
                 slot = self._open.pop(number, None)
                 if slot is None:
+                    # A stop whose start is not in this document: the span crosses a
+                    # system break, and the segment holding this note begins mid-slur.
+                    # The crop plainly shows a slur ending here, so it is recorded as a
+                    # stop rather than dropped - dropping it labelled the note as
+                    # carrying no slur and would teach the head that slurs never end near
+                    # the left edge of a staff. Measured at 291 of 56,553 notes over 600
+                    # segments, against 293 unclosed starts: the two halves of the same
+                    # crossings, and starts were already kept.
                     findings.unmatched_stops += 1
-                    continue
+                    slot = self._free_slot()
+                    if slot is None:
+                        findings.slot_overflow += 1
+                        continue
                 record(slot, SlurEvent.STOP, _side(slur))
             elif kind == "start":
                 if number in self._open:
