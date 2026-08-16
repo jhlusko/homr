@@ -1857,6 +1857,35 @@ what it did. And the beam and slur labels are unchanged, since only stems are st
 It does mean the segments stop being byte-identical to the ones described in 27.3, so
 regenerate the whole corpus rather than mixing the two.
 
+### 27.9 Notation has to survive the dataset files, not just the parser
+
+Second gap found the same way, and blocking for the same reason.
+
+Training does not parse MusicXML. `convert_*` writes token text files once, and
+`data_loader` reads those back through `read_tokens`, which reconstructs each symbol from
+its six fields. Notation attached during parsing is therefore dropped at the moment the
+dataset is written - the heads would see the same nothing the stem head sees in 27.8,
+for a different reason.
+
+11.1 anticipates this ("serialization used for dataset indexes must be schema-versioned")
+and 19.2 constrains the fix ("legacy token files remain readable", "structured token
+schema is versioned and preferably JSON-based"). What it does not settle is where the
+notation goes, and the packed line format argues against putting it inline: a chord is one
+line carrying several symbols, with articulations and slurs hoisted into per-position
+sets, so a per-note field cannot be appended without either escaping problems or a second
+parser.
+
+**The step**: a sidecar file beside each token file, one JSON record per note-bearing
+symbol in sequence order, read only when present. Legacy token files stay byte-identical
+and keep loading, which 19.2 requires, and nothing in the existing format changes.
+
+The obvious objection is that a sidecar reintroduces exactly the pairing-by-position
+problem that carrying notation on the symbol was meant to remove. The difference is that
+both sides of this pairing are ours and are written in one pass: the count of
+note-bearing symbols is recorded when writing and checked when reading, so a mismatch is
+refused rather than mis-attached. That is a guard against our own bug, not an inference
+about someone else's data.
+
 ### 27.7 Known gaps
 
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are
