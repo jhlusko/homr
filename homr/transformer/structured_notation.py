@@ -65,6 +65,28 @@ class SlurEvent(StrEnum):
     CONTINUE = "continue"
 
 
+class TieState(StrEnum):
+    """Whether this note is joined to its neighbour by a tie.
+
+    Separate from the slur slots on purpose. A tie and a slur are drawn almost alike and
+    homr's token vocabulary collapses them - `<tied>` and `<slur>` both emit
+    `slurStart`/`slurStop`, so a tie is indistinguishable from a slur in a label file.
+    They are different objects: a tie joins two notatons of *one* pitch into a single
+    sounding note, while a slur groups distinct pitches under one phrase. Ties are 23% of
+    all slur-like markings in this corpus, and 741 notes in an 800-segment sample carry
+    both at once, so the conflation is not a rare edge.
+
+    Unlike slurs this needs no slot: a tie joins one pitch to the same pitch, so two ties
+    cannot be open on one note of a single voice without being the same tie.
+    """
+
+    NONE = "none"
+    START = "start"
+    STOP = "stop"
+    #: A note in the middle of a chain of tied notes both ends one and begins the next.
+    START_AND_STOP = "start_and_stop"
+
+
 class SlurSide(StrEnum):
     #: The majority of slurs in the corpus carry no placement at all, so this is the
     #: common case rather than an edge case, and direction loss only applies where the
@@ -126,6 +148,10 @@ STEM_CLASSES: tuple[StemDirection, ...] = tuple(
     state for state in StemDirection if state != StemDirection.UNKNOWN
 )
 
+#: Classes a tie head would predict, if one is ever trained. Declared here so the label
+#: schema and any future head cannot disagree about the vocabulary.
+TIE_CLASSES: tuple[TieState, ...] = tuple(TieState)
+
 SLUR_EVENT_CLASSES: tuple[SlurEvent, ...] = tuple(SlurEvent)
 SLUR_SIDE_CLASSES: tuple[SlurSide, ...] = tuple(SlurSide)
 
@@ -153,6 +179,9 @@ class NoteNotation:
     beam_levels: tuple[BeamLevelState, ...]
     stem: StemDirection
     slurs: tuple[tuple[SlurEvent, SlurSide], ...]
+    #: Defaulted so every existing construction stays valid, and so a sidecar written
+    #: before ties were extracted decodes as "no tie recorded" rather than failing.
+    tie: TieState = TieState.NONE
 
     def active_beam_levels(self) -> int:
         return sum(1 for state in self.beam_levels if state != BeamLevelState.NOT_APPLICABLE)

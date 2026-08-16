@@ -7,6 +7,7 @@ from homr.transformer.structured_notation import (
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
     applicable_beam_levels,
 )
 from training.omr_datasets.structured_notation_parser import parse_part, parse_score
@@ -264,3 +265,45 @@ class TestRestsCarryNoBeams(unittest.TestCase):
         _, findings = parse_part(part)
 
         self.assertEqual(findings.ambiguous_beaming, 0)
+
+
+class TestTiesAreDistinguishedFromSlurs(unittest.TestCase):
+    """A tie and a slur are drawn alike and homr's token vocabulary collapses them.
+
+    Both `<tied>` and `<slur>` emit slurStart/slurStop, so a label file cannot tell them
+    apart - and they are different objects: a tie joins two notations of one pitch into a
+    single sounding note, a slur groups distinct pitches under a phrase. Ties are 23% of
+    all slur-like markings in this corpus, and 741 notes in an 800-segment sample carry
+    both at once.
+    """
+
+    def test_a_tie_start_is_recorded(self) -> None:
+        notes, _ = parse_part(_part(_note(notations="<tied type='start'/>")))
+
+        self.assertEqual(notes[0].tie, TieState.START)
+
+    def test_a_tie_does_not_occupy_a_slur_slot(self) -> None:
+        # The whole point: a tie must not be indistinguishable from a slur here too.
+        notes, _ = parse_part(_part(_note(notations="<tied type='start'/>")))
+
+        self.assertEqual(notes[0].slurs[0][0], SlurEvent.NONE)
+
+    def test_a_note_carrying_both_records_both(self) -> None:
+        notes, _ = parse_part(
+            _part(_note(notations="<tied type='stop'/><slur type='start' number='1'/>"))
+        )
+
+        self.assertEqual(notes[0].tie, TieState.STOP)
+        self.assertEqual(notes[0].slurs[0][0], SlurEvent.START)
+
+    def test_the_middle_of_a_tie_chain_does_both(self) -> None:
+        notes, _ = parse_part(
+            _part(_note(notations="<tied type='stop'/><tied type='start'/>"))
+        )
+
+        self.assertEqual(notes[0].tie, TieState.START_AND_STOP)
+
+    def test_a_note_with_no_tie_says_so(self) -> None:
+        notes, _ = parse_part(_part(_note(notations="")))
+
+        self.assertEqual(notes[0].tie, TieState.NONE)

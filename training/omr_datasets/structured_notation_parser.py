@@ -22,6 +22,7 @@ from homr.transformer.structured_notation import (
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
     applicable_beam_levels,
     empty_beam_levels,
     empty_slur_slots,
@@ -125,6 +126,27 @@ def _beam_levels(note: ET.Element, findings: Findings) -> tuple[BeamLevelState, 
     if applicable and written == 0 and note.find("rest") is None:
         findings.ambiguous_beaming += 1
     return tuple(states)
+
+
+def _tie(note: ET.Element) -> TieState:
+    """Whether this note starts, ends, or continues a tie.
+
+    Read from `<tied>` rather than `<tie>`: both appear in MusicXML, but `<tie>` is the
+    sounding instruction and `<tied>` is the notated one, and it is the notation that is
+    on the page for the model to see.
+    """
+    types = {
+        (tied.get("type") or "").strip().lower()
+        for notations in note.findall("notations")
+        for tied in notations.findall("tied")
+    }
+    if "start" in types and "stop" in types:
+        return TieState.START_AND_STOP
+    if "start" in types:
+        return TieState.START
+    if "stop" in types:
+        return TieState.STOP
+    return TieState.NONE
 
 
 def _stem(note: ET.Element) -> StemDirection:
@@ -247,6 +269,7 @@ class NotationExtractor:
             beam_levels=_beam_levels(note, self.findings),
             stem=_stem(note),
             slurs=slots.apply(slurs, self.findings),
+            tie=_tie(note),
         )
 
     def close(self) -> Findings:

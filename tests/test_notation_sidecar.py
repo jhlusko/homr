@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from homr.transformer.structured_notation import (
+    TieState,
     BeamLevelState,
     NoteNotation,
     SlurEvent,
@@ -142,3 +143,65 @@ class TestGuards(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSchemaVersioning(unittest.TestCase):
+    """A v1 sidecar predates tie extraction and must still load.
+
+    42,000 sidecars were written before ties were represented. Refusing them would mean
+    re-converting the whole corpus to gain a field that was not in the pipeline when they
+    were written - and decoding them as "no tie" is correct for exactly that reason.
+    """
+
+    def _symbols(self) -> list[EncodedSymbol]:
+        notation = NoteNotation(
+            beam_levels=empty_beam_levels(),
+            stem=StemDirection.UP,
+            slurs=empty_slur_slots(),
+            tie=TieState.START,
+        )
+        return [EncodedSymbol("note_8", "C5", notation=notation)]
+
+    def test_a_tie_round_trips(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            symbols = self._symbols()
+            write_sidecar(tokens, symbols)
+
+            read_back = [EncodedSymbol("note_8", "C5")]
+            attach_sidecar(tokens, read_back)
+
+            self.assertEqual(read_back[0].notation.tie, TieState.START)
+
+    def test_a_v1_sidecar_still_loads_and_reads_as_no_tie(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            write_sidecar(tokens, self._symbols())
+
+            path = sidecar_path(tokens)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["schemaVersion"] = "homr.notation-sidecar.v1"
+            for record in payload["notation"]:
+                record.pop("tie", None)
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            read_back = [EncodedSymbol("note_8", "C5")]
+            attach_sidecar(tokens, read_back)
+
+            self.assertEqual(read_back[0].notation.tie, TieState.NONE)
+
+    def test_an_unknown_schema_is_still_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            write_sidecar(tokens, self._symbols())
+
+            path = sidecar_path(tokens)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["schemaVersion"] = "homr.notation-sidecar.v99"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with self.assertRaises(SidecarMismatch):
+                attach_sidecar(tokens, [EncodedSymbol("note_8", "C5")])

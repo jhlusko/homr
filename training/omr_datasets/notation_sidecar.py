@@ -28,10 +28,16 @@ from homr.transformer.structured_notation import (
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
 )
 from homr.transformer.vocabulary import EncodedSymbol
 
-SCHEMA_VERSION = "homr.notation-sidecar.v1"
+SCHEMA_VERSION = "homr.notation-sidecar.v2"
+
+#: Schemas this reader still understands. v1 predates tie extraction, so its records
+#: decode with no tie - which is correct for them: the field was not merely absent from
+#: the file, it was absent from the pipeline that wrote it.
+READABLE_SCHEMAS = (SCHEMA_VERSION, "homr.notation-sidecar.v1")
 
 SIDECAR_SUFFIX = ".notation.json"
 
@@ -49,6 +55,7 @@ def _encode(notation: NoteNotation) -> dict:
         "beams": [str(state) for state in notation.beam_levels],
         "stem": str(notation.stem),
         "slurs": [[str(event), str(side)] for event, side in notation.slurs],
+        "tie": str(notation.tie),
     }
 
 
@@ -57,6 +64,7 @@ def _decode(record: dict) -> NoteNotation:
         beam_levels=tuple(BeamLevelState(state) for state in record["beams"]),
         stem=StemDirection(record["stem"]),
         slurs=tuple((SlurEvent(event), SlurSide(side)) for event, side in record["slurs"]),
+        tie=TieState(record.get("tie", TieState.NONE)),
     )
 
 
@@ -93,7 +101,7 @@ def attach_sidecar(token_path: str | Path, symbols: Sequence[EncodedSymbol]) -> 
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     schema = payload.get("schemaVersion")
-    if schema != SCHEMA_VERSION:
+    if schema not in READABLE_SCHEMAS:
         raise SidecarMismatch(f"unsupported notation sidecar schema {schema!r} at {path}")
 
     records = payload["notation"]
