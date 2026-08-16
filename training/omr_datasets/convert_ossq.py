@@ -65,18 +65,30 @@ def extract_part(segment: ET.Element, part_index: int) -> ET.Element:
     return single
 
 
-class UnrepresentableRhythm(RuntimeError):
-    """A duration homr's rhythm vocabulary has no token for.
+class UnconvertibleStaff(RuntimeError):
+    """One staff homr's token pipeline cannot express, for a reason worth naming.
 
-    27.10 found 256th notes unrepresentable; tuplets produce more of the same, because a
-    tuplet factor scales the base duration into values the vocabulary never enumerated
-    (`note_72` is the first one this corpus hits). There is no correct token to write, and
-    inventing one would put a symbol in the labels that the model can never predict.
+    Two kinds have shown up, both fatal to a whole conversion run when left uncaught:
 
-    Raised rather than swallowed at the point of failure so the converter can skip the
-    staff and count it. Left uncaught it kills the whole conversion on the first such
-    score - which it did, producing no index at all.
+    A duration the rhythm vocabulary has no token for. 27.10 found 256th notes
+    unrepresentable; tuplets produce more of the same, because a tuplet factor scales the
+    base duration into values the vocabulary never enumerated (`note_72`, from 16 * 9/2,
+    is the first this corpus hits). There is no correct token to write, and inventing one
+    would put a symbol in the labels the model can never predict.
+
+    A `<backup>` that reaches behind the start of its measure. This is the durationless
+    whole-measure rest of 27.18 seen from a second angle: the rest contributes no
+    duration, so position never advances, and the backup taking a second voice back to
+    the measure start goes negative. 27.18 concluded the missing duration does not need
+    repairing because the *token* comes out right regardless - true, but it says nothing
+    about position accounting, which this breaks.
+
+    Skipping the staff loses one training example. Aborting loses the corpus.
     """
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
 
 
 def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str) -> Path | None:
@@ -91,6 +103,10 @@ def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str
     )
     try:
         voices = music_xml_file_to_tokens(str(scratch))
+    except ValueError as broken:
+        # The parser's own refusals - a backup past the start of a measure is the one
+        # this corpus produces. Named by its first words so the report groups them.
+        raise UnconvertibleStaff(" ".join(str(broken).split()[:4])) from broken
     finally:
         scratch.unlink(missing_ok=True)
 
@@ -110,7 +126,7 @@ def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str
     try:
         lines = token_lines_to_str(symbols)
     except KeyError as missing:
-        raise UnrepresentableRhythm(str(missing).strip("'")) from missing
+        raise UnconvertibleStaff(str(missing).strip("'")) from missing
 
     tokens = out_dir / f"{stem}.txt"
     tokens.write_text(lines, encoding="utf-8")
@@ -146,7 +162,7 @@ def build(
     examples: list[Example] = []
     unbuilt = 0
     mismatched = 0
-    unrepresentable: collections.Counter[str] = collections.Counter()
+    unconvertible: collections.Counter[str] = collections.Counter()
     for work in sorted((dataset_root / "scores").glob("*/*")):
         segments = sorted((work / "musicxml" / "unaligned").glob("*.musicxml"))
         crops = work / "images" / track / "partwise"
@@ -170,8 +186,8 @@ def build(
                 stem = f"{score_id}_{page}_{system}_{part_index + 1}"
                 try:
                     tokens = _write_example(segment_path, part_index, out_dir, stem)
-                except UnrepresentableRhythm as unknown:
-                    unrepresentable[str(unknown)] += 1
+                except UnconvertibleStaff as refused:
+                    unconvertible[refused.reason] += 1
                     continue
                 if tokens is not None:
                     examples.append(Example(image, tokens, score_id, assigned))
@@ -184,10 +200,10 @@ def build(
         )
     if mismatched:
         print(f"  {mismatched} parts skipped: staff crops do not match the parts (see below)")
-    if unrepresentable:
-        total = sum(unrepresentable.values())
-        listed = ", ".join(f"{token} x{count}" for token, count in unrepresentable.most_common(6))
-        print(f"  {total} parts skipped: rhythm outside homr's vocabulary ({listed})")
+    if unconvertible:
+        total = sum(unconvertible.values())
+        listed = ", ".join(f"{reason} x{count}" for reason, count in unconvertible.most_common(6))
+        print(f"  {total} parts skipped: homr's token pipeline refused them ({listed})")
     return examples
 
 

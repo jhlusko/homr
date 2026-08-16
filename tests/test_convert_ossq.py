@@ -6,7 +6,7 @@ from pathlib import Path
 from training.omr_datasets.convert_ossq import (
     CROP_NAME,
     Example,
-    UnrepresentableRhythm,
+    UnconvertibleStaff,
     build,
     crop_numbers,
     extract_part,
@@ -228,7 +228,7 @@ def _tuplet_dataset(root: Path) -> None:
     (crops / name).write_bytes(b"")
 
 
-class TestUnrepresentableRhythms(unittest.TestCase):
+class TestUnconvertibleStaves(unittest.TestCase):
     """A duration homr has no token for must lose one staff, not the whole conversion.
 
     27.10 found 256th notes unrepresentable and tuplets produce more of the same. Left
@@ -243,7 +243,7 @@ class TestUnrepresentableRhythms(unittest.TestCase):
 
             try:
                 examples = build(root, out, track="synthetic")
-            except UnrepresentableRhythm:
+            except UnconvertibleStaff:
                 self.fail("an unrepresentable rhythm must not abort the whole conversion")
 
         self.assertEqual(examples, [])
@@ -261,6 +261,59 @@ class TestUnrepresentableRhythms(unittest.TestCase):
 
         self.assertEqual(examples, [])
         self.assertEqual(len(healthy), 3)
+
+
+BACKUP_MEASURE = """
+  <note><rest measure="yes"/><voice>1</voice></note>
+  <backup><duration>8</duration></backup>
+  <note><pitch><step>C</step><octave>5</octave></pitch>
+    <duration>8</duration><voice>2</voice><type>whole</type></note>
+"""
+
+
+def _backup_dataset(root: Path) -> None:
+    """A measure rest with no duration, followed by a backup for a second voice.
+
+    Position never advances past the rest, so the backup goes behind the start of the
+    measure and the parser refuses the part.
+    """
+    work = root / "scores" / "Composer" / "Work"
+    segments = work / "musicxml" / "unaligned"
+    segments.mkdir(parents=True)
+    body = (
+        '<score-partwise version="3.1">'
+        '<part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>'
+        '<part id="P1"><measure number="1">'
+        "<attributes><divisions>2</divisions></attributes>"
+        + BACKUP_MEASURE
+        + "</measure></part></score-partwise>"
+    )
+    (segments / f"{KNOWN_SCORE}:0001:0002.musicxml").write_text(body, encoding="utf-8")
+    crops = work / "images" / "synthetic" / "partwise"
+    crops.mkdir(parents=True)
+    (crops / CROP_NAME.format(score=KNOWN_SCORE, page=1, system=2, part=1)).write_bytes(b"")
+
+
+class TestBackupPastMeasureStart(unittest.TestCase):
+    """27.18 seen from a second angle.
+
+    That section concluded the durationless whole-measure rest needs no repair because
+    the rest token comes out right regardless. True, and it says nothing about position
+    accounting: with no duration the position never advances, so a backup taking a second
+    voice to the start of the measure goes negative and the parser refuses the part.
+    """
+
+    def test_the_conversion_survives_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _backup_dataset(root)
+
+            try:
+                examples = build(root, out, track="synthetic")
+            except ValueError:
+                self.fail("a part the parser refuses must not abort the whole conversion")
+
+        self.assertEqual(examples, [])
 
 
 if __name__ == "__main__":
