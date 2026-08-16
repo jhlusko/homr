@@ -1926,6 +1926,39 @@ correspondence is positional and checkable rather than inferred through a second
 **The step**: run the synthetic partwise cropping (`yolo_detect_staves`,
 `yolo_crop_staves`), then `convert_ossq.py`.
 
+### 27.12 How much beaming is derivable without looking at the page
+
+Gate C asks whether the beam heads beat deterministic reconstruction, and 15.2 names
+"duration-and-meter automatic beaming" as the baseline. That baseline can be measured now,
+before any head is trained, and it says whether the exercise is worth running.
+
+Implemented as the textbook rule - beams do not cross a beat, a rest or a note too long
+to carry a beam ends the group, compound metres beat in threes - and compared against the
+engraved beaming of 20 scores, 174,830 beamable notes:
+
+```
+automatic beaming matches the engraving   136,299   78.0%
+exceptions the rule does not predict       38,531   22.0%
+```
+
+So roughly a fifth of the corpus's beaming is not derivable from duration and metre. That
+is a real target: a head that learns nothing beyond the rule would be worthless, and one
+that recovers even half the exceptions is recovering something only the image carries.
+
+**Read the 22% as an upper bound, not a score to beat.** The largest disagreements are
+`begin -> continue` and `end -> continue`, 13,172 between them, which is the rule breaking
+a group at every beat where the engraving carries it across - eight eighths in 4/4 beamed
+as two groups of four rather than four of two. That is a house-style difference, not an
+exception the page reveals. A baseline tuned to beam by half-bar in simple duple metre
+would close much of it, and Gate C should be judged against that stronger baseline rather
+than this one. The genuinely visual residue is smaller than 22%, and how much smaller is
+itself worth measuring before reading any head result as a success.
+
+The measurement also caught a labelling bug: the extractor was marking rests FLAG at their
+applicable levels. A rest has no stem and therefore no beam or flag, so every eighth rest
+in the corpus was entering the beam heads' training signal as a positive. Fixed, and the
+baseline moved 69.8% -> 78.0% once it was.
+
 ### 27.7 Known gaps
 
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are

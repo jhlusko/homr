@@ -94,6 +94,11 @@ class Findings:
 
 
 def _beam_levels(note: ET.Element, findings: Findings) -> tuple[BeamLevelState, ...]:
+    if note.find("rest") is not None:
+        # A rest has no stem and so no beam or flag at any level. Marking its applicable
+        # levels FLAG would invent supervision for something that cannot be drawn, and
+        # would put every eighth rest in the corpus into the beam heads' training signal.
+        return empty_beam_levels()
     note_type = note.findtext("type")
     applicable = applicable_beam_levels(note_type)
     states = list(empty_beam_levels())

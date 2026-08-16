@@ -230,3 +230,19 @@ class TestParseScore(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRestsCarryNoBeams(unittest.TestCase):
+    def test_an_eighth_rest_has_no_beam_levels(self) -> None:
+        # A rest has no stem, so no beam and no flag. Marking its applicable levels FLAG
+        # would invent supervision for something that cannot be drawn.
+        part = _part("<note><rest/><duration>1</duration><type>eighth</type></note>")
+        notes, _ = parse_part(part)
+
+        self.assertEqual(notes[0].beam_levels, (BeamLevelState.NOT_APPLICABLE,) * MAX_BEAM_LEVELS)
+
+    def test_a_rest_is_not_counted_as_ambiguous_beaming(self) -> None:
+        part = _part("<note><rest/><duration>1</duration><type>16th</type></note>")
+        _, findings = parse_part(part)
+
+        self.assertEqual(findings.ambiguous_beaming, 0)
