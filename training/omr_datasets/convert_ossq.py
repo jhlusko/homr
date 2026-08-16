@@ -27,6 +27,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
+from training.omr_datasets.convert_lieder import _count_staffs, is_grandstaff
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.ossq_splits import load_split_manifest
@@ -122,13 +123,15 @@ def _write_example(
     finally:
         scratch.unlink(missing_ok=True)
 
-    if len(voices) > 1:
-        # music_xml_file_to_tokens yields one entry per staff, not per musical voice, so
-        # more than one here means this part is written on a grand staff. The training
-        # unit is a single staff and there is one crop for it, so flattening would pair
-        # one staff's picture with two staves' tokens. Quartet parts are never like this,
-        # which is why it is refused rather than handled.
-        print(f"  skipped {stem}: part is on {len(voices)} staves, but a crop shows one")
+    if len(voices) != 1 or is_grandstaff(voices[0]):
+        # A grand staff is one <part> carrying two staves, and music_xml_file_to_tokens
+        # returns exactly one entry per <part> - so counting entries never detects it.
+        # It shows up as two leading clefs instead. The training unit is a single staff
+        # with a single crop, so a grand staff would pair one staff's picture with two
+        # staves' tokens. Quartet parts are never written this way, which is why it is
+        # refused rather than handled.
+        staves = _count_staffs(voices[0]) if voices else 0
+        print(f"  skipped {stem}: part is on {staves} staves, but a crop shows one")
         return None
 
     symbols = [symbol for voice in voices for measure in voice for symbol in measure]

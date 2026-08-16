@@ -448,5 +448,59 @@ class TestWrittenFilesCanActuallyBeLoaded(unittest.TestCase):
                 to_decoder_branches(read_tokens(str(example.tokens)))
 
 
+GRAND_STAFF_MEASURE = """
+  <attributes><divisions>2</divisions><staves>2</staves>
+    <clef number="1"><sign>G</sign><line>2</line></clef>
+    <clef number="2"><sign>F</sign><line>4</line></clef></attributes>
+  <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration>
+    <type>quarter</type><staff>1</staff></note>
+  <backup><duration>2</duration></backup>
+  <note><pitch><step>C</step><octave>3</octave></pitch><duration>2</duration>
+    <type>quarter</type><staff>2</staff></note>
+"""
+
+
+def _grand_staff_dataset(root: Path) -> None:
+    work = root / "scores" / "Composer" / "Work"
+    segments = work / "musicxml" / "unaligned"
+    segments.mkdir(parents=True)
+    body = (
+        '<score-partwise version="3.1">'
+        '<part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>'
+        '<part id="P1"><measure number="1">' + GRAND_STAFF_MEASURE + "</measure></part>"
+        "</score-partwise>"
+    )
+    (segments / f"{KNOWN_SCORE}:0001:0002.musicxml").write_text(body, encoding="utf-8")
+    crops = work / "images" / "synthetic" / "partwise"
+    crops.mkdir(parents=True)
+    (crops / CROP_NAME.format(score=KNOWN_SCORE, page=1, system=2, part=1)).write_bytes(b"")
+
+
+class TestGrandStaffIsRefused(unittest.TestCase):
+    """A grand staff is one <part> with two staves, not two parts.
+
+    music_xml_file_to_tokens returns exactly one entry per <part>, so counting entries
+    never detects a grand staff - it shows up as two leading clefs. The training unit is
+    one staff with one crop, so a grand staff would pair one staff's picture with two
+    staves' tokens.
+    """
+
+    def test_a_grand_staff_part_produces_no_example(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _grand_staff_dataset(root)
+
+            examples = build(root, out, track="synthetic")
+
+            self.assertEqual(examples, [])
+
+    def test_a_single_staff_part_is_not_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp) / "corpus", Path(tmp) / "out"
+            _dataset(root, [1, 2, 3])
+
+            self.assertEqual(len(build(root, out, track="synthetic")), 3)
+
+
 if __name__ == "__main__":
     unittest.main()
