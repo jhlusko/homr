@@ -6,6 +6,7 @@ from fractions import Fraction
 from typing import Iterable
 
 from homr.simple_logging import eprint
+from homr.transformer.structured_notation import NoteNotation
 
 nonote = "."
 empty = "_"  # used for decorations on note, if there is no decoration
@@ -289,6 +290,7 @@ class EncodedSymbol:
         slur: str = nonote,
         position: str = nonote,
         coordinates: tuple[float, float] | None = None,
+        notation: "NoteNotation | None" = None,
     ) -> None:
         self.rhythm = rhythm
         self.pitch = pitch
@@ -303,6 +305,15 @@ class EncodedSymbol:
         # this ordering can be used to reject cases where attention-based coordinates
         # violate monotonic scan constraints and are therefore unreliable.
         self.coordinates = coordinates
+
+        # Structured beam, stem and slur labels for this note, when the source carried
+        # them. Deliberately outside __eq__, __hash__ and __str__, like coordinates: the
+        # token pipeline sorts, deduplicates and edit-distances these symbols by their
+        # six fields, and every one of those comparisons must keep meaning exactly what
+        # it did. Riding along as an attribute means the labels survive reordering and
+        # copying without ever taking part in identity.
+        self.notation = notation
+
         self._duration: SymbolDuration | None = None
 
     def is_control_symbol(self) -> bool:

@@ -19,6 +19,7 @@ supports, not a claim about what can be learned; which levels and slots get a tr
 head is a separate decision that the support tables drive.
 """
 
+from dataclasses import dataclass
 from enum import StrEnum
 
 #: Levels the representation carries: eighth, 16th, 32nd, 64th, 128th, 256th.
@@ -138,3 +139,20 @@ TRAINED_BEAM_LEVELS = 4
 #: the trained slots are reported as overflow rather than silently unlabelled - and the
 #: extractor found zero overflow across the corpus at a cap of six.
 TRAINED_SLUR_SLOTS = 2
+
+
+@dataclass(frozen=True)
+class NoteNotation:
+    """Structured notation for one note.
+
+    Lives here rather than with the MusicXML extraction because it travels with the
+    symbol through the token pipeline, and homr's inference side must be able to name it
+    without depending on the training package.
+    """
+
+    beam_levels: tuple[BeamLevelState, ...]
+    stem: StemDirection
+    slurs: tuple[tuple[SlurEvent, SlurSide], ...]
+
+    def active_beam_levels(self) -> int:
+        return sum(1 for state in self.beam_levels if state != BeamLevelState.NOT_APPLICABLE)

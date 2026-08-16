@@ -3,6 +3,12 @@
 import unittest
 from fractions import Fraction
 
+from homr.transformer.structured_notation import (
+    NoteNotation,
+    StemDirection,
+    empty_beam_levels,
+    empty_slur_slots,
+)
 from homr.transformer.vocabulary import (
     EncodedSymbol,
     kern_to_symbol_duration,
@@ -206,3 +212,45 @@ barline . . . . ."""
             duration = kern_to_symbol_duration(kern)
             self.assertEqual(duration.normal_notes, 1)
             self.assertEqual(duration.actual_notes, 1)
+
+
+class TestNotationRidesAlongWithoutAffectingIdentity(unittest.TestCase):
+    """The token pipeline sorts, deduplicates and edit-distances symbols by their six
+    fields. Structured notation travels with a symbol but must never take part in that,
+    or NED scoring and deduplication would silently change meaning."""
+
+    def _notation(self, stem: StemDirection) -> NoteNotation:
+        return NoteNotation(beam_levels=empty_beam_levels(), stem=stem, slurs=empty_slur_slots())
+
+    def test_symbols_differing_only_in_notation_are_equal(self) -> None:
+        plain = EncodedSymbol("note_4", "C5")
+        annotated = EncodedSymbol("note_4", "C5", notation=self._notation(StemDirection.UP))
+
+        self.assertEqual(plain, annotated)
+        self.assertEqual(hash(plain), hash(annotated))
+        self.assertEqual(str(plain), str(annotated))
+
+    def test_symbols_with_different_notation_are_still_equal(self) -> None:
+        up = EncodedSymbol("note_4", "C5", notation=self._notation(StemDirection.UP))
+        down = EncodedSymbol("note_4", "C5", notation=self._notation(StemDirection.DOWN))
+
+        self.assertEqual(up, down)
+
+    def test_deduplication_is_unaffected(self) -> None:
+        up = EncodedSymbol("note_4", "C5", notation=self._notation(StemDirection.UP))
+        down = EncodedSymbol("note_4", "C5", notation=self._notation(StemDirection.DOWN))
+
+        self.assertEqual(len({up, down}), 1)
+
+    def test_notation_survives_the_copying_helpers(self) -> None:
+        # change_lift and to_upper_position copy the symbol; the labels must come along
+        # or they would be lost wherever the pipeline rewrites a field.
+        symbol = EncodedSymbol(
+            "note_4", "C5", position="lower", notation=self._notation(StemDirection.DOWN)
+        )
+
+        self.assertIs(symbol.change_lift("#").notation, symbol.notation)
+        self.assertIs(symbol.to_upper_position().notation, symbol.notation)
+
+    def test_notation_defaults_to_absent(self) -> None:
+        self.assertIsNone(EncodedSymbol("note_4").notation)

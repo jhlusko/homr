@@ -18,6 +18,7 @@ from homr.transformer.structured_notation import (
     MAX_BEAM_LEVELS,
     MAX_SLUR_SLOTS,
     BeamLevelState,
+    NoteNotation,
     SlurEvent,
     SlurSide,
     StemDirection,
@@ -47,18 +48,6 @@ _SIDES = {
     "below": SlurSide.BELOW,
     "under": SlurSide.BELOW,
 }
-
-
-@dataclass(frozen=True)
-class NoteNotation:
-    """Structured notation for one note, in the order the part reads."""
-
-    beam_levels: tuple[BeamLevelState, ...]
-    stem: StemDirection
-    slurs: tuple[tuple[SlurEvent, SlurSide], ...]
-
-    def active_beam_levels(self) -> int:
-        return sum(1 for state in self.beam_levels if state != BeamLevelState.NOT_APPLICABLE)
 
 
 @dataclass
