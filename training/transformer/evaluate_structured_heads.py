@@ -20,12 +20,15 @@ same split, not against zero.
 
 import argparse
 import json
+from collections.abc import Callable, Sequence
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
 import torch
 
 from homr.transformer.capability_manifest import CapabilityManifest
+from homr.transformer.structured_notation import BeamLevelState, NoteNotation
 from training.architecture.transformer.structured_decoding import (
     decode_predictions,
     decode_reference,
@@ -43,6 +46,7 @@ def evaluate(
     beam_levels: int,
     slur_slots: int,
     device: str = "cpu",
+    sink: Callable[[Sequence[NoteNotation], Sequence[NoteNotation]], None] | None = None,
 ) -> Evaluation:
     """Run the set and accumulate every measure."""
     model.eval()
@@ -65,7 +69,56 @@ def evaluate(
         # staff, and pooling first would let a slur opened on one close on another.
         for got, want in zip(predicted, reference, strict=True):
             evaluation.observe(got, want)
+            if sink is not None:
+                sink(got, want)
     return evaluation
+
+
+def dump_predictions(
+    batches: Any, beam_levels: int, handle: Any
+) -> Callable[[Sequence[NoteNotation], Sequence[NoteNotation]], None]:
+    """A sink that writes one JSON record per staff, named by its token file.
+
+    Aggregates cannot answer the question Gate C actually turns on - whether the head is
+    right where the *rule* is wrong - because that needs the two lined up note by note.
+    This writes the per-staff vectors so a separate pass can join them against the rule
+    without the evaluation having to know anything about MusicXML.
+
+    Identity comes from counting along the index, which is only valid because the
+    evaluation loader is built unshuffled. Names are written rather than implied so the
+    join can be checked instead of assumed.
+    """
+    entries = batches.dataset.inner.corpus_list
+    position = 0
+
+    def write(
+        predicted: Sequence[NoteNotation], reference: Sequence[NoteNotation]
+    ) -> None:
+        nonlocal position
+        if position >= len(entries):
+            return
+        supervised = [
+            (index, note)
+            for index, note in enumerate(reference)
+            if any(
+                state != BeamLevelState.NOT_APPLICABLE for state in note.beam_levels[:beam_levels]
+            )
+        ]
+        record = {
+            "tokens": entries[position]["tokens"],
+            "positions": [index for index, _ in supervised],
+            "reference": [
+                [str(s) for s in note.beam_levels[:beam_levels]] for _, note in supervised
+            ],
+            "predicted": [
+                [str(s) for s in predicted[index].beam_levels[:beam_levels]]
+                for index, _ in supervised
+            ],
+        }
+        handle.write(json.dumps(record) + "\n")
+        position += 1
+
+    return write
 
 
 def trained_heads(manifest_path: Path | None, available: list[str]) -> list[str]:
@@ -95,6 +148,11 @@ def main() -> None:
     parser.add_argument("--weights", type=Path, required=True, help="Trained head weights.")
     parser.add_argument("--manifest", type=Path, help="Capability manifest from the run.")
     parser.add_argument("--out", type=Path, help="Write the report as JSON.")
+    parser.add_argument(
+        "--predictions",
+        type=Path,
+        help="Write per-staff beam vectors as JSONL, for rule_vs_head.py to join.",
+    )
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -114,18 +172,32 @@ def main() -> None:
     model.to(args.device)
 
     names = trained_heads(args.manifest, _target_names(config))
-    batches, examples = build_batches(args.index, config, args.batch_size, args.workers)
+    # Unshuffled: the prediction dump names examples by counting along the index.
+    batches, examples = build_batches(
+        args.index, config, args.batch_size, args.workers, shuffle=False
+    )
     print(f"{examples} example(s) from {args.index}")
 
-    evaluation = evaluate(
-        model,
-        batches,
-        names,
-        config.structured_beam_levels,
-        config.structured_slur_slots,
-        args.device,
-    )
+    with (
+        args.predictions.open("w", encoding="utf-8") if args.predictions else nullcontext()
+    ) as handle:
+        sink = (
+            dump_predictions(batches, config.structured_beam_levels, handle)
+            if args.predictions
+            else None
+        )
+        evaluation = evaluate(
+            model,
+            batches,
+            names,
+            config.structured_beam_levels,
+            config.structured_slur_slots,
+            args.device,
+            sink,
+        )
     print(evaluation.describe())
+    if args.predictions:
+        print(f"predictions: {args.predictions}")
     if args.out:
         args.out.write_text(json.dumps(evaluation.to_dict(), indent=2), encoding="utf-8")
         print(f"report: {args.out}")

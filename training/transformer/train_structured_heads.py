@@ -223,9 +223,15 @@ def _target_names(config: Any) -> list[str]:
 
 
 def build_batches(
-    index: Path, config: Any, batch_size: int, workers: int
+    index: Path, config: Any, batch_size: int, workers: int, shuffle: bool = True
 ) -> tuple[TorchDataLoader, int]:
-    """The training loader, wrapped so each item carries its notation targets."""
+    """The loader, wrapped so each item carries its notation targets.
+
+    `shuffle` is off for evaluation, where batches have to arrive in index order: an
+    analysis that names which example a prediction came from can only do so by counting
+    along, and a shuffled loader would silently attach every prediction to the wrong
+    staff.
+    """
     from training.transformer.data_loader import load_dataset
     from training.transformer.structured_dataset import StructuredNotationDataset
 
@@ -238,7 +244,7 @@ def build_batches(
     loader = TorchDataLoader(
         wrapped,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=shuffle,
         num_workers=workers,
         collate_fn=lambda items: collate(items, names),
     )
