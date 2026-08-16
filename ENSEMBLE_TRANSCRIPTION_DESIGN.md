@@ -1575,19 +1575,27 @@ that, in order of what the result actually licenses:
  9  a converged run          done (27.26): twelve epochs buys about a point over three
 10  stem head or rule        done (27.27, 27.28): they are complementary, not redundant,
                              and arbitrating on head confidence beats both by 1.5 points
-11  re-convert OSSQ          running: v2 sidecars carrying ties (27.24) and slur
-                             placement (27.22), one pass for both
-12  heads for what that      slur side, now that placement exists; a tie head, now that
-    unlocks                  ties are distinguishable. Both need 11 first, and both
-                             invalidate the arbiter threshold, which is tuned per run.
-13  PDMX from source         code and data ready (27.25); the conversion has not been run
-14  lieder sidecars          one call added; the corpus has not been downloaded
-15  the scanned track        no head has seen it; 27.14 measured its layout only, and
+11  re-convert OSSQ          done (27.29): 42,088 examples with ties and placement
+12  slur-side heads          running: the retrain declares 9 heads rather than 7, so
+                             both slur.slot.N.side have targets for the first time
+13  PDMX from source         done (27.31): 35,800 examples, 2.5M annotated notes,
+                             ~4x the level-2 hooks OSSQ carries
+14  OSSQ + PDMX together     staged: 77,888 examples combined, evaluated on the OSSQ
+                             valid split so the figure stays comparable with 27.21
+15  a tie head               ties are distinguishable now (27.24) but nothing predicts
+                             them; needs the same treatment the slur sides just had
+16  lieder sidecars          one call added; the corpus has not been downloaded
+17  the scanned track        no head has seen it; 27.14 measured its layout only, and
                              27.11's crop guard has to be re-measured there first
-16  test_synth               held back deliberately - it is the one split that has not
+18  test_synth               held back deliberately - it is the one split that has not
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
 ```
+
+**The arbiter threshold is per-run and must be re-swept every time.** Items 12 and 14 each
+produce new weights, and 27.28's 0.9 was tuned against the weights of 27.26. The driver
+scripts re-run the sweep rather than reading a constant, which is the only reason this is
+safe to leave unattended.
 
 **A note on how many of these to have open at once.** At one point eight of these were
 part-started, with nine background waiters polling the instance, five of them for a
