@@ -172,9 +172,10 @@ def main() -> None:
     model.to(args.device)
 
     names = trained_heads(args.manifest, _target_names(config))
-    # Unshuffled: the prediction dump names examples by counting along the index.
+    # Unshuffled so the prediction dump can name examples by counting along the index,
+    # and in validation mode so the images are not distorted before being scored.
     batches, examples = build_batches(
-        args.index, config, args.batch_size, args.workers, shuffle=False
+        args.index, config, args.batch_size, args.workers, shuffle=False, validation=True
     )
     print(f"{examples} example(s) from {args.index}")
 

@@ -223,22 +223,37 @@ def _target_names(config: Any) -> list[str]:
 
 
 def build_batches(
-    index: Path, config: Any, batch_size: int, workers: int, shuffle: bool = True
+    index: Path,
+    config: Any,
+    batch_size: int,
+    workers: int,
+    shuffle: bool = True,
+    validation: bool = False,
 ) -> tuple[TorchDataLoader, int]:
     """The loader, wrapped so each item carries its notation targets.
 
     `shuffle` is off for evaluation, where batches have to arrive in index order: an
     analysis that names which example a prediction came from can only do so by counting
     along, and a shuffled loader would silently attach every prediction to the wrong
-    staff.
+    staff. `validation` additionally turns off image augmentation.
     """
     from training.transformer.data_loader import load_dataset
     from training.transformer.structured_dataset import StructuredNotationDataset
 
     samples = index.read_text(encoding="utf-8").splitlines()
-    datasets = load_dataset([line for line in samples if line.strip()], config, val_split=0.0)
+    # val_split routes the whole index to the loader built with is_validation=True, which
+    # turns off the distortion and occlusion the training loader applies. Scoring a held
+    # out set through the training loader would measure the model on images that are not
+    # the ones it will meet, and would not even be reproducible run to run.
+    datasets = load_dataset(
+        [line for line in samples if line.strip()],
+        config,
+        val_split=1.0 if validation else 0.0,
+    )
     wrapped = StructuredNotationDataset(
-        datasets["train"], config.structured_beam_levels, config.structured_slur_slots
+        datasets["validation" if validation else "train"],
+        config.structured_beam_levels,
+        config.structured_slur_slots,
     )
     names = _target_names(config)
     loader = TorchDataLoader(
