@@ -30,6 +30,7 @@ from homr.transformer.structured_notation import (
     BeamLevelState,
     NoteNotation,
     SlurEvent,
+    SlurSide,
     StemDirection,
 )
 
@@ -173,6 +174,30 @@ def stem_report(
     return report
 
 
+def slur_side_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation], slots: int
+) -> PerClassReport:
+    """Which way a slur bends, over the endpoints whose reference states a direction.
+
+    UNSPECIFIED is excluded rather than scored. Roughly half the slurs in both corpora
+    state no placement (27.30), and that is a silent source rather than a third direction -
+    scoring it would measure how often the engraver bothered rather than how well the head
+    reads the page.
+
+    Only endpoints count. A note in the middle of a span has no side to read off the
+    image, so including the NONE positions would drown the measure in free correct answers
+    the same way scoring every position would.
+    """
+    report = PerClassReport()
+    for left, right in zip(predicted, actual, strict=True):
+        for slot in range(slots):
+            event, side = right.slurs[slot]
+            if event == SlurEvent.NONE or side == SlurSide.UNSPECIFIED:
+                continue
+            report.observe(str(left.slurs[slot][1]), str(side))
+    return report
+
+
 def slur_endpoint_pairs(notation: Sequence[NoteNotation], slot: int) -> set[tuple[int, int]]:
     """(start, stop) index pairs for the spans one slot actually closes.
 
@@ -229,6 +254,7 @@ class Evaluation:
     hooks: ClassMetrics = field(default_factory=ClassMetrics)
     stems: PerClassReport = field(default_factory=PerClassReport)
     slur_spans: ClassMetrics = field(default_factory=ClassMetrics)
+    slur_sides: PerClassReport = field(default_factory=PerClassReport)
     vectors_matching: int = 0
     vectors_total: int = 0
     sequences: int = 0
@@ -246,6 +272,8 @@ class Evaluation:
 
         _merge(self.hooks, hook_report(predicted, actual, self.beam_levels))
         _merge(self.slur_spans, slur_span_report(predicted, actual, self.slur_slots))
+        for name, metrics in slur_side_report(predicted, actual, self.slur_slots).classes.items():
+            _merge(self.slur_sides.classes.setdefault(name, ClassMetrics()), metrics)
         for name, metrics in stem_report(predicted, actual).classes.items():
             _merge(self.stems.classes.setdefault(name, ClassMetrics()), metrics)
 
@@ -296,6 +324,11 @@ class Evaluation:
             f"slur spans: F1={self.slur_spans.f1:.3f} P={self.slur_spans.precision:.3f} "
             f"R={self.slur_spans.recall:.3f} (n={self.slur_spans.support:,})"
         )
+        # Only where something predicted a direction. Before the placement recovery of
+        # 27.22 this head had no targets at all, and a zeroed row would read as a head
+        # scoring nothing rather than a capability that does not exist.
+        if any(metrics.support for metrics in self.slur_sides.classes.values()):
+            lines.append(f"slur sides (above/below): {self.slur_sides.describe()}")
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, object]:
@@ -321,4 +354,8 @@ class Evaluation:
                 "direction_only": self.stem_direction_accuracy,
             },
             "slur_spans": {"f1": self.slur_spans.f1, "support": self.slur_spans.support},
+            "slur_sides": {
+                "macro_f1": self.slur_sides.macro_f1,
+                "support": sum(m.support for m in self.slur_sides.classes.values()),
+            },
         }

@@ -2295,6 +2295,47 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.32 The v2 retrain: nine heads, and the hooks move
+
+Trained on the re-converted OSSQ (27.29), the manifest declares **nine heads rather than
+seven** - `slur.slot.1.side` and `slur.slot.2.side` have targets for the first time, on
+141,825 and 1,107 supervised positions. That closes the chain that began with 27.20
+finding placement absent, ran through 27.22's alignment and 27.29's transfer bug, and ends
+here.
+
+Against the same validation split as 27.26, so the numbers are comparable:
+
+```
+                        v1 data      v2 data
+exact beam vector         0.923        0.927
+beam level 1 macro F1     0.931        0.936
+beam level 3 macro F1     0.879        0.885
+hooks F1                  0.794        0.822
+slur spans F1             0.917        0.919
+exceptions recovered      79.8%        81.2%
+agreements lost            5.7%         5.4%
+```
+
+Hooks moving from 0.794 to 0.822 is the result worth noting: it is the weakest class, the
+one 27.30 identified as starved in a quartet corpus, and the only change between these
+runs is label quality rather than more data. Exceptions recovered rises to 81.2%.
+
+**The arbiter threshold moved from 0.9 to 0.8.** Re-tuned on this run's weights, it gives
+95.89% against 94.22% for the head alone and 94.50% for the rule - so arbitration is still
+worth about 1.4 points, and the threshold that was correct two runs ago is not correct
+now. That is the concrete justification for sweeping rather than storing it.
+
+**A capability was trained that could not be scored.** The slur-side heads had no metric:
+`Evaluation` reported beams, hooks, stems and slur *spans*, and nothing for direction. So
+the first run to train them produced no number for them at all. `slur_side_report` now
+covers it, scoring only endpoints whose reference states a direction - UNSPECIFIED is a
+silent source, not a third class, and scoring it would measure how often the engraver
+bothered rather than how well the head reads the page.
+
+The general shape of that mistake is worth naming: a head, its targets, its loss and its
+manifest entry were all built, and the one missing piece was the measurement. Nothing
+failed; there was simply a blank where a result should have been.
+
 ### 27.31 PDMX, converted from source
 
 10,000 files in, 3,671 skipped, **35,800 usable examples with notation labels** and

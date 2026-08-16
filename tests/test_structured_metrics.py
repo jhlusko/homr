@@ -16,6 +16,7 @@ from training.transformer.structured_metrics import (
     exact_vector_accuracy,
     hook_report,
     slur_endpoint_pairs,
+    slur_side_report,
     slur_span_report,
     stem_report,
 )
@@ -271,6 +272,55 @@ class TestStemDirectionIsComparableToTheBaseline(unittest.TestCase):
 
     def test_no_directional_notes_does_not_divide_by_zero(self) -> None:
         self.assertEqual(Evaluation(beam_levels=1, slur_slots=1).stem_direction_accuracy, 0.0)
+
+
+
+
+class TestSlurSides(unittest.TestCase):
+    """Which way a slur bends, over the endpoints whose reference states a direction.
+
+    Roughly half of slurs state no placement in either corpus, and that is a silent
+    source rather than a third direction - scoring it would measure how often the
+    engraver bothered rather than how well the head reads the page.
+    """
+
+    def _slurred(self, event: SlurEvent, side: SlurSide) -> NoteNotation:
+        return _note(slurs=((event, side),))
+
+    def test_a_correct_direction_scores(self) -> None:
+        above = [self._slurred(SlurEvent.START, SlurSide.ABOVE)]
+
+        self.assertEqual(slur_side_report(above, above, slots=1).macro_f1, 1.0)
+
+    def test_the_wrong_direction_does_not(self) -> None:
+        predicted = [self._slurred(SlurEvent.START, SlurSide.BELOW)]
+        actual = [self._slurred(SlurEvent.START, SlurSide.ABOVE)]
+
+        self.assertEqual(slur_side_report(predicted, actual, slots=1).macro_f1, 0.0)
+
+    def test_an_unspecified_reference_is_not_scored(self) -> None:
+        # Half the corpus states no placement; counting it would measure the engraver.
+        predicted = [self._slurred(SlurEvent.START, SlurSide.ABOVE)]
+        actual = [self._slurred(SlurEvent.START, SlurSide.UNSPECIFIED)]
+
+        report = slur_side_report(predicted, actual, slots=1)
+
+        self.assertEqual(sum(m.support for m in report.classes.values()), 0)
+
+    def test_a_note_that_is_not_an_endpoint_is_not_scored(self) -> None:
+        # No side can be read off the image where there is no slur end.
+        predicted = [self._slurred(SlurEvent.NONE, SlurSide.ABOVE)]
+        actual = [self._slurred(SlurEvent.NONE, SlurSide.ABOVE)]
+
+        report = slur_side_report(predicted, actual, slots=1)
+
+        self.assertEqual(sum(m.support for m in report.classes.values()), 0)
+
+    def test_the_evaluation_reports_it_only_when_something_predicted_one(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+        evaluation.observe([_note()], [_note()])
+
+        self.assertNotIn("slur sides", evaluation.describe())
 
 
 if __name__ == "__main__":
