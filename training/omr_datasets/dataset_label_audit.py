@@ -33,6 +33,7 @@ from homr.transformer.structured_notation import (
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
 )
 from training.omr_datasets.notation_sidecar import SidecarMismatch, attach_sidecar
 from training.transformer.training_vocabulary import read_tokens
@@ -48,6 +49,7 @@ class DatasetCounts:
     stems: collections.Counter[str] = field(default_factory=collections.Counter)
     slur_events: dict[int, collections.Counter[str]] = field(default_factory=dict)
     slur_sides: collections.Counter[str] = field(default_factory=collections.Counter)
+    ties: collections.Counter[str] = field(default_factory=collections.Counter)
 
     def observe(self, notation: object) -> None:
         self.notes += 1
@@ -57,6 +59,8 @@ class DatasetCounts:
                 continue
             self.beam_states.setdefault(level, collections.Counter())[str(state)] += 1
         self.stems[str(notation.stem)] += 1  # type: ignore[attr-defined]
+        if notation.tie != TieState.NONE:  # type: ignore[attr-defined]
+            self.ties[str(notation.tie)] += 1  # type: ignore[attr-defined]
         for slot, (event, side) in enumerate(notation.slurs, start=1):  # type: ignore[attr-defined]
             if event == SlurEvent.NONE:
                 continue
@@ -127,6 +131,7 @@ def describe(counts: DatasetCounts) -> str:
         f"{name}={count:,}" for name, count in counts.stems.most_common() if count
     )
     sides = "  ".join(f"{name}={count:,}" for name, count in counts.slur_sides.most_common())
+    ties = "  ".join(f"{name}={count:,}" for name, count in counts.ties.most_common())
     parts = [
         f"{counts.examples:,} examples, {counts.annotated:,} with labels, "
         f"{counts.notes:,} annotated notes",
@@ -137,6 +142,10 @@ def describe(counts: DatasetCounts) -> str:
         "",
         _slur_table(counts),
         f"slur placement: {sides or 'none stated'}",
+        "",
+        # A sidecar written before ties existed reports none, which is correct for it -
+        # so an empty line here means "v1 data", not "this corpus has no ties".
+        f"ties: {ties or 'none recorded (v1 sidecars predate tie extraction)'}",
     ]
     return "\n".join(parts)
 

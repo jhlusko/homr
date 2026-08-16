@@ -9,11 +9,17 @@ from homr.transformer.structured_notation import (
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
     empty_beam_levels,
     empty_slur_slots,
 )
 from homr.transformer.vocabulary import EncodedSymbol
-from training.omr_datasets.dataset_label_audit import audit_index, unsupported
+from training.omr_datasets.dataset_label_audit import (
+    DatasetCounts,
+    audit_index,
+    describe,
+    unsupported,
+)
 from training.omr_datasets.notation_sidecar import sidecar_path, write_sidecar
 from training.transformer.training_vocabulary import token_lines_to_str
 
@@ -22,11 +28,13 @@ def _notation(
     beams: tuple[BeamLevelState, ...] = (BeamLevelState.BEGIN,),
     stem: StemDirection = StemDirection.UP,
     slurs: tuple[tuple[SlurEvent, SlurSide], ...] = (),
+    tie: TieState = TieState.NONE,
 ) -> NoteNotation:
     return NoteNotation(
         beam_levels=beams + empty_beam_levels()[len(beams) :],
         stem=stem,
         slurs=slurs + empty_slur_slots()[len(slurs) :],
+        tie=tie,
     )
 
 
@@ -148,3 +156,37 @@ class TestUnsupportedHeads(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTiesAreAudited(unittest.TestCase):
+    """Ties are a v2 field, so the audit has to distinguish absent from unrecorded.
+
+    A sidecar written before tie extraction reports no ties, and that is correct for it -
+    the field was absent from the writer, not from the music. Reporting a bare zero would
+    read as "this corpus has no ties".
+    """
+
+    def test_a_tie_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            index = directory / "index.txt"
+            index.write_text(
+                _example(directory, "a", [_notation(tie=TieState.START)]), encoding="utf-8"
+            )
+
+            counts, _ = audit_index(index)
+
+        self.assertEqual(counts.ties["start"], 1)
+
+    def test_a_note_with_no_tie_is_not_counted(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            index = directory / "index.txt"
+            index.write_text(_example(directory, "a", [_notation()]), encoding="utf-8")
+
+            counts, _ = audit_index(index)
+
+        self.assertEqual(sum(counts.ties.values()), 0)
+
+    def test_the_report_says_why_it_may_be_empty(self) -> None:
+        self.assertIn("v1 sidecars", describe(DatasetCounts()))
