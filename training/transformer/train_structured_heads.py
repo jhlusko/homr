@@ -75,6 +75,26 @@ class EpochReport:
         return line
 
 
+def set_probe_mode(model: nn.Module) -> None:
+    """Frozen core in eval mode, heads in train mode.
+
+    `model.train()` would leave the core's dropout on - homr's decoder carries 0.1 on
+    attention, feed-forward and whole layers - so the heads would learn from a
+    stochastically perturbed hidden state and then meet an unperturbed one at inference.
+    The point of this experiment is to ask what the pretrained representation already
+    carries, and that representation is the one the model produces in eval mode.
+
+    Dropout in a frozen backbone is defensible as augmentation when the backbone is being
+    tuned too. Here nothing about the core is being learned, so the noise is not
+    regularising anything - it is only putting a gap between what the heads train on and
+    what they are scored on.
+    """
+    model.eval()
+    heads = getattr(getattr(model, "decoder", None), "structured_heads", None)
+    if heads is not None:
+        heads.train()
+
+
 def structured_parameters(model: nn.Module) -> list[nn.Parameter]:
     return [p for name, p in model.named_parameters() if name.startswith(NEW_PARAMETER_PREFIXES)]
 
@@ -95,7 +115,7 @@ def train_epoch(
     device: str = "cpu",
 ) -> EpochReport:
     """One pass, updating only the structured heads."""
-    model.train()
+    set_probe_mode(model)
     totals: dict[str, float] = dict.fromkeys(head_targets, 0.0)
     support: dict[str, int] = dict.fromkeys(head_targets, 0)
     total = 0.0

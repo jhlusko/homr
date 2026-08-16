@@ -13,6 +13,7 @@ from training.transformer.train_structured_heads import (
     EpochReport,
     collate,
     heads_with_support,
+    set_probe_mode,
     structured_parameters,
     train_epoch,
     write_manifest,
@@ -172,6 +173,48 @@ class TestDeclaringWhatWasTrained(unittest.TestCase):
         self.assertEqual(manifest.supported_heads, ("beam.level.1",))
         self.assertFalse(manifest.supports("stem.direction"))
         self.assertEqual(manifest.run_id, "run-1")
+
+
+class TestProbeMode(unittest.TestCase):
+    """The frozen core must not be dropping activations while the heads learn from it.
+
+    homr's decoder carries 0.1 dropout on attention, feed-forward and whole layers. With
+    the core in train mode the heads would fit a stochastically perturbed hidden state and
+    then meet an unperturbed one at inference - and since nothing about the core is being
+    learned, that noise regularises nothing.
+    """
+
+    def setUp(self) -> None:
+        self.model = _Model()
+        self.model.decoder.dropout = nn.Dropout(0.5)
+
+    def test_the_core_is_put_in_eval_mode(self) -> None:
+        self.model.train()
+
+        set_probe_mode(self.model)
+
+        self.assertFalse(self.model.body.training)
+        self.assertFalse(self.model.decoder.dropout.training)
+
+    def test_the_heads_stay_in_train_mode(self) -> None:
+        set_probe_mode(self.model)
+
+        self.assertTrue(self.model.decoder.structured_heads.training)
+
+    def test_a_model_without_heads_does_not_fail(self) -> None:
+        bare = nn.Linear(4, 4)
+
+        set_probe_mode(bare)
+
+        self.assertFalse(bare.training)
+
+    def test_an_epoch_leaves_the_core_in_eval_mode(self) -> None:
+        optimizer = torch.optim.Adam(structured_parameters(self.model), lr=0.01)
+
+        train_epoch(self.model, [_batch()], optimizer, HEADS, epoch=1)
+
+        self.assertFalse(self.model.body.training)
+        self.assertTrue(self.model.decoder.structured_heads.training)
 
 
 if __name__ == "__main__":
