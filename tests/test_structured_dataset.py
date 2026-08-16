@@ -2,6 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import cv2
+import numpy as np
 import torch
 
 from homr.transformer.structured_notation import (
@@ -108,6 +110,61 @@ class TestStructuredNotationDataset(unittest.TestCase):
             item = StructuredNotationDataset(inner, beam_levels=2, slur_slots=1)[0]
 
         self.assertTrue(bool((item["slur.slot.1.event"][5:] == IGNORE_INDEX).all()))
+
+
+class _TwoEntryInner:
+    """Mirrors the real loader's substitution: an unreadable image serves the next entry."""
+
+    def __init__(self, entries: list[dict], served: list[int]) -> None:
+        self.corpus_list = entries
+        self.served = served
+
+    def __len__(self) -> int:
+        return len(self.corpus_list)
+
+    def __getitem__(self, index: int) -> dict:
+        self.served.append(index)
+        return {
+            "inputs": torch.zeros(1, 4, 4),
+            "rhythms": torch.zeros(12, dtype=torch.long),
+            "mask": torch.ones(12, dtype=torch.bool),
+        }
+
+
+class TestUnreadableImagesStayInStep(unittest.TestCase):
+    def test_the_wrapper_follows_the_loaders_substitution(self) -> None:
+        # The loader silently serves (index + 1) when an image will not decode. If the
+        # wrapper kept attaching the original index's sidecar, one staff's image would
+        # carry the previous staff's beams and nothing would raise.
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = _write(tmp, annotated=True)
+            entries = [
+                {"image": str(Path(tmp) / "missing.png"), "tokens": str(tokens)},
+                {"image": str(Path(tmp) / "also_missing.png"), "tokens": str(tokens)},
+            ]
+            served: list[int] = []
+            inner = _TwoEntryInner(entries, served)
+
+            StructuredNotationDataset(inner, beam_levels=2, slur_slots=1)[0]
+
+        # Neither image is readable, so it comes back to where it started rather than
+        # looping forever.
+        self.assertEqual(served, [0])
+
+    def test_a_readable_neighbour_is_the_one_served(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = _write(tmp, annotated=True)
+            good = Path(tmp) / "good.png"
+            cv2.imwrite(str(good), np.zeros((16, 32, 3), dtype=np.uint8))
+            entries = [
+                {"image": str(Path(tmp) / "missing.png"), "tokens": str(tokens)},
+                {"image": str(good), "tokens": str(tokens)},
+            ]
+            served: list[int] = []
+
+            StructuredNotationDataset(_TwoEntryInner(entries, served), 2, 1)[0]
+
+        self.assertEqual(served, [1])
 
 
 if __name__ == "__main__":
