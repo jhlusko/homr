@@ -47,8 +47,18 @@ def evaluate(
     slur_slots: int,
     device: str = "cpu",
     sink: Callable[[Sequence[NoteNotation], Sequence[NoteNotation]], None] | None = None,
+    all_targets: Sequence[str] | None = None,
 ) -> Evaluation:
-    """Run the set and accumulate every measure."""
+    """Run the set and accumulate every measure.
+
+    `head_targets` is what gets scored; `all_targets` is every key the loader may attach.
+    They differ whenever the manifest declares fewer heads than the dataset labels - an
+    untrained head still has target tensors in the batch - and the difference matters
+    because every non-target key is forwarded to the model as a keyword argument. Scoring
+    seven heads while the batch carries nine would hand the decoder `slur.slot.1.side` and
+    it would refuse it.
+    """
+    strip = set(all_targets if all_targets is not None else head_targets)
     model.eval()
     evaluation = Evaluation(beam_levels=beam_levels, slur_slots=slur_slots)
 
@@ -58,7 +68,7 @@ def evaluate(
         if not targets:
             continue
         targets = align_to_decoder_output(targets)
-        outputs = model(**{k: v for k, v in batch.items() if k not in head_targets})
+        outputs = model(**{k: v for k, v in batch.items() if k not in strip})
         logits = outputs["structured_logits"]
         if logits is None:
             raise ValueError("model has no structured heads - enable them in the config")
@@ -195,6 +205,7 @@ def main() -> None:
             config.structured_slur_slots,
             args.device,
             sink,
+            all_targets=_target_names(config),
         )
     print(evaluation.describe())
     if args.predictions:

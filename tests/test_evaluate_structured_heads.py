@@ -41,6 +41,11 @@ class _Model(nn.Module):
         self.decoder.structured_heads = StructuredNotationHeads(dim=8, beam_levels=2, slur_slots=1)
 
     def forward(self, **batch: torch.Tensor) -> dict:
+        # The real decoder refuses unexpected keyword arguments, which is how a target key
+        # leaking into the model call surfaced. Reproduced here so the test can catch it.
+        unexpected = [key for key in batch if key not in ("inputs",)]
+        if unexpected:
+            raise TypeError(f"unexpected keyword argument {unexpected[0]!r}")
         hidden = batch["inputs"][:, :-1]
         logits = self.decoder.structured_heads(hidden)
         fixed = {}
@@ -125,6 +130,41 @@ class TestTrainedHeads(unittest.TestCase):
 
     def test_without_a_manifest_everything_is_scored(self) -> None:
         self.assertEqual(trained_heads(None, HEADS), HEADS)
+
+
+class TestUnscoredHeadsAreStillStrippedFromTheInput(unittest.TestCase):
+    """A head the manifest does not declare still has target tensors in the batch.
+
+    Every key that is not a target gets forwarded to the model as a keyword argument, so
+    scoring seven heads while the batch carries nine hands the decoder `slur.slot.1.side`
+    and it refuses it. This is what killed the first evaluation run after a successful
+    training run.
+    """
+
+    def test_scoring_a_subset_does_not_leak_the_rest_into_the_model(self) -> None:
+        model = _Model({})
+        declared = ["beam.level.1", "stem.direction"]
+
+        result = evaluate(
+            model,
+            [_batch(StemDirection.UP, BeamLevelState.BEGIN)],
+            declared,
+            beam_levels=2,
+            slur_slots=1,
+            all_targets=HEADS,
+        )
+
+        self.assertEqual(result.sequences, 1)
+
+    def test_without_all_targets_it_falls_back_to_what_is_scored(self) -> None:
+        # The training path passes one list because it scores everything it labels.
+        model = _Model({})
+
+        result = evaluate(
+            model, [_batch(StemDirection.UP, BeamLevelState.BEGIN)], HEADS, 2, 1
+        )
+
+        self.assertEqual(result.sequences, 1)
 
 
 if __name__ == "__main__":
