@@ -1659,3 +1659,188 @@ specific implementation evidence behind it:
 The external review system is a consumer, not a dependency of HOMR. HOMR should
 remain independently usable from its CLI while exposing contracts rich enough for
 that consumer and others.
+
+## 27. Reproduction record (2026-08-15/16)
+
+Everything in this section was run and measured. It exists so the numbers quoted in
+§24.1 can be re-derived rather than taken on trust, and so the next person does not
+rediscover the environment problems.
+
+### 27.1 What was built
+
+| Area | Where |
+|---|---|
+| Page-level OSSQ benchmark | `validation/ossq.py` |
+| MusicXML ground truth in the NED scorer | `validation/ned_score.py` (`_side_parts`) |
+| Deterministic system grouping | `homr/system_grouping.py` |
+| Score-level split manifest | `training/omr_datasets/ossq_split_manifest.json`, `ossq_splits.py` |
+| Per-class support tables | `training/omr_datasets/ossq_label_audit.py` |
+| Structured beam/stem/slur schema | `homr/transformer/structured_notation.py` |
+| Label extraction from MusicXML | `training/omr_datasets/structured_notation_parser.py` |
+| Beam materialization check | `training/omr_datasets/beam_materialization_check.py` |
+
+### 27.2 Environment
+
+Rented a single RTX 4090 (48 GB) with 128 vCPU and 755 GB RAM. B0 is inference only, so
+the GPU is not the constraint; CPU is. Three things had to be right:
+
+**onnxruntime and CUDA.** The driver advertises CUDA 12.8, and `onnxruntime-gpu >=
+1.24` - what `homr`'s `[gpu]` extra asks for - requires CUDA 13 and fails to load
+`libcublasLt.so.13`. Pin `onnxruntime-gpu==1.22.0` with the `nvidia-*-cu12` wheels and
+put their `lib` directories on `LD_LIBRARY_PATH`.
+
+**Thread count, which dominates everything.** Uncapped, one page cost 4m40s wall and 65
+CPU-minutes thrashing 128 cores. With `OMP_NUM_THREADS=4` the same page takes 12.8s wall
+and 24 CPU-seconds. Set it before measuring anything.
+
+**The container's task limit.** Threads, not processes, exhaust it: a healthy run sits at
+~115 processes but ~3,600 threads, roughly 30 per homr process even with the cap above,
+from ONNX inter-op, OpenCV and CUDA pools. Six benchmark workers is sustainable; sixteen
+is not, and produces `fork: Resource temporarily unavailable` across the box. Recover by
+killing only the offending session - `kill -9 -1` takes out sshd with everything else.
+
+`validation/tools.py` shells out to `poetry run python3 -m homr.main`, so a `poetry`
+shim that execs the project's interpreter is enough; poetry itself is not needed.
+
+### 27.3 Dataset construction
+
+`ossq-omr` tracks only sources: `.mscx`, `sq*.musicxml`, `sq*_cleaned.musicxml`,
+`yolo_infos.yaml`, `_scanned.csv`. Everything the benchmark consumes is generated, and
+the scanned PDFs are fetched separately and are not in git.
+
+Synthetic track, from a fresh clone:
+
+```
+convert_musicxml_to_lmxe.py -t synthetic   # -> musicxml/, lmxe/, metadata/ unaligned
+convert_musescore_to_pdf.py -t synthetic
+convert_pdf_to_images.py    -t synthetic   # -> images/synthetic/original
+```
+
+Scanned track additionally needs the four YOLO checkpoints and, per score, its own
+recorded models and thresholds (`--reproduce 1`):
+
+```
+convert_pdf_to_images.py       -t scanned
+yolo_detect_systems.py         -t scanned --reproduce 1
+yolo_crop_systems.py           -t scanned --confidence-threshold 0.30 --reproduce 1
+yolo_detect_staff_heights.py   -t scanned --reproduce 1
+yolo_resize_systems.py         -t scanned --target_height 18 --reproduce 1
+align_systems_lmxe.py          -t scanned   # -> musicxml/scanned/systemwise
+```
+
+**Do not regenerate `sq*.musicxml` with a different MuseScore.** The page indices in the
+reference come from the MusicXML layout and the images from rendering the same score;
+4.6.5 lays the Ravel quartet out over 56 pages where the version behind the tracked
+MusicXML used 47. The filenames still line up, so page 5 is scored against a page 5 of
+different music, silently and with a plausible NED. `validation/ossq.py` now refuses a
+score whose rendered page count disagrees with the reference, but the cheaper answer is
+to leave the tracked MusicXML alone - `convert_musicxml_to_lmxe.py` reads it and
+reproduces the segments byte for byte.
+
+Scanned alignment is positional, not by page number: `align_systems_lmxe` sorts the
+detected scanned systems, sorts the symbolic segments, requires the counts to match
+exactly, and zips them. Its per-score `_scanned.csv` check is an existence gate only.
+Predicted coverage: the 96 scores with a scanned PDF hold 11,305 symbolic segments
+against 11,304 published scanned system images, so essentially every score should align,
+with one segment excluded.
+
+### 27.4 B0: the pinned checkpoint on OSSQ synthetic
+
+3,148 of 3,206 pages, whole corpus, attribute restatements collapsed:
+
+```
+all pages                     n=3148  mean  8.43%  median  3.93%  p90 18.99%
+layout correct (parts match)  n=3057  mean  6.66%  median  3.72%  p90 16.67%
+layout wrong  (parts differ)  n=  91  mean 67.79%  median 70.36%  p90 74.22%
+```
+
+Layout failure rate 2.9%, of which 80 pages are still four parts read as one. Before the
+grouping work it was 25%. On a fixed 60-page subset, before and after: mean 16.44% ->
+5.19%, layout-broken 12 -> 0, median unchanged at 2.68%, nothing regressed.
+polish-scores is bit-identical with and without the change (17.93%, 108/112, same four
+failures), which is expected since single-system images cannot reach the geometric path.
+
+Two scoring artifacts had to be handled before any of this meant anything:
+
+- Clef and key restatements were 40% of all non-matching tokens. Engraving restates them
+  at every system start; homr reports state changes only. Same page, different
+  convention. Collapsing repeats on both sides moved a sample from 6.31% to 3.74%
+  overall and pitch from 3.43% to 0.57%.
+- Whole-measure rests carry no `<duration>` in 19,147 places, and homr's parser assigns
+  duration 0 rather than inferring it, so every empty measure in the reference was
+  mis-timed against a real rest in the prediction.
+
+The largest remaining error classes are now `note_12 -> note_8` (32,538) and
+`note_24 -> note_16` (13,114) - triplets read as plain eighths and sixteenths - plus
+12,091 hallucinated `timeSignature/4`, which is `music_xml_generator` forcing a `<time>`
+element into every part's first measure whether or not a meter was recognised.
+
+### 27.5 Label support, and what it settles
+
+Counted from the original MusicXML over 1,433,203 notes (§25.2's open questions):
+
+```
+beam level    train    valid   test        slur slot   train   valid  test
+  1         608,166   66,043  62,656         1       291,683  34,830 34,983
+  2         246,240   23,050  17,749         2         2,379     438    243
+  3          27,129    2,413   1,405         3            83       2     11
+  4           1,697        8      40         4-6          33       0      9
+  5               0        0      14
+  6               0        0      14
+```
+
+Beam levels 5 and 6 have no training examples at all - all 28 occurrences are in test -
+so they should be deterministic or unsupported, not learned. Level 4 can be fit at 1,697
+but cannot be selected on with 8 validation examples. Slur slots 3-6 hold 116 training
+occurrences between them: two trained slots plus overflow reporting matches the data,
+six trained slots does not. Half of all slurs carry no placement, so the side head's
+supervision covers ~50% of spans and `UNSPECIFIED` is the majority class rather than an
+edge case. The stem head's `DOUBLE` class has no support anywhere in the corpus.
+
+Extraction over all 122 scores is clean: 89 unmatched stops, 17 unclosed starts, 60
+duplicate starts, **0 slot overflow**, 0 beams deeper than their duration. Starts minus
+stops is exactly 17, matching unclosed starts, so the canonical slot pairing balances.
+
+### 27.6 Beam materialization is not needed here, and would be harmful
+
+§9.5 prescribes materializing automatic beam choices through the pinned MuseScore, with
+a check that this does not change the rendered notation. Running the check first inverts
+the conclusion. Over 14 scores and 172,607 notes:
+
+```
+beams gained        1  (0.001%)
+beams lost/changed  2,910  (1.686%)
+
+1756  16th   ['end','backward hook'] -> ['end','end']
+ 458  eighth ['end']                 -> []
+ 280  eighth ['begin']               -> []
+ 118  32nd   ['end','backward hook','backward hook'] -> ['end','end','backward hook']
+```
+
+Nothing is ambiguous: MuseScore writes `<beam>` for what it beams, so a flag-worthy note
+without one is genuinely flagged and its FLAG label is already correct. And the round
+trip is not safe to run - it rewrites grouping on 1.7% of notes, and its largest single
+pattern turns backward hooks into full beams. That is exactly the information these
+heads exist to recover, and the same information this design cites as the reason to
+prefer per-level states over MuseScore's `BeamMode`.
+
+So: skip materialization, and do not use a MuseScore round trip to produce or normalise
+beam labels. This also bounds §11.3's generator gate - a MuseScore load/render check on
+emitted MusicXML cannot assert beam equality without producing false failures. The
+finding is corpus- and version-specific, so it is a repeatable check that records the
+MuseScore version rather than a fact asserted here.
+
+### 27.7 Known gaps
+
+- Incomplete systems are dropped rather than repaired. On repaired pages that discard is
+  the entire residual error: `pred/ref` token ratio 0.81-0.85 against 1.01 on clean
+  pages, about 10% NED. Recovering it means inferring the missing voice slot from the
+  internal gap pattern and teaching `parse_staffs` to index by slot rather than position.
+- 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are
+  the cases where geometry declines - overlapping duplicate staff detections, too few
+  systems to read - rather than decides wrongly.
+- The scanned benchmark has not been run; only its pipeline is validated end to end on
+  one score (168 detected systems against 168 symbolic segments, aligning to scanned
+  pages 3-58, matching that score's curated `3:58` range).
+- The non-regression tolerance for Gate D has not been declared. B0 variance is now
+  measurable, which is the precondition §22 sets for declaring it.
