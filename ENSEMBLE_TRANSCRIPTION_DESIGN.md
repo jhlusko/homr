@@ -1572,20 +1572,34 @@ cannot predict, against 27.12's question of whether half was reachable. What fol
 that, in order of what the result actually licenses:
 
 ```
-9   a converged run          done (27.26): twelve epochs buys about a point over
-                             three, and the stem head does not beat a beam-grouped rule
-10  re-convert the corpus    the built dataset is v1 sidecars: no slur placement (27.20,
-                             27.22) and no ties (27.24). Both are label changes, so both
-                             need the conversion re-run - once, not twice, since it is
-                             ~25 minutes and the schema bump is already in place.
-11  heads for what that      slur side, now that placement exists; a tie head, now that
-    unlocks                  ties are distinguishable. Both need 10 first.
-12  the scanned track        no head has seen it; 27.14 measured its layout only, and
+ 9  a converged run          done (27.26): twelve epochs buys about a point over three
+10  stem head or rule        done (27.27, 27.28): they are complementary, not redundant,
+                             and arbitrating on head confidence beats both by 1.5 points
+11  re-convert OSSQ          running: v2 sidecars carrying ties (27.24) and slur
+                             placement (27.22), one pass for both
+12  heads for what that      slur side, now that placement exists; a tie head, now that
+    unlocks                  ties are distinguishable. Both need 11 first, and both
+                             invalidate the arbiter threshold, which is tuned per run.
+13  PDMX from source         code and data ready (27.25); the conversion has not been run
+14  lieder sidecars          one call added; the corpus has not been downloaded
+15  the scanned track        no head has seen it; 27.14 measured its layout only, and
                              27.11's crop guard has to be re-measured there first
-13  test_synth               held back deliberately - it is the one split that has not
+16  test_synth               held back deliberately - it is the one split that has not
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
 ```
+
+**A note on how many of these to have open at once.** At one point eight of these were
+part-started, with nine background waiters polling the instance, five of them for a
+marker written by a run that had finished seventeen hours earlier. The parallelism was not
+buying anything - every track was blocked on the same GPU or the same conversion - and it
+made the state of the work genuinely hard to read. One or two live tracks, with the rest
+explicitly parked, is the working discipline.
+
+**And a constant that must not go stale.** The stem arbiter's confidence threshold (0.9)
+was tuned on half of `valid` for *this* set of weights. Any retraining invalidates it, and
+re-using it because it is written down somewhere would look fine and quietly cost
+accuracy. It is produced by a sweep, not a configuration file, for that reason.
 
 **What does and does not need a re-conversion.** The seven heads trained in 27.21 read
 beam levels, stem and slur slots, and none of those moved: the extractor always read only
