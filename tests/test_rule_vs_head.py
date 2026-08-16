@@ -72,14 +72,14 @@ CHORD_EIGHTH = (
 
 class TestRuleVectors(unittest.TestCase):
     def test_one_vector_per_note_element(self) -> None:
-        vectors = rule_vectors(_part(EIGHTH * 2))
+        vectors, _ = rule_vectors(_part(EIGHTH * 2))
 
         self.assertEqual(len(vectors), 2)
 
     def test_a_chord_member_is_carried_but_marked(self) -> None:
         # Carried so the vectors line up with the labels, which have one entry per <note>;
         # marked so it can be left out of the scoring.
-        vectors = rule_vectors(_part(EIGHTH + CHORD_EIGHTH + EIGHTH))
+        vectors, _ = rule_vectors(_part(EIGHTH + CHORD_EIGHTH + EIGHTH))
 
         self.assertEqual(len(vectors), 3)
         self.assertEqual([is_chord for _, is_chord in vectors], [False, True, False])
@@ -87,8 +87,8 @@ class TestRuleVectors(unittest.TestCase):
     def test_a_chord_member_does_not_advance_the_onset(self) -> None:
         # If it did, the chord's notes would be spread across beats and the rule would
         # break groups that the engraving keeps.
-        plain = rule_vectors(_part(EIGHTH * 2))
-        chorded = rule_vectors(_part(EIGHTH + CHORD_EIGHTH + EIGHTH))
+        plain, _ = rule_vectors(_part(EIGHTH * 2))
+        chorded, _ = rule_vectors(_part(EIGHTH + CHORD_EIGHTH + EIGHTH))
 
         self.assertEqual(chorded[2][0], plain[1][0])
 
@@ -222,6 +222,48 @@ class TestChordMembersAreNotScored(unittest.TestCase):
             crosstab = self._run(tmp)
 
         self.assertEqual(crosstab.rule_wrong_head_right + crosstab.rule_wrong_head_wrong, 0)
+
+
+NO_TIME_PART = """
+<part><measure>
+  <attributes><divisions>2</divisions></attributes>
+  {notes}
+</measure></part>
+"""
+
+
+class TestMeterIsCarriedAcrossSegments(unittest.TestCase):
+    """A systemwise segment restates <time> only at a movement start or a real change.
+
+    Taken alone, every later segment would be beamed as if it were in 4/4. Measured
+    against the same split's baseline that cost the rule 3.5 points - 87.0% down to
+    83.5% - and every point the rule loses is a point wrongly credited to the head as an
+    exception it recovered.
+    """
+
+    def test_the_meter_is_returned_for_the_next_segment(self) -> None:
+        part = _part(EIGHTH * 2)  # states 4/4, divisions 2
+
+        _, meter = rule_vectors(part)
+
+        self.assertEqual(meter, (2, 4, 4))
+
+    def test_a_segment_without_a_time_signature_uses_the_carried_one(self) -> None:
+        part = ET.fromstring(NO_TIME_PART.format(notes=EIGHTH * 2))
+
+        _, meter = rule_vectors(part, (2, 6, 8))
+
+        # Unchanged: nothing in this segment restates it.
+        self.assertEqual(meter, (2, 6, 8))
+
+    def test_the_carried_meter_changes_the_grouping(self) -> None:
+        # 6/8 beams in threes, 4/4 in twos, so the same six eighths are grouped
+        # differently. If the carry were dropped this difference would vanish.
+        notes = ET.fromstring(NO_TIME_PART.format(notes=EIGHTH * 6))
+        as_duple, _ = rule_vectors(notes, (2, 4, 4))
+        compound, _ = rule_vectors(ET.fromstring(NO_TIME_PART.format(notes=EIGHTH * 6)), (2, 6, 8))
+
+        self.assertNotEqual([v for v, _ in as_duple], [v for v, _ in compound])
 
 
 if __name__ == "__main__":

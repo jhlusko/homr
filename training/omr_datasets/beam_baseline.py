@@ -10,9 +10,17 @@ figure could not be re-derived or narrowed to a split. This is the same measurem
 committed tool, and it takes `--split`, so the baseline can be quoted on exactly the
 scores a head is evaluated against rather than corpus-wide.
 
-The comparison is per beam vector, over notes that carry at least one flag. Notes the
-rule and the engraving both leave unbeamed are not evidence about beaming, and counting
-them would put the baseline in the high nineties and make any head look pointless.
+The comparison is per beam vector, over *notes* that carry at least one flag. Two
+exclusions, both for the same reason - they are agreements the rule is not entitled to
+claim credit for:
+
+Notes with no flags. A quarter note carries no beam under any rule and none in any
+engraving, so counting it would put the baseline in the high nineties.
+
+Rests. An eighth rest has a flag count but no stem, so it can carry no beam: the rule
+returns not-applicable and the engraving says the same, and every one of them would score
+as a free match. They are 11.4% of what would otherwise be counted on the validation
+split, and including them overstated this baseline by about 1.7 points.
 """
 
 # flake8: noqa: T201
@@ -126,7 +134,7 @@ def measure_part(part: ET.Element, baseline: Baseline) -> None:
             notes = [note for note, _ in entries]
             predicted = automatic_beams(notes, beat, wide)
             for (note, engraved_vector), rule_vector in zip(entries, predicted, strict=True):
-                if note.flags == 0:
+                if note.flags == 0 or note.is_rest:
                     continue
                 _score(baseline, rule_vector, engraved_vector)
 

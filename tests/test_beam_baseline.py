@@ -102,5 +102,34 @@ class TestBaseline(unittest.TestCase):
             self.assertTrue(baseline.disagreements)
 
 
+EIGHTH_REST = """
+  <note><rest/><duration>1</duration><voice>1</voice><type>eighth</type></note>
+"""
+
+
+class TestRestsAreNotFreeAgreements(unittest.TestCase):
+    """An eighth rest has a flag count but no stem, so it can carry no beam.
+
+    The rule returns not-applicable and the engraving says the same, so every flagged rest
+    would score as a match the rule did not earn. They are 11.4% of what would otherwise
+    be counted on the validation split, which overstated the baseline by about 1.7 points
+    and made the head's measured advantage look smaller than it is.
+    """
+
+    def test_a_flagged_rest_is_not_scored(self) -> None:
+        baseline = Baseline()
+
+        measure_part(_part(EIGHTH_REST * 2), baseline)
+
+        self.assertEqual(baseline.total, 0)
+
+    def test_notes_beside_rests_are_still_scored(self) -> None:
+        baseline = Baseline()
+
+        measure_part(_part(_eighths(["begin", "end"]) + EIGHTH_REST), baseline)
+
+        self.assertEqual(baseline.total, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -134,7 +134,12 @@ def segment_for(tokens: Path, dataset_root: Path) -> tuple[Path, int] | None:
     return None
 
 
-def rule_vectors(part: ET.Element) -> list[tuple[tuple[BeamLevelState, ...], bool]]:
+Meter = tuple[int, int, int]
+
+
+def rule_vectors(
+    part: ET.Element, meter: Meter = (1, *DEFAULT_TIME)
+) -> tuple[list[tuple[tuple[BeamLevelState, ...], bool]], Meter]:
     """The rule's beam vector for every note of one part, with whether it is a chord member.
 
     Chord members are carried so this lines up with the labels, which have one entry per
@@ -148,7 +153,7 @@ def rule_vectors(part: ET.Element) -> list[tuple[tuple[BeamLevelState, ...], boo
     for the same reason.
     """
     vectors: list[tuple[tuple[BeamLevelState, ...], bool]] = []
-    divisions, (beats, beat_type) = 1, DEFAULT_TIME
+    divisions, beats, beat_type = meter
 
     for measure in part.findall("measure"):
         divisions_text = measure.findtext("attributes/divisions")
@@ -191,20 +196,43 @@ def rule_vectors(part: ET.Element) -> list[tuple[tuple[BeamLevelState, ...], boo
         }
         for voice, index, is_chord_member in slots:
             vectors.append((computed[voice][index], is_chord_member))
-    return vectors
+    return vectors, (divisions, beats, beat_type)
+
+
+def _ordering(record: dict) -> tuple[str, int, int, int]:
+    """Score, page, system, part - the order a movement is actually read in."""
+    fields = Path(record["tokens"]).stem.rsplit("_", 3)
+    if len(fields) != 4 or not all(f.isdigit() for f in fields[1:]):
+        return ("", 0, 0, 0)
+    return (fields[0], int(fields[1]), int(fields[2]), int(fields[3]))
 
 
 def compare(predictions: Path, dataset_root: Path, levels: int) -> Crosstab:
+    """Score every staff, carrying the meter across the segments of each part.
+
+    The meter has to be carried because a systemwise segment restates <time> only at a
+    movement start or a genuine change - so a segment taken alone is beamed as if it were
+    in 4/4. That is not a small effect: it dropped the rule's measured accuracy from
+    87.0% to 83.5% against the same split's baseline, and every point it loses is a point
+    wrongly credited to the head as an exception recovered.
+
+    Records are sorted rather than trusted to arrive in order, since the carry is only
+    correct if a part's segments are seen in reading order.
+    """
     crosstab = Crosstab()
+    meters: dict[tuple[str, int], Meter] = {}
+    records = []
     for line in predictions.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        record = json.loads(line)
+        if line.strip():
+            records.append(json.loads(line))
+
+    for record in sorted(records, key=_ordering):
         located = segment_for(Path(record["tokens"]), dataset_root)
         if located is None:
             crosstab.skipped_examples += 1
             continue
         segment_path, part_index = located
+        score_id = _ordering(record)[0]
         try:
             parts = ET.parse(segment_path).getroot().findall("part")  # noqa: S314
         except ET.ParseError:
@@ -214,7 +242,9 @@ def compare(predictions: Path, dataset_root: Path, levels: int) -> Crosstab:
             crosstab.skipped_examples += 1
             continue
 
-        rules = rule_vectors(parts[part_index])
+        carried = meters.get((score_id, part_index), (1, *DEFAULT_TIME))
+        rules, carried = rule_vectors(parts[part_index], carried)
+        meters[(score_id, part_index)] = carried
         beamable = [
             (vector, is_chord_member)
             for vector, is_chord_member in rules
