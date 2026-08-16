@@ -92,13 +92,31 @@ def _write_example(segment_path: Path, part_index: int, out_dir: Path, stem: str
 def build(
     dataset_root: Path, out_dir: Path, track: str = "synthetic", split: str | None = None
 ) -> list[Example]:
-    """Convert every staff crop that has both an image and a symbolic part behind it."""
+    """Convert every system whose staff crops line up one-for-one with its parts.
+
+    The pairing of crop to part is positional: crop *n* is the *n*th part in document
+    order, because both are top-to-bottom on the page. That holds only when the detector
+    found exactly the staves that are there, and 27.14 measured that it does not always -
+    scans in particular over-detect, reporting five, six, seven or nine staves in a
+    four-part system, and detection can equally miss one.
+
+    Either way the numbering shifts. A system whose second staff was missed yields crops
+    numbered 1, 2, 3 where the music has four parts, and crop 2 is part 3 - so every pair
+    from the gap onward is mislabelled, with a plausible staff image and the wrong beams,
+    stems and slurs. Nothing downstream can detect that.
+
+    So a system is converted only when the crop numbers are exactly 1..len(parts), and is
+    skipped whole otherwise. Filling in what is present would keep the pairs before the
+    gap and corrupt the ones after it, which is worse than losing the system: a smaller
+    clean training set beats a larger one with unfindable label errors in it.
+    """
     manifest = load_split_manifest()
     manifest.check_no_leakage()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     examples: list[Example] = []
-    missing_crops = 0
+    unbuilt = 0
+    mismatched = 0
     for work in sorted((dataset_root / "scores").glob("*/*")):
         segments = sorted((work / "musicxml" / "unaligned").glob("*.musicxml"))
         crops = work / "images" / track / "partwise"
@@ -108,25 +126,42 @@ def build(
             if assigned is None or (split is not None and assigned != split):
                 continue
             parts = ET.parse(segment_path).getroot().findall("part")  # noqa: S314
+            present = crop_numbers(crops, score_id, int(page), int(system))
+            if not present:
+                unbuilt += len(parts)
+                continue
+            if present != set(range(1, len(parts) + 1)):
+                mismatched += len(parts)
+                continue
             for part_index in range(len(parts)):
                 image = crops / CROP_NAME.format(
                     score=score_id, page=int(page), system=int(system), part=part_index + 1
                 )
-                if not image.is_file():
-                    missing_crops += 1
-                    continue
                 stem = f"{score_id}_{page}_{system}_{part_index + 1}"
                 tokens = _write_example(segment_path, part_index, out_dir, stem)
                 if tokens is not None:
                     examples.append(Example(image, tokens, score_id, assigned))
 
     print(f"{len(examples)} examples written to {out_dir}")
-    if missing_crops:
+    if unbuilt:
         print(
-            f"  {missing_crops} parts skipped: no staff crop on disk - run"
+            f"  {unbuilt} parts skipped: no staff crops for the system at all - run"
             f" omr-data-preprocessor's {track} partwise cropping first"
         )
+    if mismatched:
+        print(f"  {mismatched} parts skipped: staff crops do not match the parts (see below)")
     return examples
+
+
+def crop_numbers(crops: Path, score_id: str, page: int, system: int) -> set[int]:
+    """The part numbers that actually have a crop for one system."""
+    prefix = f"{score_id}:{page:04d}:{system:04d}:"
+    found: set[int] = set()
+    for path in crops.glob(f"{prefix}*.png"):
+        tail = path.stem[len(prefix) :]
+        if tail.isdigit():
+            found.add(int(tail))
+    return found
 
 
 def write_index(examples: list[Example], index_path: Path) -> None:
