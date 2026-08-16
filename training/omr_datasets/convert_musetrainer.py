@@ -43,7 +43,10 @@ musetrainer_train_index = os.path.join(musetrainer_root, "index.txt")
 
 _WINDOW_SIZE = 8
 _VEROVIO_FONTS = ["Leipzig", "Bravura", "Gootville", "Leland", "Petaluma"]
-_N_WORKERS = max(1, os.cpu_count() or 4)
+# Every core by default, which is right for a dedicated conversion box and wrong when
+# something else is using the machine - a training run's dataloaders will starve against
+# 128 rendering processes. HOMR_CONVERT_WORKERS caps it without editing code.
+_N_WORKERS = max(1, int(os.environ.get("HOMR_CONVERT_WORKERS", os.cpu_count() or 4)))
 _TIMEOUT_SECONDS = 20
 _RENDER_TIMEOUT_SECONDS = _TIMEOUT_SECONDS
 

@@ -21,11 +21,14 @@ from training.omr_datasets.convert_lieder import (
 )
 from training.omr_datasets.convert_musetrainer import (
     _N_WORKERS,
+    _RENDER_TIMEOUT_SECONDS,
     _TIMEOUT_SECONDS,
+    _VEROVIO_FONTS,
     _WINDOW_SIZE,
     _context_at_measure,
+    _render_svg_in_subprocess,
     _svg_to_png,
-    _tokens_to_svg,
+    inject_musicxml_markings,
 )
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_window import extract_window, measure_count

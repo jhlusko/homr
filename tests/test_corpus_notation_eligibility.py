@@ -75,3 +75,48 @@ class TestIneligibleCorporaDoNot(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestConvertersImportWhatTheyUse(unittest.TestCase):
+    """A NameError inside a rendering helper is swallowed and looks like a bad score.
+
+    _source_to_svg catches exceptions and returns None so one unrenderable window cannot
+    kill a 10,000-file conversion. That is right, and it means a missing import produces a
+    silent zero-output run rather than a crash - which is exactly what happened: every
+    window failed with "name 'inject_musicxml_markings' is not defined" while the
+    conversion reported progress normally.
+    """
+
+    def test_pdmx_imports_every_name_its_renderer_uses(self) -> None:
+        import training.omr_datasets.convert_pdmx as module
+
+        for name in (
+            "inject_musicxml_markings",
+            "_render_svg_in_subprocess",
+            "_VEROVIO_FONTS",
+            "_svg_to_png",
+            "extract_window",
+        ):
+            self.assertTrue(hasattr(module, name), f"convert_pdmx is missing {name}")
+
+    def test_the_renderer_compiles_against_those_names(self) -> None:
+        # Importing is not enough - the function body has to resolve them.
+        import xml.etree.ElementTree as ET
+
+        from training.omr_datasets.convert_pdmx import _source_to_svg
+
+        # A score Verovio may or may not render; what matters is that it fails on the
+        # rendering rather than on a NameError.
+        score = ET.fromstring(
+            '<score-partwise version="3.1"><part-list><score-part id="P1">'
+            "<part-name>P</part-name></score-part></part-list>"
+            '<part id="P1"><measure number="1"><attributes><divisions>1</divisions>'
+            '<clef><sign>G</sign><line>2</line></clef></attributes>'
+            "<note><pitch><step>C</step><octave>5</octave></pitch>"
+            "<duration>1</duration><type>quarter</type></note></measure></part>"
+            "</score-partwise>"
+        )
+        try:
+            _source_to_svg(score)
+        except NameError as missing:  # pragma: no cover - the failure this pins
+            self.fail(f"renderer references an unimported name: {missing}")
