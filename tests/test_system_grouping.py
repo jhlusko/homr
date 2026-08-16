@@ -96,6 +96,19 @@ class TestPagesThatMustNotBeRegrouped(unittest.TestCase):
     def test_a_single_staff_page_returns_nothing(self) -> None:
         self.assertIsNone(find_system_grouping(_from_gaps([]), set()))
 
+    def test_vertically_overlapping_staffs_are_declined(self) -> None:
+        # One staff line detected twice, as its left half and its right half, overlapping
+        # by 4.4 unit sizes. The list is then not a sequence of distinct staffs down the
+        # page, so there is nothing here to partition.
+        gaps = [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, -4.4, 9.0] + [4.0, 4.0, 4.0]
+        self.assertIsNone(find_system_grouping(_from_gaps(gaps), set()))
+
+    def test_a_hair_of_overlap_at_a_boundary_is_tolerated(self) -> None:
+        # Dewarping jitter can make a genuine boundary read as marginally negative; that
+        # must not throw the page away.
+        gaps = [4.0, 4.0, 4.0, 9.0] * 3 + [-0.2, 4.0, 4.0, 9.0] + [4.0, 4.0, 4.0]
+        self.assertIsNotNone(find_system_grouping(_from_gaps(gaps), set()))
+
 
 class TestOtherLayouts(unittest.TestCase):
     def test_piano_grand_staff_pages_group_in_twos(self) -> None:

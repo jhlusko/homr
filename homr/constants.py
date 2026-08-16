@@ -130,3 +130,10 @@ min_systems_for_geometric_grouping = 3
 # staves. Comfortably above a string quartet (4) or a voice-plus-piano system (3), and
 # above the largest ensembles this pipeline currently targets.
 max_staves_per_system = 8
+
+# Two staffs closer together than this, in unit sizes, are not two staffs: a negative gap
+# means they overlap vertically, which happens when one staff line gets detected twice
+# (e.g. once as its left half and once as its right). The small negative tolerance
+# absorbs dewarping jitter at a genuine boundary without admitting a real overlap - the
+# observed duplicate overlapped by 4.4 unit sizes, two orders of magnitude past this.
+min_gap_for_distinct_staffs = -0.5

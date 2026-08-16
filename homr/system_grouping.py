@@ -82,6 +82,14 @@ def _normalized_gaps(staffs: Sequence[Staff]) -> list[float]:
     Normalising by unit size is what makes a threshold meaningful across scans of
     different resolutions, and it is per-pair rather than per-page so a score whose staff
     size changes down the page (an ossia, a reduced final system) stays comparable.
+
+    Returns [] when two staffs overlap vertically, which means the staff list itself is
+    not a sequence of distinct staffs down the page - the precondition this whole module
+    rests on. It happens: one quartet page had a staff line detected twice, once as its
+    left half and once as its right, overlapping by 4.4 unit sizes. Partitioning that
+    list produces a system holding two halves of one staff, which then crops to a
+    degenerate image. Deciding which detection to keep is a staff-detection question, so
+    the honest answer here is to have no opinion and let the caller fall back.
     """
     gaps = []
     for index in range(1, len(staffs)):
@@ -89,7 +97,10 @@ def _normalized_gaps(staffs: Sequence[Staff]) -> list[float]:
         unit_size = (previous.average_unit_size + current.average_unit_size) / 2
         if unit_size <= 0:
             return []
-        gaps.append((current.min_y - previous.max_y) / unit_size)
+        gap = (current.min_y - previous.max_y) / unit_size
+        if gap < constants.min_gap_for_distinct_staffs:
+            return []
+        gaps.append(gap)
     return gaps
 
 
