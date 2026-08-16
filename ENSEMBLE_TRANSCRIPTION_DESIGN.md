@@ -2287,6 +2287,53 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.30 Is OSSQ representative? For beams yes, for slurs not at all
+
+Every number in this work comes from 122 string quartets - one instrumentation, one
+texture, one slice of engraving practice. `corpus_comparison.py` measures the statistics
+that actually determine head sizing and Gate C against a PDMX sample, from the symbolic
+files alone, using the same extractor and the same rule that produced the OSSQ figures.
+
+```
+                          OSSQ     PDMX
+scores sampled             120      120
+notes                1,398,799   63,612
+beamable notes           59.6%    52.0%
+automatic beaming        82.2%    79.8%
+hooks                     2.3%     6.5%
+ties                      6.3%     4.6%
+slurs                    25.4%     3.8%
+slurs stating placement   50.0%    50.0%
+notes stating a stem     85.7%    82.7%
+```
+
+**The beam conclusions travel.** The rule reproduces 79.8% of PDMX's beaming against 82.2%
+of OSSQ's, so the residue the beam heads exist for is not a quartet artefact - it is
+slightly *larger* elsewhere. Gate C's premise holds.
+
+**Hooks are 2.8 times more common in PDMX.** That is the sharpest result here. Hooks are
+what MuseScore's BeamMode discards and what no duration-and-metre rule can produce, and
+they are the head's weakest class (F1 0.794, and 0.442 at level 2). Training on quartets
+alone starves exactly the class that most needs examples, and PDMX has nearly three times
+the density.
+
+**Slurs are 6.7 times rarer in PDMX.** Quartet writing is slur-saturated because bowing is
+notated; a corpus of piano pieces and lead sheets is not. So the slur head configuration -
+two canonical slots, sized from OSSQ's support tables - is sized against an outlier. Fewer
+slurs argues if anything for fewer slots, so the cap is probably safe, but the *support*
+figures behind it describe quartets and should not be quoted as general.
+
+**Placement is stated on exactly half of slurs in both corpora.** Identical to a tenth of a
+percent across two corpora with nothing else in common, which says it is a property of
+MuseScore's export rather than of any genre - and makes the 27.22 recovery work worth as
+much in PDMX as in OSSQ.
+
+**What follows.** PDMX is not merely more data, it is differently distributed in the
+direction the heads are weakest. That is the argument for converting it, and it is a
+stronger argument than volume. The counter-argument is that its scores are far shorter -
+530 notes per score against OSSQ's 11,657 - so a fixed score count buys much less music
+than it appears to.
+
 ### 27.29 The re-conversion, and two bugs that only a prediction would have caught
 
 The rebuild carrying ties (27.24) and slur placement (27.22) was run against three
