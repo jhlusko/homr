@@ -1903,6 +1903,29 @@ model cannot emit. Level 5 is the 128th, which is representable.
 So level 6 is not merely unsupported for want of data - it is unreachable, and should
 stay out of the trained configuration on that ground alone.
 
+### 27.11 Training needs staff crops, which nobody has built
+
+The heads train on single staves, because that is what homr's transformer reads. The
+crops exist in principle - omr-data-preprocessor's partwise cropping writes
+`images/<track>/partwise/<score>:<page>:<system>:<part>.png` - but no run has produced
+them: zero `partwise` directories across the corpus. The systemwise pipeline that B0 and
+the scanned track need stops short of them.
+
+`convert_ossq.py` is written against that layout and reports how many parts it skipped
+for want of a crop, so the missing step names itself rather than producing an empty
+dataset quietly.
+
+One choice worth recording. The preprocessor's partwise *symbolic* output is LMXE only,
+with no MusicXML, so a converter following it would have to come back through the LMXE
+tooling to reach something homr can tokenise. Instead the converter takes the systemwise
+MusicXML - which it already has, and which the benchmark already assembles the other way
+round - and pulls the single part out of it. Parts are taken in document order, which is
+top-to-bottom on the page and therefore exactly how the crops are numbered, so the
+correspondence is positional and checkable rather than inferred through a second format.
+
+**The step**: run the synthetic partwise cropping (`yolo_detect_staves`,
+`yolo_crop_staves`), then `convert_ossq.py`.
+
 ### 27.7 Known gaps
 
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are
