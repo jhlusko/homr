@@ -46,6 +46,8 @@ _MANIFEST_PATH = Path(__file__).with_name("ossq_split_manifest.json")
 @dataclass(frozen=True)
 class SplitManifest:
     scores: dict[str, dict[str, str]]
+    #: score id -> "<Composer>/<Work>", relative to the dataset's scores/ directory.
+    paths: dict[str, str]
     segment_counts: dict[str, int]
     source: dict[str, str]
     #: sha256 of the manifest file, to stamp into run metadata so a result can be tied
@@ -99,6 +101,7 @@ def load_split_manifest(path: Path | None = None) -> SplitManifest:
         raise ValueError(f"unsupported split manifest schema {schema!r}")
     return SplitManifest(
         scores={score: body["tracks"] for score, body in data["scores"].items()},
+        paths={score: body["path"] for score, body in data["scores"].items()},
         segment_counts=data["segmentCounts"],
         source=data["source"],
         digest=hashlib.sha256(raw).hexdigest(),
