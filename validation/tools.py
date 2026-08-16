@@ -176,14 +176,42 @@ def music21(kern_text: str, image: Path | None) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _run_homr_on_dir(image_dir: Path) -> None:
+# Wall-clock allowance per image before homr is assumed stuck. Generous against the
+# ~13-20s a quartet page takes, because a genuinely hard page is slow rather than hung.
+# Bounded because at least one page hangs indefinitely: a corpus run left an orphaned
+# homr process alive for 3.4 hours on a single page, which stalled the run it belonged to
+# and slowed every other job on the box to a third of its rate. run_benchmark's own
+# _SAMPLE_TIMEOUT_S does not cover this - it guards scoring, not the tool subprocess.
+_HOMR_TIMEOUT_PER_IMAGE_S = 120
+
+
+def _run_homr_on_dir(image_dir: Path, timeout_per_image: int = _HOMR_TIMEOUT_PER_IMAGE_S) -> None:
     """Run homr on every image in image_dir, writing .musicxml alongside each."""
-    result = subprocess.run(  # noqa: S603
-        ["poetry", "run", "python3", "-m", "homr.main", str(image_dir), "--no-title"],  # noqa: S607
-        cwd=str(_REPO_ROOT),
-        capture_output=True,  # if True does not show log from homr
-        check=False,
-    )
+    images = [path for path in image_dir.iterdir() if path.suffix.lower() != ".musicxml"]
+    timeout = timeout_per_image * max(len(images), 1)
+    try:
+        result = subprocess.run(  # noqa: S603
+            [  # noqa: S607
+                "poetry",
+                "run",
+                "python3",
+                "-m",
+                "homr.main",
+                str(image_dir),
+                "--no-title",
+            ],
+            cwd=str(_REPO_ROOT),
+            capture_output=True,  # if True does not show log from homr
+            check=False,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as expired:
+        # subprocess.run kills the child before re-raising, so nothing is left behind.
+        names = sorted(path.name for path in images)
+        raise RuntimeError(
+            f"homr exceeded {timeout}s on {len(images)} image(s) and was killed: "
+            f"{names[:8]}{' ...' if len(names) > 8 else ''}"
+        ) from expired
     if result.returncode != 0:
         stderr = result.stderr.decode("utf-8", errors="replace")
         raise RuntimeError(f"homr exited with code {result.returncode}\n{stderr[:1000]}")
