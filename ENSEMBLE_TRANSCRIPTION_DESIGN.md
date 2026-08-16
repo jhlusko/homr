@@ -1830,6 +1830,33 @@ emitted MusicXML cannot assert beam equality without producing false failures. T
 finding is corpus- and version-specific, so it is a repeatable check that records the
 MuseScore version rather than a fact asserted here.
 
+### 27.8 The stem head has no supervision from the segment labels
+
+Found while wiring notation onto the token stream, and it needs fixing before the stem
+head can be trained at all.
+
+The per-system segments under `musicxml/unaligned/` are what the training crops
+correspond to, and **none of them carry `<stem>`**: 0 of 13,244 files, against 14,370
+stem elements in one original score alone. Beams and slurs survive the same path
+untouched. This is the hazard 13.2 names - "existing derived token data also
+intentionally removed stem direction" - now measured rather than anticipated.
+
+The cause is `convert_musicxml_to_lmxe.py`, which calls `system.strip_stem_directions()`
+before writing both the LMXE and the MusicXML segment when `--remove-stem-direction 1` is
+set, which is what `ossq_step_001.sh` sets. Parsing a segment therefore yields
+`StemDirection.UNKNOWN` for every note, which the target builder correctly masks - so the
+stem head would train on nothing and report a clean zero loss over zero positions.
+
+**The step**: regenerate the segments with `--remove-stem-direction 0`. That is 13.2's
+"revised cleaning path proven to preserve these fields", and it is a flag rather than new
+code.
+
+Two things it does not disturb. NED is unaffected, because stem direction is not one of
+the six fields `EncodedSymbol` compares on, so the benchmark's ground truth means exactly
+what it did. And the beam and slur labels are unchanged, since only stems are stripped.
+It does mean the segments stop being byte-identical to the ones described in 27.3, so
+regenerate the whole corpus rather than mixing the two.
+
 ### 27.7 Known gaps
 
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are

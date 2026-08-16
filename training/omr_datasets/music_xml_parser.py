@@ -13,6 +13,7 @@ from training.omr_datasets.staff_merging import (
     EncodedSymbolWithPos,
     merge_upper_and_lower_staff,
 )
+from training.omr_datasets.structured_notation_parser import NotationExtractor
 from training.transformer.training_vocabulary import VocabularyStats, check_token_lines
 
 _T = TypeVar("_T")
@@ -327,6 +328,9 @@ class TokensPart:
         # Queued clefs that became active once the measure they target started;
         # still cancellable by an explicit clef in that same measure.
         self.pending_clefs: dict[int, EncodedSymbol] = {}
+        # Beam, stem and slur labels for the notes of this part. Slur slots depend on
+        # which spans are open, so the extractor is per part and fed in document order.
+        self.notation = NotationExtractor()
 
     def _ensure_current_measure(self) -> TokensMeasure:
         """
@@ -592,6 +596,10 @@ def _process_note(part: TokensPart, note: ET.Element) -> None:
     duration_type = _text(dur_nodes[0]) if dur_nodes else "eighth"
     base_duration = round(DURATION_NUMBER[duration_type] * triplet_factor)
     art, slur = _collect_articulation(note, part, staff)
+    # Extracted once per note, in document order, and carried on whichever symbol this
+    # note becomes. The symbol keeps it through sorting, chord grouping and
+    # deduplication without it ever affecting identity.
+    notation = part.notation.extract(note)
     if len(rest) > 0:
         if rest[0] is not None and rest[0].get("measure", None):
             rhythm = _measure_rest_rhythm(duration, part.divisions)
@@ -600,18 +608,18 @@ def _process_note(part: TokensPart, note: ET.Element) -> None:
                 is_chord,
                 duration,
                 invisible,
-                EncodedSymbol(rhythm, empty, empty, empty, empty),
+                EncodedSymbol(rhythm, empty, empty, empty, empty, notation=notation),
             )
         else:
             rhythm = _rhythm_token("rest", base_duration, dots, is_grace)
-            sym = EncodedSymbol(rhythm, empty, empty, art, slur)
+            sym = EncodedSymbol(rhythm, empty, empty, art, slur, notation=notation)
             part.append_rest(staff, is_chord, duration, invisible, sym)
     pitch = _children(note, "pitch")
     if len(pitch) > 0:
         pitch_name = _pitch_name(pitch[0])
         lift = _lift_from_pitch_or_accidental(pitch[0], note)
         rhythm = _rhythm_token("note", base_duration, dots, is_grace)
-        sym = EncodedSymbol(rhythm, pitch_name, lift, art, slur)
+        sym = EncodedSymbol(rhythm, pitch_name, lift, art, slur, notation=notation)
 
         part.append_note(staff, is_chord, max(duration, 1), invisible, sym)
 

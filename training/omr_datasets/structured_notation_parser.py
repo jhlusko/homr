@@ -206,33 +206,45 @@ class _SlurSlots:
         self._open.clear()
 
 
-def parse_part(part: ET.Element) -> tuple[list[NoteNotation], Findings]:
-    """Structured notation for every note of one <part>, in document order.
+class NotationExtractor:
+    """Stateful, note-by-note extraction for one part.
 
-    Slur slots are tracked per voice, because two voices on a staff open and close their
-    own spans independently and sharing one slot pool across them would make each voice's
-    slots depend on the other's.
+    Slur slots depend on which spans are open, so they cannot be decided from a note in
+    isolation - the caller must feed notes in document order. This exists so the MusicXML
+    token parser can attach notation as it builds each symbol, rather than extracting
+    separately and pairing the two sequences up afterwards against a pipeline that sorts,
+    chord-groups and deduplicates them.
     """
-    findings = Findings()
-    result: list[NoteNotation] = []
-    voices: dict[str, _SlurSlots] = {}
-    for note in part.iter("note"):
-        findings.notes += 1
+
+    def __init__(self) -> None:
+        self._voices: dict[str, _SlurSlots] = {}
+        self.findings = Findings()
+
+    def extract(self, note: ET.Element) -> NoteNotation:
+        self.findings.notes += 1
         voice = note.findtext("voice") or "1"
-        slots = voices.setdefault(voice, _SlurSlots())
+        slots = self._voices.setdefault(voice, _SlurSlots())
         slurs = [
             slur for notations in note.findall("notations") for slur in notations.findall("slur")
         ]
-        result.append(
-            NoteNotation(
-                beam_levels=_beam_levels(note, findings),
-                stem=_stem(note),
-                slurs=slots.apply(slurs, findings),
-            )
+        return NoteNotation(
+            beam_levels=_beam_levels(note, self.findings),
+            stem=_stem(note),
+            slurs=slots.apply(slurs, self.findings),
         )
-    for slots in voices.values():
-        slots.close(findings)
-    return result, findings
+
+    def close(self) -> Findings:
+        """Finish the part, accounting for spans still open."""
+        for slots in self._voices.values():
+            slots.close(self.findings)
+        return self.findings
+
+
+def parse_part(part: ET.Element) -> tuple[list[NoteNotation], Findings]:
+    """Structured notation for every note of one <part>, in document order."""
+    extractor = NotationExtractor()
+    result = [extractor.extract(note) for note in part.iter("note")]
+    return result, extractor.close()
 
 
 def parse_score(root: ET.Element) -> tuple[dict[str, list[NoteNotation]], Findings]:
