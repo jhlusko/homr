@@ -1585,10 +1585,9 @@ that, in order of what the result actually licenses:
 15  a tie head               ties are distinguishable now (27.24) but nothing predicts
                              them; needs the same treatment the slur sides just had
 16  lieder sidecars          one call added; the corpus has not been downloaded
-17  the scanned track        no head has seen it. Its pipeline stopped at
-                             resize_systems, so no staff detection exists and 27.11's
-                             crop guard cannot be measured there until it does -
-                             running now
+17  the scanned track        staff detection and cropping now done (11,206 detections,
+                             44,682 crops), the crop guard measured at 99.8% (27.33),
+                             and the conversion running
 18  test_synth               held back deliberately - it is the one split that has not
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
@@ -2305,12 +2304,13 @@ be expensive on the scanned track and might make it unusable. Measured over 5,62
 systems:
 
 ```
-detections match the part count   5,611   99.8%
-mismatch (system skipped)            12    0.2%
-  -3: 8    -4: 2    +1: 2
+detections match the part count   10,110   99.8%
+mismatch (system skipped)             20    0.2%
+  found one staff: 11    found none: 3    found five: 6
 ```
 
-Against synthetic's 99.9%. The guard costs essentially nothing on either track.
+Against synthetic's 99.9%, over the full 10,130 scanned systems. The guard costs
+essentially nothing on either track.
 
 **The prediction was wrong because it conflated two different detectors.** 27.14 measured
 homr's own segmentation and system grouping working on a *full scanned page* - finding the
@@ -2321,8 +2321,9 @@ constrained than the first, and scanning noise that defeats page-level grouping 
 much trouble a detector looking at one isolated system.
 
 So "scans are harder" is true of the layout stage and not of this one, and the two should
-not have been reasoned about as a single quantity. The eight systems where only one staff
-was found, and the two where none was, are the real scanning failures - twelve in 5,623.
+not have been reasoned about as a single quantity. The eleven systems where only one staff
+was found, and the three where none was, are the real scanning failures - fourteen in
+10,130.
 
 This clears the way for converting the scanned track with the same guard, and it means the
 27.14 over-detection figure should be quoted as a property of page-level grouping rather
