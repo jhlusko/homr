@@ -2201,6 +2201,48 @@ instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. I
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
 
+### 27.25 Which corpora may carry notation labels
+
+`music_xml_parser` attaches beam, stem and slur labels for every corpus that goes through
+it, so it is tempting to have every converter write a sidecar. That is wrong for some of
+them, and wrong in a way no test of the parser could catch. The labels describe the
+*source* engraving, so the test a corpus has to pass is about its **images**: does the
+training picture show the engraving the labels came from?
+
+```
+ossq        page images rendered from the source score, cropped to staves      eligible
+lieder      SVG and MusicXML both rendered from one source .mscx               eligible
+pdmx        MusicXML regenerated from the tokens, rendered with Verovio        not eligible
+musetrainer same rendering path as pdmx                                        not eligible
+grandstaff  **kern source; beams and stems are there but need another parser   unassessed
+primus      .semantic encoding, which likely carries no beaming at all         unassessed
+```
+
+PDMX is the interesting case. Its images are built by regenerating MusicXML *from the
+tokens* and rendering that - and tokens carry no beams or stems, so Verovio supplies its
+own. Source-derived labels would then disagree with the picture precisely where the
+engraving departs from the rule, which is the entire 18% the beam heads exist to learn.
+That is not a noisy addition to the training set, it is an anti-signal: it would teach a
+head that exceptions do not occur.
+
+**The fix is a change to one stage, not a re-acquisition.** `convert_pdmx` already
+downloads its MusicXML from the same Zenodo record it would need (15571083), so the source
+is present; only the render step round-trips through tokens.
+`training/omr_datasets/musicxml_window.py` cuts a renderable window out of the source part
+instead, carrying the clef, key, divisions and time in force where the window starts.
+
+**On the PDFs in that record.** They are MuseScore's rendering of the same MXL, not
+independent scans, so they carry no notation the MXL does not already have - the same
+relationship OSSQ's *synthetic* track has to its source, and the reason that track is
+called synthetic rather than scanned. A PDF-based path would buy realistic page layout and
+system breaks, not label fidelity, and it would need the whole OSSQ-style pipeline
+(page, systems, staves, alignment) over heterogeneous instrumentation with no curated page
+ranges. Worth wanting for layout realism; not a shortcut to better labels.
+
+The eligibility rules are pinned by `tests/test_corpus_notation_eligibility.py` rather
+than by comments, so a later change to how a corpus builds its images fails a test instead
+of silently making its labels wrong.
+
 ### 27.24 Ties are not slurs, and the labels could not tell them apart
 
 homr's label vocabulary has three slur values - `slurStart`, `slurStop`,
