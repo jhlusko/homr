@@ -208,3 +208,67 @@ def report_grouping(result: GroupingResult) -> None:
     eprint(f"Page geometry suggests {result.best.describe()} - {verdict}")
     if result.runner_up is not None:
         eprint(f"  next best was {result.runner_up.describe()}")
+
+
+def _staff_heights(staffs: Sequence[Staff]) -> list[float]:
+    return [
+        (staff.max_y - staff.min_y) / staff.average_unit_size
+        for staff in staffs
+        if staff.average_unit_size > 0
+    ]
+
+
+def assign_voice_slots(
+    staffs: Sequence[Staff], partition: SystemPartition
+) -> list[tuple[int, ...] | None]:
+    """Which voice each staff of each system belongs to.
+
+    A full system is its own answer: the nth staff is the nth voice. A short system is
+    the interesting case, and it is common - staff detection missing one staff out of an
+    otherwise complete system leaves a system one short, in the middle of the page.
+    Dropping those systems costs every voice's music for that system; placing their
+    staffs into voice slots costs only the missing voice's.
+
+    The evidence is spacing. A staff missing between two detected ones leaves a gap of
+    roughly two ordinary gaps plus a staff height, so the number of voices skipped over a
+    gap is how many staff-plus-gap units it exceeds one ordinary gap by. Both quantities
+    are measured from this page's own full systems rather than assumed.
+
+    Returns None for a system whose slots cannot be pinned down, which the caller should
+    drop as before. That happens when the gaps account for fewer missing voices than are
+    actually absent - a staff missing from the top or bottom of a system leaves no gap to
+    measure, so there is no way to tell which end it went from, and guessing would read
+    every remaining staff into the wrong voice.
+    """
+    size = partition.staves_per_system
+    gaps = _normalized_gaps(staffs)
+    if not gaps:
+        return [None] * len(partition.groups)
+
+    internal = [
+        gaps[index - 1] for group in partition.groups if len(group) == size for index in group[1:]
+    ]
+    heights = _staff_heights(staffs)
+    if not internal or not heights:
+        return [None] * len(partition.groups)
+    ordinary_gap = statistics.median(internal)
+    staff_height = statistics.median(heights)
+    stride = ordinary_gap + staff_height
+    if stride <= 0:
+        return [None] * len(partition.groups)
+
+    result: list[tuple[int, ...] | None] = []
+    for group in partition.groups:
+        if len(group) == size:
+            result.append(tuple(range(size)))
+            continue
+        slots = [0]
+        for index in group[1:]:
+            skipped = round((gaps[index - 1] - ordinary_gap) / stride)
+            slots.append(slots[-1] + 1 + max(skipped, 0))
+        # Only trust the assignment when the spacing accounts for every absent voice.
+        if slots[-1] == size - 1 and len(set(slots)) == len(slots):
+            result.append(tuple(slots))
+        else:
+            result.append(None)
+    return result

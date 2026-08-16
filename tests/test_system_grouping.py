@@ -1,7 +1,12 @@
 import unittest
 from unittest.mock import MagicMock
 
-from homr.system_grouping import GroupingResult, SystemPartition, find_system_grouping
+from homr.system_grouping import (
+    GroupingResult,
+    SystemPartition,
+    assign_voice_slots,
+    find_system_grouping,
+)
 
 
 def _staffs(spans: list[tuple[float, float]], unit_size: float = 10.0) -> list[MagicMock]:
@@ -183,3 +188,51 @@ class TestOtherLayouts(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestVoiceSlots(unittest.TestCase):
+    """Placing a short system's staffs into voice slots, so it need not be dropped."""
+
+    def _slots(self, gaps: list[float], connected: set | None = None) -> list:
+        staffs = _from_gaps(gaps)
+        result = _require(find_system_grouping(staffs, connected or set()))
+        return assign_voice_slots(staffs, result.best)
+
+    def test_a_complete_page_is_the_identity_mapping(self) -> None:
+        slots = self._slots([4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0])
+
+        self.assertEqual(slots, [(0, 1, 2, 3)] * 4)
+
+    def test_a_missing_middle_staff_is_read_from_the_double_gap(self) -> None:
+        # The real case: staff detection missed one staff inside system 1, leaving a gap
+        # of about two ordinary gaps plus a staff height where one gap should be.
+        slots = self._slots(_ANDREE_PAGE_1_GAPS)
+
+        self.assertEqual(slots[0], (0, 1, 3))
+        self.assertEqual(slots[1:], [(0, 1, 2, 3)] * 4)
+
+    def test_the_recovered_system_skips_exactly_the_absent_voice(self) -> None:
+        # Andrée page 1: the 14.80 gap sits between the second and third detected staff,
+        # so voice 2 is the one with no staff, not voice 3.
+        slots = self._slots(_ANDREE_PAGE_1_GAPS)
+
+        self.assertNotIn(2, slots[0])
+        self.assertIn(3, slots[0])
+
+    def test_a_staff_missing_from_the_end_leaves_no_evidence_and_is_declined(self) -> None:
+        # Nothing in the spacing distinguishes "the last voice is absent" from "the first
+        # voice is absent", so the system is dropped rather than read into wrong voices.
+        gaps = [4.0, 4.0, 9.0] + [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0]
+        slots = self._slots(gaps)
+
+        self.assertIsNone(slots[0])
+        self.assertEqual(slots[1:], [(0, 1, 2, 3)] * 4)
+
+    def test_two_missing_staffs_in_one_system_are_read_together(self) -> None:
+        # Two absent staffs between two detected ones leave a gap of three ordinary gaps
+        # plus two staff heights, so voices 1 and 2 are the ones with no staff.
+        gaps = [4.0 + 2 * (4.0 + 4.5), 9.0] + [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0]
+        slots = self._slots(gaps)
+
+        self.assertEqual(slots[0], (0, 3))
+        self.assertEqual(slots[1:], [(0, 1, 2, 3)] * 4)

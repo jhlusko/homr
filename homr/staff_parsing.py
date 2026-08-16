@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
@@ -11,7 +12,7 @@ from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
 from homr.staff_parsing_tromr import parse_staff_tromr
 from homr.staff_regions import StaffRegions
-from homr.system_grouping import find_system_grouping, report_grouping
+from homr.system_grouping import assign_voice_slots, find_system_grouping, report_grouping
 from homr.transformer.configs import Config, default_config
 from homr.transformer.vocabulary import EncodedSymbol, remove_duplicated_symbols
 from homr.type_definitions import NDArray
@@ -93,18 +94,44 @@ def _adjacent_connected_pairs(
     return pairs
 
 
-def _group_by_geometry(
-    flat_staffs: list[Staff], staffs: list[MultiStaff]
-) -> list[MultiStaff] | None:
+@dataclass(frozen=True)
+class SystemPlan:
+    """Systems, plus which voice each of their staffs belongs to.
+
+    Kept alongside the MultiStaff list rather than inside it because a system can be
+    missing a voice: `slots[system][position]` is the voice index of that system's
+    position-th staff, which is the identity mapping for a complete system and skips
+    over the absent voice for a short one.
+    """
+
+    systems: list[MultiStaff]
+    slots: list[tuple[int, ...]]
+
+    @property
+    def voices(self) -> int:
+        return max((max(slots) + 1 for slots in self.slots if slots), default=0)
+
+    def staff_for_voice(self, system: int, voice: int) -> Staff | None:
+        slots = self.slots[system]
+        if voice not in slots:
+            return None
+        return self.systems[system].staffs[slots.index(voice)]
+
+    @staticmethod
+    def dense(systems: list[MultiStaff]) -> "SystemPlan":
+        """Every system complete, so the nth staff is the nth voice."""
+        return SystemPlan(systems, [tuple(range(len(s.staffs))) for s in systems])
+
+
+def _group_by_geometry(flat_staffs: list[Staff], staffs: list[MultiStaff]) -> SystemPlan | None:
     """Regroup the page from staff spacing, or None to leave the decision alone.
 
-    Callers downstream index every system by voice number, so all systems returned here
-    must have the same length. An incomplete system - a genuinely short one at a page
-    edge, or a full one that detection came up a staff short on - is dropped rather than
-    padded out, the same way _find_periodic_core trims a page's non-conforming first or
-    last staffs. Keeping it would be worse than losing it: with no way to tell which
-    voice is the missing one, its staffs would be read into the wrong parts, and the
-    voice count would come from the short system and truncate every complete one.
+    A system short of a staff is not dropped when its spacing says which voice is
+    missing. Detection missing one staff out of an otherwise complete system is common,
+    and dropping the system costs every voice's music for it, where reading its staffs
+    into the right voice slots costs only the absent voice's. A system whose slots cannot
+    be pinned down is still dropped: guessing would read every one of its staffs into the
+    wrong voice, which is worse than losing it.
     """
     result = find_system_grouping(flat_staffs, _adjacent_connected_pairs(flat_staffs, staffs))
     if result is None:
@@ -112,20 +139,37 @@ def _group_by_geometry(
     report_grouping(result)
     if not result.confident:
         return None
+
     size = result.best.staves_per_system
-    complete = [group for group in result.best.groups if len(group) == size]
-    dropped = len(result.best.groups) - len(complete)
+    assignments = assign_voice_slots(flat_staffs, result.best)
+    systems: list[MultiStaff] = []
+    slots: list[tuple[int, ...]] = []
+    recovered = dropped = 0
+    for group, assigned in zip(result.best.groups, assignments, strict=True):
+        if assigned is None:
+            dropped += 1
+            continue
+        if len(group) < size:
+            recovered += 1
+        systems.append(MultiStaff([flat_staffs[index] for index in group], []))
+        slots.append(assigned)
+    if recovered:
+        eprint(
+            f"Recovered {recovered} incomplete system(s): placed their staffs into voice"
+            f" slots from the spacing rather than dropping the system"
+        )
     if dropped:
         eprint(
             f"Ignoring {dropped} incomplete system(s) of the {len(result.best.groups)} on this"
-            f" page: fewer than the {size} staffs the rest of the page repeats"
+            f" page: fewer than the {size} staffs the rest of the page repeats, and the"
+            " spacing does not say which voice is missing"
         )
-    if not complete:
+    if not systems:
         return None
-    return [MultiStaff([flat_staffs[i] for i in group], []) for group in complete]
+    return SystemPlan(systems, slots)
 
 
-def _ensure_same_number_of_staffs(staffs: list[MultiStaff]) -> list[MultiStaff]:
+def _plan_systems(staffs: list[MultiStaff]) -> SystemPlan:
     """
     If every system already has the same number of *more than one* staff, trust that
     directly rather than re-deriving it via _find_periodic_core. That function's signature
@@ -147,7 +191,7 @@ def _ensure_same_number_of_staffs(staffs: list[MultiStaff]) -> list[MultiStaff]:
     """
     row_lengths = {len(multi_staff.staffs) for multi_staff in staffs}
     if len(row_lengths) == 1 and next(iter(row_lengths)) > 1:
-        return staffs
+        return SystemPlan.dense(staffs)
     flat_staffs = _flatten_staffs(staffs)
     # Ask page geometry before the periodic signature. Once the rows disagree, that
     # signature is unreliable in both directions on the same score: on one page it reads
@@ -179,11 +223,16 @@ def _ensure_same_number_of_staffs(staffs: list[MultiStaff]) -> list[MultiStaff]:
                 period,
                 "staffs with a different layout each time, combining them into one row",
             )
-        return _regroup_by_period(flat_staffs, period, front_trim, back_trim)
+        return SystemPlan.dense(_regroup_by_period(flat_staffs, period, front_trim, back_trim))
     result: list[MultiStaff] = []
     for staff in staffs:
         result.extend(staff.break_apart())
-    return sorted(result, key=lambda s: s.staffs[0].min_y)
+    return SystemPlan.dense(sorted(result, key=lambda s: s.staffs[0].min_y))
+
+
+def _ensure_same_number_of_staffs(staffs: list[MultiStaff]) -> list[MultiStaff]:
+    """Back-compatible view of _plan_systems for callers that only want the systems."""
+    return _plan_systems(staffs).systems
 
 
 def _get_number_of_voices(staffs: list[MultiStaff]) -> int:
@@ -398,15 +447,22 @@ def parse_staffs(
     Dewarps each staff and then runs it through an algorithm which extracts
     the rhythm and pitch information.
     """
-    staffs = _ensure_same_number_of_staffs(staffs)
+    plan = _plan_systems(staffs)
     # For simplicity we call every staff in a multi staff a voice,
     # even if it's part of a grand staff.
-    number_of_voices = _get_number_of_voices(staffs)
+    number_of_voices = plan.voices
     i = 0
     voices = []
-    regions = StaffRegions(staffs)
+    regions = StaffRegions(plan.systems)
     for voice in range(number_of_voices):
-        staffs_for_voice = [staff.staffs[voice] for staff in staffs]
+        # A system can be missing this voice: detection came up a staff short and the
+        # spacing said which one. That voice simply has no music from that system, which
+        # is a gap in one part rather than the whole system's music going missing.
+        staffs_for_voice = [
+            staff
+            for system in range(len(plan.systems))
+            if (staff := plan.staff_for_voice(system, voice)) is not None
+        ]
         result_for_voice = []
         for staff_index, staff in enumerate(staffs_for_voice):
             if selected_staff >= 0 and staff_index != selected_staff:
