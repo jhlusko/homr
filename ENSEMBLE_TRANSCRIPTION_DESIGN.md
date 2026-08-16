@@ -1547,6 +1547,36 @@ rebuilding them.
 `music_xml_parser.py` feeds every corpus conversion, not only OSSQ, so extending it
 follows §19.2: versioned schema, existing token files stay readable.
 
+### 24.2 Where the sequence actually stands (2026-08-16)
+
+Items 1-3 of §24.1 are done, and so is everything the heads need on the code side. What
+remains is data and a run.
+
+```
+1  split manifest                      done   ossq_split_manifest.json, sqomr 4926e698
+2  label extraction and validation     done   27.8-27.10, sidecars, support tables
+3  incomplete-system recovery          done   27.7, layout failure 25% -> 2.9%
+4  head architecture                   done   structured_heads, frozen-core loading
+   targets, losses, dataset wrapper    done   27.15, alignment and substitution fixed
+   metrics and evaluation pass         done   15.2-15.4, evaluate_structured_heads
+   Gate C baseline, per split          done   27.16, 80.3-87.0% depending on split
+   end-to-end integration              done   real loader, real TrOMR, core frozen
+5  synthetic partwise staff crops      running (27.11)
+6  convert_ossq -> training set        blocked on 5
+7  Phase 2 frozen-core run             blocked on 6
+8  evaluate against the split baseline blocked on 7
+```
+
+Two things are worth carrying forward from how items 4's sub-items went. Both bugs found
+in the wiring were *correspondence* bugs - targets one position out from the decoder's
+shifted output, and labels not following the loader's image substitution - where neither
+side is malformed alone and no shape check or loss curve reveals the mismatch. Anything
+else that pairs two sequences in this pipeline deserves the same direct assertion.
+
+And the Gate C baseline moves 6.7 points between splits, so a head's result is only
+meaningful against the baseline on its own split. That is now a flag on the tool rather
+than a note in a doc.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
@@ -2074,6 +2104,28 @@ heads: beam, slur_event, slur_side, stem
 
 25,137 trainable parameters against a 300 MB core is the shape the experiment wants: if
 these heads learn anything, it is because the representation already carried it.
+
+**The loader substitutes images, and the labels did not follow.** `DataLoader.__getitem__`
+returns `(index + 1)` when cv2 cannot decode an image - a reasonable way to survive a
+corrupt file in a corpus of hundreds of thousands. The notation wrapper was still
+attaching the requested index's sidecar, so any substituted item paired one staff's
+picture with the previous staff's beams, stems and slurs. Like the alignment bug, nothing
+raises and the loss looks normal. The wrapper now resolves the substitution before
+fetching, using the loader's own test - a decode attempt, not an existence check, because
+a present-but-corrupt file passes the cheap check here and fails there, which is precisely
+the desync.
+
+Both of these share a shape worth naming: the failure is a *correspondence* between two
+sequences, and neither sequence is malformed on its own. Shape checks do not catch them,
+losses do not spike, and the heads converge to something plausible. They are only
+catchable by asserting the correspondence directly, which is what the tests for
+`align_to_decoder_output` and `_resolve` do.
+
+**End to end, once, on real objects.** `tests/test_structured_training_integration.py`
+runs an index file through the real loader into a real TrOMR shrunk to one layer, and
+checks the three things every stand-in hides: that no core parameter moves, that the head
+parameters receive gradient rather than merely being listed as trainable, and that `loss`
+is still emitted and finite so B0 stays comparable.
 
 **Environment.** The benchmark venv is inference-only. Training additionally needs
 `x_transformers`, `timm` and `albumentations`; installing `timm` pulls a PyPI
