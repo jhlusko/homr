@@ -95,3 +95,38 @@ brace_core_width_ratio = 0.5
 # (barline connectors, real braces) observed across smb/polish-scores/testdata was >=5px -
 # exactly the dilation kernel's own width.
 min_width_for_brace_dot_candidate = 5
+
+
+# --- Deterministic page-level system grouping (homr/system_grouping.py) ---
+
+# How much larger the mean gap between systems must be than the mean gap inside one,
+# in staff unit sizes, before the geometric partition is trusted over the caller's
+# existing behaviour. Measured on a string quartet page whose bracket detection had gone
+# inconsistent: internal gaps 3.6-6.7, system gaps 8.7-9.1, separation 3.1. A page of
+# genuinely independent single staves has one population of gaps and separates at ~0, so
+# this sits well below the real signal and well above the noise floor.
+min_system_gap_separation = 2.0
+
+# Every cut must also clear the *median* internal gap by this factor. The mean-based
+# separation above can stay positive while individual boundaries sit in the wrong place;
+# this is what pins them. Median rather than max because a staff missed by detection
+# leaves one double-width gap inside a system (14.8 unit sizes on the page above, against
+# an 8.7 smallest cut) and a max-based test would reject the correct partition outright.
+min_cut_to_internal_gap_ratio = 1.2
+
+# Cutting where the bracket/barline detector saw a connection costs this much score, in
+# unit sizes. Deliberately comparable to min_system_gap_separation: bracket evidence
+# should be able to overturn a marginal geometric win but not a decisive one, since that
+# detector's disagreements are the reason this module exists.
+broken_connection_penalty = 2.0
+max_broken_connections_for_grouping = 0
+
+# Geometry can only separate two populations of gaps once the page shows several systems.
+# Below this the page is one or two systems, where there is no repetition to read and the
+# bracket detector's own grouping is the better evidence.
+min_systems_for_geometric_grouping = 3
+
+# An upper bound on staves per system, to keep the search finite on pages with many
+# staves. Comfortably above a string quartet (4) or a voice-plus-piano system (3), and
+# above the largest ensembles this pipeline currently targets.
+max_staves_per_system = 8

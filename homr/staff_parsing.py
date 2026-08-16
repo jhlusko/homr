@@ -11,6 +11,7 @@ from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
 from homr.staff_parsing_tromr import parse_staff_tromr
 from homr.staff_regions import StaffRegions
+from homr.system_grouping import find_system_grouping, report_grouping
 from homr.transformer.configs import Config, default_config
 from homr.transformer.vocabulary import EncodedSymbol, remove_duplicated_symbols
 from homr.type_definitions import NDArray
@@ -78,6 +79,52 @@ def _find_periodic_core(flat_staffs: list[Staff]) -> tuple[int, int, int] | None
     return period, front_trim, back_trim
 
 
+def _adjacent_connected_pairs(
+    flat_staffs: list[Staff], staffs: list[MultiStaff]
+) -> set[tuple[int, int]]:
+    """Adjacent flat-staff index pairs that the bracket/barline detector put in one row."""
+    position = {id(staff): index for index, staff in enumerate(flat_staffs)}
+    pairs: set[tuple[int, int]] = set()
+    for multi_staff in staffs:
+        indices = sorted(position[id(staff)] for staff in multi_staff.staffs)
+        for first, second in zip(indices, indices[1:], strict=False):
+            if second == first + 1:
+                pairs.add((first, second))
+    return pairs
+
+
+def _group_by_geometry(
+    flat_staffs: list[Staff], staffs: list[MultiStaff]
+) -> list[MultiStaff] | None:
+    """Regroup the page from staff spacing, or None to leave the decision alone.
+
+    Callers downstream index every system by voice number, so all systems returned here
+    must have the same length. An incomplete system - a genuinely short one at a page
+    edge, or a full one that detection came up a staff short on - is dropped rather than
+    padded out, the same way _find_periodic_core trims a page's non-conforming first or
+    last staffs. Keeping it would be worse than losing it: with no way to tell which
+    voice is the missing one, its staffs would be read into the wrong parts, and the
+    voice count would come from the short system and truncate every complete one.
+    """
+    result = find_system_grouping(flat_staffs, _adjacent_connected_pairs(flat_staffs, staffs))
+    if result is None:
+        return None
+    report_grouping(result)
+    if not result.confident:
+        return None
+    size = result.best.staves_per_system
+    complete = [group for group in result.best.groups if len(group) == size]
+    dropped = len(result.best.groups) - len(complete)
+    if dropped:
+        eprint(
+            f"Ignoring {dropped} incomplete system(s) of the {len(result.best.groups)} on this"
+            f" page: fewer than the {size} staffs the rest of the page repeats"
+        )
+    if not complete:
+        return None
+    return [MultiStaff([flat_staffs[i] for i in group], []) for group in complete]
+
+
 def _ensure_same_number_of_staffs(staffs: list[MultiStaff]) -> list[MultiStaff]:
     """
     If every system already has the same number of *more than one* staff, trust that
@@ -103,6 +150,19 @@ def _ensure_same_number_of_staffs(staffs: list[MultiStaff]) -> list[MultiStaff]:
         return staffs
     flat_staffs = _flatten_staffs(staffs)
     core = _find_periodic_core(flat_staffs)
+    if core is None or core[0] == 1:
+        # Both of these end with one staff per system, which reads the page as a single
+        # part containing every staff's music in sequence. Period 1 means the
+        # is_grandstaff signature carried no information: either the page really is one
+        # staff per system, or it is an ensemble of same-type single staffs where that
+        # flag is constant and period 1 fits vacuously (see _find_periodic_core). No core
+        # at all means no period tiled the page, and the fallback below breaks every row
+        # apart, which lands in the same place. Page geometry can tell a genuine solo
+        # part from a collapsed ensemble; it only overrules when the gaps actually
+        # separate, so an unclear page keeps the behaviour below.
+        geometric = _group_by_geometry(flat_staffs, staffs)
+        if geometric is not None:
+            return geometric
     if core is not None:
         period, front_trim, back_trim = core
         if front_trim > 0:
