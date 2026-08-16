@@ -1980,6 +1980,22 @@ That is the third correspondence bug of this kind - after the decoder-output ali
 the loader's image substitution (27.15) - and the same shape each time: two sequences,
 neither malformed alone, paired by position, with no check that the pairing holds.
 
+**What the guard costs, measured before the run rather than after.** A guard that discards
+systems is only affordable if it rarely fires, so
+`training/omr_datasets/staff_detection_agreement.py` compares the staff detections already
+on disk against the part counts. On 5,742 synthetic systems:
+
+```
+detections match the part count   5,739   99.9%
+mismatch (system skipped)             3    0.1%   one each at +1, -1 and -3
+```
+
+So on the synthetic track the guard costs essentially nothing, and the question of what to
+do about a large drop does not arise. That is a statement about this track only - 27.14
+found scans over-detecting into five, six, seven and nine staves, so the same measurement
+has to be repeated before the scanned track is converted, and the answer there is likely
+different.
+
 ### 27.12 How much beaming is derivable without looking at the page
 
 Gate C asks whether the beam heads beat deterministic reconstruction, and 15.2 names
