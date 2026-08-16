@@ -9,12 +9,12 @@ same engraving.
 
   lieder    renders SVG and MusicXML from one source .mscx, so the staff image is the
             score's own engraving. Eligible.
-  pdmx      regenerates MusicXML *from the tokens* and renders that with Verovio. Tokens
-            carry no beams or stems, so the image shows Verovio's automatic beaming.
-            Source-derived labels would disagree with the picture exactly where the
-            engraving departs from the rule - which is the entire signal the heads exist
-            to learn. Not eligible.
-  musetrainer  same rendering path as pdmx. Not eligible.
+  pdmx      *was* ineligible: it regenerated MusicXML from the tokens and rendered that
+            with Verovio, so the image showed Verovio's automatic beaming rather than the
+            score's. It now renders the source window instead, which is what makes it
+            eligible - so the test is that it renders from source, not merely that it
+            writes a sidecar.
+  musetrainer  still regenerates from tokens. Not eligible.
 
 These tests pin the reasoning to the code, so that a later change to how a corpus builds
 its images cannot silently make its labels wrong.
@@ -47,6 +47,14 @@ class TestEligibleCorporaWriteSidecars(unittest.TestCase):
     def test_ossq_writes_a_sidecar(self) -> None:
         self.assertIn("write_sidecar", _calls("convert_ossq.py"))
 
+    def test_pdmx_writes_a_sidecar_and_renders_from_source(self) -> None:
+        # Both halves matter. A sidecar without source rendering is the anti-signal this
+        # module exists to prevent, so the two are asserted together rather than apart.
+        calls = _calls("convert_pdmx.py")
+        self.assertIn("write_sidecar", calls)
+        self.assertIn("extract_window", calls)
+        self.assertNotIn("_tokens_to_svg", calls)
+
 
 class TestIneligibleCorporaDoNot(unittest.TestCase):
     """A corpus whose image is re-rendered from tokens must not carry source labels.
@@ -57,15 +65,12 @@ class TestIneligibleCorporaDoNot(unittest.TestCase):
     a comment.
     """
 
-    def test_pdmx_does_not_write_a_sidecar(self) -> None:
-        self.assertNotIn("write_sidecar", _calls("convert_pdmx.py"))
-
     def test_musetrainer_does_not_write_a_sidecar(self) -> None:
         self.assertNotIn("write_sidecar", _calls("convert_musetrainer.py"))
 
-    def test_pdmx_still_renders_from_tokens(self) -> None:
+    def test_musetrainer_still_renders_from_tokens(self) -> None:
         # The reason it is ineligible. If this stops being true the decision changes.
-        self.assertIn("_tokens_to_svg", _calls("convert_pdmx.py"))
+        self.assertIn("_tokens_to_svg", _calls("convert_musetrainer.py"))
 
 
 if __name__ == "__main__":

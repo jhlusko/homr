@@ -2,6 +2,7 @@ import csv
 import multiprocessing
 import os
 import random
+import xml.etree.ElementTree as ET
 import zipfile
 from itertools import zip_longest
 from pathlib import Path
@@ -27,6 +28,8 @@ from training.omr_datasets.convert_musetrainer import (
     _tokens_to_svg,
 )
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
+from training.omr_datasets.musicxml_window import extract_window, measure_count
+from training.omr_datasets.notation_sidecar import write_sidecar
 from training.transformer.training_vocabulary import (
     calc_ratio_of_tuplets,
     check_token_lines,
@@ -59,6 +62,51 @@ def _read_mxl(path: Path) -> str:
         return zf.read(xml_name).decode("utf-8")
 
 
+def has_empty_final_measure(parts: list[ET.Element]) -> bool:
+    """Whether any part ends on a measure with no notes.
+
+    A trailing empty bar is what an unfinished or badly truncated score looks like -
+    MuseScore leaves one behind on export from an incomplete edit - and PDMX is large
+    enough that a cheap well-formedness proxy is worth more than the scores it costs.
+    Judged on notes rather than on rests: a final bar of rests is a real musical ending,
+    an empty one is an artefact.
+    """
+    for part in parts:
+        measures = part.findall("measure")
+        if measures and not measures[-1].findall("note"):
+            return True
+    return False
+
+
+def _source_to_svg(score: ET.Element) -> str | None:
+    """Render a window of the *source* score.
+
+    The alternative, and what this replaces, is regenerating MusicXML from the tokens and
+    rendering that - which loses beams and stems, because tokens do not carry them, and
+    leaves Verovio to invent its own. See 27.25: it is the difference between a training
+    image that shows the score's engraving and one that shows the renderer's.
+    """
+    try:
+        xml_str = inject_musicxml_markings(ET.tostring(score, encoding="unicode"))
+    except Exception as e:  # noqa: BLE001
+        eprint("Marking injection failed:", e)
+        return None
+
+    try:
+        root = ET.fromstring(xml_str)  # noqa: S314
+        start = random.randint(1, 150)
+        for i, measure in enumerate(root.findall(".//measure")):
+            measure.set("number", str(start + i))
+        xml_str = ET.tostring(root, encoding="unicode")
+    except ET.ParseError:
+        pass
+
+    scale = random.randint(40, 80)
+    font = random.choice(_VEROVIO_FONTS)
+    mnum_interval = 1 if random.random() < 0.20 else 0
+    return _render_svg_in_subprocess(xml_str, scale, font, mnum_interval)
+
+
 def _convert_file_impl(mxl_path: Path) -> list[str]:
     try:
         xml_str = _read_mxl(mxl_path)
@@ -75,7 +123,21 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
     if not voices:
         return []
 
-    voices_to_process = [v for v in voices if _count_staffs(v) >= 1]
+    try:
+        source_parts = ET.fromstring(xml_str).findall("part")  # noqa: S314
+    except ET.ParseError:
+        return []
+    # One parser entry per <part>, so the indices line up - but only if they are the same
+    # length. A disagreement means a window would be rendered from the wrong instrument,
+    # so the file is skipped rather than guessed at.
+    if len(source_parts) != len(voices):
+        return []
+    if has_empty_final_measure(source_parts):
+        return []
+
+    voices_to_process = [
+        (index, voice) for index, voice in enumerate(voices) if _count_staffs(voice) >= 1
+    ]
     if not voices_to_process:
         return []
 
@@ -87,7 +149,7 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
 
     results: list[str] = []
 
-    for voice_idx, voice in enumerate(voices_to_process):
+    for voice_idx, (part_index, voice) in enumerate(voices_to_process):
         n_measures = len(voice)
         if n_measures < 2:
             continue
@@ -117,7 +179,14 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
                 except ValueError:
                     pass
                 else:
-                    svg_str = _tokens_to_svg(tokens)
+                    window_score = extract_window(source_parts[part_index], window_start, end)
+                    if window_score is None or measure_count(
+                        window_score.find("part")
+                    ) != len(window_measures):
+                        window_start = end
+                        window_idx += 1
+                        continue
+                    svg_str = _source_to_svg(window_score)
                     if svg_str is not None:
                         img = _svg_to_png(svg_str)
                         if img is not None:
@@ -127,6 +196,9 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
                             cv2.imwrite(img_path, img)
                             with open(tok_path, "w") as f:
                                 f.write(token_lines_to_str(tokens))
+                            # Eligible now that the image is rendered from the source:
+                            # the beams and stems in the picture are the score's own.
+                            write_sidecar(tok_path, tokens)
                             rel_img = str(Path(img_path).relative_to(git_root))
                             rel_tok = str(Path(tok_path).relative_to(git_root))
                             results.append(rel_img + "," + rel_tok + "\n")

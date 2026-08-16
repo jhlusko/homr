@@ -1,6 +1,7 @@
 import unittest
 import xml.etree.ElementTree as ET
 
+from training.omr_datasets.convert_pdmx import has_empty_final_measure
 from training.omr_datasets.musicxml_window import (
     extract_window,
     measure_count,
@@ -116,6 +117,44 @@ class TestExtractWindow(unittest.TestCase):
         part = _part(_measure(1))
 
         self.assertIsNone(extract_window(part, 5, 7))
+
+
+
+
+class TestEmptyFinalMeasure(unittest.TestCase):
+    """A trailing bar with no notes is what a truncated or unfinished score looks like.
+
+    Judged on notes rather than rests: a final bar of rests is a real musical ending, an
+    empty one is an export artefact. PDMX is large enough that a cheap well-formedness
+    proxy is worth more than the scores it costs.
+    """
+
+    def test_a_part_ending_on_an_empty_bar_is_caught(self) -> None:
+        part = _part(_measure(1) + '<measure number="2"/>')
+
+        self.assertTrue(has_empty_final_measure([part]))
+
+    def test_a_part_ending_on_notes_is_not(self) -> None:
+        part = _part(_measure(1) + _measure(2))
+
+        self.assertFalse(has_empty_final_measure([part]))
+
+    def test_a_final_bar_of_rests_is_a_real_ending(self) -> None:
+        rest = '<measure number="2"><note><rest/><duration>4</duration></note></measure>'
+        part = _part(_measure(1) + rest)
+
+        self.assertFalse(has_empty_final_measure([part]))
+
+    def test_any_part_ending_empty_condemns_the_score(self) -> None:
+        # Parts are rendered independently, so one truncated part means the score was
+        # exported mid-edit and the others are suspect too.
+        good = _part(_measure(1) + _measure(2))
+        bad = _part(_measure(1) + '<measure number="2"/>')
+
+        self.assertTrue(has_empty_final_measure([good, bad]))
+
+    def test_a_part_with_no_measures_is_not_flagged(self) -> None:
+        self.assertFalse(has_empty_final_measure([_part("")]))
 
 
 if __name__ == "__main__":
