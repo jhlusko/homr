@@ -18,6 +18,7 @@ from training.architecture.transformer.structured_losses import (
     structured_loss,
 )
 from training.architecture.transformer.structured_targets import (
+    align_to_decoder_output,
     build_targets,
     notation_positions,
 )
@@ -223,3 +224,41 @@ class TestDecoderAlignment(unittest.TestCase):
         positions = notation_positions(self._symbols(), length=2)
 
         self.assertEqual(len(positions), 2)
+
+
+class TestDecoderOutputAlignment(unittest.TestCase):
+    """The shift that separates a label from the token it describes.
+
+    The decoder reads `rhythms[:, :-1]`; its hidden state at t is the prediction for
+    token t+1. Unaligned targets do not raise once shapes happen to agree - the heads
+    just learn the next token's notation and report a healthy loss.
+    """
+
+    def _targets(self) -> dict:
+        notation = NoteNotation(
+            beam_levels=(BeamLevelState.BEGIN,) + empty_beam_levels()[1:],
+            stem=StemDirection.UP,
+            slurs=empty_slur_slots(),
+        )
+        # BOS, clef, the note, barline, EOS.
+        return build_targets([[None, None, notation, None, None]], beam_levels=1, slur_slots=1)
+
+    def test_the_label_moves_with_the_prediction(self) -> None:
+        aligned = align_to_decoder_output(self._targets())
+
+        # The note sits at token 2, so the hidden state that predicts it is at index 1.
+        supervised = (aligned["beam.level.1"][0] != IGNORE_INDEX).nonzero().flatten().tolist()
+        self.assertEqual(supervised, [1])
+
+    def test_alignment_shortens_the_sequence_by_exactly_one(self) -> None:
+        targets = self._targets()
+        aligned = align_to_decoder_output(targets)
+
+        for name, tensor in aligned.items():
+            self.assertEqual(tensor.shape[1], targets[name].shape[1] - 1)
+
+    def test_every_head_is_shifted_not_just_the_beams(self) -> None:
+        aligned = align_to_decoder_output(self._targets())
+
+        supervised = (aligned["stem.direction"][0] != IGNORE_INDEX).nonzero().flatten().tolist()
+        self.assertEqual(supervised, [1])

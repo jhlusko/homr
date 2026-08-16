@@ -11,6 +11,7 @@ from training.architecture.transformer.structured_heads import StructuredNotatio
 from training.architecture.transformer.structured_losses import IGNORE_INDEX
 from training.transformer.train_structured_heads import (
     EpochReport,
+    collate,
     heads_with_support,
     structured_parameters,
     train_epoch,
@@ -42,7 +43,10 @@ class _Model(nn.Module):
         self.decoder = _Decoder()
 
     def forward(self, **batch: torch.Tensor) -> dict:
-        hidden = self.body(batch["inputs"])
+        # Shortened by one like the real decoder, which reads rhythms[:, :-1] and whose
+        # hidden state at t predicts token t+1. If the stand-in kept the full length the
+        # target alignment would go untested.
+        hidden = self.body(batch["inputs"][:, :-1])
         return {"structured_logits": self.decoder.structured_heads(hidden)}
 
 
@@ -116,6 +120,36 @@ class TestFrozenCoreStep(unittest.TestCase):
 
         self.assertIn("no targets all epoch", report.describe())
         self.assertIn("beam.level.2", report.describe())
+
+
+class TestCollate(unittest.TestCase):
+    def _items(self) -> list[dict]:
+        annotated = {
+            "inputs": torch.randn(5, 8),
+            "beam.level.1": torch.zeros(5, dtype=torch.long),
+        }
+        bare = {"inputs": torch.randn(5, 8)}
+        return [annotated, bare]
+
+    def test_an_unannotated_example_does_not_cost_its_neighbour_its_labels(self) -> None:
+        # Dropping the structured keys for a mixed batch would be quietly worse than
+        # crashing: the annotated example would stop being supervised and nothing would say so.
+        batch = collate(self._items(), ["beam.level.1"])
+
+        self.assertIn("beam.level.1", batch)
+        self.assertEqual(batch["beam.level.1"].shape, (2, 5))
+
+    def test_the_unannotated_example_contributes_nothing(self) -> None:
+        batch = collate(self._items(), ["beam.level.1"])
+
+        self.assertTrue(bool((batch["beam.level.1"][1] == IGNORE_INDEX).all()))
+        self.assertTrue(bool((batch["beam.level.1"][0] != IGNORE_INDEX).all()))
+
+    def test_a_batch_with_no_annotations_at_all_carries_no_target_keys(self) -> None:
+        batch = collate([{"inputs": torch.randn(5, 8)}], ["beam.level.1"])
+
+        self.assertNotIn("beam.level.1", batch)
+        self.assertEqual(batch["inputs"].shape, (1, 5, 8))
 
 
 class TestDeclaringWhatWasTrained(unittest.TestCase):

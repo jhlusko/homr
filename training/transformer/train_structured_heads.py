@@ -24,20 +24,31 @@ any targets at all.
 
 import argparse
 import json
+import subprocess
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import torch
 from torch import nn
+from torch.utils.data import DataLoader as TorchDataLoader
 
 from homr.transformer.capability_manifest import build as build_manifest
 from training.architecture.transformer.checkpoint_loading import load_checkpoint
 from training.architecture.transformer.structured_heads import head_names
 from training.architecture.transformer.structured_losses import (
+    IGNORE_INDEX,
     StructuredLoss,
     structured_loss,
 )
+from training.architecture.transformer.structured_targets import align_to_decoder_output
+
+# The model, the image pipeline and the dataset loader are imported inside the functions
+# that need them rather than here. Everything above this line is pure - the epoch loop,
+# the collate, the manifest - and importing this module for those pulls in timm,
+# albumentations and transformers through TrOMR if the imports sit at the top. The tests
+# for the pure parts should not need the whole training stack installed to run.
 
 #: Parameters the pretrained checkpoint cannot be expected to contain.
 NEW_PARAMETER_PREFIXES = ("decoder.structured_heads.",)
@@ -79,8 +90,9 @@ def train_epoch(
     model: nn.Module,
     batches: object,
     optimizer: torch.optim.Optimizer,
-    head_targets: list[str],
+    head_targets: Sequence[str],
     epoch: int,
+    device: str = "cpu",
 ) -> EpochReport:
     """One pass, updating only the structured heads."""
     model.train()
@@ -89,11 +101,18 @@ def train_epoch(
     total = 0.0
     count = 0
 
-    for batch in batches:  # type: ignore[attr-defined]
+    for raw in batches:  # type: ignore[attr-defined]
+        batch = {k: v.to(device) if hasattr(v, "to") else v for k, v in raw.items()}
         targets = {name: batch[name] for name in head_targets if name in batch}
         if not targets:
             # Nothing to learn from this batch: a corpus without sidecars, or a crop with
             # no notes. Skipping keeps it out of the mean rather than averaging in a zero.
+            continue
+        # The heads read the decoder's hidden state, which predicts the *next* token, so
+        # the labels have to move with it. Without this every head trains on the token
+        # after the one it describes.
+        targets = align_to_decoder_output(targets)
+        if all(int((t != IGNORE_INDEX).sum()) == 0 for t in targets.values()):
             continue
         outputs = model(**{k: v for k, v in batch.items() if k not in head_targets})
         logits = outputs["structured_logits"]
@@ -153,23 +172,126 @@ def heads_with_support(reports: list[EpochReport]) -> tuple[str, ...]:
     return tuple(name for name, count in sorted(seen.items()) if count > 0)
 
 
+def collate(items: list[dict[str, Any]], head_targets: Sequence[str]) -> dict[str, Any]:
+    """Batch items that may or may not carry notation targets.
+
+    A corpus can mix annotated and unannotated examples - the wrapper adds no keys at all
+    where there is no sidecar - and the default collate would reject a batch whose items
+    have different keys. Dropping the structured keys for such a batch would be worse than
+    the error: the annotated examples in it would silently stop being supervised. So a
+    missing example is filled with IGNORE_INDEX and contributes nothing, while its
+    neighbours are still learned from.
+    """
+    batch: dict[str, Any] = {}
+    shared = [key for key in items[0] if key not in head_targets]
+    for key in shared:
+        batch[key] = torch.stack([item[key] for item in items])
+
+    for name in head_targets:
+        present = [item[name] for item in items if name in item]
+        if not present:
+            continue
+        blank = torch.full_like(present[0], IGNORE_INDEX)
+        batch[name] = torch.stack([item.get(name, blank) for item in items])
+    return batch
+
+
+def _target_names(config: Any) -> list[str]:
+    from training.transformer.structured_dataset import target_names
+
+    return target_names(config.structured_beam_levels, config.structured_slur_slots)
+
+
+def build_batches(
+    index: Path, config: Any, batch_size: int, workers: int
+) -> tuple[TorchDataLoader, int]:
+    """The training loader, wrapped so each item carries its notation targets."""
+    from training.transformer.data_loader import load_dataset
+    from training.transformer.structured_dataset import StructuredNotationDataset
+
+    samples = index.read_text(encoding="utf-8").splitlines()
+    datasets = load_dataset([line for line in samples if line.strip()], config, val_split=0.0)
+    wrapped = StructuredNotationDataset(
+        datasets["train"], config.structured_beam_levels, config.structured_slur_slots
+    )
+    names = _target_names(config)
+    loader = TorchDataLoader(
+        wrapped,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=workers,
+        collate_fn=lambda items: collate(items, names),
+    )
+    return loader, len(wrapped)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--index", type=Path, required=True, help="Dataset index.txt.")
     parser.add_argument("--checkpoint", type=Path, required=True, help="Pinned .pth to start from.")
     parser.add_argument("--out", type=Path, required=True, help="Where to write the manifest.")
+    parser.add_argument("--weights", type=Path, help="Where to write the trained head weights.")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--run-id", default="")
     args = parser.parse_args()
 
-    raise SystemExit(
-        "Not runnable yet: this needs an OSSQ training set with notation sidecars, which "
-        "needs the synthetic partwise staff crops that no pipeline run has produced. See "
-        "27.11 - run omr-data-preprocessor's synthetic partwise cropping, then "
-        "training/omr_datasets/convert_ossq.py, then remove this guard.\n"
-        f"(index={args.index}, checkpoint={args.checkpoint}, out={args.out})"
+    from homr.transformer.configs import Config
+    from training.architecture.transformer.tromr_arch import TrOMR
+    from training.run_id import get_run_id
+
+    config = Config()
+    config.enable_structured_heads = True
+    names = _target_names(config)
+
+    model = TrOMR(config)
+    load_pinned(model, args.checkpoint)
+    trainable = model.freeze_core_for_structured_heads()
+    print(f"training {len(trainable)} tensor(s), everything else frozen")
+    model.to(args.device)
+
+    batches, examples = build_batches(args.index, config, args.batch_size, args.workers)
+    print(f"{examples} example(s) from {args.index}")
+
+    optimizer = torch.optim.Adam(structured_parameters(model), lr=args.lr)
+    reports = []
+    for epoch in range(1, args.epochs + 1):
+        report = train_epoch(model, batches, optimizer, names, epoch, device=args.device)
+        print(report.describe())
+        reports.append(report)
+
+    trained = heads_with_support(reports)
+    if args.weights:
+        torch.save(model.decoder.structured_heads.state_dict(), args.weights)
+        print(f"weights: {args.weights}")
+    write_manifest(
+        args.out,
+        config,
+        trained,
+        model_revision=str(args.checkpoint),
+        training_revision=git_revision(),
+        run_id=args.run_id or get_run_id(),
     )
+
+
+def git_revision() -> str:
+    """The training-side revision recorded in the manifest.
+
+    Best effort: a manifest from a tree that is not a git checkout is still worth having,
+    so an unavailable revision is recorded as unknown rather than failing the run.
+    """
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, OSError):
+        return "unknown"
 
 
 if __name__ == "__main__":

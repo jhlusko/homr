@@ -127,3 +127,19 @@ def notation_positions(
     if len(positions) < length:
         positions.extend([None] * (length - len(positions)))
     return positions[:length]
+
+
+def align_to_decoder_output(targets: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    """Shift targets onto the decoder's output positions.
+
+    The decoder is autoregressive: it reads `rhythms[:, :-1]` and its hidden state at
+    position t is the prediction for token t+1. The structured heads sit on that same
+    hidden state, so a target tensor laid out over the full token sequence is one place
+    to the left of the logits it is meant to score.
+
+    Getting this wrong does not raise. The shapes differ by one, which torch would catch,
+    but only until something pads or truncates - and then every head trains on the token
+    after the one it describes, converges to something plausible, and reports a healthy
+    loss. Hence a named function with a test rather than a `[:, 1:]` at the call site.
+    """
+    return {name: tensor[:, 1:] for name, tensor in targets.items()}
