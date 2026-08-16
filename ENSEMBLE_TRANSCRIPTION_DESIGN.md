@@ -2174,6 +2174,92 @@ instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. I
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
 
+### 27.21 Phase 2, the first frozen-core run, and Gate C
+
+**The heads clear the baseline, and they do it on the part of the corpus a rule cannot
+reach.**
+
+Training: 41,764 examples after the ledger-line filter, three epochs, ~15 minutes each on
+a 4090. Only the 25,137 head parameters moved; the 300 MB core stayed frozen and in eval
+mode. The structured loss never joined `loss`, so B0 remains comparable.
+
+```
+epoch 1: mean 1.4756  beam.1 0.3163  beam.2 0.3629  beam.3 0.3932  beam.4 0.0649  stem 0.1985
+epoch 2: mean 1.0330  beam.1 0.2366  beam.2 0.2483  beam.3 0.2417  beam.4 0.0300  stem 0.1579
+epoch 3: mean 0.9675  beam.1 0.2270  beam.2 0.2315  beam.3 0.2206  beam.4 0.0187  stem 0.1539
+manifest: 7 heads declared   [no targets all epoch: slur.slot.1.side, slur.slot.2.side]
+```
+
+The two slur-side heads got no targets and the manifest declined to declare them, exactly
+as 27.20 predicted. That is the capability machinery doing its job rather than a surprise.
+
+Evaluation on the held-out `valid` split, 4,912 staves, undistorted images:
+
+```
+exact beam vector   0.920  (72,051 / 78,307)
+beam level 1        macro F1 0.929   micro 0.931
+beam level 2        macro F1 0.818   micro 0.923
+beam level 3        macro F1 0.859   micro 0.903
+beam level 4        macro F1 0.292   micro 0.500   (8 notes - not a result)
+hooks               F1 0.790  P 0.807  R 0.774  (n=1,529)
+stems               macro F1 0.719   micro 0.949
+slur spans          F1 0.916  P 0.952  R 0.882  (n=17,146)
+```
+
+**Gate C.** The comparison that matters is not head-against-baseline but the crosstab, on
+the same notes:
+
+```
+                  head right   head wrong
+  rule right        59,790        3,699
+  rule wrong         9,234        2,494
+
+rule accuracy 84.4%    head accuracy 91.8%
+exceptions the head recovers   78.7%   (9,234 notes)
+agreements the head loses       5.8%   (3,699 notes)
+```
+
+27.12 asked whether a head could recover "even half the exceptions". It recovers **78.7%**
+of them - 9,234 notes where duration and metre are provably insufficient and the head is
+right anyway. A head that had merely learned the rule would score zero in that cell. The
+price is 3,699 notes the rule had right and the head lost, and both are reported because
+only the pair is honest.
+
+Hooks are the sharpest version of the same point: F1 0.790 on 1,529 hooks, which are
+precisely what MuseScore's `BeamMode` discards and what no duration-and-metre rule can
+produce.
+
+**How much of this to believe, and why the number moved.** The crosstab put the rule at
+83.5% where the committed baseline put it at 87.0% on the same split. That 3.5-point
+disagreement was the cross-check working, and chasing it found two real errors and
+rejected two plausible-sounding hypotheses:
+
+- *Rejected:* beam groups cut at system breaks. Disagreements are **less** frequent at the
+  first and last beamed note of a staff (7.2%) than in the interior (16.7%).
+- *Rejected:* the cleaned, original and segmented MusicXML disagreeing about beams. The
+  markup is identical in all three - 6,291 beam elements each, same distribution.
+- *Real:* the crosstab was beaming every segment as if it were in 4/4, because a segment
+  restates `<time>` only at a movement start. Carrying the meter across a part's segments
+  in reading order: 83.5% -> 84.4%.
+- *Real, and larger:* the **baseline** was counting rests as free agreements. An eighth
+  rest has a flag count but no stem, so it can carry no beam; the rule says
+  not-applicable, the engraving says not-applicable, and every one scored as a match the
+  rule never earned. They were 11.4% of what was counted on this split. This is the same
+  error class the baseline already guarded against for quarter notes, missed for rests.
+
+The corrected baseline on `valid` is 85.3%, against the crosstab's independently computed
+84.4%. The residual 0.9 points is two different walks over slightly different artifacts -
+whole scores against converted staves, six levels against four - and is small enough to
+leave stated rather than chased. Note the direction of the correction: the overstated
+baseline was **understating** the head's advantage, not flattering it.
+
+**What is not established.** Beam level 4 has eight supervised notes in the whole
+validation split; its macro F1 of 0.292 is noise and should not be quoted. The slur side
+heads were not trained at all (27.20). Everything here is the synthetic track; the scanned
+track has been benchmarked for layout (27.14) but no head has seen it. And this is one run
+at one learning rate for three epochs - the losses were still falling, so these are a floor
+rather than a converged result.
+
 ### 27.20 What the built labels actually contain
 
 The audit of the built training set - 42,088 examples, 1,136,381 annotated notes - settles
@@ -2353,14 +2439,18 @@ no span, which is right, because within one staff image there is no span to find
 the same measurement committed, and it disagrees with the recorded figure - so the
 recorded figure goes.
 
-Corpus-wide, 121 scores, 905,560 beamable notes:
+**These figures were themselves corrected once - see 27.21. Rests were being counted as
+free agreements, overstating every number here by 1.7 to 2.4 points. The corrected table
+is below; the reasoning about splits is unchanged and the conclusion is strengthened.**
+
+Corpus-wide, 121 scores:
 
 ```
-automatic beaming matches the engraving   758,855   83.8%
-exceptions the rule does not predict      146,705   16.2%
+automatic beaming matches the engraving   669,051   82.0%
+exceptions the rule does not predict      146,705   18.0%
 ```
 
-against 79.4% before. Two differences account for most of it. The committed tool measures
+against 79.4% from the uncommitted script. Two differences account for most of it. The committed tool measures
 whole scores rather than systemwise segments - a segment cuts at a system break, which
 cuts beam groups and restarts the divisions and time-signature context, and the rule
 scored 91.9% on a sample of segments purely from that fragmentation. And it counts one
@@ -2372,16 +2462,16 @@ re-derived.
 Per split, which is the part that matters for Gate C:
 
 ```
-split        scores   beamable notes   rule matches   exceptions
-train            99          738,239          83.8%        16.2%
-valid            11           85,549          87.0%        13.0%
-test_synth       11           81,772          80.3%        19.7%
-all             121          905,560          83.8%        16.2%
+split        scores   rule matches   exceptions
+train            99          82.1%        17.9%
+valid            11          85.3%        14.7%
+test_synth       11          77.3%        22.7%
+all             121          82.0%        18.0%
 ```
 
-**The baseline moves 6.7 points between splits.** A head evaluated on `test_synth` faces
-a 80.3% baseline, not the 83.8% corpus figure - quoting the corpus number against a
-test-split result would hand the head 3.5 points it did not earn. Gate C should compare
+**The baseline moves 8.0 points between splits.** A head evaluated on `test_synth` faces
+a 77.3% baseline, not the 82.0% corpus figure - quoting the corpus number against a
+test-split result would hand the head 4.7 points it did not earn. Gate C should compare
 against the baseline on whatever split the head is scored on, which is why the tool takes
 `--split`.
 
