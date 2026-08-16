@@ -12,7 +12,11 @@ from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
 from homr.staff_parsing_tromr import parse_staff_tromr
 from homr.staff_regions import StaffRegions
-from homr.system_grouping import assign_voice_slots, find_system_grouping, report_grouping
+from homr.system_grouping import (
+    assign_voice_slots,
+    find_system_grouping,
+    report_grouping,
+)
 from homr.transformer.configs import Config, default_config
 from homr.transformer.vocabulary import EncodedSymbol, remove_duplicated_symbols
 from homr.type_definitions import NDArray

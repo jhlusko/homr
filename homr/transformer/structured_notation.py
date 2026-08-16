@@ -110,3 +110,31 @@ def empty_beam_levels() -> tuple[BeamLevelState, ...]:
 
 def empty_slur_slots() -> tuple[tuple[SlurEvent, SlurSide], ...]:
     return ((SlurEvent.NONE, SlurSide.UNSPECIFIED),) * MAX_SLUR_SLOTS
+
+
+#: Classes the beam-level heads predict. Every state is reachable: FLAG and
+#: NOT_APPLICABLE are ordinary predictions, not sentinels.
+BEAM_LEVEL_CLASSES: tuple[BeamLevelState, ...] = tuple(BeamLevelState)
+
+#: Classes the stem head predicts. UNKNOWN is excluded on purpose - it is a dataset-side
+#: marker for a source that does not say, masked out of the loss, and predicting it would
+#: let a silent source be learned as a real answer. DOUBLE is kept despite having no
+#: support in OSSQ: an unused logit costs almost nothing, where adding a class later
+#: changes the head's vocabulary and invalidates checkpoints trained against it.
+STEM_CLASSES: tuple[StemDirection, ...] = tuple(
+    state for state in StemDirection if state != StemDirection.UNKNOWN
+)
+
+SLUR_EVENT_CLASSES: tuple[SlurEvent, ...] = tuple(SlurEvent)
+SLUR_SIDE_CLASSES: tuple[SlurSide, ...] = tuple(SlurSide)
+
+#: Beam levels given a trained head. The corpus audit found levels 5 and 6 occur 14 times
+#: each, all of them in the test split, so a head for either would train on nothing and be
+#: evaluated on 14 samples. They stay representable in labels and unsupported by the model.
+TRAINED_BEAM_LEVELS = 4
+
+#: Slur slots given trained heads. Slots 3-6 hold 116 training occurrences between them
+#: and none in validation above slot 3; slots 1 and 2 hold 291,683 and 2,379. Spans beyond
+#: the trained slots are reported as overflow rather than silently unlabelled - and the
+#: extractor found zero overflow across the corpus at a cap of six.
+TRAINED_SLUR_SLOTS = 2
