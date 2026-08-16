@@ -1561,10 +1561,26 @@ remains is data and a run.
    metrics and evaluation pass         done   15.2-15.4, evaluate_structured_heads
    Gate C baseline, per split          done   27.16, 80.3-87.0% depending on split
    end-to-end integration              done   real loader, real TrOMR, core frozen
-5  synthetic partwise staff crops      running (27.11)
-6  convert_ossq -> training set        blocked on 5
-7  Phase 2 frozen-core run             blocked on 6
-8  evaluate against the split baseline blocked on 7
+5  synthetic partwise staff crops      done   52,973 vs 52,960 published (27.11)
+6  convert_ossq -> training set        done   42,089 train / 4,942 valid (27.19)
+7  Phase 2 frozen-core run             done   3 epochs, 7 heads declared (27.21)
+8  evaluate against the split baseline done   Gate C cleared, 78.7% of exceptions
+```
+
+**Gate C is cleared** (27.21): the heads recover 78.7% of the beaming duration and metre
+cannot predict, against 27.12's question of whether half was reachable. What follows from
+that, in order of what the result actually licenses:
+
+```
+9   a converged run          the losses were still falling at three epochs, so the
+                             numbers in 27.21 are a floor rather than a result
+10  slur placement           27.20 - the side heads have no labels at all, and
+                             recovering them means joining the original scores by note
+11  the scanned track        no head has seen it; 27.14 measured its layout only, and
+                             27.11's crop guard has to be re-measured there first
+12  test_synth              held back deliberately - it is the one split that has not
+                             been looked at, and it should stay that way until a
+                             configuration is being reported rather than explored
 ```
 
 Two things are worth carrying forward from how items 4's sub-items went. Both bugs found
