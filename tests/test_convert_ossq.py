@@ -4,10 +4,12 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from training.transformer.training_vocabulary import read_tokens, to_decoder_branches
+from homr.transformer.vocabulary import EncodedSymbol, Vocabulary
 from training.omr_datasets.convert_ossq import (
     CROP_NAME,
     Example,
     UnconvertibleStaff,
+    collapse_unrepresentable_slurs,
     link_image,
     build,
     crop_numbers,
@@ -500,6 +502,66 @@ class TestGrandStaffIsRefused(unittest.TestCase):
             _dataset(root, [1, 2, 3])
 
             self.assertEqual(len(build(root, out, track="synthetic")), 3)
+
+
+
+
+class TestCollapsingUnrepresentableSlurs(unittest.TestCase):
+    """homr's slur field has three values, and real music needs more.
+
+    Two concurrent slurs both ending on one note yields slurStop_slurStop, for which no
+    token exists - and that is 8.6% of this corpus's parts. Refusing them would throw away
+    a twelfth of the training data to a limitation of a field the sidecar supersedes.
+    """
+
+    def _symbol(self, slur: str) -> EncodedSymbol:
+        return EncodedSymbol("note_8", "C5", "", "", slur)
+
+    def test_two_stops_collapse_to_one(self) -> None:
+        symbols = [self._symbol("slurStop_slurStop")]
+
+        cut = collapse_unrepresentable_slurs(symbols)
+
+        self.assertEqual(symbols[0].slur, "slurStop")
+        self.assertEqual(cut, 1)
+
+    def test_three_starts_collapse_to_one(self) -> None:
+        symbols = [self._symbol("slurStart_slurStart_slurStart")]
+
+        collapse_unrepresentable_slurs(symbols)
+
+        self.assertEqual(symbols[0].slur, "slurStart")
+
+    def test_a_start_and_a_stop_are_kept_because_they_are_representable(self) -> None:
+        # A note closing one slur and opening another is real and has a token.
+        symbols = [self._symbol("slurStart_slurStop")]
+
+        cut = collapse_unrepresentable_slurs(symbols)
+
+        self.assertEqual(symbols[0].slur, "slurStart_slurStop")
+        self.assertEqual(cut, 0)
+
+    def test_a_mixed_overflow_collapses_to_the_representable_pair(self) -> None:
+        symbols = [self._symbol("slurStart_slurStart_slurStop")]
+
+        collapse_unrepresentable_slurs(symbols)
+
+        self.assertEqual(symbols[0].slur, "slurStart_slurStop")
+
+    def test_an_ordinary_symbol_is_untouched(self) -> None:
+        symbols = [self._symbol("slurStart"), self._symbol("")]
+
+        self.assertEqual(collapse_unrepresentable_slurs(symbols), 0)
+        self.assertEqual(symbols[0].slur, "slurStart")
+
+    def test_everything_it_produces_is_in_the_vocabulary(self) -> None:
+        # The property that matters: whatever comes out must load.
+        vocab = Vocabulary()
+        for field in ("slurStop_slurStop", "slurStart_slurStart_slurStart",
+                      "slurStart_slurStart_slurStop", "slurStart_slurStop", "slurStart"):
+            symbols = [self._symbol(field)]
+            collapse_unrepresentable_slurs(symbols)
+            self.assertIn(symbols[0].slur, vocab.slur, field)
 
 
 if __name__ == "__main__":

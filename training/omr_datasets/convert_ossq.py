@@ -99,8 +99,12 @@ def _write_example(
     out_dir: Path,
     stem: str,
     placements: list[dict[str, str]] | None = None,
-) -> Path | None:
-    """Tokenise one part of one system; returns the token file, or None if it is empty."""
+) -> tuple[Path | None, int]:
+    """Tokenise one part of one system.
+
+    Returns the token file - or None if it is empty - and how many slur markings had to be
+    collapsed to fit the legacy token field.
+    """
     segment = ET.parse(segment_path).getroot()  # noqa: S314
     single = extract_part(segment, part_index)
     if placements:
@@ -132,11 +136,13 @@ def _write_example(
         # refused rather than handled.
         staves = _count_staffs(voices[0]) if voices else 0
         print(f"  skipped {stem}: part is on {staves} staves, but a crop shows one")
-        return None
+        return None, 0
 
     symbols = [symbol for voice in voices for measure in voice for symbol in measure]
     if not symbols:
-        return None
+        return None, 0
+
+    collapsed = collapse_unrepresentable_slurs(symbols)
 
     try:
         lines = token_lines_to_str(symbols)
@@ -153,7 +159,36 @@ def _write_example(
     tokens = out_dir / f"{stem}.txt"
     tokens.write_text(lines, encoding="utf-8")
     write_sidecar(tokens, symbols)
-    return tokens
+    return tokens, collapsed
+
+
+def collapse_unrepresentable_slurs(symbols: list) -> int:
+    """Reduce a slur field the legacy vocabulary cannot hold; returns how many were cut.
+
+    homr's slur branch has three values - slurStart, slurStop, slurStart_slurStop - so a
+    note where two concurrent slurs both end produces `slurStop_slurStop`, which no token
+    exists for. That is real music, not a defect: 8.6% of this corpus's parts contain one.
+
+    Refusing those parts would throw away a twelfth of the training data to a limitation of
+    a field that is being superseded - the notation sidecar carries slur slots 1 and 2
+    separately and keeps both endpoints exactly. So the legacy field is collapsed to the
+    representable form and the structured labels stay complete.
+
+    This loses nothing the sidecar does not already record, and it is what the pipeline
+    effectively did before the conversion-time vocabulary check existed - the difference is
+    that it is now deliberate and counted rather than silent.
+    """
+    cut = 0
+    for symbol in symbols:
+        parts = [piece for piece in (symbol.slur or "").split("_") if piece]
+        if len(parts) <= 1:
+            continue
+        unique = sorted(set(parts))
+        # Both a start and a stop on one note is representable and meaningful; two of the
+        # same kind is not, and collapses to one.
+        symbol.slur = "slurStart_slurStop" if len(unique) > 1 else unique[0]
+        cut += len(parts) - len(symbol.slur.split("_"))
+    return cut
 
 
 def build(
@@ -184,6 +219,7 @@ def build(
     examples: list[Example] = []
     unbuilt = 0
     mismatched = 0
+    collapsed_slurs = 0
     placement_index: dict[str, PlacementIndex] = {}
     unconvertible: collections.Counter[str] = collections.Counter()
     for work in sorted((dataset_root / "scores").glob("*/*")):
@@ -218,12 +254,13 @@ def build(
                     index.for_segment(int(page), int(system), part_index) if index else None
                 )
                 try:
-                    tokens = _write_example(
+                    tokens, collapsed = _write_example(
                         segment_path, part_index, out_dir, stem, placements
                     )
                 except UnconvertibleStaff as refused:
                     unconvertible[refused.reason] += 1
                     continue
+                collapsed_slurs += collapsed
                 if tokens is not None:
                     examples.append(
                         Example(link_image(image, out_dir, stem), tokens, score_id, assigned)
@@ -237,6 +274,11 @@ def build(
         )
     if mismatched:
         print(f"  {mismatched} parts skipped: staff crops do not match the parts (see below)")
+    if collapsed_slurs:
+        print(
+            f"  {collapsed_slurs} slur markings collapsed to fit the legacy token field;"
+            " the sidecars keep both endpoints"
+        )
     if unconvertible:
         total = sum(unconvertible.values())
         listed = ", ".join(f"{reason} x{count}" for reason, count in unconvertible.most_common(6))
