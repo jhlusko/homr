@@ -14,6 +14,7 @@ from training.architecture.transformer.custom_x_transformer import (
     LayerIntermediates,
     TokenEmbedding,
 )
+from training.architecture.transformer.structured_heads import StructuredNotationHeads
 
 
 class ScoreTransformerWrapper(nn.Module):
@@ -267,6 +268,20 @@ class ScoreDecoder(nn.Module):
                 note_mask[index] = 1
         self.note_mask = nn.Parameter(note_mask)
 
+        # Output-only heads over the shared hidden state. They add dictionary keys to
+        # forward's result and nothing else - the existing losses and the positional
+        # tuple ScoreTransformerWrapper returns are untouched, so a run without them is
+        # bit-identical to before.
+        self.structured_heads = (
+            StructuredNotationHeads(
+                dim=config.decoder_dim,
+                beam_levels=config.structured_beam_levels,
+                slur_slots=config.structured_slur_slots,
+            )
+            if getattr(config, "enable_structured_heads", False)
+            else None
+        )
+
         # Weight the actual lift tokens (so neither nonote nor null) higher
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -503,6 +518,14 @@ class ScoreDecoder(nn.Module):
             "loss_slurs": loss_slurs,
             "loss": loss,
             "logits": (rhythmsp, pitchsp, liftsp, positionsp, articulationsp, slursp),
+            # Additive: the shared hidden state, and the structured heads' logits when
+            # they exist. The structured loss is deliberately not folded into "loss" -
+            # the frozen-core experiment needs the existing objective to stay exactly
+            # what it was.
+            "hidden": x,
+            "structured_logits": (
+                self.structured_heads(x) if self.structured_heads is not None else None
+            ),
         }
 
     def calConsistencyLoss(

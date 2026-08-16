@@ -78,6 +78,31 @@ class TrOMR(nn.Module):
         if hasattr(self.encoder, "unfreeze_backbone"):
             self.encoder.unfreeze_backbone()
 
+    def freeze_core_for_structured_heads(self) -> list[str]:
+        """Train only the structured heads; freeze everything the checkpoint provided.
+
+        This is the first experiment's whole design: if the pretrained representation
+        already carries enough visual evidence for explicit beaming, stem direction and
+        richer slurs, heads over a frozen core will learn them. Anything else moving
+        makes the result unattributable - a gain could be the heads, or the core drifting
+        to suit them.
+
+        The existing fine-tuning path freezes most of the model and trains only the lift
+        head, which is a different objective and not reusable here.
+
+        Returns the names of the parameters left trainable, so a run can record what it
+        actually trained rather than what it intended to.
+        """
+        if self.decoder.structured_heads is None:
+            raise ValueError("no structured heads to train - set config.enable_structured_heads")
+        trainable = []
+        for name, param in self.named_parameters():
+            train = name.startswith("decoder.structured_heads.")
+            param.requires_grad = train
+            if train:
+                trainable.append(name)
+        return trainable
+
     def unfreeze_lift_decoder(self) -> None:
         for param in self.decoder.net.lift_emb.parameters():
             param.requires_grad = True
