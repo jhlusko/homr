@@ -33,6 +33,11 @@ is visually on the page and needs no signature normalisation before scoring.
 One reference defect does need repairing: whole-measure rests carry no <duration>. See
 _materialize_whole_measure_rests.
 
+The two halves are produced by separate omr-data-preprocessor steps, so they only line
+up if both were made by the same MuseScore. They are paired by filename, which means a
+repaginated render is silently scored against the wrong music - see the pagination guard
+in get_ossq_samples.
+
 Synthetic track only
 --------------------
 --track scanned is rejected on purpose. The per-system MusicXML and metadata are
@@ -245,6 +250,7 @@ def get_ossq_samples(
     materialized = 0
     meter_unknown = 0
     unassemblable: list[tuple[str, str]] = []
+    repaginated: list[tuple[str, int, int]] = []
 
     work_dirs = [
         d
@@ -258,7 +264,20 @@ def get_ossq_samples(
         for key in pages:
             by_score.setdefault(key.score_id, []).append(key)
 
-        for _, keys in sorted(by_score.items()):
+        for score_id, keys in sorted(by_score.items()):
+            # Pagination guard. Page indices come from the MusicXML layout, the images
+            # from rendering that same score - but only if both were produced by the
+            # same MuseScore. They are separate pipeline steps, and a different
+            # MuseScore version repaginates: 4.6.5 lays the Ravel quartet out over 56
+            # pages where the version behind the repo's tracked MusicXML used 47. The
+            # filenames still line up, so page 5 would be scored against a page 5 of
+            # different music - silently, and with a plausible-looking NED. Refuse the
+            # whole score instead.
+            rendered = len(list(image_dir.glob(f"{score_id}:*.png")))
+            expected = max(key.page for key in keys)
+            if rendered and rendered != expected:
+                repaginated.append((score_id, expected, rendered))
+                continue
             # One meter state per score, folded forward in page order. Every page of the
             # score is assembled even when its render is missing or it is later dropped
             # by --limit, so a skipped page cannot desynchronise the meter of the pages
@@ -290,6 +309,15 @@ def get_ossq_samples(
         print(f"  {len(unassemblable)} pages skipped: reference could not be assembled.")
         for sample_id, reason in unassemblable[:10]:
             print(f"    [{sample_id}] {reason}", file=sys.stderr)
+    if repaginated:
+        print(
+            f"  {len(repaginated)} scores REFUSED: page count disagrees with the reference"
+            " - regenerate the MusicXML and the renders with the same MuseScore."
+        )
+        for score_id, expected, rendered in repaginated[:10]:
+            print(
+                f"    [{score_id}] reference {expected} pages, {rendered} rendered", file=sys.stderr
+            )
     if not samples:
         raise SystemExit("No samples found - check --dataset-root, --track and --score.")
     return samples
