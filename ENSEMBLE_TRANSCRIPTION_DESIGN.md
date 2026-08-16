@@ -1849,7 +1849,7 @@ stem head would train on nothing and report a clean zero loss over zero position
 
 **The step**: regenerate the segments with `--remove-stem-direction 0`. That is 13.2's
 "revised cleaning path proven to preserve these fields", and it is a flag rather than new
-code.
+code. **Done** - all 13,244 segments now carry `<stem>`, so the stem head has supervision.
 
 Two things it does not disturb. NED is unaffected, because stem direction is not one of
 the six fields `EncodedSymbol` compares on, so the benchmark's ground truth means exactly
@@ -1972,6 +1972,29 @@ The measurement also caught a labelling bug: the extractor was marking rests FLA
 applicable levels. A rest has no stem and therefore no beam or flag, so every eighth rest
 in the corpus was entering the beam heads' training signal as a positive. Fixed, and the
 baseline moved 69.8% -> 78.0% once it was.
+
+### 27.13 The scanned track, built
+
+The scanned pipeline was run for all 96 scores with a scanned PDF, using each score's own
+recorded YOLO models and thresholds (`--reproduce 1`):
+
+```
+scores aligned                     89 / 96
+aligned scanned system musicxml    10,548
+benchmark pages built              2,468 across 89 works
+```
+
+Against the 11,304 predicted from the published system-image count, so seven scores did
+not align. `align_systems_lmxe` requires the detected system count to equal the symbolic
+one exactly and skips the score otherwise, and the log names each one with both figures.
+Most are near misses - 179 symbolic against 178 detected - but `sq9790696` detected 36
+systems against 159 expected, which is a detection failure rather than an off-by-one and
+would need that score's `yolo_infos.yaml` exceptions revisited.
+
+Refusing those seven is the right outcome rather than a shortfall: a score whose systems
+were only partly detected would pair the wrong music with every page after the first
+miss, which is exactly what the positional alignment cannot survive and what the count
+check exists to catch.
 
 ### 27.7 Known gaps
 
