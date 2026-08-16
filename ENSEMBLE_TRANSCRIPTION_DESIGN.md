@@ -2273,6 +2273,45 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.27 The stem head can be replaced by a rule over its own beam predictions
+
+27.26 proposed it; this measures it. Stem direction derived from the *predicted* beam
+grouping plus pitch, scored over exactly the notes the stem head is scored on - 111,229,
+which is the evaluation's up (51,871) and down (59,358) added together, so the populations
+are identical rather than merely similar:
+
+```
+pitch alone                     91.0%
+the trained stem head           94.3%     25,137 parameters
+grouped by predicted beams      94.4%     no parameters
+grouped by reference beams      94.9%     upper bound, perfect grouping
+```
+
+**The rule matches the head and edges past it.** The head is not adding anything the beam
+predictions plus a middle-line rule do not already give, which is what 27.23 suspected and
+27.26 predicted.
+
+The gap between predicted and reference grouping is 0.5 points, so the derived figure will
+improve as the beam heads do - it inherits their accuracy instead of competing with it.
+That is the better dependency: one capability improving two outputs.
+
+**What follows.** The stem head is a candidate for removal, not a proven failure. Three
+things are worth settling first:
+
+- Whether it holds on `test_synth`, where the beam baseline is 8 points lower than on
+  `valid` and predicted grouping will therefore be worse.
+- Whether the two disagree on the *same* notes. A head that is 94.3% right on a different
+  set from the rule's 94.4% could still be worth keeping as an ensemble; one that fails
+  where the rule fails is pure redundancy. This needs the crosstab treatment that settled
+  Gate C, not a comparison of totals.
+- The multi-voice convention (upper voice up, lower down) is not applied here, because
+  homr does not emit voice. It was worth 0.3 points in 27.23, so its absence is not what
+  separates these numbers.
+
+Note what this does *not* say about beams. Beams needed a head because 18% of them are not
+derivable from anything homr already has. Stems are derivable from beams, so the beam head
+carries both - which is an argument for the beam heads, not against heads in general.
+
 ### 27.26 The converged run: three epochs was already most of the way
 
 Item 9 asked whether 27.21's numbers were a floor. They were, but a shallow one: twelve
