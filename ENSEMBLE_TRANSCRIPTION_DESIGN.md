@@ -1996,6 +1996,37 @@ were only partly detected would pair the wrong music with every page after the f
 miss, which is exactly what the positional alignment cannot survive and what the count
 check exists to catch.
 
+### 27.14 B0 on the scanned track, and the synthetic-to-scan gap
+
+2,452 of 2,468 pages scored, against the synthetic corpus for comparison:
+
+```
+             pages   overall   rhythm   pitch    lift   artic    slur   layout fail
+synthetic     3159     7.79%    5.39%   3.46%   3.28%   4.13%   4.09%      2.9%
+scanned       2452    10.00%    6.42%   3.82%   3.67%   4.64%   4.47%      3.1%
+```
+
+Two things stand out, and the second was not expected.
+
+**The domain gap is smaller than the framing suggests.** 23 names the synthetic-to-scan
+gap as a principal risk, and it is real - 1.28x on the mean, 1.57x on the median - but
+these are photographs of different editions scored against symbolic ground truth, and the
+degradation is a quarter rather than a multiple. Every field moves together, roughly
+proportionally, rather than one collapsing: no component of recognition falls apart on
+scans, they all get modestly harder. An earlier reading of two pages suggested rhythm
+carried nearly all the scanned error; across 2,452 it does not.
+
+**Layout failure is the same on both tracks: 2.9% synthetic, 3.1% scanned.** That was not
+a given. The grouping in 8.2 decides from staff spacing measured in unit sizes, and
+nothing about it was tuned for scans - yet it transfers from clean renders to photographs
+essentially unchanged. The failure *modes* do differ: synthetic failures are almost all
+four parts read as one, while scans also over-detect, producing 5, 6, 7 and even 9 parts
+where there are 4. Spurious staves are a scanning artefact the geometry has no reason to
+catch, and they are the residue worth attacking next on that track.
+
+Taken together these say the remaining gap is mostly in transcription rather than
+structure, which is where the notation heads are aimed.
+
 ### 27.7 Known gaps
 
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are
