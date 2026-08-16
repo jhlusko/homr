@@ -2174,6 +2174,39 @@ instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. I
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
 
+### 27.18 Whole-measure rests need no repair on the training side
+
+Converting real segments raises hundreds of `Note without duration` warnings, which is
+27.5's finding: whole-measure rests carry no `<duration>` because MusicXML lets the meter
+imply it. §27.5 repairs this for the benchmark, so the obvious conclusion is that
+`convert_ossq.py` needs the same repair. It does not, and adding it would have introduced
+label errors.
+
+Measured on 800 segments: every durationless rest is `<rest measure="yes"/>`, 1,110 of
+8,106 rests (13.7%), and all of them lack `<type>` as well. But the parser does not reach
+`<type>` for these - a measure rest takes a separate path through
+`_measure_rest_rhythm(duration, divisions)`, and with duration 0 that falls through its
+lookup table and returns `rest_1`. The rest is still emitted; only its value is in
+question.
+
+`rest_1` is the right label. A full-bar rest is engraved as a whole-rest glyph in the
+simple meters this corpus uses, whatever the meter, so the token matches the image.
+Materialising the duration would produce `rest_2.` in 3/4 and `rest_2` in 2/4 - correct
+arithmetic, wrong glyph, and a label error on one of the most common constructs in
+ensemble music.
+
+It is also not possible per segment. `<divisions>` appears in 100% of segments but `<time>`
+in none of the ones carrying these rests: a systemwise segment restates the meter only at a
+movement start or a genuine meter change. The benchmark can materialise because it carries
+meter across pages; a converter working one segment at a time has nothing to compute from.
+
+**One flagged uncertainty, on the benchmark side rather than this one.** Materialising
+changes nothing in 4/4 - the arithmetic gives back `rest_1` - so §27.5's repair only alters
+the reference in other meters, where it will disagree with a whole-rest glyph that homr
+reads correctly, and charge that to homr. How much this matters depends on how much of the
+corpus is not in 4/4, which has not been measured. It would be settled by comparing the
+reference token against homr's output on measure rests in 3/4 bars specifically.
+
 ### 27.17 Slurs that cross a system break
 
 The training unit is one system's staff, so the symbolic segment behind it is cut at
