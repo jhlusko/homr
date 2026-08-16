@@ -2027,6 +2027,56 @@ catch, and they are the residue worth attacking next on that track.
 Taken together these say the remaining gap is mostly in transcription rather than
 structure, which is where the notation heads are aimed.
 
+### 27.15 The frozen-core run, made runnable
+
+Three things stood between the design and a first Phase 2 run, and none of them was the
+part that had been written.
+
+**There was no entry point.** `train_structured_heads.main()` was a guard over an empty
+body - no model, no loader, no loop - so removing the guard would not have produced a
+run. It now builds the model with the heads enabled, loads the pinned checkpoint under
+the allowlist, freezes the core, and iterates the wrapped dataset.
+
+**The targets were a position out.** The decoder reads `rhythms[:, :-1]`, so its hidden
+state at *t* is the prediction for token *t+1*, and the structured heads sit on that same
+hidden state. Targets laid out over the full token sequence are one place to the left of
+the logits meant to score them. This is the kind of error that does not announce itself:
+the shapes differ by one, which torch catches only until something pads or truncates, and
+then every head trains on the token *after* the one it describes, converges to something
+plausible, and reports a healthy loss. It is now `align_to_decoder_output`, a named
+function with a test, and the stand-in model in the tests shortens by one exactly as the
+real decoder does - otherwise the test would pass whatever the alignment.
+
+**There is no published `.pth`.** homr's `download_weights` fetches ONNX only, and the
+frozen-core experiment needs torch weights. The checkpoint does exist, in a separate
+release that nothing in the code references:
+
+```
+https://github.com/liebharc/homr/releases/download/checkpoints/
+  pytorch_model_426-b6fd20809a8dcaf10dfd39a4ca4f64c6f056e644.zip
+```
+
+That is the run-426 checkpoint named by `Config.filepaths.checkpoint`, so it is the same
+core B0 measured, not a nearby one. Unzip it into
+`training/architecture/transformer/`. It loads cleanly into a model with the heads
+enabled:
+
+```
+checkpoint: loaded 326 parameters; initialized 18 new ones under decoder.structured_heads
+trainable tensors: 18   frozen: 326   trainable params: 25,137
+heads: beam, slur_event, slur_side, stem
+```
+
+25,137 trainable parameters against a 300 MB core is the shape the experiment wants: if
+these heads learn anything, it is because the representation already carried it.
+
+**Environment.** The benchmark venv is inference-only. Training additionally needs
+`x_transformers`, `timm` and `albumentations`; installing `timm` pulls a PyPI
+`torchvision` built against the CUDA torch ABI, which fails at import against this
+instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. Install
+`torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
+torch build instead; the checkpoint load and the unit tests do not.
+
 ### 27.7 Known gaps
 
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are
