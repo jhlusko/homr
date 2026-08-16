@@ -106,6 +106,7 @@ def _record_success(
     kern_parser: str = "native",
     xml_parser: str = "native",
     ignore_unreliable_articulation: bool = False,
+    collapse_repeated_attributes: bool = False,
 ) -> None:
     kern_parts: list[list[EncodedSymbol]] = []
     xml_parts: list[list[EncodedSymbol]] = []
@@ -117,7 +118,12 @@ def _record_success(
         )
     else:
         kern_parts, xml_parts = _parse_output(
-            kern_text, raw_output, kern_parser, xml_parser, ignore_unreliable_articulation
+            kern_text,
+            raw_output,
+            kern_parser,
+            xml_parser,
+            ignore_unreliable_articulation,
+            collapse_repeated_attributes,
         )
         result = _ned_from_parts(kern_parts, xml_parts)
     results.append(result)
@@ -164,6 +170,7 @@ def update_ned_scores(
     xml_parser: str = "native",
     limit: int | None = None,
     ignore_unreliable_articulation: bool = False,
+    collapse_repeated_attributes: bool = False,
 ) -> None:
     """Recompute NED for all samples with stored actual_text using the current parsers.
 
@@ -202,7 +209,12 @@ def update_ned_scores(
                 events = []
             else:
                 kern_parts, xml_parts = _parse_output(
-                    kern_text, actual_text, kern_parser, xml_parser, ignore_unreliable_articulation
+                    kern_text,
+                    actual_text,
+                    kern_parser,
+                    xml_parser,
+                    ignore_unreliable_articulation,
+                    collapse_repeated_attributes,
                 )
                 result = _ned_from_parts(kern_parts, xml_parts)
                 events = _events_for_parts(kern_parts, xml_parts)
@@ -302,6 +314,7 @@ def run_benchmark(
     kern_parser: str = "native",
     xml_parser: str = "native",
     ignore_unreliable_articulation: bool = False,
+    collapse_repeated_attributes: bool = False,
 ) -> None:
     """
     Wire data source, tool, and check together.
@@ -317,6 +330,9 @@ def run_benchmark(
     batch_size:   number of samples per batch_run() call (default 10)
     ignore_unreliable_articulation: see ned_score.py's "Known ground-truth reliability
                   exceptions" - only ever set True by validation/polish-scores.py.
+    collapse_repeated_attributes: see ned_score._collapse_repeated_attributes - only ever
+                  set True by validation/ossq.py, whose samples are whole multi-system
+                  pages.
     """
     db: BenchmarkDB | None = None
     skip_ids: set[str] = set()
@@ -395,6 +411,7 @@ def run_benchmark(
                                 kern_parser,
                                 xml_parser,
                                 ignore_unreliable_articulation,
+                                collapse_repeated_attributes,
                             )
                     except Exception as e:  # noqa: BLE001
                         _record_failure(
@@ -429,6 +446,7 @@ def run_benchmark(
                         kern_parser,
                         xml_parser,
                         ignore_unreliable_articulation,
+                        collapse_repeated_attributes,
                     )
             except Exception as e:  # noqa: BLE001
                 _record_failure(

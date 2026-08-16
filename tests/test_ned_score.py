@@ -232,6 +232,65 @@ class TestMusicXmlGroundTruth(unittest.TestCase):
         self.assertGreater(result.pitch_ned, 0.0)
         self.assertEqual(result.rhythm_ned, 0.0)
 
+    def test_repeated_clef_and_key_can_be_collapsed_on_both_sides(self) -> None:
+        # The reference restates clef and key at every system start; homr reports state
+        # changes only. Same music, different convention.
+        restated = _one_part_xml("CD") + ""
+        reference = restated.replace(
+            "</measure></part>",
+            "</measure><measure number='2'>"
+            "<attributes><key><fifths>0</fifths></key>"
+            "<clef><sign>G</sign><line>2</line></clef></attributes>"
+            "<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration>"
+            "<type>quarter</type><voice>1</voice><staff>1</staff></note>"
+            "</measure></part>",
+        )
+        prediction = restated.replace(
+            "</measure></part>",
+            "</measure><measure number='2'>"
+            "<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration>"
+            "<type>quarter</type><voice>1</voice><staff>1</staff></note>"
+            "</measure></part>",
+        )
+
+        as_written = compute_ned(reference, prediction)
+        collapsed = compute_ned(reference, prediction, collapse_repeated_attributes=True)
+
+        self.assertGreater(as_written.ned, 0.0)
+        self.assertEqual(collapsed.ned, 0.0)
+
+    def test_collapsing_still_penalises_a_wrong_clef(self) -> None:
+        reference = _one_part_xml("CD")
+        prediction = reference.replace(
+            "<sign>G</sign><line>2</line>", "<sign>F</sign><line>4</line>"
+        )
+
+        collapsed = compute_ned(reference, prediction, collapse_repeated_attributes=True)
+
+        self.assertGreater(collapsed.ned, 0.0)
+
+    def test_collapsing_keeps_a_genuine_clef_change(self) -> None:
+        # A mid-part clef change is a change, not a restatement, and must survive.
+        reference = _one_part_xml("CD").replace(
+            "</measure></part>",
+            "</measure><measure number='2'>"
+            "<attributes><clef><sign>F</sign><line>4</line></clef></attributes>"
+            "<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration>"
+            "<type>quarter</type><voice>1</voice><staff>1</staff></note>"
+            "</measure></part>",
+        )
+        prediction = _one_part_xml("CD").replace(
+            "</measure></part>",
+            "</measure><measure number='2'>"
+            "<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration>"
+            "<type>quarter</type><voice>1</voice><staff>1</staff></note>"
+            "</measure></part>",
+        )
+
+        collapsed = compute_ned(reference, prediction, collapse_repeated_attributes=True)
+
+        self.assertGreater(collapsed.ned, 0.0)
+
     def test_kern_ground_truth_against_musicxml_prediction_is_unaffected(self) -> None:
         # The mixed kern/MusicXML case is what smb and polish-scores rely on; detecting
         # the format per side must not have changed it.

@@ -343,6 +343,17 @@ def main() -> None:
         help="Samples per batch for tools that support batch_run (default: 10).",
     )
     parser.add_argument(
+        "--raw-attributes",
+        action="store_true",
+        help=(
+            "Score every clef/key/time token as written, instead of collapsing repeats "
+            "of the value already in force. The reference restates clef and key at each "
+            "system start (engraving practice) while homr reports state changes only, so "
+            "leaving these uncollapsed measures the encoding convention rather than the "
+            "recognition - on quartet pages it was 40%% of all non-matching tokens."
+        ),
+    )
+    parser.add_argument(
         "--xml-parser",
         choices=["native", "music21", "musicdiff", "musicdiff_detailed"],
         default="native",
@@ -375,6 +386,7 @@ def main() -> None:
             verbose=args.verbose,
             xml_parser=args.xml_parser,
             limit=args.limit,
+            collapse_repeated_attributes=not args.raw_attributes,
         )
         return
 
@@ -389,6 +401,7 @@ def main() -> None:
         continue_run=args.continue_run,
         batch_size=args.batch_size,
         xml_parser=args.xml_parser,
+        collapse_repeated_attributes=not args.raw_attributes,
     )
 
 

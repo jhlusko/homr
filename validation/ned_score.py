@@ -325,6 +325,39 @@ def _is_xml(text: str) -> bool:
     return stripped.startswith("<?xml") or "<score-partwise" in stripped[:500]
 
 
+_ATTRIBUTE_KINDS = ("clef", "keySignature", "timeSignature")
+
+
+def _collapse_repeated_attributes(part: list[EncodedSymbol]) -> list[EncodedSymbol]:
+    """Keep only attribute tokens that change the running clef/key/meter.
+
+    Engraving restates the clef and key at the start of every system, and a page-level
+    reference built from per-system sources carries every one of those restatements.
+    homr reports the musical state instead: one clef per part, then changes only. Both
+    encode the same page, so scoring them against each other measures the convention,
+    not the recognition - on OSSQ quartet pages the restatements were 40% of all
+    non-matching tokens, roughly doubling the reported NED.
+
+    Collapsing both sides removes that. It cannot hide a real error: a clef or key homr
+    got wrong is a change on its side, a change the reference does not have, and
+    survives. Only exact repeats of the value already in force are dropped.
+
+    This is opt-in per dataset. The single-system benchmarks have at most one system per
+    sample, so it would be a no-op there, and enabling it globally would silently change
+    their published numbers.
+    """
+    active: dict[str, str] = {}
+    result: list[EncodedSymbol] = []
+    for symbol in part:
+        kind = next((k for k in _ATTRIBUTE_KINDS if symbol.rhythm.startswith(k)), None)
+        if kind is None:
+            result.append(symbol)
+        elif active.get(kind) != symbol.rhythm:
+            active[kind] = symbol.rhythm
+            result.append(symbol)
+    return result
+
+
 def _side_parts(text: str, kern_parser: str, xml_parser: str) -> list[list[EncodedSymbol]]:
     """Parse one side of the comparison (MusicXML or **kern) into per-part token lists.
 
@@ -355,6 +388,7 @@ def _parse_output(
     kern_parser: str = "native",
     xml_parser: str = "native",
     ignore_unreliable_articulation: bool = False,
+    collapse_repeated_attributes: bool = False,
 ) -> tuple[list[list[EncodedSymbol]], list[list[EncodedSymbol]]]:
     """Parse ground truth and tool raw output into aligned per-part token lists.
 
@@ -365,12 +399,17 @@ def _parse_output(
     ignore_unreliable_articulation: see "Known ground-truth reliability exceptions"
     above - opt-in only, set by callers benchmarking datasets with confirmed-unreliable
     articulation ground truth.
+    collapse_repeated_attributes: see _collapse_repeated_attributes - opt-in only, for
+    multi-system samples whose reference restates clef/key at every system.
     """
     gt_parts = _side_parts(gt_text, kern_parser, xml_parser)
     pred_parts = _side_parts(raw_output, kern_parser, xml_parser)
     if ignore_unreliable_articulation:
         gt_parts = _strip_articulation_from_parts(gt_parts)
         pred_parts = _strip_articulation_from_parts(pred_parts)
+    if collapse_repeated_attributes:
+        gt_parts = [_collapse_repeated_attributes(p) for p in gt_parts]
+        pred_parts = [_collapse_repeated_attributes(p) for p in pred_parts]
     return gt_parts, pred_parts
 
 
@@ -546,16 +585,23 @@ def _alignment_events(
 
 
 def compute_ned(
-    gt_text: str, raw_output: str, ignore_unreliable_articulation: bool = False
+    gt_text: str,
+    raw_output: str,
+    ignore_unreliable_articulation: bool = False,
+    collapse_repeated_attributes: bool = False,
 ) -> NedResult:
     """Compute OMR-NED between ground truth and tool output.
 
     Both sides may be MusicXML or **kern; each format is detected independently.
 
     ignore_unreliable_articulation: see "Known ground-truth reliability exceptions" above.
+    collapse_repeated_attributes: see _collapse_repeated_attributes.
     """
     gt_parts, pred_parts = _parse_output(
-        gt_text, raw_output, ignore_unreliable_articulation=ignore_unreliable_articulation
+        gt_text,
+        raw_output,
+        ignore_unreliable_articulation=ignore_unreliable_articulation,
+        collapse_repeated_attributes=collapse_repeated_attributes,
     )
     return _ned_from_parts(gt_parts, pred_parts)
 
