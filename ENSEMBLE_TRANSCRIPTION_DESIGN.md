@@ -1886,6 +1886,23 @@ note-bearing symbols is recorded when writing and checked when reading, so a mis
 refused rather than mis-attached. That is a guard against our own bug, not an inference
 about someone else's data.
 
+### 27.10 homr's rhythm vocabulary stops at the 128th note
+
+A corpus run failed one page with a bare `'256th'`, which is a KeyError from
+`DURATION_NUMBER` in the MusicXML parser. `DURATION_NAMES` runs breve, whole, half,
+quarter, eighth, 16th, 32nd, 64th, 128th - and stops. A 256th note cannot be tokenised,
+so a score containing one cannot be parsed at all, in the benchmark's ground truth or
+anywhere else.
+
+This is pre-existing and unrelated to the structured heads, but it settles one of their
+open questions from a second direction. 27.5 already showed beam level 6 has no training
+examples; level 6 is by definition the 256th note, and homr has no rhythm token for it.
+A level-6 beam head could not be trained, and its predictions would attach to notes the
+model cannot emit. Level 5 is the 128th, which is representable.
+
+So level 6 is not merely unsupported for want of data - it is unreachable, and should
+stay out of the trained configuration on that ground alone.
+
 ### 27.7 Known gaps
 
 - 2.9% of pages still fail layout, 80 of them collapsing four parts to one. These are
