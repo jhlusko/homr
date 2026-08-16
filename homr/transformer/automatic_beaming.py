@@ -53,7 +53,29 @@ def beat_divisions(beats: int, beat_type: int, divisions_per_quarter: int) -> in
     return unit
 
 
-def automatic_beams(notes: Sequence[BeamableNote], beat: int) -> list[tuple[BeamLevelState, ...]]:
+def wide_unit(beats: int, beat_type: int, divisions_per_quarter: int) -> int:
+    """The widest span a group of eighths may cross, which is not always the beat.
+
+    Simple duple metres beam eighths by the half-bar: eight eighths in 4/4 are engraved
+    as two groups of four, not four of two. Beaming everything strictly to the beat is
+    the textbook rule but not what engravers do, and a baseline that gets this wrong
+    reports house style as though it were an exception only the page could reveal.
+
+    Shorter values keep their beat-level groups - adding a sixteenth to a run of eighths
+    pulls the whole group back to the beat - which is what `automatic_beams` uses this for.
+    """
+    beat = beat_divisions(beats, beat_type, divisions_per_quarter)
+    is_compound = beat_type >= 8 and beats % 3 == 0 and beats > 3
+    if is_compound or beat_type == 0:
+        return beat
+    if beats % 2 == 0:
+        return beat * 2
+    return beat
+
+
+def automatic_beams(
+    notes: Sequence[BeamableNote], beat: int, wide: int | None = None
+) -> list[tuple[BeamLevelState, ...]]:
     """Beam vectors the rule produces for one voice of one measure.
 
     Groups run while consecutive notes carry flags and stay inside one beat. A group of
@@ -63,15 +85,21 @@ def automatic_beams(notes: Sequence[BeamableNote], beat: int) -> list[tuple[Beam
     vectors: list[list[BeamLevelState]] = [
         [BeamLevelState.NOT_APPLICABLE] * MAX_BEAM_LEVELS for _ in notes
     ]
-    for start, end in _groups(notes, beat):
+    for start, end in _groups(notes, beat, wide if wide is not None else beat):
         _beam_group(notes, vectors, start, end)
     return [tuple(vector) for vector in vectors]
 
 
-def _groups(notes: Sequence[BeamableNote], beat: int) -> list[tuple[int, int]]:
-    """Half-open index ranges of consecutive notes the rule beams together."""
+def _groups(notes: Sequence[BeamableNote], beat: int, wide: int) -> list[tuple[int, int]]:
+    """Half-open index ranges of consecutive notes the rule beams together.
+
+    The span a group may cross depends on the shortest value in it: a run of eighths may
+    cross to the wide unit, but one sixteenth anywhere in it pulls the whole group back to
+    the beat.
+    """
     groups: list[tuple[int, int]] = []
     start: int | None = None
+    span = wide
     for index, note in enumerate(notes):
         beamable = note.flags > 0 and not note.is_rest
         if not beamable:
@@ -79,12 +107,14 @@ def _groups(notes: Sequence[BeamableNote], beat: int) -> list[tuple[int, int]]:
                 groups.append((start, index))
                 start = None
             continue
+        unit = wide if note.flags <= 1 else beat
         if start is None:
-            start = index
-        elif beat > 0 and note.onset // beat != notes[start].onset // beat:
-            # A new beat starts a new group, which is the whole of the rule.
+            start, span = index, unit
+            continue
+        span = min(span, unit)
+        if span > 0 and note.onset // span != notes[start].onset // span:
             groups.append((start, index))
-            start = index
+            start, span = index, unit
     if start is not None:
         groups.append((start, len(notes)))
     return groups

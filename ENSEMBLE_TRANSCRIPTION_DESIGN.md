@@ -1945,14 +1945,28 @@ So roughly a fifth of the corpus's beaming is not derivable from duration and me
 is a real target: a head that learns nothing beyond the rule would be worthless, and one
 that recovers even half the exceptions is recovering something only the image carries.
 
-**Read the 22% as an upper bound, not a score to beat.** The largest disagreements are
-`begin -> continue` and `end -> continue`, 13,172 between them, which is the rule breaking
-a group at every beat where the engraving carries it across - eight eighths in 4/4 beamed
-as two groups of four rather than four of two. That is a house-style difference, not an
-exception the page reveals. A baseline tuned to beam by half-bar in simple duple metre
-would close much of it, and Gate C should be judged against that stronger baseline rather
-than this one. The genuinely visual residue is smaller than 22%, and how much smaller is
-itself worth measuring before reading any head result as a success.
+The largest disagreements under that rule were `begin -> continue` and `end -> continue`,
+13,172 between them, which is the rule breaking a group at every beat where the engraving
+carries it across - eight eighths in 4/4 beamed as two groups of four rather than four of
+two. That is house style rather than an exception the page reveals, so the rule was
+strengthened to beam eighths by the half-bar in simple duple metre, with any shorter value
+in a group pulling it back to the beat.
+
+```
+strict beat rule    136,299 / 174,830   78.0% match   22.0% exceptions
+half-bar rule       138,824 / 174,830   79.4% match   20.6% exceptions
+```
+
+**That correction was expected to close much of the gap and did not - it closed 1.4
+points of 22.** The remaining disagreements are also no longer one-sided: `continue ->
+begin` and `continue -> end` (8,155) now sit alongside `begin -> continue` and `end ->
+continue` (4,836). A systematic rule offset would push in one direction; this pushes both
+ways, which is what per-instance editorial choice looks like rather than a rule still
+waiting to be implemented.
+
+So about a fifth of this corpus's beaming appears genuinely not derivable by any fixed
+rule, and that residue is what the beam heads are for. Gate C should be judged against
+the half-bar baseline, not the strict one.
 
 The measurement also caught a labelling bug: the extractor was marking rests FLAG at their
 applicable levels. A rest has no stem and therefore no beam or flag, so every eighth rest

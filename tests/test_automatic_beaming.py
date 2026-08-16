@@ -5,6 +5,7 @@ from homr.transformer.automatic_beaming import (
     agreement,
     automatic_beams,
     beat_divisions,
+    wide_unit,
 )
 from homr.transformer.structured_notation import BeamLevelState as B
 
@@ -127,3 +128,37 @@ class TestAgreement(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestWideUnit(unittest.TestCase):
+    def test_simple_duple_beams_eighths_by_the_half_bar(self) -> None:
+        # Eight eighths in 4/4 are engraved as two groups of four, not four of two.
+        self.assertEqual(wide_unit(4, 4, DIV), DIV * 2)
+
+    def test_triple_metre_keeps_the_beat(self) -> None:
+        self.assertEqual(wide_unit(3, 4, DIV), DIV)
+
+    def test_compound_metre_keeps_its_compound_beat(self) -> None:
+        self.assertEqual(wide_unit(6, 8, DIV), beat_divisions(6, 8, DIV))
+
+    def test_eighths_cross_the_beat_when_the_wide_unit_allows(self) -> None:
+        vectors = automatic_beams(_eighths(4), beat=DIV, wide=DIV * 2)
+
+        self.assertEqual(_level(vectors), [B.BEGIN, B.CONTINUE, B.CONTINUE, B.END])
+
+    def test_a_sixteenth_pulls_the_whole_group_back_to_the_beat(self) -> None:
+        # Adding a shorter value to a run of eighths restores beat-level grouping.
+        notes = [
+            BeamableNote(0, 2, 1),
+            BeamableNote(2, 2, 1),
+            BeamableNote(4, 1, 2),
+            BeamableNote(5, 1, 2),
+        ]
+        vectors = automatic_beams(notes, beat=DIV, wide=DIV * 2)
+
+        self.assertEqual(_level(vectors)[:2], [B.BEGIN, B.END])
+
+    def test_omitting_the_wide_unit_keeps_the_strict_beat_rule(self) -> None:
+        vectors = automatic_beams(_eighths(4), beat=DIV)
+
+        self.assertEqual(_level(vectors), [B.BEGIN, B.END, B.BEGIN, B.END])
