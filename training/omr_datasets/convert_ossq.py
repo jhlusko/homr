@@ -111,7 +111,7 @@ def _write_example(
         # 27.20: the round-trip that produced these segments dropped slur placement, so it
         # is put back from the original score before tokenising. Writing it into the XML
         # means the ordinary extractor reads direction the way it always would.
-        apply_placements(single, placements)
+        apply_placements(single.find("part"), placements)
 
     scratch = out_dir / f"{stem}.musicxml"
     scratch.write_text(

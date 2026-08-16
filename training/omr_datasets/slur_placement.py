@@ -262,6 +262,14 @@ def apply_placements(part: ET.Element, placements: list[dict[str, str]]) -> int:
     segmentation, so a note's slur is matched to the whole score's by its own number
     rather than by ordering within the note.
     """
+    if part.tag != "part":
+        # Passing the <score-partwise> root instead of its <part> finds no measures, so
+        # every placement is silently dropped and the length check reads as an ordinary
+        # mismatch. That is how this failed the first time: the index built 457 slices
+        # carrying placement and not one of them landed. A wrong element is a programming
+        # error and says so; a length mismatch is a data condition and returns 0.
+        raise ValueError(f"expected a <part> element, got <{part.tag}>")
+
     applied = 0
     notes = [
         note

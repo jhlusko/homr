@@ -228,5 +228,35 @@ class TestApplyPlacements(unittest.TestCase):
         self.assertEqual(part.find(".//slur").get("placement"), "above")
 
 
+
+
+class TestApplyPlacementsRefusesTheWrongElement(unittest.TestCase):
+    """The failure that made the first re-conversion produce no placement at all.
+
+    extract_part returns a <score-partwise> root; apply_placements walks <measure>
+    children and so found none, dropped every placement, and reported it as an ordinary
+    length mismatch. 457 slices carried placement and not one landed.
+    """
+
+    def test_a_score_element_is_refused_rather_than_silently_dropped(self) -> None:
+        score = ET.fromstring(
+            f'<score-partwise><part id="P1"><measure>{_slurred("C")}</measure></part>'
+            "</score-partwise>"
+        )
+
+        with self.assertRaises(ValueError):
+            apply_placements(score, [{"1": "above"}])
+
+    def test_its_part_child_works(self) -> None:
+        score = ET.fromstring(
+            f'<score-partwise><part id="P1"><measure>{_slurred("C")}</measure></part>'
+            "</score-partwise>"
+        )
+
+        applied = apply_placements(score.find("part"), [{"1": "above"}])
+
+        self.assertEqual(applied, 1)
+
+
 if __name__ == "__main__":
     unittest.main()
