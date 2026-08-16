@@ -2287,6 +2287,55 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.29 The re-conversion, and two bugs that only a prediction would have caught
+
+The rebuild carrying ties (27.24) and slur placement (27.22) was run against three
+predictions written down before the numbers arrived. That mattered: one prediction was
+met, one was wrong in an informative way, and one failure was caught only because it had
+been named in advance as the thing to watch.
+
+```
+                predicted                        actual
+ties            ~85,000, starts = stops          50,743; starts 23,158, stops 23,228
+placement       tens of thousands stated         "none stated"  - FAILED
+parts converted ~42,000 as before                38,451  - 3,637 fewer, unpredicted
+```
+
+**Ties landed.** The near-equality of starts and stops is the load-bearing part: it is the
+check that the extractor is not losing one end of a span. The count came in lower than
+predicted because the estimate was extrapolated from an 800-segment sample, which is a
+reminder that a sample of a corpus this uneven scales badly.
+
+**Placement did not land, and the cause was a silent no-op.** `extract_part` returns a
+`<score-partwise>` root; `apply_placements` walks `<measure>` children and so found none,
+dropped every placement, and reported it as an ordinary length mismatch. For one score
+alone, 457 slices carried placement and not one of them landed. The index built by 27.22
+was correct the whole time.
+
+The fix is in two places, because the call site was only half of it. The caller passes
+`single.find("part")`. And `apply_placements` now raises on an element that is not a
+`<part>`: a wrong element is a programming error and should say so, where a length
+mismatch is a data condition and still returns 0. Without that distinction the next such
+mistake looks exactly like a corpus that states no placement - which is precisely how this
+one presented.
+
+**The unpredicted loss was a pre-existing problem becoming visible.** 3,637 parts (8.6%)
+were refused for tokens like `slurStop_slurStop`, which is real music: two concurrent
+slurs both ending on one note. homr's slur branch has three values and cannot express it,
+so the conversion-time vocabulary check - added *after* the previous run - correctly
+refused what the previous run had silently written.
+
+Refusing is the wrong trade. The sidecar carries slur slots 1 and 2 separately and keeps
+both endpoints exactly, so the only thing that cannot hold this is the legacy field the
+sidecar supersedes. Paying a twelfth of the training set to protect it loses far more than
+it saves, so the legacy field now collapses to its representable form, counted, and tested
+to emit only tokens the vocabulary contains.
+
+**The general point.** Writing the expected numbers down first turned a quiet "none
+stated" into a caught bug. Had the prediction not been made, that line would have read as
+a fact about the corpus - and the slur-side heads would have stayed untrainable for a
+reason nobody was looking for.
+
 ### 27.28 The stem head and the rule are complementary, not redundant
 
 27.27 read as a case for deleting the stem head: two sources, the same accuracy, so keep
