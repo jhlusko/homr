@@ -238,5 +238,40 @@ class TestEvaluationAccumulates(unittest.TestCase):
         self.assertEqual(evaluation.to_dict()["sequences"], 0)
 
 
+class TestStemDirectionIsComparableToTheBaseline(unittest.TestCase):
+    """The micro figure includes notes that have no stem at all.
+
+    Rests and whole notes are NOT_APPLICABLE, the head gets them nearly free, and the
+    rhythm token already determines them. stem_baseline scores only notes with a stated
+    direction, so setting the micro number against it would credit the head with a
+    category the rule never attempts.
+    """
+
+    def test_not_applicable_notes_are_left_out(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+        up = _note(stem=StemDirection.UP)
+        na = _note(stem=StemDirection.NOT_APPLICABLE)
+
+        # One directional note right, one wrong, plus ten free NOT_APPLICABLE.
+        evaluation.observe([up], [up])
+        evaluation.observe([_note(stem=StemDirection.DOWN)], [up])
+        for _ in range(10):
+            evaluation.observe([na], [na])
+
+        self.assertEqual(evaluation.stem_direction_accuracy, 0.5)
+        self.assertGreater(evaluation.stems.micro_accuracy, 0.9)
+
+    def test_it_is_reported_and_serialised(self) -> None:
+        evaluation = Evaluation(beam_levels=1, slur_slots=1)
+        up = _note(stem=StemDirection.UP)
+        evaluation.observe([up], [up])
+
+        self.assertIn("stem direction only", evaluation.describe())
+        self.assertIn("direction_only", evaluation.to_dict()["stems"])
+
+    def test_no_directional_notes_does_not_divide_by_zero(self) -> None:
+        self.assertEqual(Evaluation(beam_levels=1, slur_slots=1).stem_direction_accuracy, 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

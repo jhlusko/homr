@@ -253,6 +253,26 @@ class Evaluation:
     def exact_vector_rate(self) -> float:
         return self.vectors_matching / self.vectors_total if self.vectors_total else 0.0
 
+    @property
+    def stem_direction_accuracy(self) -> float:
+        """Accuracy over notes that actually have a stem.
+
+        The plain micro figure includes NOT_APPLICABLE - rests, whole notes - which the
+        head gets right almost for free and which the rhythm token already determines.
+        `stem_baseline.py` scores only notes with a stated direction, so this is the
+        figure that can be set against it; the micro number cannot.
+        """
+        directional = ("up", "down")
+        correct = sum(
+            self.stems.classes[name].true_positive
+            for name in directional
+            if name in self.stems.classes
+        )
+        total = sum(
+            self.stems.classes[name].support for name in directional if name in self.stems.classes
+        )
+        return correct / total if total else 0.0
+
     def describe(self) -> str:
         lines = [f"{self.sequences:,} sequence(s)", ""]
         for level in sorted(self.per_level):
@@ -268,6 +288,10 @@ class Evaluation:
             f"R={self.hooks.recall:.3f} (n={self.hooks.support:,})"
         )
         lines.append(f"stems: {self.stems.describe()}")
+        lines.append(
+            f"stem direction only (up/down, comparable to stem_baseline): "
+            f"{self.stem_direction_accuracy:.3f}"
+        )
         lines.append(
             f"slur spans: F1={self.slur_spans.f1:.3f} P={self.slur_spans.precision:.3f} "
             f"R={self.slur_spans.recall:.3f} (n={self.slur_spans.support:,})"
@@ -291,6 +315,10 @@ class Evaluation:
                 "total": self.vectors_total,
             },
             "hooks": {"f1": self.hooks.f1, "support": self.hooks.support},
-            "stems": {"macro_f1": self.stems.macro_f1, "micro": self.stems.micro_accuracy},
+            "stems": {
+                "macro_f1": self.stems.macro_f1,
+                "micro": self.stems.micro_accuracy,
+                "direction_only": self.stem_direction_accuracy,
+            },
             "slur_spans": {"f1": self.slur_spans.f1, "support": self.slur_spans.support},
         }

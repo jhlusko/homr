@@ -2190,6 +2190,75 @@ instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. I
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
 
+### 27.23 Stem direction is mostly a rule, and the head has not yet beaten it
+
+The beam heads have a baseline to clear; the stem head had none. 27.21 reports macro F1
+0.719 and micro 0.949 against nothing at all, which is the wrong way round - stem
+direction is the *most* rule-governed of the three notations, so a head that cannot beat
+the textbook rule has learned nothing worth keeping.
+
+`training/omr_datasets/stem_baseline.py` implements the rule engravers use: a note at or
+above the middle line takes a down stem, a chord takes the direction of the notehead
+furthest from the middle line, and where two voices share a staff the convention overrides
+pitch entirely (upper voice up, lower down). The middle line comes from the clef, so the
+whole rule needs only pitch and clef - both of which homr already predicts. On `valid`:
+
+```
+pitch-and-voice rule, per note                     102,725 / 112,051   91.7%
+same rule, one direction per engraved beam group   107,211 / 112,051   95.7%
+```
+
+The second is an upper bound rather than a rule homr could apply unaided - it uses the
+engraved beams to decide where a group starts - but it is the fair statement of what a
+rule *can* do, because real engraving sets one direction per beam, not per note.
+
+**So stem direction is 91.7% derivable from what homr already outputs, and the trained
+head's 94.9% micro is not a like-for-like comparison.** That micro includes
+`NOT_APPLICABLE` - rests and whole notes, which have no stem at all, which the rhythm
+token already determines, and which the rule never attempts. `Evaluation` now reports
+`stem direction only (up/down)` for exactly this comparison, and the converged run will be
+the first to have it.
+
+The honest position until then: the beam result is established (78.7% of exceptions
+recovered, 27.21), and **the stem result is not**. It sits between the per-note rule and
+the beam-grouped rule, which is the range where a head could be adding nothing. This is
+what a baseline is for, and it is the reason 15.3 asked for one.
+
+### 27.22 Slur placement can be recovered, and the join is verifiable
+
+27.20 left `slur.slot.N.side` untrainable: placement survives on half the slurs in the
+original whole scores and is stripped from every segment by the MuseScore round-trip.
+Recovering it needs a positional join - segment note *k* of a part is whole-score note *k*
+- which is the correspondence that has failed five times in this pipeline, so the join was
+measured before anything was built on it.
+
+The naive join aligns **4 parts of 48**. The shape of the failure is what makes it
+tractable: every failure is a *length* mismatch and none is a *signature* mismatch, which
+says both walks see the same music and one of them sees more notes than the other.
+
+Grace notes were the obvious suspect and are innocent - they match to the note on every
+part inspected. The cause is invisible notes (`print-object="no"`), which the segmentation
+drops: the shortfall equals `whole invisible - segment invisible` exactly, on all 16 parts
+checked by hand. Excluding them, corpus-wide:
+
+```
+parts checked                        484
+aligned note for note                484   100.0%
+length mismatches                      0
+signature mismatches                   0
+notes in aligned parts         1,409,056
+slur placements recoverable      178,433
+```
+
+Alignment is checked on a pitch-and-type signature rather than a count, because a dropped
+note and an added one cancel in a count - and that is precisely how a placement would
+transfer silently onto its neighbour.
+
+178,433 recoverable placements against slot 1's 141,385 slur starts is enough to train the
+side heads. What remains is the transfer itself: writing placement into the sidecars at
+conversion time, with the alignment check as a per-part precondition rather than an
+assumption.
+
 ### 27.21 Phase 2, the first frozen-core run, and Gate C
 
 **The heads clear the baseline, and they do it on the part of the corpus a rule cannot
