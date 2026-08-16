@@ -234,11 +234,14 @@ def assign_voice_slots(
     gap is how many staff-plus-gap units it exceeds one ordinary gap by. Both quantities
     are measured from this page's own full systems rather than assumed.
 
-    Returns None for a system whose slots cannot be pinned down, which the caller should
-    drop as before. That happens when the gaps account for fewer missing voices than are
-    actually absent - a staff missing from the top or bottom of a system leaves no gap to
-    measure, so there is no way to tell which end it went from, and guessing would read
-    every remaining staff into the wrong voice.
+    A voice missing from the top or bottom of a system leaves no internal gap to measure,
+    but it does leave one: the gap to the neighbouring system is oversized by the same
+    staff-plus-gap unit. On the page where the bracket rows read [4, 4, 3, 4, 4], the cut
+    after the short system measured 19.26 unit sizes against a typical 9.15 - one staff's
+    worth - which places the absent voice at that system's bottom.
+
+    Returns None for a system whose slots still cannot be pinned down, which the caller
+    should drop as before: guessing would read every remaining staff into the wrong voice.
     """
     size = partition.staves_per_system
     gaps = _normalized_gaps(staffs)
@@ -257,8 +260,24 @@ def assign_voice_slots(
     if stride <= 0:
         return [None] * len(partition.groups)
 
+    # The yardstick for an edge-missing voice is what a system boundary normally measures.
+    # Boundaries touching a short system are the ones under suspicion, so they are left
+    # out of the estimate unless there is nothing else to measure.
+    short = {index for group in partition.groups if len(group) != size for index in (group[0],)}
+    boundaries = [group[0] for group in partition.groups[1:]]
+    undisputed = [
+        gaps[index - 1]
+        for index in boundaries
+        if index not in short
+        and index - 1 not in {g[-1] for g in partition.groups if len(g) != size}
+    ]
+    typical_cut = statistics.median(undisputed or [gaps[index - 1] for index in boundaries])
+
+    def voices_in(excess: float) -> int:
+        return max(round(excess / stride), 0)
+
     result: list[tuple[int, ...] | None] = []
-    for group in partition.groups:
+    for position, group in enumerate(partition.groups):
         if len(group) == size:
             result.append(tuple(range(size)))
             continue
@@ -266,9 +285,20 @@ def assign_voice_slots(
         for index in group[1:]:
             skipped = round((gaps[index - 1] - ordinary_gap) / stride)
             slots.append(slots[-1] + 1 + max(skipped, 0))
-        # Only trust the assignment when the spacing accounts for every absent voice.
-        if slots[-1] == size - 1 and len(set(slots)) == len(slots):
-            result.append(tuple(slots))
-        else:
-            result.append(None)
+
+        # Voices the internal gaps did not account for must be at one end or the other,
+        # and the oversized boundary says which.
+        at_edges = size - (slots[-1] + 1)
+        resolved = at_edges == 0
+        if not resolved:
+            before = gaps[group[0] - 1] if position > 0 else None
+            after = gaps[group[-1]] if group[-1] + 1 < len(staffs) else None
+            front = voices_in(before - typical_cut) if before is not None else 0
+            back = voices_in(after - typical_cut) if after is not None else 0
+            if front + back == at_edges:
+                slots = [slot + front for slot in slots]
+                resolved = True
+
+        valid = resolved and len(set(slots)) == len(slots) and slots[-1] <= size - 1
+        result.append(tuple(slots) if valid else None)
     return result

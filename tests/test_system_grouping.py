@@ -236,3 +236,51 @@ class TestVoiceSlots(unittest.TestCase):
 
         self.assertEqual(slots[0], (0, 3))
         self.assertEqual(slots[1:], [(0, 1, 2, 3)] * 4)
+
+
+class TestVoiceSlotsAtSystemEdges(unittest.TestCase):
+    """A voice missing from a system's top or bottom leaves no internal gap, but it does
+    leave an oversized boundary to the neighbouring system."""
+
+    def _slots(self, gaps: list[float]) -> list:
+        staffs = _from_gaps(gaps)
+        result = _require(find_system_grouping(staffs, set()))
+        return assign_voice_slots(staffs, result.best)
+
+    def test_a_voice_missing_from_the_bottom_is_read_from_the_next_boundary(self) -> None:
+        # Measured on sq7313978:0010.png, whose bracket rows read [4, 4, 3, 4, 4]: the
+        # short system's own gaps are ordinary, and the cut after it is 19.26 against a
+        # typical 9.15 - one staff plus one gap - so the absent voice is its last.
+        gaps = [
+            6.17, 7.91, 7.94,
+            9.52, 4.87, 7.23, 6.61,
+            11.10, 3.57, 4.13,
+            19.26, 3.90, 3.97, 4.54,
+            8.77, 5.89, 7.36, 7.37,
+        ]  # fmt: skip
+        slots = self._slots(gaps)
+
+        self.assertEqual(slots[2], (0, 1, 2))
+        self.assertEqual([s for i, s in enumerate(slots) if i != 2], [(0, 1, 2, 3)] * 4)
+
+    def test_a_voice_missing_from_the_top_shifts_the_rest_down(self) -> None:
+        ordinary, cut, stride = 4.0, 9.0, 4.0 + 4.5
+        gaps = (
+            [ordinary] * 3
+            + [cut + stride]  # oversized boundary before the short system
+            + [ordinary, ordinary]
+            + [cut]
+            + [ordinary] * 3
+            + [cut]
+            + [ordinary] * 3
+        )
+        slots = self._slots(gaps)
+
+        self.assertEqual(slots[1], (1, 2, 3))
+
+    def test_an_ordinary_boundary_on_both_sides_still_declines(self) -> None:
+        # Nothing oversized anywhere: the missing voice left no trace at all.
+        gaps = [4.0, 4.0, 4.0, 9.0] + [4.0, 4.0, 9.0] + [4.0, 4.0, 4.0, 9.0] * 2 + [4.0, 4.0, 4.0]
+        slots = self._slots(gaps)
+
+        self.assertIsNone(slots[1])
