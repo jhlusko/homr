@@ -2200,6 +2200,19 @@ in none of the ones carrying these rests: a systemwise segment restates the mete
 movement start or a genuine meter change. The benchmark can materialise because it carries
 meter across pages; a converter working one segment at a time has nothing to compute from.
 
+**Correction: the token is not the only thing the missing duration touches.** The
+conclusion above - that no repair is needed - is right about the rest token and stops too
+early. Position accounting also reads the duration, and with duration 0 the position never
+advances past the rest. When a second voice's `<backup>` then returns to the start of the
+measure, it goes negative and the parser refuses the part outright:
+`Backup duration is too long 0 -8`. That killed a whole conversion run.
+
+The repair is still not available - the meter needed to compute the duration is not in the
+segment - so the converter skips those staves and counts them. The right way to read 27.18
+is therefore narrower than first written: the *labels* need no repair, but the durationless
+rest is not harmless, and staves where a second voice backs up over one are lost rather
+than converted.
+
 **One flagged uncertainty, on the benchmark side rather than this one.** Materialising
 changes nothing in 4/4 - the arithmetic gives back `rest_1` - so §27.5's repair only alters
 the reference in other meters, where it will disagree with a whole-rest glyph that homr
