@@ -284,3 +284,43 @@ class TestVoiceSlotsAtSystemEdges(unittest.TestCase):
         slots = self._slots(gaps)
 
         self.assertIsNone(slots[1])
+
+
+class TestWiderEnsembles(unittest.TestCase):
+    """Pages beyond the quartets and grand staffs this was built and adapted for.
+
+    The module assumes the gap inside a system is smaller than the gap between systems.
+    Orchestral engraving strains that directly: staves are grouped by instrument family,
+    so an internal gap can approach a system gap. These pin the behaviour - including
+    where it declines, since declining falls back to the periodic reading and a wrong
+    grouping is far worse than none.
+    """
+
+    def test_family_gaps_inside_a_system_do_not_split_it(self) -> None:
+        # Six staves in families of 2/2/2: internal gaps 5, 5, 9, 5, 5 against a system
+        # gap of 12. The 9 is the one that could be mistaken for a system boundary.
+        gaps = [5, 5, 9, 5, 5, 12, 5, 5, 9, 5, 5, 12, 5, 5, 9, 5, 5]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertEqual([len(group) for group in result.best.groups], [6, 6, 6])
+        self.assertTrue(result.confident)
+
+    def test_a_twelve_staff_system_is_read_rather_than_declined(self) -> None:
+        # Orchestral scores routinely exceed the old cap of 8.
+        gaps = ([5] * 11 + [9]) * 2 + [5] * 11
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertEqual([len(group) for group in result.best.groups], [12, 12, 12])
+
+    def test_a_tight_duo_still_groups_in_twos(self) -> None:
+        result = _require(find_system_grouping(_from_gaps([3, 10, 3, 10, 3, 10, 3]), set()))
+
+        self.assertEqual([len(group) for group in result.best.groups], [2, 2, 2, 2])
+
+    def test_systems_of_different_sizes_are_declined_not_guessed(self) -> None:
+        # A page where instruments drop out has no single period to read. Declining hands
+        # it back to the bracket evidence rather than imposing a wrong uniform split.
+        self.assertIsNone(find_system_grouping(_from_gaps([5, 5, 5, 9, 5, 5, 9, 5, 5, 5]), set()))
+
+    def test_a_lead_sheet_offers_no_multi_staff_evidence(self) -> None:
+        self.assertIsNone(find_system_grouping(_from_gaps([9, 9, 9, 9, 9]), set()))

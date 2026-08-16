@@ -127,9 +127,15 @@ max_broken_connections_for_grouping = 0
 min_systems_for_geometric_grouping = 3
 
 # An upper bound on staves per system, to keep the search finite on pages with many
-# staves. Comfortably above a string quartet (4) or a voice-plus-piano system (3), and
-# above the largest ensembles this pipeline currently targets.
-max_staves_per_system = 8
+# staves. A string quartet is 4 and voice-plus-piano is 3, but the bound decides what the
+# page is allowed to *be*, not what is expected: a system above it is declined outright
+# and falls back to the periodic reading this module exists to replace. Raised from 8 to
+# cover orchestral and choral scores, where a system of a dozen staves is ordinary.
+#
+# The cost of raising it is a slightly larger candidate search and nothing else; the
+# scoring still has to find a partition whose cut gaps beat its internal gaps, so a wrong
+# large partition loses to the right small one on the same page.
+max_staves_per_system = 16
 
 # Two staffs closer together than this, in unit sizes, are not two staffs: a negative gap
 # means they overlap vertically, which happens when one staff line gets detected twice
