@@ -2174,6 +2174,59 @@ instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. I
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
 
+### 27.20 What the built labels actually contain
+
+The audit of the built training set - 42,088 examples, 1,136,381 annotated notes - settles
+the head configuration §25.2 left open, and one of its answers is negative.
+
+```
+beam levels (over notes the level applies to)
+  level      flag     begin  continue       end   fwd hook   bwd hook      total
+      1    91,087   182,754   234,410   182,755          0          0    691,006
+      2    11,161    64,000    98,955    64,001      3,855     11,025    252,997
+      3     1,488     5,971    12,531     5,971        869      1,618     28,448
+      4       128       432       734       432         27         72      1,825
+
+stems   down 527,904   up 456,085   not_applicable 144,210   unknown 8,179   none 3
+
+slur slots (notes carrying an event)
+  slot        start       stop   start_and_stop
+     1      141,385    141,419            1,403
+     2        1,389      1,367               14
+     3           42         39                0
+     4           10         10                0
+     5            3          3                0
+     6            2          2                0
+```
+
+All four configured beam levels have support, level 4 thinly at 1,825. Two slur slots are
+justified and slots 3-6 are not, which is what `TRAINED_SLUR_SLOTS = 2` already assumed.
+Zero hooks at level 1 is a consistency check passing rather than a gap: a hook needs a
+beam above it to hang from, which is why `beam_validation` treats a level-1 hook as
+invalid.
+
+**The negative answer: slur placement is gone, so the side heads cannot be trained.**
+Every slur in the built labels has placement unstated. Tracing it back:
+
+```
+original whole scores    placement on 8,328 of 16,656 slurs (50%)   numbering 1/2/3
+cleaned whole scores     placement absent                           numbering absent
+systemwise segments      placement absent                           numbering 1/2/3
+```
+
+The segments are not derived from the cleaned copy - the numbering survives, and slot 2
+carries 1,389 starts - so placement is lost in the MuseScore round-trip that produces
+them, which stores slur direction as automatic and omits it on export. This is the same
+shape as 27.8's stripped stems, but unlike that one there is no preprocessor flag to turn
+it off.
+
+So `slur.slot.N.side` gets no supervision and the manifest will decline to declare it,
+which is the machinery working as designed rather than a surprise at inference. The
+information is not lost from the corpus, only from this path to it: recovering it means
+taking placement from the original whole-score MusicXML and joining it onto the segments
+by note, which is precisely the kind of positional correspondence that has produced four
+bugs here already. Worth doing deliberately, not as a side effect.
+
 ### 27.19 Building the training set: three things that stop a conversion dead
 
 The synthetic partwise crops came out at **52,973 against the published figure of 52,960**,
