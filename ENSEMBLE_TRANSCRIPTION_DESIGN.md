@@ -2174,6 +2174,51 @@ instance's `torch 2.13.0+cpu` with `operator torchvision::nms does not exist`. I
 `torchvision==0.28.0+cpu` from the pytorch cpu index to match. A GPU run will want a CUDA
 torch build instead; the checkpoint load and the unit tests do not.
 
+### 27.19 Building the training set: three things that stop a conversion dead
+
+The synthetic partwise crops came out at **52,973 against the published figure of 52,960**,
+which is as close a confirmation as a rebuild can give. Converting them into a homr
+training set then failed three times, each on something that killed the whole run rather
+than one staff. They are recorded together because they share a shape: each is a case where
+the corpus is legal and homr's pipeline is reasonable, and the two do not meet.
+
+**A rhythm the vocabulary has no token for.** `KeyError: 'note_72'` - a tuplet factor
+scales the base duration (16 x 9/2 here) into a value the rhythm vocabulary never
+enumerated, the same family as 27.10's 256th notes. There is no correct token, and
+inventing one would put a symbol in the labels the model can never predict.
+
+**A backup reaching behind the start of its measure.** `ValueError: Backup duration is too
+long 0 -8`. This is 27.18's durationless whole-measure rest from a second angle: with no
+duration the position never advances past the rest, so a second voice's `<backup>` to the
+measure start goes negative. See the correction in 27.18 - the conclusion there was right
+about the token and stopped too early.
+
+**Every path in the corpus contains a comma.** homr's index is one `image,token_file` pair
+per line, split on the comma; OSSQ files every score under `Lastname,_Firstname`, and all
+47 composer directories in this corpus are of that form. So no line of the index parses -
+the loader takes the wrong side of the split and opens
+`_Elfrida/String_Quartet_in_A_major/...png,/workspace/...txt`. Rewriting the shared index
+format would touch every corpus homr trains on, so the dataset gets its own comma-free name
+for each crop, symlinked beside its token file.
+
+With all three handled as skips rather than aborts, the train split converts:
+
+```
+42,089 examples written
+     4 parts skipped: staff crops did not match the parts   (the 27.11 guard)
+    23 parts skipped: token pipeline refused them
+                      note_19 x8, note_24. x6, note_52 x3,
+                      Backup duration x2, note_60 x1, note_72 x1
+```
+
+27 losses in 42,116 - 0.06%. Both guards cost almost nothing, which is the outcome the
+27.11 measurement predicted and the reason it was worth measuring first.
+
+**The operational lesson, which cost two runs.** Every step of the driver script piped
+through `tail`, so a failing Python exited 0 as far as `set -e` was concerned. One
+conversion crash became four cascading `FileNotFoundError`s and buried its own cause.
+`set -eo pipefail`.
+
 ### 27.18 Whole-measure rests need no repair on the training side
 
 Converting real segments raises hundreds of `Note without duration` warnings, which is
