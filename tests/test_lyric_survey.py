@@ -3,7 +3,12 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from training.omr_datasets.lyric_survey import collect, out_of_vocabulary
+from training.omr_datasets.lyric_survey import (
+    collect,
+    heaps_exponent,
+    out_of_vocabulary,
+    vocabulary_growth,
+)
 
 SCORE = """<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise version="3.1">
@@ -111,6 +116,49 @@ class TestOutOfVocabulary(unittest.TestCase):
             mass, types, _ = out_of_vocabulary(paths, holdout=0.2)
 
         self.assertEqual((mass, types), (0.0, 0.0))
+
+
+class TestVocabularyGrowth(unittest.TestCase):
+    """A vocabulary count from one corpus is bounded by that corpus. What says whether a
+    closed set is possible is whether the count is still climbing when the scores run out."""
+
+    def test_growth_is_reported_at_each_step(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            paths = [
+                _score(directory, f"{index}.mxl", _note("C", _lyric(f"syl{index}")))
+                for index in range(8)
+            ]
+
+            growth = vocabulary_growth(paths, steps=4)
+
+        self.assertEqual([scores for scores, _, _ in growth], [2, 4, 6, 8])
+        self.assertEqual([types for _, _, types in growth], [2, 4, 6, 8])
+
+    def test_a_corpus_that_never_repeats_itself_grows_linearly(self) -> None:
+        # beta near 1 means every new score brings new words - the case where a closed
+        # vocabulary cannot work at any size.
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            paths = [
+                _score(directory, f"{index}.mxl", _note("C", _lyric(f"syl{index}")))
+                for index in range(8)
+            ]
+
+            self.assertAlmostEqual(heaps_exponent(vocabulary_growth(paths, steps=4)), 1.0, places=2)
+
+    def test_a_corpus_that_only_repeats_itself_does_not_grow(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            paths = [
+                _score(directory, f"{index}.mxl", _note("C", _lyric("same")))
+                for index in range(8)
+            ]
+
+            self.assertAlmostEqual(heaps_exponent(vocabulary_growth(paths, steps=4)), 0.0, places=2)
+
+    def test_too_few_points_to_fit_is_zero_not_an_error(self) -> None:
+        self.assertEqual(heaps_exponent([]), 0.0)
 
 
 if __name__ == "__main__":

@@ -16,12 +16,19 @@ they are worth stating, because the temptation is real and cheap-looking:
 So the numbers that matter are the OCR alphabet, how long a decode has to run, and what the
 resolve stage is up against.
 
-A fourth claim was made here first and it was wrong: that lyrics have a long open tail a
-closed vocabulary could never hold. Within these 200 scores 7,112 syllables account for
-every occurrence, which is not a long tail at all. The claim only becomes true on music the
-vocabulary has not seen, and measuring that needs a holdout rather than a coverage curve -
-so `out_of_vocabulary` is the honest version of the argument, and coverage-within-corpus is
-not reported at all, because it can only ever say 100%.
+Vocabulary is reported two ways, because one way is a trap. Within these 200 scores 7,112
+syllables account for every occurrence, which invites the reading that a closed vocabulary
+would do. It would not, and the count is an artefact of a small sample: coverage measured
+inside the corpus it was built from can only ever reach 100%.
+
+`vocabulary_growth` and `out_of_vocabulary` are the measures that survive scrutiny. Growth
+shows no saturation - the last 25 of 200 scores still contribute 515 unseen syllable types,
+and the Heaps exponent is 0.770 against the 0.4-0.6 typical of natural language, meaning
+the vocabulary grows almost linearly with text. The holdout shows the cost: a vocabulary
+from 80% of the scores fails on 20.3% of occurrences in the rest.
+
+And this is one genre in three languages. A scanner has to read whatever is printed under
+the staff, so the true vocabulary is unbounded and no corpus measurement can bound it.
 
 **There is no positional ground truth here.** The published scores carry no `default-x` on
 either notes or lyrics, so the resolve stage cannot be trained against coordinates from this
@@ -63,6 +70,43 @@ class Survey:
     @property
     def occurrences(self) -> int:
         return sum(self.syllables.values())
+
+
+def vocabulary_growth(paths: list[Path], steps: int = 8) -> list[tuple[int, int, int]]:
+    """How the syllable vocabulary grows as scores are added.
+
+    The count from a whole corpus says nothing on its own - it is bounded by the corpus.
+    What tells you whether a closed vocabulary is possible is whether that count is still
+    climbing when the corpus runs out. Here it is: no flattening at 200 scores.
+
+    Returns (scores, occurrences, distinct syllables) at each step.
+    """
+    points = []
+    for step in range(1, steps + 1):
+        count = max(1, len(paths) * step // steps)
+        survey = collect(paths[:count])
+        points.append((count, survey.occurrences, len(survey.syllables)))
+    return points
+
+
+def heaps_exponent(points: list[tuple[int, int, int]]) -> float:
+    """Fit V = K * N^beta and return beta, the rate the vocabulary outgrows the text.
+
+    Natural language usually sits at 0.4 to 0.6. Higher means less reuse, so a closed
+    vocabulary saturates more slowly - and above about 0.7 it effectively does not.
+    """
+    import math
+
+    usable = [(occurrences, types) for _, occurrences, types in points if occurrences > 0]
+    if len(usable) < 2:
+        return 0.0
+    xs = [math.log(n) for n, _ in usable]
+    ys = [math.log(v) for _, v in usable]
+    mean_x, mean_y = sum(xs) / len(xs), sum(ys) / len(ys)
+    spread = sum((x - mean_x) ** 2 for x in xs)
+    if spread == 0:
+        return 0.0
+    return sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)) / spread
 
 
 def out_of_vocabulary(paths: list[Path], holdout: float = HOLDOUT) -> tuple[float, float, int]:
@@ -206,6 +250,11 @@ def main() -> None:
     print(describe(collect(paths)))
     print()
     print("-- why not a closed vocabulary --")
+    growth = vocabulary_growth(paths)
+    for scores, _, distinct in growth:
+        print(f"  {scores:>5} scores: {distinct:,} distinct syllables")
+    print(f"  Heaps exponent {heaps_exponent(growth):.3f}"
+          " (natural language is 0.4-0.6; higher means less reuse)")
     mass, types, size = out_of_vocabulary(paths)
     print(f"  a vocabulary of {size:,} syllables built from {1 - HOLDOUT:.0%} of the scores")
     print(f"  fails on {mass:.1%} of occurrences and {types:.1%} of types in the rest")

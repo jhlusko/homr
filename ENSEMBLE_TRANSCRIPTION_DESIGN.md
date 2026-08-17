@@ -2319,18 +2319,35 @@ The decoder emits one token per note and every field on it is a per-token closed
 syllable across eight notes has nowhere to live in that; nor do four verses on one note. The
 structure is dense but it is emphatically not 1:1.
 
-**A claim made in the first framing was wrong.** It asserted a long open tail no closed
-vocabulary could hold. Within these 200 scores, 7,112 syllables account for *every*
-occurrence - not a long tail. Coverage measured inside one corpus is circular and can only
-ever reach 100%; the honest measure is a holdout:
+**On vocabulary the record went wrong twice, in opposite directions.** The first framing
+claimed a long open tail. Then 7,112 syllables were found to account for *every* occurrence
+in these 200 scores, and that was written up as the first claim being wrong. It was not -
+7,112 is what a 200-score sample produces, and coverage measured inside the corpus it was
+built from can only ever reach 100%.
+
+Growth is the measure that settles it, and it does not saturate:
 
 ```
-vocabulary from 80% of the scores   6,234 syllables
-fails on the remaining 20%          20.3% of occurrences, 39.3% of types
+ scores    tokens    types    new types in the last 25 scores
+     25     4,393    1,478
+     50     7,895    2,333    +855
+    100    16,440    4,200    +856
+    150    26,536    6,002    +823
+    200    34,657    7,112    +515
+
+Heaps fit  V = 2.33 * N^0.770
+extrapolated to 1,462 scores    ~33,800 distinct syllables
+extrapolated to 10,000 scores  ~148,800 distinct syllables
 ```
 
-Still fatal for a closed set - one syllable in five unreadable means most lines of text
-contain a hole - but that is the argument, and the coverage curve was not.
+A Heaps exponent of 0.770 against the 0.4-0.6 typical of natural language means the
+vocabulary grows almost linearly with text - there is no size at which it closes. The
+holdout gives the cost in the meantime: a vocabulary from 80% of the scores fails on 20.3%
+of occurrences and 39.3% of types in the rest.
+
+And this is one genre in three languages. A scanner has to read whatever is printed under
+the staff, so the real vocabulary is unbounded and no corpus measurement can bound it. The
+7,112 was a sampling artefact and treating it as a finding was the error.
 
 **What the OCR pass faces is small.** Alphabet 104 characters, 2.31% of characters non-ascii
 (French and German diacritics, curly quotes, dashes). Syllable length median 3, mean 3.3,
