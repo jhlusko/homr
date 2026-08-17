@@ -1838,6 +1838,46 @@ rather than discovered as a regression afterward.
 is a separate decision from the data it will train on, and this section stops at making that
 data ready.
 
+### 27.69 Detection masks built on homr's own segmentation pattern - and how sparse the target is
+
+27.68 left the detector's architecture open. It is not a new invention: `homr/segmentation`
+already solves "find small objects on a large, mostly-blank sheet-music page" for staves and
+noteheads - a U-Net over 320x320 patches tiled across the full-resolution page at 50%
+overlap, boxes recovered from the predicted per-pixel class map by connected components. A
+lyric syllable at a measured median 34x16 pixels (27.44) is exactly what that pattern was
+built for, and downsampling a whole page to one fixed size would erase it before the model
+ever saw it. `detector_masks.py` produces the target that architecture trains against - a
+per-pixel class mask - as the data step ahead of the model, not the model itself.
+
+Run over the full corpus:
+
+```
+2,847 page masks written, 79MB total (~28KB average - PNG's compression on a mask that is
+  background almost everywhere, not a raw array)
+text pixels: 0.38% of a page, sampled over 200
+```
+
+**0.38% coverage is the number that decides how this has to be trained.** A 320x320 patch is
+102,400 pixels; at uniform random placement over a page this sparse, most patches land
+entirely in background, and a training loop that samples patches uniformly would spend
+nearly all its steps on nothing to detect. This is the same shape of problem 27.49 diagnosed
+for the tie head and 27.68 already flagged for the class balance between text types - here
+it is spatial rather than categorical, and the fix is the spatial analogue: patches have to
+be sampled biased toward where the boxes are, not drawn uniformly across the page.
+
+**Class indices are fixed, not derived from a set's iteration order.** `CLASS_ORDER` is an
+explicit tuple; a mask's channel meaning has to be stable across every image it is compared
+against, and depending on a set's ordering would make that stability accidental.
+
+Caught in the test before it ran on real data: the first version of the write-then-read test
+asserted on a mask file after the `TemporaryDirectory` block that held it had already been
+deleted, and passed nothing - a manual repro of the same code the test wrapped worked cleanly,
+which was the tell that the test's structure was wrong rather than the code.
+
+**Left for the next slot**, since it needs the GPU phase12 currently holds: the patch sampler
+and the segmentation model itself, biased per the 0.38% finding, and trained with the focal
+loss correction 27.62 validated and 27.68 already flagged this corpus would need.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
