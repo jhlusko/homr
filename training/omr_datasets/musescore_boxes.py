@@ -25,6 +25,9 @@ Rendering needs `xvfb-run`; the AppImage aborts under `QT_QPA_PLATFORM=offscreen
 # flake8: noqa: T201
 
 import argparse
+import collections
+import json
+import multiprocessing
 import re
 import subprocess
 import xml.etree.ElementTree as ET
@@ -272,35 +275,90 @@ def pair(score: Path, svg_path: Path, png_path: Path) -> list[Syllable]:
     ]
 
 
+def annotate(score: Path, out_dir: Path, dpi: int = DPI) -> dict:
+    """Render one system and write everything readable about its text.
+
+    The lyric boxes are paired to their syllables; every other text class is recorded as
+    boxes alone, because only Lyrics and Dynamic have a count that can be checked against
+    the source (27.44). Recording the unpaired classes anyway is deliberate: detection and
+    classification need a box and a type, not a string.
+    """
+    svgs, pngs = render(score, out_dir, dpi)
+    if len(svgs) != 1:
+        # `pair` matches one page's boxes against the whole score's syllables, so a score
+        # spilling onto a second page would pair the first page's boxes against all of
+        # them. These inputs are single systems and should never spill.
+        raise Unrenderable(f"expected one page, rendered {len(svgs)}")
+
+    image = cv2.imread(str(pngs[0]))
+    if image is None:
+        raise Unrenderable(f"cannot read {pngs[0]}")
+    svg = svgs[0].read_text(encoding="utf-8")
+    scale = _scale(svg, image.shape[1], image.shape[0])
+
+    syllables = pair(score, svgs[0], pngs[0])
+    record = {
+        "image": pngs[0].name,
+        "width": image.shape[1],
+        "height": image.shape[0],
+        "lyrics": [
+            {"text": s.text, "syllabic": s.syllabic, "verse": s.verse, **s.box.to_dict()}
+            for s in syllables
+        ],
+        "text_boxes": {
+            name: [box.to_dict() for box in boxes]
+            for name, boxes in typed_boxes(svg, scale).items()
+            if name != LYRIC_CLASS
+        },
+        "extenders": [box.to_dict() for box in boxes_of_class(svg, EXTENDER_CLASS, scale)],
+    }
+    (out_dir / f"{score.stem}.boxes.json").write_text(
+        json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    return record
+
+
+def _annotate_one(job: tuple[Path, Path, int]) -> tuple[str, int, int]:
+    """Returns (reason or '', syllables, other text boxes). Runs in a worker process."""
+    score, out_root, dpi = job
+    try:
+        record = annotate(score, out_root / score.stem, dpi)
+    except (Unrenderable, subprocess.TimeoutExpired, OSError) as reason:
+        return getattr(reason, "reason", str(reason))[:48], 0, 0
+    other = sum(len(boxes) for boxes in record["text_boxes"].values())
+    return "", len(record["lyrics"]), other
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--scores", type=Path, required=True, help="A dir of .musicxml systems.")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--dpi", type=int, default=DPI)
+    parser.add_argument(
+        "--workers", type=int, default=1, help="Renders in parallel; each is its own mscore."
+    )
     args = parser.parse_args()
 
-    done = refused = syllables = 0
-    reasons: dict[str, int] = {}
-    for score in sorted(args.scores.rglob("*.musicxml")):
-        try:
-            svgs, pngs = render(score, args.out / score.stem, args.dpi)
-            if len(svgs) != 1:
-                # `pair` matches one page's boxes against the whole score's syllables, so a
-                # score spilling onto a second page would pair the first page's boxes
-                # against all of them. These inputs are single systems and should never
-                # spill; one that does is a sign something else is wrong with it.
-                raise Unrenderable(f"expected one page, rendered {len(svgs)}")
-            found = pair(score, svgs[0], pngs[0])
-        except (Unrenderable, subprocess.TimeoutExpired) as reason:
-            key = getattr(reason, "reason", str(reason))[:48]
-            reasons[key] = reasons.get(key, 0) + 1
-            refused += 1
-            continue
-        syllables += len(found)
-        done += 1
+    scores = sorted(args.scores.rglob("*.musicxml"))
+    if not scores:
+        raise SystemExit(f"No .musicxml under {args.scores}")
+    jobs = [(score, args.out, args.dpi) for score in scores]
 
-    print(f"{done:,} systems rendered, {syllables:,} syllables boxed")
-    for reason, count in sorted(reasons.items(), key=lambda pair: -pair[1])[:6]:
+    done = syllables = other = 0
+    reasons: collections.Counter[str] = collections.Counter()
+    with multiprocessing.Pool(max(1, args.workers)) as pool:
+        for reason, found, boxes in pool.imap_unordered(_annotate_one, jobs, chunksize=4):
+            if reason:
+                reasons[reason] += 1
+                continue
+            done += 1
+            syllables += found
+            other += boxes
+
+    print(f"{done:,} of {len(scores):,} systems annotated")
+    print(f"  {syllables:,} syllables paired to boxes")
+    print(f"  {other:,} other text boxes recorded without a string (27.44)")
+    for reason, count in reasons.most_common(6):
         print(f"  {count:,} refused: {reason}")
 
 

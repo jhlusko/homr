@@ -2300,6 +2300,55 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.45 Detection then recognition - and dynamics are not text
+
+Two open questions closed here. One was put to the user and handed back, so it is decided
+below on the evidence rather than deferred again.
+
+**Dynamics do not belong in the OCR pass, and 27.44 grouped them wrongly.** They passed the
+same count check as lyrics - 28 rendered against 28 in the source - so they were listed
+beside them as joinable text. The geometry says otherwise:
+
+```
+class            n   median w x h   aspect   width range
+Lyrics         798        34 x 16     2.12         6-77
+Tempo           14       200 x 25     8.72       39-475
+StaffText       12       116 x 20     5.00       42-145
+InstrumentName 105        55 x 17     3.24       50-114
+MeasureNumber   31        19 x 13     1.46        10-20
+Dynamic         61        26 x 26     1.00       17-117
+```
+
+Every text class is wide; Dynamic is square. The decisive evidence is in the source, not the
+render: **MusicXML stores dynamics as element names** - `<dynamics><p/></dynamics>` - never
+as strings, which is why `source_dynamics` has to rebuild the name from child tags. They are
+music glyphs in a music font, and `f` the dynamic is a different glyph from `f` the letter.
+Reading them as text would be recognising the wrong thing correctly.
+
+They belong in homr's symbol vocabulary, which is already written and commented out
+(`homr/transformer/vocabulary.py`). Uncommenting it is a separate piece of work from the OCR
+stage and should not be folded into it.
+
+**The text pass is detection then recognition, not one model emitting typed text.** The
+geometry is the weakest of the reasons - a 79x span in width is exactly what CTC absorbs,
+since it reads a fixed-height strip of any length. The reasons that decide it:
+
+  1. **Separable measurement.** Detection recall and recognition accuracy can be judged
+     apart. An end-to-end spotter fails un-attributably, and every stage in this work is
+     judged by decomposition - 27.16 preferring a crosstab to a total, per-class F1 over a
+     macro number, 27.40 finding a measure that could not verify its own fix.
+  2. **Positions are the product.** The resolve stage consumes boxes. Detection emits them;
+     an end-to-end model buries them in attention and they have to be recovered.
+  3. **CTC refines inside the box.** Per-character alignment gives sub-box positions at no
+     extra cost, which is what attaching a melisma to its notes needs.
+
+**A rendering artefact to correct before training on this data.** Each joined system is
+rendered as a standalone score, so MuseScore prints the instrument name on every one -
+`InstrumentName` appears 105 times across 50 systems, about twice each. Real engraving
+prints it on the first system only. A detector trained on this would learn that every system
+carries an instrument label, which no scan will show. Either suppress it at render time or
+exclude the class from the detection target.
+
 ### 27.44 The page is not only lyrics, and MuseScore types the rest for free
 
 The lyric framing was too narrow. A page carries title, composer, tempo marks, dynamics,
