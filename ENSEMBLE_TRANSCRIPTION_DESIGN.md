@@ -2300,6 +2300,60 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.60 The scan gap is bimodal, and a fifth of one score's staves collapse
+
+27.58 reframed track 1 around closing the domain gap. That is only actionable once the gap's
+shape is known, and there were two candidates: **spread**, where every staff degrades because
+scans are harder to read and the fix is visual; or **concentrated**, where most staves are
+fine and a minority collapse, which would point at misalignment rather than difficulty -
+27.14 measured scanned staff detection reporting five to nine staves in a four-part system,
+and a miscount shifts every crop-to-part pairing after it.
+
+The two tracks share their token filenames, so each staff can be scored twice.
+
+```
+3,028 staves scored under both renderings
+  mean accuracy   synthetic 90.8%    scanned 70.9%
+
+drop per staff (synthetic minus scanned)
+  median 14.3%    quartiles 0.0% / 39.1%
+  unchanged or nearly so (<= 10 points)   1,387  (45.8%)
+  collapsed (> 50 points)                   326  (10.8%)
+
+share of lost notes in the worst 10% of staves   28.1%
+  uniform would give about 10%; broken crops alone would give most of it
+```
+
+**It is both, and neither answer alone was right.** Nearly half the scanned staves read as
+well as their synthetic twins - the median staff loses nothing at the first quartile - while
+a tenth collapse outright. The worst tenth carries 28.1% of the loss: concentration is real
+at nearly three times its share, and still explains under a third.
+
+**The sharper signal is per score:**
+
+```
+sq8806881   40/183  21.9%      sq10307350   28/343   8.2%
+sq10414906  49/290  16.9%      sq7354505    65/817   8.0%
+sq8075304   33/199  16.6%      sq8806134     8/147   5.4%
+sq8885571   58/380  15.3%      sq12772795    1/365   0.3%
+sq8907120   44/304  14.5%
+```
+
+A seventyfold spread between the best and worst score. One score loses one staff in 365; another
+loses one in five. That is not a property of scanned images in general, it is a property of
+*these* scans, and it means a meaningful share of the gap is recoverable by finding what is
+wrong with the bad ones rather than by making the model more robust in general.
+
+**A caveat that matters more than usual: this split has nine scores.** Every figure above is
+an average over nine documents, and per-score rates from nine samples are suggestive rather
+than settled. The finding worth acting on is that the variation exists and is large; which
+scores are bad, and why, needs the fold that 13.5 set up rather than this one.
+
+**One line in the first version of this tool was misleading and is fixed.** It reported "the
+326 collapsed staves come from 9 score(s)", which reads as clustering. The split has exactly
+nine scores, so that is all of them. A count is only evidence of concentration against the
+total it is drawn from, and the tool now prints the rate per score with the total beside it.
+
 ### 27.59 The recogniser's errors are diffuse, which is itself the finding
 
 27.54 killed the resolution hypothesis for the 11.6% CER and left capacity or training length.
