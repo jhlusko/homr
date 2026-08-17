@@ -2300,6 +2300,77 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.49 Why dynamics are commented out - and the same failure is in our tie head
+
+27.45 claimed dynamics "belong in homr's symbol vocabulary, which is already written and
+commented out", and treated uncommenting it as separate, straightforward work. That was
+asserted without checking. Checking changes it.
+
+**The block was never disabled after a failure.** It was born commented out in `c50aec7`
+(2025-08-30), the commit that created `vocabulary.py`, and no commit has ever uncommented
+it. The maintainer answered the question directly in upstream issue #61 (2026-02-13), where
+a contributor asked whether training had been tried and found wanting:
+
+> "A 'Scope/priority' decision likely describes it well enough. So it was simply the last
+> feature which was added and a realization that I have to put less time into the project."
+
+He also ruled out data quality: *"Almost all articulations are solely trained on the Lieder
+dataset. You should get at least comparable performance as for the other articulations."*
+
+**But it was then tried, and it collapsed.** The same contributor trained it (run 318, ~70
+epochs, eval_loss 0.044):
+
+> "SER jumped to 132% vs baseline 26% - dynamics were never predicted. The more probable
+> root cause was that dynamics are only ~0.05% of tokens, so the model learned to ignore
+> them entirely to minimise loss (class imbalance collapse)."
+
+The maintainer agreed it was plausible and observed run 331 doing the same with double
+sharps, never detected at inference. Proposed remedies were focal loss - as oemer's UNet
+uses - class weighting at 50x, more Lieder data, or a dynamics-enriched subset.
+
+So adding dynamics to the rhythm branch is not a matter of uncommenting: it is a documented
+regression that made the whole model worse. 27.45's conclusion to keep them out of the OCR
+pass still holds - they are music glyphs, not text - but its disposal of them into the
+symbol vocabulary was too casual.
+
+**The same failure mode is already in our own numbers.** The tie head, on the phase9
+baseline:
+
+```
+none             n=2,149,263   F1 0.999
+stop             n=2,345       F1 0.535      0.109% of tokens
+start            n=2,342       F1 0.315      0.109%
+start_and_stop   n=293         F1 0.393      0.014%
+
+macro F1 0.560   micro F1 0.997
+```
+
+The contributor's dynamics were 0.05% of tokens and vanished entirely. Our tie classes are
+0.109% - twice as frequent, not collapsed, but plainly starved. **And micro F1 0.997 is
+almost entirely `none`**: reported alone it would call the head excellent while it is close
+to useless for the thing it exists to predict. That is the same shape as 27.16 preferring a
+crosstab to a total, arriving in a metric rather than a comparison.
+
+So the tie head needs the treatment that discussion converged on - class weighting or focal
+loss - and it needs it before more corpora are added, since more data at the same class
+ratio does not fix a ratio problem.
+
+**An independent corroboration of the architecture.** In the same thread, fablau describes
+the pipeline behind Virtual Sheet Music's Playground:
+
+```
+1. staves, notes, key signatures, time signatures, clefs
+2. dynamics
+3. slurs and ties
+4. other objects
+```
+
+Separate models per layer, combined into MusicXML afterwards. That is a deployed system
+arriving independently at the staged design of 27.45, with dynamics as their own layer
+rather than tokens in a shared vocabulary - which is also the answer to the class-imbalance
+problem, since a detector for a class does not have to compete with note tokens for
+probability mass.
+
 ### 27.48 A recogniser's corpus, split by score, and the chain checked end to end
 
 `musescore_boxes` feeds the detector; `lyric_crops` feeds the recogniser - one image per
