@@ -2300,6 +2300,45 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.56 Three-corpus training: scans bought cheaply, and a prediction confirmed the hard way
+
+phase9 trained the heads on all three corpora - OSSQ synthetic 42,088, OSSQ scanned 32,982,
+PDMX 32,451 - for 12 epochs, against 27.38's baseline of the same heads trained without any
+scans.
+
+**Adding scanned data helps scans, and costs almost nothing elsewhere:**
+
+```
+on scanned validation        before     after     change
+exact beam vector             0.661     0.701      +4.0
+stem direction (up/down)      0.721     0.784      +6.3
+hooks F1                      0.623     0.632      +0.9
+slur spans F1                 0.494     0.509      +1.5
+ties macro F1                 0.560     0.545      -1.5
+
+on synthetic validation       0.911     0.903      -0.8   (exact beam vector)
+```
+
+Eight tenths of a point given up on synthetic to buy four on scans and six on stems. 27.36
+measured the cost of mixing corpora at 1.6 points on OSSQ; scans cost half that, which makes
+this the cheapest mixture tried.
+
+**The domain gap narrows but does not close.** After training on scans, synthetic against
+scanned still runs 0.903 to 0.701 on beams, 0.926 to 0.784 on stems, and 0.884 to 0.509 on
+slur spans. 27.38 measured the untrained gap at 25 points on beams; it is now 20. **Slurs are
+the worst channel by a wide margin** - 37.5 points - and that is where the next effort on
+this track belongs.
+
+**The tie head got worse with more data, which 27.49 predicted.** 0.560 to 0.545 macro F1 on
+scans, while every other channel improved. The prediction there was explicit: *more data at
+the same class ratio does not fix a ratio problem*, because the ratio is what starves the
+class. Three corpora instead of two gave the tie classes three times as many examples and
+three times as many `none`s, and the head moved backwards. This is the confirmation that
+phase11's instruments are aimed at something real rather than at a suspicion.
+
+Note also that tie **micro** F1 rose, 0.997 to 0.998, while macro fell. Quoted alone the
+micro figure would have reported this regression as an improvement.
+
 ### 27.55 Two thirds of the rendered pages hold more than one system, and 27.52 blamed the wrong thing
 
 27.52 skipped 249 of 600 systems for carrying more than one line of lyrics, put it down to a
