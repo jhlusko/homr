@@ -2348,6 +2348,41 @@ that the domain gap is a contrast problem - one score contradicts that outright,
 documents cannot settle it either way. The measurement to run is the same one on a larger
 fold, which 13.5's split provides.
 
+### 27.62 phase11: focal loss helps, class weights hurt - the risk in 27.50 materialized
+
+27.49 diagnosed tie-class starvation and 27.50 built two instruments without knowing which
+would work. phase11 ran them against the same baseline, synthetic validation:
+
+```
+                    macro F1   start F1   stop F1   start_and_stop F1   exact beam vector
+baseline               0.772      0.551     0.791              0.746              0.904
+focal (gamma=2)        0.782      0.600     0.785              0.744              0.899
+weights (cap 50)       0.689      0.414     0.615              0.727              0.901
+```
+
+**Focal loss helps, at negligible cost.** Macro up a point, `start` up five points, beam
+vector down half a point - a clean win, and it is the change to keep.
+
+**Class weights make ties worse across every class**, not merely fail to help: macro down
+8.3 points, `start` down 13.7, `stop` down 17.6. This is the over-correction risk 27.50 named
+before running anything - *"293 start_and_stop examples carry a quarter of the gradient,
+roughly 7,300x the leverage of one none, so the head memorises 293 examples rather than
+learning a visual cue, and any label error among them is amplified 7,300x."* Weighting did
+not fail neutrally; it actively damaged the classes it was meant to help, which is consistent
+with that mechanism and not with simple underfitting - underfitting would show as no
+movement, not as movement in the wrong direction on every rare class at once.
+
+**Why focal succeeds where weighting does not**, on the same theory: focal reduces the loss
+on positions the model is already confident about, which for `none` is nearly all of them,
+without amplifying any specific rare example's individual leverage. It rebalances the
+*aggregate* pressure between classes without turning any one of 293 crops into a landmark
+the model must fit. Weighting rebalances by literally multiplying that example's gradient,
+which is the mechanism 27.50 flagged as the failure mode.
+
+The `both` arm is running to check whether combining them recovers weighting's loss or
+compounds it - the theory above predicts compounds, since focal's gain does not depend on
+weighting being safe.
+
 ### 27.60 The scan gap is bimodal, and a fifth of one score's staves collapse
 
 27.58 reframed track 1 around closing the domain gap. That is only actionable once the gap's
