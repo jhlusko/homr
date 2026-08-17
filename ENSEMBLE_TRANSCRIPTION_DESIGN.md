@@ -2348,6 +2348,52 @@ that the domain gap is a contrast problem - one score contradicts that outright,
 documents cannot settle it either way. The measurement to run is the same one on a larger
 fold, which 13.5's split provides.
 
+### 27.63 CLAHE does not close the gap - it narrows the spread by damaging the good scans
+
+27.61 licensed testing contrast normalisation without licensing the belief it would help.
+`contrast_normalize.py` measures CLAHE's effect on all nine scanned scores directly, on CPU,
+before spending any GPU time retraining with it.
+
+At the default clip limit, the effect is negligible - the worst score gains six points of
+contrast, the spread across scores narrows only 92 to 85. Raising the clip limit to see
+whether a stronger setting would help instead reveals why it does not:
+
+```
+clip limit    sq8806881 (worst)    sq12772795 (best)    spread across scores
+   2               169 -> 176           255 -> 250              92 -> 85
+   4               169 -> 176           255 -> 249             101 -> 90
+   8               169 -> 177           255 -> 246             101 -> 85
+  16               169 -> 179           255 -> 239             101 -> 76
+  40               169 -> 188           255 -> 223             101 -> 53
+```
+
+**The worst score barely moves - 19 points across a twentyfold increase in clip limit -
+while the best score is damaged steadily**, losing 32 points at the setting that would be
+needed to move the worst score by less than 20. The spread narrows, but by pulling the good
+scans down rather than by lifting the faint ones. That is precisely the failure mode the
+module's docstring was written to catch, and it is not a marginal effect: at clip 40 the
+best score has been made measurably worse than the second-worst score started.
+
+**Why it fails, mechanically:** a uniformly faint page has little *local* variation for CLAHE
+to exploit - the tile is faint ink on faint background nearly everywhere, not a a patch of
+strong contrast next to a patch of none. There is no local structure to redistribute. What
+CLAHE has plenty of, on a crisp page with clean staff lines and white ground, is exactly the
+sharp local structure it is built to equalise - so it acts on the wrong image.
+
+**CLAHE is ruled out as the fix for this domain gap.** The next candidate, per the domain
+gap's own shape, is not a page-level transform at all: 27.60 found the gap concentrated by
+score more than by staff, so a fix aimed at *which documents* enter training - re-weighting
+or oversampling the worst-performing scores - fits the evidence better than a filter applied
+uniformly to every image.
+
+**A gap in the test suite, worth naming.** `test_a_crisp_page_is_not_pushed_into_noise`
+passed throughout this sweep and did not catch the damage documented above, because its
+synthetic crisp page is nearly flat except for one thin stroke - it has none of a real
+staff's dense local structure for CLAHE to over-equalise. The unit test validated the
+mechanism in isolation and missed the failure that only appears on real images at scale,
+which is why this measurement was run against the real scans rather than trusted from the
+test alone.
+
 ### 27.62 phase11: focal loss helps, class weights hurt - the risk in 27.50 materialized
 
 27.49 diagnosed tie-class starvation and 27.50 built two instruments without knowing which
