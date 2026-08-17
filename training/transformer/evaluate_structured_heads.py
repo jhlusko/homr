@@ -155,6 +155,45 @@ def dump_predictions(batches: Any, beam_levels: int, handle: Any) -> Callable[..
     return write
 
 
+def load_head_weights(module: Any, state: dict, declared: Sequence[str]) -> None:
+    """Load head weights, allowing only heads this run will not score to be absent.
+
+    The architecture grows - a tie head arrived after some weights were saved - so strict
+    loading refuses a checkpoint that is merely older. But loading loosely is worse: an
+    absent head keeps its random initialisation and still emits an argmax, which is a
+    confident prediction from a projection that never saw a gradient.
+
+    The manifest already says which heads a run trained, and those are the only ones that
+    will be scored. So a missing weight is fine exactly when the manifest does not declare
+    its head, and an error otherwise - the same allowlist rule the core checkpoint uses.
+    """
+    missing, unexpected = module.load_state_dict(state, strict=False)
+    scored = {name.split(".")[0] for name in declared}
+    # Parameter names are "<head>.weight"; slur heads live under slur_event/slur_side.
+    prefixes = {
+        "beam": "beam.level.",
+        "stem": "stem.direction",
+        "tie": "tie.state",
+        "slur_event": "slur.slot.",
+        "slur_side": "slur.slot.",
+    }
+    refused = []
+    for key in missing:
+        group = key.split(".")[0]
+        head_prefix = prefixes.get(group, group)
+        if any(name.startswith(head_prefix) for name in declared):
+            refused.append(key)
+    if refused:
+        raise ValueError(
+            f"weights are missing heads this run will score: {sorted(refused)}. "
+            "The checkpoint and the manifest disagree about what was trained."
+        )
+    if missing:
+        print(f"not in these weights, and not declared, so not scored: {sorted(missing)}")
+    if unexpected:
+        print(f"in these weights but not in the model: {sorted(unexpected)}")
+
+
 def trained_heads(manifest_path: Path | None, available: list[str]) -> list[str]:
     """The heads worth scoring: what the manifest declares, intersected with what exists.
 
@@ -202,7 +241,7 @@ def main() -> None:
     model = TrOMR(config)
     load_pinned(model, args.checkpoint)
     heads = torch.load(args.weights, map_location="cpu", weights_only=True)
-    model.decoder.structured_heads.load_state_dict(heads)
+    load_head_weights(model.decoder.structured_heads, heads, names)
     model.to(args.device)
 
     names = trained_heads(args.manifest, _target_names(config))

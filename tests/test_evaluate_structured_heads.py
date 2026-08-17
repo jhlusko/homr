@@ -13,7 +13,11 @@ from homr.transformer.structured_notation import (
 )
 from training.architecture.transformer.structured_heads import StructuredNotationHeads
 from training.architecture.transformer.structured_losses import IGNORE_INDEX
-from training.transformer.evaluate_structured_heads import evaluate, trained_heads
+from training.transformer.evaluate_structured_heads import (
+    evaluate,
+    load_head_weights,
+    trained_heads,
+)
 from training.transformer.train_structured_heads import write_manifest
 
 HEADS = ["beam.level.1", "beam.level.2", "stem.direction", "slur.slot.1.event", "slur.slot.1.side"]
@@ -165,6 +169,36 @@ class TestUnscoredHeadsAreStillStrippedFromTheInput(unittest.TestCase):
         )
 
         self.assertEqual(result.sequences, 1)
+
+
+
+
+class TestLoadingOlderHeadWeights(unittest.TestCase):
+    """The architecture grows, and older weights must still be usable.
+
+    A tie head arrived after some weights were saved, so strict loading refuses a
+    checkpoint that is merely older. Loading loosely is worse: an absent head keeps its
+    random initialisation and still emits an argmax - a confident prediction from a
+    projection that never saw a gradient.
+    """
+
+    def _module(self) -> StructuredNotationHeads:
+        return StructuredNotationHeads(dim=8, beam_levels=2, slur_slots=1)
+
+    def _older_state(self) -> dict:
+        state = self._module().state_dict()
+        return {k: v for k, v in state.items() if not k.startswith("tie.")}
+
+    def test_a_head_the_run_will_not_score_may_be_absent(self) -> None:
+        load_head_weights(self._module(), self._older_state(), ["beam.level.1"])
+
+    def test_a_head_the_run_will_score_may_not_be_absent(self) -> None:
+        with self.assertRaises(ValueError):
+            load_head_weights(self._module(), self._older_state(), ["tie.state"])
+
+    def test_complete_weights_load_cleanly(self) -> None:
+        module = self._module()
+        load_head_weights(module, module.state_dict(), ["beam.level.1", "tie.state"])
 
 
 if __name__ == "__main__":
