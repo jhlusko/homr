@@ -2300,6 +2300,60 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.41 The voice comes back by arithmetic, and MuseScore is not needed
+
+27.40 fixed OLiMPiC's images. The labels stayed a piano reduction: `get_piano_part()` is
+called before any slicing happens, and `Pruner` strips `<lyric>` on top of that. So the
+picture showed a singer and the label described a piano.
+
+27.39 assumed the fix was to re-run OLiMPiC's build on the unreduced score. That would need
+MuseScore, and worse, it would need MuseScore's page layout reproduced exactly - the systems
+come from `<print new-system>` markers written at export, and the published OpenScore Lieder
+`.mxl` files carry **none** of them (checked: zero in either part of lc5837811). Reproducing
+a layout to the system is not a thing to be confident about.
+
+**That assumption was wrong, and one measurement dissolved it.**
+
+```
+published lc5837811.mxl   P1 Chant/Voice   49 measures, numbered 0..48, 169 lyric elements
+                          P2 Piano         49 measures, numbered 0..48
+olimpic 5837811           16 systems covering measures 0..48, contiguous
+                          p1-s1 = measures 0-2, p1-s2 = 3-5, p2-s1 = 12-14
+```
+
+OLiMPiC's slicing **preserves the original measure numbers**. A system is therefore a
+measure range, and the same range read out of the published score is the voice part for
+exactly that system. The join is arithmetic on measure numbers. No MuseScore, no layout,
+no geometry - and all 200 of OLiMPiC's scores are in the Lieder corpus, which publishes
+`.mxl` for all 1,462 of its own.
+
+`training/omr_datasets/lieder_voice.py` does it. The piano half is passed through from
+OLiMPiC's sample rather than re-sliced, so that half stays byte-for-byte what its published
+labels describe; only the voice is new. Part selection matches OLiMPiC's instrument-name
+list exactly, so the part discarded here is the part it keeps.
+
+The range is checked, not trusted. A voice part one measure short would put every lyric
+after it under the wrong note and nothing downstream could tell - 27.11 arriving through a
+third route, after indexing and geometry.
+
+On lc5837811, end to end:
+
+```
+16/16 systems joined
+169 lyric elements recovered   against the published score's 169
+p1-s2 parses as 2 voices       voice 0: 21 symbols, F4 - the singer
+                               voice 1: 226 symbols - the piano grand staff
+```
+
+**The 169 is the check that matters.** The systems are disjoint, so their lyric counts sum
+to the score's total only if every measure landed in exactly one system - nothing dropped,
+nothing duplicated. Coverage in 27.40 could not verify its own fix; this number can.
+
+**What is still missing is the vocabulary.** homr's `EncodedSymbol` has six fields and none
+of them is text. The data for a lyric stage now exists - images showing lyrics, labels
+containing them, aligned - but reading lyrics needs a seventh channel or a separate head,
+and that is the design question 27.39 opened and this does not answer.
+
 ### 27.40 OLiMPiC's lyrics are recoverable, and it took looking to know it
 
 27.39 ended with a prediction: the boxes bound the piano, so extending them upward should
