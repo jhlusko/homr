@@ -2300,6 +2300,60 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.39 A lyric track, and what OLiMPiC would have to be repaired to
+
+18.2 designs the lyric stage; this is about where its supervision could come from. The
+first question is which corpus, and the answer is not the obvious one.
+
+```
+OSSQ (string quartets)      0% of files carry lyrics
+OLiMPiC scanned             0%
+PDMX                       22% of files, 11.6% of notes
+                              syllabic single 4,106  begin 2,117  end 2,081  middle 524
+                              extend (melisma) 237   verse beyond the first 3,015
+```
+
+**PDMX has the lyrics and is the wrong corpus to learn them from.** Its images are Verovio
+renderings, so its lyric text is clean synthetic glyphs at a consistent size and font. For
+notation that mattered little - a beam is a beam - but for *text recognition* synthetic
+rendering is not a different domain so much as the easy case, and 27.38 has just shown the
+notation heads losing 25 points crossing from synthetic to scanned. A lyric recogniser
+trained on rendered text would overstate by more.
+
+**OLiMPiC has the scans and no lyrics**, because it extracted the pianoform parts from
+OpenScore Lieder and dropped the vocal line with them - one part per file, zero `<lyric>`
+elements. That is worth knowing before building on it: 27.37 recommended this corpus and
+would have been recommending something unusable for this purpose.
+
+**But OLiMPiC is repairable, and the expensive part is already published.**
+`olimpic-1.0-sources-for-scanned` ships the IMSLP PDFs, the page renderings, the
+sample-to-IMSLP mapping, and - the part that would otherwise cost weeks - the manually
+annotated system bounding boxes. So for its 200 scores the title-page pruning, rotation and
+page alignment are done.
+
+The boxes bound the piano only, which is measurable rather than assumed. Over 2,173 system
+pairs in 121 documents:
+
+```
+median box height     412 px
+median system pitch  1013 px
+median coverage        41% of the pitch   (quartiles 38% / 43%)
+```
+
+A box covering a whole system would leave only an inter-system margin, around 80-90%. At
+41%, with quartiles that tight, these bound the grand staff and leave the voice staff and
+its lyrics in the gap above. Recovering them is therefore geometry - extend each box upward
+towards the previous system's lower edge - and not re-annotation.
+
+**The remaining work is symbolic, not visual.** OLiMPiC's per-sample MusicXML is the
+pianoform reduction, so the labels would have to come from re-slicing the full OpenScore
+Lieder score - voice, piano and lyrics - against the same system boundaries. Its build
+already does that slicing; it would run on the unreduced score.
+
+Extending past OLiMPiC's 200 scores means following OpenScore Lieder's own IMSLP links and
+redoing the page alignment - discarding title pages, correcting rotation, matching systems
+to scans. That is the phase to defer, not the phase to start with.
+
 ### 27.38 The synthetic-to-scan gap is far worse for notation than for notes
 
 23 framed a domain gap and 27.14 measured it: mean OMR-NED 7.79% on synthetic against
