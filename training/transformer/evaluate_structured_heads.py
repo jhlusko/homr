@@ -238,13 +238,15 @@ def main() -> None:
     config = Config()
     config.enable_structured_heads = True
 
+    # The manifest is read first: it decides which heads are scored, and therefore which
+    # may legitimately be missing from an older set of weights.
+    names = trained_heads(args.manifest, _target_names(config))
+
     model = TrOMR(config)
     load_pinned(model, args.checkpoint)
     heads = torch.load(args.weights, map_location="cpu", weights_only=True)
     load_head_weights(model.decoder.structured_heads, heads, names)
     model.to(args.device)
-
-    names = trained_heads(args.manifest, _target_names(config))
     # Unshuffled so the prediction dump can name examples by counting along the index,
     # and in validation mode so the images are not distorted before being scored.
     batches, examples = build_batches(
