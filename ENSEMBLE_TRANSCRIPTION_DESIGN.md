@@ -2300,6 +2300,45 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.47 The synthetic stage was lower-resolution than the scans, which is backwards
+
+150 dpi was chosen for the render with the comment that it was "close to the scanned
+corpus". That was an assumption stated as a fact, and it was wrong in the direction that
+matters. Staff space is the scale everything else on a page follows from:
+
+```
+synthetic at 150dpi   10.3px   lyric text 16px = 1.55 staff spaces
+scanned IMSLP         26.0px   quartiles 19 / 37, full range 5 to 76  (248 crops)
+```
+
+**The synthetic stage sat below the first quartile of the real data.** Nearly every scan
+carries more detail than the images meant to teach the model to read them - the reverse of
+the usual synthetic-to-scan gap, where synthetic is the cleaner domain. Height-normalising
+crops at preprocessing does not fix it, because upscaling cannot recover detail that was
+never rendered.
+
+The crops were checked by eye first and were perfectly legible - *Schatz,* *säu* *Veil*,
+umlauts and all, at 15 to 20 pixels. Legible was the wrong bar. The question is not whether
+a human can read the training image, it is whether it carries what the test image carries.
+
+**No single resolution fixes it**, because the scans vary fourfold among themselves: 19 to
+37 px at the quartiles is 277 to 539 dpi. So resolution is sampled per system across
+280-540, seeded on the system name so a rebuild does not silently change an image the boxes
+were computed against. The spread becomes something the model meets in training instead of
+first at inference.
+
+After the change, measured on the same 50 systems:
+
+```
+staff space   28.7px   against the scans' 26.0
+lyric text    44px     up from 16
+```
+
+This is the third defect found in this data by measuring rather than reasoning - after the
+shared tree in `lieder_voice` and the part-id collision - and the only one that would have
+survived into training silently. A crashed render and a crawling loop announce themselves.
+An image that is merely too small does not.
+
 ### 27.46 Two sources numbering parts independently, and a crash that was the lucky outcome
 
 Annotating all 2,926 joined systems refused 227 of them - 7.4% - with `mscore failed on
