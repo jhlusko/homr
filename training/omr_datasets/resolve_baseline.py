@@ -191,6 +191,59 @@ def single_lyric_line(syllables: list[dict]) -> bool:
     return max(tops) - min(tops) <= tolerance
 
 
+def lyric_lines(syllables: list[dict]) -> list[list[dict]]:
+    """Group syllables into lines of text, topmost first, each left to right.
+
+    27.52 found 41% of systems carry more than one line - a second vocal staff, or a second
+    verse engraved below the first - and excluded them, because "the voice notes are above
+    the lyrics" stops meaning anything with two bands of lyrics. This is the grouping that
+    lets them be scored instead of skipped.
+
+    Grouped by vertical overlap rather than by bucketing the top coordinate, for the reason
+    `musescore_boxes._lines` records: a capital or an accent raises a box's top by several
+    pixels, and a bucket boundary then splits one line in two.
+    """
+    if not syllables:
+        return []
+    heights = sorted(box["bottom"] - box["top"] for box in syllables)
+    tolerance = max(4, heights[len(heights) // 2]) // 2
+
+    lines: list[list[dict]] = []
+    for box in sorted(syllables, key=lambda b: b["bottom"]):
+        if lines and abs(box["bottom"] - lines[-1][-1]["bottom"]) <= tolerance:
+            lines[-1].append(box)
+        else:
+            lines.append([box])
+    return [sorted(line, key=lambda b: b["left"]) for line in lines]
+
+
+def parts_with_lyrics(score: Path) -> list[list[int]]:
+    """Per lyric-carrying part, the positions of its verse-1 lyric-bearing notes.
+
+    Document order, which is top-to-bottom on the page: MusicXML lists parts in score
+    order, and an engraver puts the first part on the top staff. That is the assumption the
+    line-to-part pairing rests on, and it is checked by count rather than trusted.
+    """
+    root = ET.parse(score).getroot()
+    found = []
+    for part in root.findall("part"):
+        if not part.findall(".//lyric"):
+            continue
+        positions, index = [], 0
+        for note in part.iter("note"):
+            if note.find("chord") is not None or note.find("rest") is not None:
+                continue
+            if any(
+                (lyric.findtext("text") or "").strip()
+                for lyric in note.findall("lyric")
+                if lyric.get("number", "1") == "1"
+            ):
+                positions.append(index)
+            index += 1
+        found.append(positions)
+    return found
+
+
 def score_system(
     record_path: Path, score: Path, agreement: Agreement, skips: collections.Counter | None = None
 ) -> bool:
@@ -236,14 +289,100 @@ def score_system(
     return True
 
 
+def notes_between(svg_path: Path, width: int, height: int, ceiling: float, floor_: float):
+    """Horizontal centres of noteheads in a horizontal band, left to right.
+
+    A staff's notes sit between the lyrics of the line above and the lyrics of its own line.
+    For the topmost staff the ceiling is the page edge.
+    """
+    svg = svg_path.read_text(encoding="utf-8")
+    box = re.search(r'viewBox="([^"]+)"', svg)
+    if not box:
+        return []
+    _, _, view_width, view_height = (float(value) for value in box.group(1).split())
+    sx, sy = width / view_width, height / view_height
+    return sorted(
+        (left + right) / 2 * sx
+        for left, _, right, bottom in placed_boxes(svg, "Note")
+        if ceiling < bottom * sy < floor_
+    )
+
+
+@dataclass
+class LineCounts:
+    """Whether vertical clustering finds as many lines as the score has lyric parts."""
+
+    agreed: int = 0
+    total: int = 0
+    deltas: collections.Counter[int] = field(default_factory=collections.Counter)
+
+    def observe(self, found: int, expected: int) -> None:
+        self.total += 1
+        self.agreed += found == expected
+        self.deltas[found - expected] += 1
+
+    def describe(self) -> str:
+        if not self.total:
+            return "no multi-line systems seen"
+        parts = ", ".join(f"{d:+d}:{c:,}" for d, c in sorted(self.deltas.items())[:7])
+        return (
+            f"line count agrees with the score: {self.agreed:,}/{self.total:,} "
+            f"({self.agreed / self.total:.1%})\n    found minus expected: {parts}"
+        )
+
+
+def score_multiline(
+    record_path: Path, score: Path, agreement: Agreement, counts: LineCounts
+) -> bool:
+    """Score a system by assigning syllables to lines first, then notes within each line."""
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    syllables = [box for box in record["lyrics"] if box.get("verse", "1") == "1"]
+    parts = parts_with_lyrics(score)
+    if not syllables or not parts:
+        return False
+
+    lines = lyric_lines(syllables)
+    counts.observe(len(lines), len(parts))
+    if len(lines) != len(parts):
+        return False
+    if any(len(line) != len(positions) for line, positions in zip(lines, parts)):
+        return False
+
+    svg = record_path.parent / (record["image"][: -len(".png")] + ".svg")
+    if not svg.is_file():
+        return False
+
+    ceiling = 0.0
+    for line, positions in zip(lines, parts):
+        top = min(box["top"] for box in line)
+        centres = notes_between(svg, record["width"], record["height"], ceiling, top)
+        ceiling = max(box["bottom"] for box in line)
+        if not centres or positions[-1] >= len(centres):
+            continue
+        for index, (box, position) in enumerate(zip(line, positions)):
+            following = positions[index + 1] if index + 1 < len(positions) else position + 1
+            agreement.observe(
+                nearest((box["left"] + box["right"]) / 2, centres), position,
+                following - position > 1,
+            )
+    return True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--boxes", type=Path, required=True, help="A musescore_boxes out dir.")
     parser.add_argument("--scores", type=Path, required=True, help="Dir of joined .musicxml.")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument(
+        "--multiline",
+        action="store_true",
+        help="Assign syllables to lines first, then notes within each line - so the 41%% of "
+        "systems 27.52 skipped are scored instead (27.55).",
+    )
     args = parser.parse_args()
 
     agreement = Agreement()
+    counts = LineCounts()
     skips: collections.Counter[str] = collections.Counter()
     skipped = scored = 0
     records = sorted(args.boxes.glob("*/*.boxes.json"))
@@ -256,12 +395,18 @@ def main() -> None:
         if not score.is_file():
             skips["no joined score on disk"] += 1
             skipped += 1
+        elif args.multiline and score_multiline(path, score, agreement, counts):
+            scored += 1
+        elif args.multiline:
+            skipped += 1
         elif score_system(path, score, agreement, skips):
             scored += 1
         else:
             skipped += 1
 
     print(agreement.describe())
+    if args.multiline:
+        print("\n  " + counts.describe())
     print(f"\n{scored:,} systems scored, {skipped:,} skipped:")
     for reason, count in skips.most_common():
         print(f"    {count:,}  {reason}")

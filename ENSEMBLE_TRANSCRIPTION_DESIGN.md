@@ -2300,6 +2300,51 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.55 Two thirds of the rendered pages hold more than one system, and 27.52 blamed the wrong thing
+
+27.52 skipped 249 of 600 systems for carrying more than one line of lyrics, put it down to a
+second vocal staff, and concluded that line assignment is the open problem for the resolve
+stage. Chasing the line-count disagreement produced a different answer.
+
+The disagreements are almost all in one direction - clustering finds one line *more* than the
+score has parts, 245 times against 4 with two more. One case, opened up:
+
+```
+4919798_p1-s1:  2 lines vs 1 part
+  line 0   9 syllables at y 777-815    'Fried' 'li' 'cher' 'A' 'bend' 'senkt'
+  line 1   2 syllables at y 2348-2395  'fil' 'de,'
+```
+
+Fifteen hundred pixels apart, one vocal part. Counting staff lines in the same page settles
+it: six groups of five, where a voice-over-piano system is three. **MuseScore wrapped the
+joined system onto two systems** because it did not fit the page width, and across the corpus
+**132 of 200 rendered pages hold more than one**.
+
+So the vertical bands are not two singers, they are one singer continued. Measured directly:
+
+```
+lyric-carrying parts per joined system (800 systems)
+  0 parts   57  ( 7.1%)
+  1 part   743  (92.9%)
+  2+       0    ( 0.0%)
+```
+
+**No system in this corpus has a second vocal line.** The "41% need line assignment" of 27.52
+was an artefact of the renderer, and the resolve stage does not face simultaneous lines at
+all - it faces a continued one, where the assignment is reading order rather than a choice.
+
+**What this does and does not damage.** The recogniser corpus is unaffected: crops are
+per-syllable, the counts were checked, and the pairing was verified by eye (27.48). The
+detector arguably benefits, since a page holding two systems resembles a real page more than
+one holding a single system does. What was damaged is a conclusion about where to spend
+effort, which is the expensive kind of wrong - it would have bought a model for a problem
+that does not exist.
+
+The lesson is narrow and repeatable: **a disagreement between two counts is worth opening
+before it is explained.** The explanation offered in 27.52 was plausible, fitted the numbers,
+and named a real phenomenon that Lieder does exhibit elsewhere - it simply was not what these
+numbers were.
+
 ### 27.54 Resolution was not the constraint, and the hypothesis that it was is dead
 
 27.51 reached CER 11.7% and blamed `IMAGE_HEIGHT = 32`, on the reasoning that 32 downscales
@@ -2400,12 +2445,15 @@ rule that gets 94.8% of the hard case right is not the weak link it was expected
     0  count disagreements
 ```
 
-Zero count disagreements says the join of 27.41 is sound. But 249 of 600 systems carry more
-than one line of lyrics, and for those the question is not *which note* but *which line* -
-a vertical problem this rule does not address and 41% of systems ask. **Horizontal
-attachment is close to solved by geometry; line assignment is the open part.** That is where
-a learned resolver would earn its place, and it is not where 27.45 expected to spend the
-effort.
+Zero count disagreements says the join of 27.41 is sound. 249 of 600 systems carry more than
+one line of lyrics.
+
+**The explanation given here for those 249 was wrong, and 27.55 replaces it.** They were
+attributed to a second vocal staff, and the conclusion drawn was that line assignment is the
+open problem. Measured afterwards: **no joined system has more than one lyric-carrying
+part** - 92.9% have exactly one and 7.1% have none. Every multi-line case is MuseScore
+wrapping one system across the page. The finding that survives is the first half only:
+horizontal attachment is close to solved by geometry.
 
 Two encodings had to be learned by being wrong about them. MuseScore draws lyrics in place,
 with absolute path coordinates, but draws noteheads at the origin with a `transform` matrix -
