@@ -6,13 +6,16 @@ import cv2
 import numpy as np
 
 from training.omr_datasets.musescore_boxes import (
+    VERIFIABLE_CLASSES,
     Box,
     Unrenderable,
     _lines,
     _scale,
     boxes_of_class,
     pair,
+    source_dynamics,
     source_syllables,
+    typed_boxes,
 )
 
 SCORE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -118,6 +121,58 @@ class TestSourceSyllables(unittest.TestCase):
             path.write_text(SCORE.format(notes=_note(_lyric("  "))), encoding="utf-8")
 
             self.assertEqual(source_syllables(path), [])
+
+
+class TestTypedBoxes(unittest.TestCase):
+    """A page carries far more text than lyrics, and an OCR pass cropping a band under a
+    staff meets all of it. MuseScore already says which is which."""
+
+    def test_text_is_grouped_by_what_musescore_calls_it(self) -> None:
+        svg = _svg(
+            _lyric_path(10, 200, 40, 220)
+            + '<path class="Dynamic" d="M10,300 L30,320" />'
+            + '<path class="Tempo" d="M10,10 L60,30" />'
+        )
+
+        found = typed_boxes(svg, (1.0, 1.0))
+
+        self.assertEqual(sorted(found), ["Dynamic", "Lyrics", "Tempo"])
+
+    def test_classes_with_nothing_drawn_are_absent_rather_than_empty(self) -> None:
+        found = typed_boxes(_svg(_lyric_path(10, 200, 40, 220)), (1.0, 1.0))
+
+        self.assertEqual(list(found), ["Lyrics"])
+
+    def test_notes_are_not_text(self) -> None:
+        found = typed_boxes(_svg('<path class="Note" d="M0,0 L5,5" />'), (1.0, 1.0))
+
+        self.assertEqual(found, {})
+
+    def test_only_countable_classes_are_marked_verifiable(self) -> None:
+        # MuseScore decides whether a <words> renders as Tempo, StaffText or Expression and
+        # the MusicXML does not record which, so those cannot be joined to a string.
+        self.assertEqual(sorted(VERIFIABLE_CLASSES), ["Dynamic", "Lyrics"])
+
+
+class TestSourceDynamics(unittest.TestCase):
+    def test_each_marking_is_read_as_its_glyph_name(self) -> None:
+        notes = (
+            '<direction><direction-type><dynamics><p/></dynamics></direction-type></direction>'
+            + _note(_lyric("x"))
+            + '<direction><direction-type><dynamics><f/><f/></dynamics></direction-type></direction>'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.musicxml"
+            path.write_text(SCORE.format(notes=notes), encoding="utf-8")
+
+            self.assertEqual(source_dynamics(path), ["p", "ff"])
+
+    def test_a_score_without_dynamics_has_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.musicxml"
+            path.write_text(SCORE.format(notes=_note(_lyric("x"))), encoding="utf-8")
+
+            self.assertEqual(source_dynamics(path), [])
 
 
 class TestPair(unittest.TestCase):

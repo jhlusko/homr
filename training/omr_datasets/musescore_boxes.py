@@ -40,6 +40,44 @@ LYRIC_CLASS = "Lyrics"
 #: where one syllable is held across several notes, which is 32.9% of them (27.42).
 EXTENDER_CLASS = "LyricsLineSegment"
 
+#: Every class MuseScore draws as text. A page carries far more text than lyrics - title,
+#: composer, tempo, dynamics, staff and system directions, fingerings, rehearsal marks - and
+#: an OCR pass cropping a band under a staff will meet them whether or not it expects to.
+#: 27.40 caught "sempre legato" sitting exactly where the lyric crop lands.
+#:
+#: homr represents none of them. Its six fields are rhythm, pitch, lift, articulation, slur
+#: and position; the dynamics vocabulary exists but is commented out
+#: (`homr/transformer/vocabulary.py`), and tempo, rehearsal marks, fingerings and titles were
+#: never there. So typed text is capability homr does not currently have, not a duplicate of
+#: something it does.
+TEXT_CLASSES = frozenset(
+    {
+        "Lyrics",
+        "Dynamic",
+        "Tempo",
+        "StaffText",
+        "SystemText",
+        "Expression",
+        "Text",
+        "InstrumentName",
+        "MeasureNumber",
+        "RehearsalMark",
+        "Fingering",
+        "Harmony",
+    }
+)
+
+#: Classes whose path count can be checked against the source score, so the reading-order
+#: join is verifiable for them. Measured on two full scores: Lyrics 134/134 and 155/155,
+#: Dynamic 28/28.
+#:
+#: The direction texts are deliberately absent. MuseScore decides whether a `<words>`
+#: becomes a Tempo, a StaffText or an Expression, and the MusicXML does not record which -
+#: 21 rendered against 23 source `<words>` on one score. Their boxes are still extracted;
+#: only the pairing to a string is withheld, because an unverifiable join is the thing this
+#: module exists to avoid.
+VERIFIABLE_CLASSES = frozenset({"Lyrics", "Dynamic"})
+
 #: Rendering resolution. 150 gives roughly a 1240x1754 A4 page, close to the scanned
 #: corpus, so the curriculum's two stages are not also a resolution change.
 DPI = 150
@@ -154,6 +192,35 @@ def boxes_of_class(svg: str, name: str, scale: tuple[float, float]) -> list[Box]
             Box(int(left * sx), int(top * sy), int(right * sx) + 1, int(bottom * sy) + 1)
         )
     return [box for line in _lines(found) for box in line]
+
+
+def typed_boxes(svg: str, scale: tuple[float, float]) -> dict[str, list[Box]]:
+    """Every text box on the page, grouped by what MuseScore says it is.
+
+    The typing is free - it is already in the SVG's class attribute - which is why a pass
+    that reads all page text costs no more annotation than one that reads only lyrics.
+    """
+    found = {}
+    for name in sorted(TEXT_CLASSES):
+        boxes = boxes_of_class(svg, name, scale)
+        if boxes:
+            found[name] = boxes
+    return found
+
+
+def source_dynamics(score: Path) -> list[str]:
+    """Every dynamic marking, in document order.
+
+    Rendered one path per element, and the count matches the source exactly, so these join
+    the same checkable way lyrics do.
+    """
+    root = ET.parse(score).getroot()
+    marks = []
+    for element in root.iter("dynamics"):
+        names = [child.tag for child in element]
+        if names:
+            marks.append("".join(names))
+    return marks
 
 
 def source_syllables(score: Path) -> list[tuple[str, str, str]]:
