@@ -151,6 +151,26 @@ def _carry_attributes(part: ET.Element, source: ET.Element, wanted: tuple[str, .
         first.insert(0, running)
 
 
+def reassign_ids(combined: ET.Element) -> None:
+    """Renumber the parts P1..Pn so the two sources cannot collide.
+
+    The published score and OLiMPiC's sample number their parts independently. A Lied with
+    two vocal lines has voices P1 and P2 with the piano at P3, while OLiMPiC re-emits that
+    same piano as P2 - so the join produced two parts called P2, which MuseScore refuses
+    outright (exit 40, no output). It cost 227 of 2,926 systems, and the silent version
+    would have been worse than the crash: had the renderer accepted it, the labels would
+    have described the piano twice.
+
+    Position is what pairs a `<score-part>` with its `<part>` here, since `join` appends
+    both in the same order, so renumbering by position keeps them together.
+    """
+    entries = combined.findall("part-list/score-part")
+    parts = combined.findall("part")
+    for index, (entry, part) in enumerate(zip(entries, parts), start=1):
+        entry.set("id", f"P{index}")
+        part.set("id", f"P{index}")
+
+
 def join(sample: Path, full_score: ET.ElementTree) -> Joined:
     """Build a system score holding the voice parts and the piano, lyrics intact."""
     wanted = system_measures(sample)
@@ -172,16 +192,20 @@ def join(sample: Path, full_score: ET.ElementTree) -> Joined:
         lyrics += len(sliced.findall(".//lyric"))
         entry = published.get(voice.get("id"))
         if entry is not None:
-            part_list.append(entry)
+            # Copied for the same reason the measures are: `reassign_ids` rewrites the id,
+            # and writing that into the published tree would rename a part in the score
+            # every later system is read from.
+            part_list.append(copy.deepcopy(entry))
         combined.append(sliced)
 
     # The piano comes from OLiMPiC's own sample rather than being re-sliced, so this half
     # stays byte-for-byte what its published labels describe.
     for entry in piano_system.findall("part-list/score-part"):
-        part_list.append(entry)
+        part_list.append(copy.deepcopy(entry))
     for part in piano_system.findall("part"):
         combined.append(part)
 
+    reassign_ids(combined)
     return Joined(ET.ElementTree(combined), wanted, lyrics)
 
 

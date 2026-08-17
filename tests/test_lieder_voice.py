@@ -10,6 +10,7 @@ from training.omr_datasets.lieder_voice import (
     piano_part_id,
     read_mxl,
     slice_part,
+    reassign_ids,
     system_measures,
     voice_parts,
 )
@@ -187,6 +188,69 @@ class TestJoin(unittest.TestCase):
 
             with self.assertRaises(Unjoinable):
                 join(sample, _full())
+
+
+TWO_VOICES = FULL_SCORE.replace(
+    """    <score-part id="P2"><part-name>Piano</part-name>
+      <score-instrument id="I2"><instrument-name>Piano</instrument-name></score-instrument>
+    </score-part>""",
+    """    <score-part id="P2"><part-name>Chant verse 2</part-name>
+      <score-instrument id="I2"><instrument-name>Voice</instrument-name></score-instrument>
+    </score-part>
+    <score-part id="P3"><part-name>Piano</part-name>
+      <score-instrument id="I3"><instrument-name>Piano</instrument-name></score-instrument>
+    </score-part>""",
+).replace('<part id="P2">', '<part id="P3">')
+
+
+class TestPartIdCollision(unittest.TestCase):
+    """The published score and OLiMPiC's sample number their parts independently, so a Lied
+    with two vocal lines has a voice called P2 while OLiMPiC calls its piano P2 too."""
+
+    def test_the_joined_score_has_no_repeated_part_id(self) -> None:
+        full = ET.ElementTree(ET.fromstring(TWO_VOICES))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = join(_sample(Path(tmp)), full).score.getroot()
+            ids = [part.get("id") for part in root.findall("part")]
+
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_every_part_still_has_an_entry_that_matches_it(self) -> None:
+        # MuseScore refuses a score whose parts and part-list disagree, which is how the
+        # collision surfaced: exit 40 and no output on 227 of 2,926 systems.
+        full = ET.ElementTree(ET.fromstring(TWO_VOICES))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = join(_sample(Path(tmp)), full).score.getroot()
+
+            declared = [e.get("id") for e in root.findall("part-list/score-part")]
+            present = [p.get("id") for p in root.findall("part")]
+
+        self.assertEqual(declared, present)
+
+    def test_renumbering_pairs_entries_with_parts_by_position(self) -> None:
+        combined = ET.fromstring(
+            '<score-partwise><part-list>'
+            '<score-part id="X"/><score-part id="Y"/></part-list>'
+            '<part id="X"/><part id="Y"/></score-partwise>'
+        )
+
+        reassign_ids(combined)
+
+        self.assertEqual([e.get("id") for e in combined.findall("part-list/score-part")],
+                         ["P1", "P2"])
+        self.assertEqual([p.get("id") for p in combined.findall("part")], ["P1", "P2"])
+
+    def test_the_published_score_is_not_renamed(self) -> None:
+        # reassign_ids rewrites ids, and the part-list entries were shared with the source.
+        full = ET.ElementTree(ET.fromstring(TWO_VOICES))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            join(_sample(Path(tmp)), full)
+
+        ids = [e.get("id") for e in full.getroot().findall("part-list/score-part")]
+        self.assertEqual(ids, ["P1", "P2", "P3"])
 
 
 class TestTheSourceIsLeftAlone(unittest.TestCase):
