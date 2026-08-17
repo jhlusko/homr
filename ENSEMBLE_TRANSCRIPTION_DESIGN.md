@@ -2296,6 +2296,48 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.34 The scanned track, converted
+
+With the crop guard measured at 99.8% (27.33), the scanned track converts on the same
+terms as synthetic:
+
+```
+train   32,982 examples    860,879 annotated notes
+valid    3,571 examples
+skipped     44 parts for crop/part mismatch, 344 for systems with no crops at all,
+            19 for tokens outside homr's vocabulary
+        6,180 slur markings collapsed to fit the legacy field
+```
+
+Every channel survives the scan pipeline: placement at 66,277 above and 46,644 below, ties
+at 25,071 starts against 25,088 stops. The labels come from the same MusicXML as the
+synthetic track, so this is expected rather than surprising - but it is the confirmation
+that the *image* pipeline being different does not disturb the symbolic side, which is
+what makes a synthetic-versus-scanned comparison meaningful at all.
+
+Three corpora now exist with notation labels:
+
+```
+OSSQ synthetic   42,088 examples   1,136,351 notes
+OSSQ scanned     32,982 examples     860,879 notes
+PDMX             35,800 examples   2,501,759 notes
+```
+
+**A confound to record rather than hide.** The combined OSSQ+PDMX run declared ten heads
+rather than nine, because the tie head was added while that run was queued - so it differs
+from 27.32 in corpus *and* head set, which is exactly the "one variable at a time" rule
+this design has been keeping.
+
+It happens not to matter, for a structural reason. The heads are independent projections
+on a frozen hidden state and the loss is their sum, so the gradient reaching a beam head is
+its own loss's gradient and nothing else's. Adding a tie head cannot change what a beam
+head learns. The reported *mean* loss is not comparable across the two runs - it averages
+more terms - but every per-head metric is.
+
+That is a property worth having noticed: output-only heads over a frozen core are
+independently trainable, so the head set can grow without invalidating earlier per-head
+results. It is also luck rather than discipline in this instance, and the rule stands.
+
 ### 27.33 The scanned crop guard costs nothing either, and why I expected otherwise
 
 27.14 found homr over-detecting staves on scans - five, six, seven and nine parts where
