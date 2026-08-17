@@ -2300,6 +2300,54 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.61 The collapsed staves are faint, not misaligned - which rules out the cheaper fix
+
+27.60 found a seventyfold spread in collapse rate between scores and offered two readings:
+scan quality, or misalignment from the staff-miscounting 27.14 measured. Looking settles it.
+
+Two collapsed staves from the worst score against two healthy ones from the best:
+
+```
+sq8806881_0002_0003_2   87% -> 33%      faint, low contrast, staff lines thin and broken
+sq8806881_0002_0004_3   89% -> 22%      same
+sq12772795_0001_0001_1  92% -> 92%      crisp, solid noteheads, clean beams
+sq12772795_0001_0001_2 100% -> 100%     same
+```
+
+**The bad crops are correctly framed and coherent - they are simply faded.** Staff lines are
+present, the music reads, nothing is shifted. So this is not the crop-to-part misalignment
+that produced three earlier defects, and the alignment guard is doing its job.
+
+Measured across all nine scores:
+
+```
+score         collapse   ink fraction   contrast
+sq8806881       21.9%          0.083         170
+sq10414906      16.9%          0.070         163
+sq8075304       16.6%          0.185         249
+sq8885571       15.3%          0.139         221
+sq8907120       14.5%          0.156         232
+sq10307350       8.2%          0.204         254
+sq7354505        8.0%          0.134         210
+sq8806134        5.4%          0.114         198
+sq12772795       0.3%          0.210         255
+
+correlation(contrast, collapse)      -0.51
+correlation(ink fraction, collapse)  -0.56
+```
+
+**The correlations are suggestive and not established, and the difference matters.** With nine
+points, r of -0.5 carries p around 0.16 - it would arise by chance one time in six. The
+extremes are unambiguous: the two faintest scores are the two worst, the crispest is the best
+by a factor of thirty. But sq8075304 has contrast on a par with the best score and still loses
+one staff in six, so faintness is not the whole account.
+
+**What this licenses and what it does not.** It licenses testing contrast normalisation and
+faded-ink augmentation, which are cheap and now have a reason. It does not license the claim
+that the domain gap is a contrast problem - one score contradicts that outright, and nine
+documents cannot settle it either way. The measurement to run is the same one on a larger
+fold, which 13.5's split provides.
+
 ### 27.60 The scan gap is bimodal, and a fifth of one score's staves collapse
 
 27.58 reframed track 1 around closing the domain gap. That is only actionable once the gap's
