@@ -1576,22 +1576,26 @@ that, in order of what the result actually licenses:
 10  stem head or rule        done (27.27, 27.28): they are complementary, not redundant,
                              and arbitrating on head confidence beats both by 1.5 points
 11  re-convert OSSQ          done (27.29): 42,088 examples with ties and placement
-12  slur-side heads          running: the retrain declares 9 heads rather than 7, so
-                             both slur.slot.N.side have targets for the first time
-13  PDMX from source         done (27.31): 35,800 examples, 2.5M annotated notes,
-                             ~4x the level-2 hooks OSSQ carries
-14  OSSQ + PDMX together     staged: 77,888 examples combined, evaluated on the OSSQ
-                             valid split so the figure stays comparable with 27.21
-15  a tie head               ties are distinguishable now (27.24) but nothing predicts
-                             them; needs the same treatment the slur sides just had
-16  lieder sidecars          one call added; the corpus has not been downloaded
-17  the scanned track        staff detection and cropping now done (11,206 detections,
-                             44,682 crops), the crop guard measured at 99.8% (27.33),
-                             and the conversion running
-18  test_synth               held back deliberately - it is the one split that has not
+12  slur-side heads          done (27.32): macro F1 0.925, from no targets at all
+13  PDMX from source         done (27.31): 35,800 examples, ~4x the level-2 hooks
+14  OSSQ + PDMX together     done (27.35, 27.36): mixing costs 1.6 points on OSSQ and
+                             buys 16 on PDMX, and the quartet-only model turns out not
+                             to generalise
+15  a tie head               done (27.35): macro F1 0.842 on PDMX
+16  the scanned track        converted (27.34); training on all three corpora running
+17  Gate C on the combined   the three-corpus script scores each domain but does not
+    model                    dump predictions, so the crosstab and the arbiter sweep
+                             have to be run separately afterwards
+18  lieder sidecars          one call added; the corpus has not been downloaded
+19  test_synth               held back deliberately - it is the one split that has not
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
 ```
+
+**Every result before 27.36 should be read as "on string quartets".** That section measured
+the OSSQ-only model on ordinary published music and found 0.927 exact beam vector falling
+to 0.706, and 0.919 slur spans to 0.145. The figures in 27.21 through 27.32 are correct and
+they describe one genre.
 
 **The arbiter threshold is per-run and must be re-swept every time.** Items 12 and 14 each
 produce new weights, and 27.28's 0.9 was tuned against the weights of 27.26. The driver
