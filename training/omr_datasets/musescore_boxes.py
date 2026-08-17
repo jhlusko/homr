@@ -113,10 +113,33 @@ class Syllable:
     verse: str
 
 
+def without_part_names(score: Path, target: Path) -> Path:
+    """Write a copy whose parts are unnamed, so nothing is printed down the left margin.
+
+    Each system here is rendered as a score of its own, so MuseScore prints the instrument
+    name on every one - 105 across 50 systems, about twice each. Real engraving prints it
+    on the first system of a piece and nowhere else, so a detector trained on the raw
+    render would learn that every system carries an instrument label, which no scan shows.
+
+    Only the render is affected. Part names are not in homr's vocabulary, so the labels are
+    the same either way.
+    """
+    tree = ET.parse(score)
+    for tag in ("part-name", "part-abbreviation"):
+        for element in tree.getroot().iter(tag):
+            element.text = ""
+    tree.write(target, encoding="utf-8", xml_declaration=True)
+    return target
+
+
 def render(score: Path, out_dir: Path, dpi: int = DPI) -> tuple[list[Path], list[Path]]:
     """Export a score to SVG and PNG, one file per page, and return both lists."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = out_dir / score.stem
+    # Held before `score` is rebound below: the copy is named `<name>.render.musicxml`, so
+    # its own stem would send the output and the glob to different names.
+    name = score.stem
+    stem = out_dir / name
+    score = without_part_names(score, out_dir / f"{name}.render.musicxml")
     for suffix in (".svg", ".png"):
         result = subprocess.run(
             ["xvfb-run", "-a", "mscore", "-r", str(dpi), "--export-to", str(stem) + suffix,
@@ -128,8 +151,8 @@ def render(score: Path, out_dir: Path, dpi: int = DPI) -> tuple[list[Path], list
         if result.returncode != 0:
             raise Unrenderable(f"mscore failed on {suffix}: {result.stderr.strip()[:120]}")
 
-    svgs = sorted(out_dir.glob(f"{score.stem}-*.svg"))
-    pngs = sorted(out_dir.glob(f"{score.stem}-*.png"))
+    svgs = sorted(out_dir.glob(f"{name}-*.svg"))
+    pngs = sorted(out_dir.glob(f"{name}-*.png"))
     if not svgs or len(svgs) != len(pngs):
         raise Unrenderable(f"{len(svgs)} svg pages against {len(pngs)} png pages")
     return svgs, pngs

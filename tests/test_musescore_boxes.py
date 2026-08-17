@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import cv2
@@ -15,6 +16,7 @@ from training.omr_datasets.musescore_boxes import (
     pair,
     source_dynamics,
     source_syllables,
+    without_part_names,
     typed_boxes,
 )
 
@@ -173,6 +175,45 @@ class TestSourceDynamics(unittest.TestCase):
             path.write_text(SCORE.format(notes=_note(_lyric("x"))), encoding="utf-8")
 
             self.assertEqual(source_dynamics(path), [])
+
+
+class TestWithoutPartNames(unittest.TestCase):
+    """Every system renders as a score of its own, so MuseScore prints the instrument name
+    on all of them. Real engraving prints it once."""
+
+    def test_the_name_is_emptied(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            score = directory / "s.musicxml"
+            score.write_text(SCORE.format(notes=_note(_lyric("x"))), encoding="utf-8")
+
+            stripped = without_part_names(score, directory / "r.musicxml")
+            names = [e.text for e in ET.parse(stripped).getroot().iter("part-name")]
+
+        # ElementTree writes an empty string as <part-name /> and reads it back as None,
+        # so the assertion is that nothing is left to print, not that it is exactly "".
+        self.assertEqual([name for name in names if name], [])
+
+    def test_the_original_is_not_touched(self) -> None:
+        # It is the label source as well as the render source.
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            score = directory / "s.musicxml"
+            score.write_text(SCORE.format(notes=_note(_lyric("x"))), encoding="utf-8")
+
+            without_part_names(score, directory / "r.musicxml")
+
+            self.assertIn("<part-name>Voice</part-name>", score.read_text(encoding="utf-8"))
+
+    def test_the_music_is_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            score = directory / "s.musicxml"
+            score.write_text(SCORE.format(notes=_note(_lyric("va"))), encoding="utf-8")
+
+            stripped = without_part_names(score, directory / "r.musicxml")
+
+            self.assertEqual(source_syllables(stripped), source_syllables(score))
 
 
 class TestPair(unittest.TestCase):
