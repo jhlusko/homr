@@ -2326,11 +2326,34 @@ The imbalance is not a tie-head peculiarity - six of eight heads sit above 19x, 
 
 **Three decisions worth stating, because each could have been hidden:**
 
-  * *The 50x cap flattens the rarest classes together.* `start` at 0.109% and
-    `start_and_stop` at 0.014% come out equal despite one being eight times rarer. Past the
-    cap every class is simply as boosted as this scheme goes; if that ordering turns out to
-    matter the answer is a gentler curve, not a higher cap, which is the mirror-image
-    collapse the cap exists to prevent.
+  * *The 50x cap flattens the rarest classes together* - `start` at 0.109% and
+    `start_and_stop` at 0.014% come out equal despite one being eight times rarer. This was
+    first written up as the cap's main cost. It is not. Measured as gradient share on the
+    tie head:
+
+    ```
+    scheme          none      stop     start   start_and_stop     tie classes combined
+    unweighted    99.77%     0.11%     0.11%            0.01%                    0.23%
+    cap 10        97.74%     1.06%     1.06%            0.13%                    2.26%
+    cap 50        89.64%     4.88%     4.87%            0.61%                   10.36%
+    cap 200       68.38%    14.89%    14.87%            1.86%                   31.62%
+    uncapped      25.00%    25.00%    25.00%           25.00%                   75.00%
+    ```
+
+    **The cap chooses how much rebalancing happens at all, and at 50 `none` still holds
+    89.6% of the gradient.** The flattening is a side effect of that larger choice. Too
+    little rebalancing is the documented collapse - the class stops being predicted, SER 26%
+    to 132%. Too much is worse in a way particular to this work: uncapped, 293
+    `start_and_stop` examples carry a quarter of the gradient, roughly 7,300x the leverage
+    of one `none`, so the head memorises 293 examples rather than learning a visual cue, and
+    **any label error among them is amplified 7,300x**. Four label-pipeline defects were
+    found in this corpus in a single day; a handful of bad labels in a 293-example class
+    would decide what that class learns.
+
+    Flattening is also a refusal to assume rarity tracks difficulty. `start_and_stop` is
+    rare but visually distinctive - a note with a tie arriving and a tie leaving - so
+    weighting it eight times harder than `start` asserts something unmeasured. The cap is a
+    scalar, so `phase11.sh` sweeps it rather than arguing about it.
   * *Alpha normalises by the applied weight, not the count.* Otherwise raising a rare
     class's weight would also raise that head's share of the summed multi-head loss, and the
     two knobs would silently interact.

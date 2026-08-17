@@ -107,7 +107,11 @@ def load_pinned(model: nn.Module, checkpoint: Path) -> None:
 
 
 def measure_class_weights(
-    batches: object, head_targets: Sequence[str], model: nn.Module, device: str = "cpu"
+    batches: object,
+    head_targets: Sequence[str],
+    model: nn.Module,
+    device: str = "cpu",
+    cap: float = 50.0,
 ) -> dict[str, torch.Tensor]:
     """Count each head's classes over the training data, then invert.
 
@@ -155,7 +159,7 @@ def measure_class_weights(
                     counts[name][index] = counts[name].get(index, 0) + count
 
     return {
-        name: inverse_frequency_alpha(support, sizes[name])
+        name: inverse_frequency_alpha(support, sizes[name], cap=cap)
         for name, support in counts.items()
         if support and name in sizes
     }
@@ -350,8 +354,16 @@ def main() -> None:
     parser.add_argument(
         "--class-weights",
         action="store_true",
-        help="Weight each head's classes by inverse frequency, capped at 50x, measured "
-        "from a first pass over the training data (27.49).",
+        help="Weight each head's classes by inverse frequency, measured from a first "
+        "pass over the training data (27.49).",
+    )
+    parser.add_argument(
+        "--weight-cap",
+        type=float,
+        default=50.0,
+        help="How far --class-weights may rebalance. On the tie head this moves the tie "
+        "classes from 0.23%% of the gradient unweighted to 2.3%% at 10, 10.4%% at 50 and "
+        "31.6%% at 200; uncapped is 75%%, where 293 examples carry a quarter of it.",
     )
     args = parser.parse_args()
 
@@ -374,7 +386,9 @@ def main() -> None:
 
     alpha = None
     if args.class_weights:
-        alpha = measure_class_weights(batches, names, model, device=args.device)
+        alpha = measure_class_weights(
+            batches, names, model, device=args.device, cap=args.weight_cap
+        )
         for name, vector in sorted(alpha.items()):
             spread = vector.max().item() / vector.min().item()
             print(f"  {name}: class weights spread {spread:.1f}x")

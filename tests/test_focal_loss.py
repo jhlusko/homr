@@ -190,3 +190,36 @@ class TestStructuredLossPlumbing(unittest.TestCase):
 
         self.assertAlmostEqual(with_other.total.item(),
                                structured_loss(logits, targets).total.item(), places=6)
+
+
+class TestTheCapIsTheRebalancingDial(unittest.TestCase):
+    """The cap was first described as controlling how the rarest classes order among
+    themselves. It mostly controls how much rebalancing happens at all."""
+
+    #: The tie head's real counts: none, stop, start, start_and_stop.
+    TIE = {0: 2_149_263, 1: 2_345, 2: 2_342, 3: 293}
+
+    def _gradient_share(self, cap: float) -> float:
+        """Share of the weighted loss the three tie classes receive."""
+        alpha = inverse_frequency_alpha(self.TIE, 4, cap=cap)
+        mass = [alpha[index].item() * self.TIE[index] for index in range(4)]
+        return sum(mass[1:]) / sum(mass)
+
+    def test_a_higher_cap_gives_the_rare_classes_more_of_the_gradient(self) -> None:
+        self.assertLess(self._gradient_share(10.0), self._gradient_share(50.0))
+        self.assertLess(self._gradient_share(50.0), self._gradient_share(200.0))
+
+    def test_the_default_cap_still_leaves_the_common_class_dominant(self) -> None:
+        # 89.6% of the gradient stays with `none` at cap 50, so this is a mild correction
+        # and not a rebalancing to parity.
+        self.assertLess(self._gradient_share(50.0), 0.15)
+        self.assertGreater(self._gradient_share(50.0), 0.05)
+
+    def test_uncapped_hands_a_quarter_of_the_gradient_to_293_examples(self) -> None:
+        # Which is the reason for a cap: one mislabelled example among those 293 would
+        # carry thousands of times the weight of a `none`, and this corpus has produced
+        # four label-pipeline defects in a day.
+        alpha = inverse_frequency_alpha(self.TIE, 4, cap=1e9)
+        mass = [alpha[index].item() * self.TIE[index] for index in range(4)]
+
+        self.assertAlmostEqual(mass[3] / sum(mass), 0.25, places=2)
