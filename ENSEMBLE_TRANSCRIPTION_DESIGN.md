@@ -1878,6 +1878,50 @@ which was the tell that the test's structure was wrong rather than the code.
 and the segmentation model itself, biased per the 0.38% finding, and trained with the focal
 loss correction 27.62 validated and 27.68 already flagged this corpus would need.
 
+### 27.70 Every "scanned" result in this design is OSSQ, one corpus, one genre
+
+Asked directly and worth stating plainly rather than leaving implicit: does the scanned
+domain behind 27.38, 27.56, 27.58, 27.60, 27.61, 27.63, 27.65 and phase12 include OLiMPiC's
+scanned track, or only OSSQ's?
+
+**Only OSSQ.** Checked rather than recalled:
+
+```
+phase7/train token names       sq7383977_..., sq8907120_...   - OSSQ's own naming
+phase9's training index        zero references to olimpic
+dataset-root for every         /workspace/b0/ossq-omr, whose layout
+Gate C / arbiter run           scores/*/*/musicxml/unaligned/... is OSSQ-specific
+                                (27.58 already noted PDMX cannot use these tools for the
+                                same reason - they are OSSQ-shaped by construction)
+```
+
+`phase7` - the source of every "scanned" figure in 27.38 through phase12 - is built by
+`scanned_convert.sh` from OSSQ alone. OLiMPiC's scanned images are a wholly separate track,
+used only for the lyric/OCR work from 27.40 onward (`musescore_boxes.py`, the resolve
+baseline, the detector data). They have never been part of notation-head training or
+evaluation, and no beam, stem, slur or tie number in this design has ever been measured
+against them.
+
+**So every domain-gap finding in this design describes one corpus: OSSQ's photographed
+string quartets.** That includes the headline results - the 20-40 point synthetic-to-scan
+gaps, Gate C's scanned regression, the 70x per-score collapse-rate spread, the contrast
+correlation, and phase12's test of whether reweighting narrows it. None of it has been
+checked against a second scanned source.
+
+**This is a real scope limit, not a caveat to wave past.** OLiMPiC's scans differ from
+OSSQ's on every axis that could matter: different repertoire (Lieder rather than quartets),
+different engraving era and conventions, and - so far as this design has established -
+different scanning equipment and provenance entirely. A contrast effect real for OSSQ's
+photographs might not describe OLiMPiC's scans at all; it might be milder, worse, or shaped
+differently. Nothing here says which, because nothing here has looked.
+
+**What would close it**: the same domain-gap measurement 27.60 ran - paired staff accuracy
+between a corpus's synthetic and scanned renderings - repeated on OLiMPiC once its notation
+heads have targets to train against, which they do not yet (26.40's track has built images
+and lyric labels, not beam/stem/slur/tie labels for OLiMPiC's scans). Until then, "the scan
+gap" in this design should be read as "the scan gap measured on OSSQ," not as a property of
+scanned sheet music in general.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
