@@ -163,3 +163,41 @@ class TestTrainEntryPoint(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPaddingIsNotDecoded(unittest.TestCase):
+    """Training gave CTC the true lengths; evaluation decoded every frame including the
+    padding, and read the white padding as the alphabet's non-breaking space."""
+
+    def test_a_narrow_crop_in_a_wide_batch_is_cut_to_its_own_frames(self) -> None:
+        import torch
+        from torch.utils.data import DataLoader
+
+        from training.ocr.recognizer_data import SyllableCrops, collate, read_manifest
+        from training.ocr.train_recognizer import evaluate
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            # One short crop and one long one, so the short one is heavily padded.
+            manifest = _corpus(directory, "v", ["a", "abcdefgh"])
+            samples = read_manifest(manifest)
+            alphabet = Alphabet("abcdefgh")
+            model = CRNN(len(alphabet), image_height=32)
+
+            # Force the model to always predict a character, so anything decoded beyond the
+            # true frame count shows up as extra letters.
+            with torch.no_grad():
+                model.classify.bias.fill_(-10.0)
+                model.classify.bias[1] = 10.0
+
+            loader = DataLoader(
+                SyllableCrops(samples, alphabet, model.frame_count, height=32),
+                batch_size=2, collate_fn=collate,
+            )
+            known, novel = evaluate(model, loader, alphabet, set(), "cpu")
+
+        # Both decode to "a" (CTC collapses the repeat). The point is that the short crop's
+        # prediction is not longer than the long crop's because of padding.
+        self.assertEqual(novel.total, 2)
+        for truth, predicted in novel.examples:
+            self.assertLessEqual(len(predicted), 1)

@@ -85,7 +85,16 @@ class Accuracy:
 def evaluate(
     model: CRNN, loader: DataLoader, alphabet: Alphabet, seen: set[str], device: str
 ) -> tuple[Accuracy, Accuracy]:
-    """Score the model, split by whether the syllable was ever in training."""
+    """Score the model, split by whether the syllable was ever in training.
+
+    **Each row is cut to its own unpadded frame count before decoding.** Training already
+    does this - CTC is given the true lengths - but evaluation did not, and read the padding
+    as content. Because the padding is white and the corpus alphabet contains a non-breaking
+    space, the model had a perfectly good white character to put there: every prediction came
+    back as the right word with a space stapled on, `'Zü'` decoded as `'Zü\xa0'`, and exact
+    match collapsed while CER stayed low. Two runs were scored under this before the misread
+    list made it obvious.
+    """
     model.eval()
     known, novel = Accuracy(), Accuracy()
 
@@ -93,8 +102,9 @@ def evaluate(
         for batch in loader:
             logits = model(batch["images"].to(device))
             best = logits.argmax(dim=-1).permute(1, 0).cpu()
-            for row, truth in zip(best, batch["texts"]):
-                predicted = alphabet.decode(row.tolist())
+            for row, truth, width in zip(best, batch["texts"], batch["widths"]):
+                frames = model.frame_count(int(width))
+                predicted = alphabet.decode(row[:frames].tolist())
                 (known if truth in seen else novel).observe(truth, predicted)
     return known, novel
 
