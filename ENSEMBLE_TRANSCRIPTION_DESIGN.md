@@ -2296,6 +2296,54 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.35 Mixing corpora: the predicted gain arrives, and so does a cost
+
+Trained on OSSQ and PDMX together (77,888 examples) and evaluated on the OSSQ validation
+split, against 27.32's OSSQ-only run:
+
+```
+                       OSSQ v2    OSSQ+PDMX
+hooks F1                 0.822        0.837
+beam level 2 macro F1    0.816        0.829
+beam level 3 forward hk  0.659        0.709
+exact beam vector        0.927        0.912
+beam level 1 macro F1    0.936        0.921
+slur spans F1            0.919        0.884
+stem direction only      0.943        0.928
+exceptions recovered     81.2%        79.4%
+agreements lost           5.4%         7.0%
+```
+
+**The prediction held where it was made.** 27.30 said PDMX carries 2.8 times the hook
+density and that quartets starve the heads' weakest class; hooks rise 0.822 -> 0.837 and
+level-3 forward hooks 0.659 -> 0.709. Level 2, where most hooks live, improves too.
+
+**Everything else got worse**, and the honest position is that this run does not establish
+why. Two readings fit the same numbers:
+
+- Mixing hurt: PDMX's different distribution pulled the heads away from quartet
+  conventions, and the beam and slur losses are the price of the hook gain.
+- Nothing got worse: the model is better across both domains, and this evaluation only
+  looks at one of them.
+
+**The reason it cannot be told apart is a gap I created: PDMX has no held-out split.** All
+35,800 examples went into training, so the only validation set available is OSSQ's, and a
+mixed-corpus model measured solely on quartets is being asked the wrong question. The
+figures above describe how the combined model reads string quartets, which is a real thing
+to know and not the thing the run was for.
+
+That is the next step, and it is a correction rather than an extension: split PDMX by score
+- never by window, since windows of one score share an engraving and would leak - and
+re-evaluate both models on both validation sets. Four numbers instead of two, and the
+question becomes answerable.
+
+**The tie head trained for the first time:** macro F1 0.814, with `none` at 0.999 over
+2.97 million notes and the real classes far lower - `stop` 0.827, `start_and_stop` 0.790,
+`start` 0.638. The asymmetry between finding where a tie ends (0.827) and where it begins
+(0.638) is not something the design anticipated and is worth a look: a tie's two ends are
+drawn identically, so a gap that large suggests the head is using context rather than the
+mark itself.
+
 ### 27.34 The scanned track, converted
 
 With the crop guard measured at 99.8% (27.33), the scanned track converts on the same
