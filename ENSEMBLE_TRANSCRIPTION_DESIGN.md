@@ -1690,6 +1690,32 @@ reference, caught by running it against real data before trusting the arithmetic
 Not yet trained against - it builds and verifies on CPU; whether oversampling actually
 narrows the domain gap needs a training run, queued behind phase11.
 
+### 27.66 phase11 complete: focal alone is the winner, and combining with weights compounds the damage
+
+All four arms, synthetic validation:
+
+```
+                  macro F1   start F1   stop F1   start_and_stop F1   exact beam vector
+baseline             0.772      0.551     0.791              0.746               0.904
+focal (g=2)          0.782      0.600     0.785              0.744               0.899
+weights (cap 50)     0.689      0.414     0.615              0.727               0.901
+both                 0.630      0.283     0.490              0.750               0.895
+```
+
+27.62 predicted this before running it: *"the theory above predicts compounds, since focal's
+gain does not depend on weighting being safe."* It compounds. `both` is worse than `weights`
+alone on macro F1 (0.630 vs 0.689) and on `start` (0.283 vs 0.414) - focal does not rescue
+weighting's damage, and stacking the two costs more than either alone. Only
+`start_and_stop` moves the other way (0.750, best of all four), which is the class most
+starved to begin with and the one a 293-example weight boost was aimed hardest at; even
+there the gain is inside noise given n=604.
+
+**Decision: focal loss (gamma=2), alone, is what goes into the next full training run.**
+Class weighting is set aside, not iterated on - the mechanism 27.50 flagged (293 examples
+carrying outsized gradient, amplifying any label error among them) is now confirmed twice,
+once as a standalone regression and once as the dominant term in a compound that made a
+second technique worse than doing nothing.
+
 ### 27.65 27.64's oversampling design could not work at all - the split makes score names disjoint
 
 Preparing to actually run 27.64's tool found it broken more deeply than the scaling bug
