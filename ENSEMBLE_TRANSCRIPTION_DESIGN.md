@@ -2300,6 +2300,46 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.46 Two sources numbering parts independently, and a crash that was the lucky outcome
+
+Annotating all 2,926 joined systems refused 227 of them - 7.4% - with `mscore failed on
+.svg` and an empty stderr. Run by hand, the same score exits 40 and writes nothing.
+
+The original OLiMPiC sample renders. The joined version does not, so the join made it:
+
+```
+joined 6007571_p1-s1     part id P1, part id P2, part id P2
+```
+
+Two parts called P2. The cause is that **the published score and OLiMPiC's sample number
+their parts in independent namespaces**:
+
+```
+published lc6007571   P1 Chant/Voice   P2 Chant/Voice verse 2   P3 Piano
+olimpic sample        P2 (the piano, renumbered)
+```
+
+A Lied with two vocal lines uses P2 for its second singer, and OLiMPiC calls its piano P2 as
+well. `join` appended both and produced a score no renderer will accept. `reassign_ids`
+renumbers the combined parts P1..Pn, pairing each `<score-part>` with its `<part>` by
+position, which is sound because `join` appends both in the same order.
+
+**The crash was the lucky outcome.** A duplicate part id is not a parse error in MusicXML -
+it is ambiguous rather than illegal. Had MuseScore accepted it, the joined score would have
+carried the piano twice, the boxes would have been drawn for a doubled system, and the
+labels would have described music the image shows once. Nothing in the output would have
+said so. The failure was loud only because the tool downstream happened to be strict; this
+is the same class as the shared-tree bug two sections earlier, which was *not* loud and cost
+40 minutes of a crawling run before anyone looked.
+
+A first hypothesis - that piano detection had failed on these scores, making `voice_parts`
+return the piano as a voice - was measured and was wrong: 0 of 200 published scores lack an
+identifiable piano. Checking it took one command and would otherwise have produced a fix for
+a problem that did not exist.
+
+After the fix that score renders, and the join still reports the same 5 honest refusals for
+a missing pickup measure.
+
 ### 27.45 Detection then recognition - and dynamics are not text
 
 Two open questions closed here. One was put to the user and handed back, so it is decided
