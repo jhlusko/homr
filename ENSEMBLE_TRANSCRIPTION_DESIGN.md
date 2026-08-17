@@ -1656,6 +1656,40 @@ And the Gate C baseline moves 6.7 points between splits, so a head's result is o
 meaningful against the baseline on its own split. That is now a flag on the tool rather
 than a note in a doc.
 
+### 27.64 Oversampling the worst scores, and a scaling bug caught before it ran
+
+27.63 ruled out a page-level fix and pointed at which documents the model sees more of,
+following 27.60's finding that the gap concentrates by score. `score_reweight.py` repeats a
+score's index lines in proportion to its collapse rate - oversampling rather than filtering,
+since dropping the worst scores would shrink an already-small scanned corpus and remove
+exactly the examples a deployed system will meet.
+
+**The first version scaled toward a hypothetical 100% collapse rate**, and on the real nine
+scores - whose worst is 21.9% - that put `max_repeats` at a point nothing reaches:
+
+```
+first run     sq8806881 21.9% -> x2      every other score -> x1
+```
+
+Eight of nine scores landed within rounding distance of x1, so the mechanism built to
+correct the gap would not have fired on the data that exists. Rescaling against the worst
+rate observed *in the batch*, not against 1.0, fixes it:
+
+```
+after         sq8806881   21.9%  x6   sq8907120    14.5%  x3   sq7354505    8.0%  x1
+              sq10414906  16.9%  x4   sq10307350    8.2%  x1   sq8806134    5.4%  x1
+              sq8075304   16.6%  x4                             sq12772795   0.3%  x1
+              sq8885571   15.3%  x3
+```
+
+The worst score now reaches the cap, the next two land at x4, and the four scores at or
+below the 10% floor are untouched. This is the same shape of mistake as 27.53's padding bug
+and 27.60's first collapse-rate framing: a number computed correctly against the wrong
+reference, caught by running it against real data before trusting the arithmetic.
+
+Not yet trained against - it builds and verifies on CPU; whether oversampling actually
+narrows the domain gap needs a training run, queued behind phase11.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
