@@ -2300,6 +2300,55 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.51 The recogniser, and a metric built so it can fail
+
+`training/architecture/ocr/crnn.py` and `training/ocr/` implement the recognition half of
+27.45: a small CRNN, CTC, no language model. The size is deliberate - 27.42 measured a
+104-character alphabet and syllables of median 3 characters, so capacity is not the binding
+constraint, and a large pretrained recogniser would reintroduce the very language prior CTC
+was chosen to avoid. `ter`, `nel`, `Ê`, `schaft!` are fragments, and a model that repairs
+them into words fails in the way that looks like success.
+
+**The reporting is the part that took thought.** 27.49's tie head had micro F1 0.997 and was
+near-useless, because one class carried the figure. The same trap sits here in a different
+shape: 27.48 measured **17.0% of validation syllables never appearing in training**, so a
+model that memorised the training vocabulary and read nothing at all would still score 83% -
+and 83% reads like a working recogniser. So every figure is split:
+
+```
+seen      syllables whose exact string appears in training - says whether it remembers
+unseen    syllables that do not                            - says whether it reads
+```
+
+First run, 30,030 training crops against 4,291 validation:
+
+```
+epoch 1   seen 68.5%   unseen 53.8%    CER 18.9% / 23.0%
+epoch 2   seen 83.0%   unseen 61.8%    CER 13.5% / 20.9%
+epoch 3   seen 88.3%   ...
+```
+
+The gap is real and it is what the split exists to show - roughly 20 points at epoch 2,
+invisible in any aggregate. But **unseen climbs with seen**, which is the answer to the
+question the split was built to ask: the model is reading, not only remembering. A memorising
+model would show unseen flat.
+
+**Three loader rules, each a way CTC breaks silently rather than loudly:**
+
+  * Pad with paper, not zeros. Zero is ink, and the model would learn that every syllable
+    ends in a black bar.
+  * Give CTC the true width, not the padded one, or it hunts for the label inside the
+    padding.
+  * Refuse a label longer than its frame count. That example is not hard, it is impossible -
+    an infinite loss poisoning the batch mean. Three were refused, and they are counted so a
+    corpus that starts producing them says so.
+
+The alphabet is built from training alone. A character appearing only in validation is one
+the model could never emit, and including it would widen the output layer while pretending
+the character is learnable - one validation syllable was excluded on this ground. Weights
+are saved with their alphabet, because weights without the indexing that produced them
+decode to nonsense.
+
 ### 27.50 The class-imbalance instruments, and a sweep to choose between them
 
 27.49 established the problem and its precedent. `structured_losses.py` had already written
