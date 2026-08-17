@@ -2361,9 +2361,20 @@ The imbalance is not a tie-head peculiarity - six of eight heads sit above 19x, 
     tie would weight that class from a sample of zero, and the objective would wobble worst
     on exactly the classes least able to learn.
 
-`phase11.sh` runs the sweep: baseline, focal alone, weights alone, both - same data, same
-epochs, only the loss differing. It greps macro figures and never micro, because 27.49's
-tie micro F1 of 0.997 is almost entirely `none`.
+`phase11.sh` runs the sweep: focal alone, weights alone, both - same data, same epochs, only
+the loss differing. It greps macro figures and never micro, because 27.49's tie micro F1 of
+0.997 is almost entirely `none`.
+
+**Two scheduling decisions, made because GPU hours are the scarce thing here.** The baseline
+arm is not trained: phase9 already trains that exact configuration - same index, same 12
+epochs, same unweighted loss - so retraining it would spend three hours reproducing an
+existing file, and any gap between the two would be seed noise dressed as a finding. Its
+heads are evaluated directly instead.
+
+And the cap sweep is deferred rather than run alongside. The cap asks *how far* to
+rebalance, which is only worth answering once rebalancing is known to help at all. At about
+three GPU hours an arm, asking both questions together would cost a day to discover the
+answer to the first was no.
 
 **Found by running it, not by the tests:** the weight-measuring pass fed CPU tensors to a
 CUDA model. No unit test would catch it - they all run on cpu - and it is the fourth defect
