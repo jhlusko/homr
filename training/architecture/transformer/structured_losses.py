@@ -83,6 +83,74 @@ def masked_cross_entropy(logits: torch.Tensor, targets: torch.Tensor) -> tuple[t
     )
 
 
+def focal_cross_entropy(
+    logits: torch.Tensor,
+    targets: torch.Tensor,
+    gamma: float = 0.0,
+    alpha: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, int]:
+    """Cross-entropy with the two corrections for a class the model can afford to ignore.
+
+    `gamma` is the focal exponent: each position is scaled by (1 - p_true)^gamma, so a
+    `none` the model already predicts with confidence 0.999 contributes almost nothing and
+    stops drowning out the rare classes. `alpha` is a per-class weight vector, the blunter
+    instrument. Both at their defaults - gamma 0, alpha None - this *is* `cross_entropy`,
+    which a test pins, so the unweighted baseline stays reachable and comparable.
+
+    Why both: upstream issue #61 records dynamics at ~0.05% of tokens collapsing to
+    never-predicted, taking SER from 26% to 132%, and the discussion there converged on
+    focal loss - as oemer's UNet uses - or class weights at 50x, without settling which.
+    27.49 found our tie head in the same condition at 0.109%, so this is the instrument for
+    a sweep rather than a single guess.
+    """
+    supervised = int((targets != IGNORE_INDEX).sum().item())
+    if supervised == 0:
+        return logits.sum() * 0.0, 0
+
+    flat_logits = logits.reshape(-1, logits.shape[-1])
+    flat_targets = targets.reshape(-1)
+    keep = flat_targets != IGNORE_INDEX
+    flat_logits, flat_targets = flat_logits[keep], flat_targets[keep]
+
+    log_probabilities = F.log_softmax(flat_logits, dim=-1)
+    picked = log_probabilities.gather(1, flat_targets.unsqueeze(1)).squeeze(1)
+
+    losses = -picked
+    if gamma:
+        losses = losses * (1.0 - picked.exp()).pow(gamma)
+    if alpha is not None:
+        losses = losses * alpha.to(losses.device)[flat_targets]
+        # Normalised by the weight actually applied, not by the count, so raising a rare
+        # class's weight does not also raise the head's share of the total loss - the two
+        # knobs stay independent.
+        return losses.sum() / alpha.to(losses.device)[flat_targets].sum(), supervised
+    return losses.mean(), supervised
+
+
+def inverse_frequency_alpha(
+    support: dict[int, int], num_classes: int, cap: float = 50.0
+) -> torch.Tensor:
+    """Per-class weights from observed counts, normalised to mean 1 and capped.
+
+    Uncapped inverse frequency on the tie head would weight `start` about 900x against
+    `none`, which trades one collapse for another - the head would predict ties everywhere.
+    50 is the cap because it is the figure the upstream attempt used, so a result here is
+    comparable to that one rather than to nothing.
+
+    **The cap flattens the rarest classes together**, and that is a real consequence rather
+    than an accident. On the tie head `start` at 0.109% and `start_and_stop` at 0.014% both
+    exceed it, so both come out at the same weight even though one is eight times rarer.
+    Every class past the cap is simply "as boosted as this scheme goes"; if the ordering
+    among them turns out to matter, the fix is a gentler curve such as inverse square root,
+    not a higher cap, which is the collapse this cap exists to prevent.
+    """
+    counts = torch.tensor(
+        [max(1, support.get(index, 0)) for index in range(num_classes)], dtype=torch.float
+    )
+    weights = (counts.sum() / counts).clamp(max=cap)
+    return weights / weights.mean()
+
+
 def class_support(targets: torch.Tensor, num_classes: int) -> dict[int, int]:
     """How many supervised positions fall in each class."""
     valid = targets[targets != IGNORE_INDEX]
@@ -96,6 +164,8 @@ def structured_loss(
     logits: dict[str, torch.Tensor],
     targets: dict[str, torch.Tensor],
     weights: dict[str, float] | None = None,
+    gamma: float = 0.0,
+    alpha: dict[str, torch.Tensor] | None = None,
 ) -> StructuredLoss:
     """Sum the per-head losses over the heads the model actually has.
 
@@ -106,6 +176,11 @@ def structured_loss(
     A target for a head the model does not have is an error, not something to skip: it
     means the label pipeline and the model disagree about the configuration, and silently
     dropping the supervision would leave that head untrained with nothing to show for it.
+
+    `gamma` and `alpha` reach the per-position loss; `weights` scales whole heads against
+    each other. They are separate knobs on purpose - the first two are about a class the
+    model can afford to ignore inside one head, the third is about how much one head
+    matters against another - and 27.49 is about the first problem only.
     """
     unknown = sorted(set(targets) - set(logits))
     if unknown:
@@ -120,7 +195,9 @@ def structured_loss(
     for name, head_logits in logits.items():
         if name not in targets:
             continue
-        loss, supervised = masked_cross_entropy(head_logits, targets[name])
+        loss, supervised = focal_cross_entropy(
+            head_logits, targets[name], gamma=gamma, alpha=(alpha or {}).get(name)
+        )
         heads.append(
             HeadLoss(
                 name=name,

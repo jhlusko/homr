@@ -106,6 +106,61 @@ def load_pinned(model: nn.Module, checkpoint: Path) -> None:
     print(f"checkpoint: {report.describe()}")
 
 
+def measure_class_weights(
+    batches: object, head_targets: Sequence[str], model: nn.Module, device: str = "cpu"
+) -> dict[str, torch.Tensor]:
+    """Count each head's classes over the training data, then invert.
+
+    A separate pass rather than per-batch counts. A batch that happens to hold no `start`
+    tie would give that class a weight from a sample of zero, and the weights would then
+    wobble from step to step - the model would be chasing a moving objective on exactly the
+    classes it is least able to learn.
+    """
+    from training.architecture.transformer.structured_losses import (
+        class_support,
+        inverse_frequency_alpha,
+    )
+
+    # The width of the logits is the authority on how many classes a head has. Counting
+    # the classes that appear in the targets instead would size each head by whatever the
+    # corpus happened to contain, and a class absent from training - `start_and_stop`
+    # appears 293 times in two million - could drop out of the weight vector entirely.
+    # Taking it from the logits rather than the module names avoids restating the mapping
+    # between the two, which is exactly the kind of duplicated correspondence that has
+    # gone wrong three times in this work.
+    sizes: dict[str, int] = {}
+    counts: dict[str, dict[int, int]] = {name: {} for name in head_targets}
+    for raw in batches:  # type: ignore[attr-defined]
+        targets = {name: raw[name] for name in head_targets if name in raw}
+        if not targets:
+            continue
+        if not sizes:
+            # Moved to the model's device first. The training loop does this and this pass
+            # did not, which is a mismatch no unit test would see - both run on cpu there.
+            moved = {
+                key: value.to(device) if hasattr(value, "to") else value
+                for key, value in raw.items()
+                if key not in head_targets
+            }
+            with torch.no_grad():
+                probe = model(**moved)
+            sizes = {
+                name: tensor.shape[-1]
+                for name, tensor in (probe["structured_logits"] or {}).items()
+            }
+        targets = align_to_decoder_output(targets)
+        for name, tensor in targets.items():
+            if name in sizes:
+                for index, count in class_support(tensor, sizes[name]).items():
+                    counts[name][index] = counts[name].get(index, 0) + count
+
+    return {
+        name: inverse_frequency_alpha(support, sizes[name])
+        for name, support in counts.items()
+        if support and name in sizes
+    }
+
+
 def train_epoch(
     model: nn.Module,
     batches: object,
@@ -113,8 +168,15 @@ def train_epoch(
     head_targets: Sequence[str],
     epoch: int,
     device: str = "cpu",
+    gamma: float = 0.0,
+    alpha: dict[str, torch.Tensor] | None = None,
 ) -> EpochReport:
-    """One pass, updating only the structured heads."""
+    """One pass, updating only the structured heads.
+
+    `gamma` and `alpha` are the class-imbalance controls of 27.49. Both default to off, so
+    the unweighted baseline every earlier result was measured against stays the default and
+    a sweep changes one thing at a time.
+    """
     set_probe_mode(model)
     totals: dict[str, float] = dict.fromkeys(head_targets, 0.0)
     support: dict[str, int] = dict.fromkeys(head_targets, 0)
@@ -139,7 +201,7 @@ def train_epoch(
         if logits is None:
             raise ValueError("model has no structured heads - enable them in the config")
 
-        result: StructuredLoss = structured_loss(logits, targets)
+        result: StructuredLoss = structured_loss(logits, targets, gamma=gamma, alpha=alpha)
         optimizer.zero_grad(set_to_none=True)
         result.total.backward()
         optimizer.step()
@@ -278,6 +340,19 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--run-id", default="")
+    parser.add_argument(
+        "--focal-gamma",
+        type=float,
+        default=0.0,
+        help="Focal exponent. 0 is plain cross-entropy, the baseline every earlier "
+        "result used. 2 is the usual starting point (27.49).",
+    )
+    parser.add_argument(
+        "--class-weights",
+        action="store_true",
+        help="Weight each head's classes by inverse frequency, capped at 50x, measured "
+        "from a first pass over the training data (27.49).",
+    )
     args = parser.parse_args()
 
     from homr.transformer.configs import Config
@@ -297,10 +372,20 @@ def main() -> None:
     batches, examples = build_batches(args.index, config, args.batch_size, args.workers)
     print(f"{examples} example(s) from {args.index}")
 
+    alpha = None
+    if args.class_weights:
+        alpha = measure_class_weights(batches, names, model, device=args.device)
+        for name, vector in sorted(alpha.items()):
+            spread = vector.max().item() / vector.min().item()
+            print(f"  {name}: class weights spread {spread:.1f}x")
+
     optimizer = torch.optim.Adam(structured_parameters(model), lr=args.lr)
     reports = []
     for epoch in range(1, args.epochs + 1):
-        report = train_epoch(model, batches, optimizer, names, epoch, device=args.device)
+        report = train_epoch(
+            model, batches, optimizer, names, epoch,
+            device=args.device, gamma=args.focal_gamma, alpha=alpha,
+        )
         print(report.describe())
         reports.append(report)
 

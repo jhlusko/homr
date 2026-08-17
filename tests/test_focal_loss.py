@@ -1,0 +1,192 @@
+import unittest
+
+import torch
+
+from training.architecture.transformer.structured_losses import (
+    IGNORE_INDEX,
+    focal_cross_entropy,
+    inverse_frequency_alpha,
+    masked_cross_entropy,
+)
+
+
+def _logits(rows: list[list[float]]) -> torch.Tensor:
+    return torch.tensor([rows], dtype=torch.float)
+
+
+def _targets(values: list[int]) -> torch.Tensor:
+    return torch.tensor([values], dtype=torch.long)
+
+
+class TestEquivalenceToTheBaseline(unittest.TestCase):
+    """The unweighted baseline has to stay reachable, or the comparison 27.49 asks for
+    cannot be made."""
+
+    def test_defaults_reproduce_plain_cross_entropy(self) -> None:
+        logits = _logits([[2.0, 0.5, -1.0], [0.1, 3.0, 0.2], [1.0, 1.0, 1.0]])
+        targets = _targets([0, 1, 2])
+
+        focal, _ = focal_cross_entropy(logits, targets)
+        plain, _ = masked_cross_entropy(logits, targets)
+
+        self.assertAlmostEqual(focal.item(), plain.item(), places=5)
+
+    def test_ignored_positions_are_still_ignored(self) -> None:
+        logits = _logits([[2.0, 0.5, -1.0], [0.1, 3.0, 0.2]])
+        kept, _ = focal_cross_entropy(logits[:, :1], _targets([0]))
+        mixed, count = focal_cross_entropy(logits, _targets([0, IGNORE_INDEX]))
+
+        self.assertAlmostEqual(kept.item(), mixed.item(), places=5)
+        self.assertEqual(count, 1)
+
+    def test_nothing_supervised_is_zero_rather_than_nan(self) -> None:
+        loss, count = focal_cross_entropy(_logits([[1.0, 2.0]]), _targets([IGNORE_INDEX]))
+
+        self.assertEqual(count, 0)
+        self.assertFalse(torch.isnan(loss))
+
+
+class TestFocalTerm(unittest.TestCase):
+    """The tie head's `none` is predicted at 0.999 and drowns out start and stop."""
+
+    def test_a_confident_correct_prediction_is_discounted(self) -> None:
+        confident = _logits([[10.0, 0.0]])
+
+        plain, _ = focal_cross_entropy(confident, _targets([0]))
+        focal, _ = focal_cross_entropy(confident, _targets([0]), gamma=2.0)
+
+        self.assertLess(focal.item(), plain.item() / 100)
+
+    def test_an_uncertain_prediction_is_barely_touched(self) -> None:
+        uncertain = _logits([[0.05, 0.0]])
+
+        plain, _ = focal_cross_entropy(uncertain, _targets([0]))
+        focal, _ = focal_cross_entropy(uncertain, _targets([0]), gamma=2.0)
+
+        self.assertGreater(focal.item(), plain.item() * 0.2)
+
+    def test_the_rare_class_gains_relative_weight(self) -> None:
+        # Two positions: an easy `none` and a hard `start`. Focal should shift the balance
+        # of the gradient toward the second.
+        logits = _logits([[10.0, 0.0], [0.6, 0.4]])
+        targets = _targets([0, 1])
+
+        def share(gamma: float) -> float:
+            easy, _ = focal_cross_entropy(logits[:, :1], targets[:, :1], gamma=gamma)
+            both, _ = focal_cross_entropy(logits, targets, gamma=gamma)
+            return easy.item() / (2 * both.item())
+
+        self.assertLess(share(2.0), share(0.0))
+
+
+class TestInverseFrequencyAlpha(unittest.TestCase):
+    def test_a_rare_class_outweighs_a_common_one(self) -> None:
+        alpha = inverse_frequency_alpha({0: 2_149_263, 1: 2_345, 2: 293}, num_classes=3)
+
+        self.assertGreater(alpha[1].item(), alpha[0].item())
+
+    def test_the_cap_flattens_the_rarest_classes_together(self) -> None:
+        # The real tie-head counts: start at 0.109% and start_and_stop at 0.014% both pass
+        # the cap, so they come out equal despite one being eight times rarer. Documented
+        # rather than worked around - past the cap, every class is simply as boosted as
+        # this scheme goes.
+        alpha = inverse_frequency_alpha({0: 2_149_263, 1: 2_345, 2: 293}, num_classes=3)
+
+        self.assertAlmostEqual(alpha[1].item(), alpha[2].item(), places=5)
+
+    def test_ordering_holds_below_the_cap(self) -> None:
+        alpha = inverse_frequency_alpha({0: 400, 1: 200, 2: 100}, num_classes=3, cap=50.0)
+
+        self.assertLess(alpha[0].item(), alpha[1].item())
+        self.assertLess(alpha[1].item(), alpha[2].item())
+
+    def test_the_ratio_is_capped(self) -> None:
+        # Uncapped, `start` would outweigh `none` about 900x and the head would predict
+        # ties everywhere - one collapse traded for its mirror image.
+        alpha = inverse_frequency_alpha({0: 2_149_263, 1: 2_345}, num_classes=2, cap=50.0)
+
+        self.assertLessEqual(alpha.max().item() / alpha.min().item(), 50.0 + 1e-4)
+
+    def test_balanced_classes_get_equal_weight(self) -> None:
+        alpha = inverse_frequency_alpha({0: 100, 1: 100}, num_classes=2)
+
+        self.assertAlmostEqual(alpha[0].item(), alpha[1].item(), places=5)
+
+    def test_a_class_never_seen_is_weighted_not_dropped(self) -> None:
+        # A class absent from one shard is not absent from the corpus, and a zero weight
+        # would make it unlearnable for good.
+        alpha = inverse_frequency_alpha({0: 1000}, num_classes=2)
+
+        self.assertGreater(alpha[1].item(), 0.0)
+
+
+class TestAlphaAndTheHeadTotal(unittest.TestCase):
+    def test_raising_a_rare_weight_does_not_inflate_the_head_loss(self) -> None:
+        # Otherwise the two knobs interact: weighting a class up would also silently
+        # increase that head's share of the summed multi-head loss.
+        logits = _logits([[3.0, 0.0], [3.0, 0.0], [0.0, 3.0]])
+        targets = _targets([0, 0, 1])
+
+        mild, _ = focal_cross_entropy(logits, targets, alpha=torch.tensor([1.0, 1.0]))
+        steep, _ = focal_cross_entropy(logits, targets, alpha=torch.tensor([1.0, 20.0]))
+
+        self.assertLess(abs(steep.item() - mild.item()), 3.0)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class TestStructuredLossPlumbing(unittest.TestCase):
+    """The knobs are useless if they stop at the function that implements them."""
+
+    def _pair(self) -> tuple[dict, dict]:
+        logits = {"tie.state": _logits([[8.0, 0.0], [8.0, 0.0], [0.2, 0.1]])}
+        targets = {"tie.state": _targets([0, 0, 1])}
+        return logits, targets
+
+    def test_gamma_reaches_the_head_loss(self) -> None:
+        from training.architecture.transformer.structured_losses import structured_loss
+
+        logits, targets = self._pair()
+
+        plain = structured_loss(logits, targets).total
+        focal = structured_loss(logits, targets, gamma=2.0).total
+
+        self.assertLess(focal.item(), plain.item())
+
+    def test_alpha_reaches_the_head_loss(self) -> None:
+        from training.architecture.transformer.structured_losses import structured_loss
+
+        logits, targets = self._pair()
+
+        plain = structured_loss(logits, targets).total
+        weighted = structured_loss(
+            logits, targets, alpha={"tie.state": torch.tensor([1.0, 40.0])}
+        ).total
+
+        self.assertNotAlmostEqual(plain.item(), weighted.item(), places=4)
+
+    def test_defaults_leave_the_total_exactly_as_it_was(self) -> None:
+        # Every existing result was produced by this path, so the default must not move.
+        from training.architecture.transformer.structured_losses import (
+            masked_cross_entropy,
+            structured_loss,
+        )
+
+        logits, targets = self._pair()
+
+        expected, _ = masked_cross_entropy(logits["tie.state"], targets["tie.state"])
+
+        self.assertAlmostEqual(structured_loss(logits, targets).total.item(),
+                               expected.item(), places=6)
+
+    def test_a_head_without_a_weight_vector_is_untouched(self) -> None:
+        from training.architecture.transformer.structured_losses import structured_loss
+
+        logits, targets = self._pair()
+
+        with_other = structured_loss(logits, targets, alpha={"stem.direction": torch.tensor([1.0])})
+
+        self.assertAlmostEqual(with_other.total.item(),
+                               structured_loss(logits, targets).total.item(), places=6)
