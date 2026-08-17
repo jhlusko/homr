@@ -2311,7 +2311,8 @@ Run over all 122 annotated documents, 788 pages:
 
 ```
 coverage before   40%
-coverage after    98%
+coverage after    98%   geometry alone
+coverage after    93%   with the gutter trim below
 ```
 
 **That second number is worthless and it is worth saying why.** Once each box reaches to
@@ -2349,7 +2350,8 @@ page itself knows where the overhang ends, so `trim_to_gutter` scans down from t
 for the first clear band and cuts there. On the sampled systems it moved the top down 34,
 82 and 87 pixels. It also drops directions printed above the voice staff (*"sempre
 legato"*), which homr's vocabulary does not encode; lyrics sit below the voice staff and
-are never at risk.
+are never at risk. Over all 788 pages it gives back five points of coverage, 98% to 93% -
+that difference is the gutters, restored.
 
 The geometric path is kept for when no page image is available: it still recovers the voice
 staff, it just leaves the sliver.
