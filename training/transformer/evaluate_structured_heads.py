@@ -92,7 +92,9 @@ def evaluate(
     return evaluation
 
 
-def dump_predictions(batches: Any, beam_levels: int, handle: Any) -> Callable[..., None]:
+def dump_predictions(
+    batches: Any, beam_levels: int, slur_slots: int, handle: Any
+) -> Callable[..., None]:
     """A sink that writes one JSON record per staff, named by its token file.
 
     Aggregates cannot answer the question Gate C actually turns on - whether the head is
@@ -103,6 +105,15 @@ def dump_predictions(batches: Any, beam_levels: int, handle: Any) -> Callable[..
     Identity comes from counting along the index, which is only valid because the
     evaluation loader is built unshuffled. Names are written rather than implied so the
     join can be checked instead of assumed.
+
+    Slur vectors are written in the same nested-list-per-note shape beam vectors already
+    use - one list of [event, side, event, side, ...] strings per note, flattened across
+    slots - so a tool built against `reference`/`predicted` needs no new comparison logic
+    to read `slur_reference`/`slur_predicted`; Python's list equality already treats each
+    note's whole vector as one unit, which is what "does this note's slur state match"
+    means. 27.60 built exactly that comparison for beams and had no way to ask the same
+    question of slurs, despite slurs carrying the worst measured domain gap of any channel
+    (27.56) - this closes that gap in the tooling, not in the model.
     """
     entries = batches.dataset.inner.corpus_list
     position = 0
@@ -131,6 +142,10 @@ def dump_predictions(batches: Any, beam_levels: int, handle: Any) -> Callable[..
             for index, note in enumerate(reference)
             if str(note.stem) in directional
         ]
+        # Slur event is supervised on every note (structured_losses' docstring: "slur
+        # event on every note"), unlike beam and stem, so every index in `reference`
+        # qualifies - there is no filtering condition to mirror the beam/stem ones with.
+        slurred = list(enumerate(reference))
         record = {
             "tokens": entries[position]["tokens"],
             "stem_reference": [actual for _, actual, _ in stems],
@@ -147,6 +162,14 @@ def dump_predictions(batches: Any, beam_levels: int, handle: Any) -> Callable[..
             "predicted": [
                 [str(s) for s in predicted[index].beam_levels[:beam_levels]]
                 for index, _ in supervised
+            ],
+            "slur_reference": [
+                [str(field) for pair in note.slurs[:slur_slots] for field in pair]
+                for _, note in slurred
+            ],
+            "slur_predicted": [
+                [str(field) for pair in predicted[index].slurs[:slur_slots] for field in pair]
+                for index, _ in slurred
             ],
         }
         handle.write(json.dumps(record) + "\n")
@@ -247,7 +270,9 @@ def run_evaluation(args: Any, config: Any) -> Evaluation:
         args.predictions.open("w", encoding="utf-8") if args.predictions else nullcontext()
     ) as handle:
         sink = (
-            dump_predictions(batches, config.structured_beam_levels, handle)
+            dump_predictions(
+                batches, config.structured_beam_levels, config.structured_slur_slots, handle
+            )
             if args.predictions
             else None
         )

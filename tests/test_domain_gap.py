@@ -1,6 +1,49 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
-from training.transformer.domain_gap import Pair, describe, pair_up
+from training.transformer.domain_gap import Pair, describe, pair_up, staff_accuracy
+
+
+class TestStaffAccuracyField(unittest.TestCase):
+    """27.60 built beam-vector comparison with no way to ask the same question of slurs,
+    despite slurs carrying the worst measured domain gap of any channel (27.56)."""
+
+    def test_the_default_field_reads_the_beam_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "p.jsonl"
+            path.write_text(
+                json.dumps({"tokens": "a.txt", "reference": [["x"]], "predicted": [["x"]]}) + "\n",
+                encoding="utf-8",
+            )
+
+            found = staff_accuracy(path)
+
+        self.assertEqual(found["a.txt"], (1.0, 1))
+
+    def test_a_named_field_reads_its_own_prefixed_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "p.jsonl"
+            path.write_text(
+                json.dumps({
+                    "tokens": "a.txt",
+                    "reference": [["x"]], "predicted": [["y"]],  # wrong, to prove it's ignored
+                    "slur_reference": [["start", "above"]], "slur_predicted": [["start", "above"]],
+                }) + "\n",
+                encoding="utf-8",
+            )
+
+            found = staff_accuracy(path, field="slur")
+
+        self.assertEqual(found["a.txt"], (1.0, 1))
+
+    def test_a_field_missing_from_a_record_is_skipped_not_fatal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "p.jsonl"
+            path.write_text(json.dumps({"tokens": "a.txt"}) + "\n", encoding="utf-8")
+
+            self.assertEqual(staff_accuracy(path, field="slur"), {})
 
 
 class TestPairUp(unittest.TestCase):

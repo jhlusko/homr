@@ -1922,6 +1922,37 @@ and lyric labels, not beam/stem/slur/tie labels for OLiMPiC's scans). Until then
 gap" in this design should be read as "the scan gap measured on OSSQ," not as a property of
 scanned sheet music in general.
 
+### 27.71 Slurs had no domain-gap tooling at all - closing that gap before closing the gap itself
+
+Asked directly: slurs carry the worst measured domain gap of any channel (27.56, ~37-40
+points), worse than beams. The natural next step is 27.60's paired-staff analysis, run on
+slurs instead of beams - and it could not be done. `dump_predictions` only ever wrote beam
+and stem vectors; slur state was never recorded per staff, only aggregated into the F1
+figures already quoted. There was no way to ask which staves the slur head fails on, or
+whether the failure concentrates the way beam's did.
+
+**Extended rather than rebuilt.** `evaluate_structured_heads.py` now writes
+`slur_reference`/`slur_predicted` in the same nested-list-per-note shape the beam vectors
+already use - one list of `[event, side, event, side, ...]` strings per note, flattened
+across the configured slur slots. That shape means `domain_gap.py`'s existing comparison
+needs no new logic to read it: Python's list equality already treats each note's whole
+vector as one unit, which is what "does this note's slur state match" means for either head.
+`staff_accuracy` takes a `field` argument - `"reference"` for beams, anything else reads
+`{field}_reference`/`{field}_predicted` - so the same tool now answers the question for
+either channel.
+
+Nothing here changes what the model does. It changes what can be asked of predictions that
+have not been generated yet - phase12's own scoring stage, still to run, will produce
+`slur_reference`/`slur_predicted` automatically once it reaches its `evaluate_structured_heads`
+calls, since each is a fresh subprocess that imports the updated module from disk. No
+separate GPU pass is needed to get the first slur domain-gap reading; phase12's already-queued
+evaluation supplies it.
+
+Caught by the existing integration test rather than by inspection: `test_evaluate_integration.py`
+exercises `dump_predictions` end to end with a real model, and it passed unchanged after the
+extension, which is what confirmed the new fields did not disturb the beam/stem path they sit
+beside.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design

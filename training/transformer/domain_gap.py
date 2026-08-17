@@ -44,21 +44,29 @@ class Pair:
         return self.synthetic - self.scanned
 
 
-def staff_accuracy(predictions: Path) -> dict[str, tuple[float, int]]:
-    """Per token file, the share of positions whose whole beam vector is right.
+def staff_accuracy(
+    predictions: Path, field: str = "reference"
+) -> dict[str, tuple[float, int]]:
+    """Per token file, the share of positions whose whole vector for `field` is right.
 
     Keyed by the token file's name rather than its path, because the two tracks write the
     same names into different directories - which is exactly what makes them comparable.
+
+    `field` selects which head's vectors to compare: "reference" reads the beam pair
+    (`reference`/`predicted`), and any other value reads `{field}_reference` /
+    `{field}_predicted` - so `field="slur"` reads the slur vectors 27.60 originally had no
+    way to ask this question of. Every vector is a list, and Python's list equality treats
+    it as one unit, which is what "does this note's whole state match" means for either head.
     """
+    ref_key = "reference" if field == "reference" else f"{field}_reference"
+    pred_key = "predicted" if field == "reference" else f"{field}_predicted"
+
     found: dict[str, tuple[float, int]] = {}
     with predictions.open(encoding="utf-8") as handle:
         for line in handle:
             record = json.loads(line)
-            # `reference` and `predicted` are the beam vectors, one per beamable note;
-            # `stem_reference` and `stem_predicted` are a different length, since the two
-            # heads are supervised on different subsets of the notes.
-            reference = record.get("reference")
-            predicted = record.get("predicted")
+            reference = record.get(ref_key)
+            predicted = record.get(pred_key)
             if not reference or not predicted:
                 continue
             matched = sum(1 for want, got in zip(reference, predicted) if want == got)
@@ -131,9 +139,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--synthetic", type=Path, required=True, help="predictions.jsonl")
     parser.add_argument("--scanned", type=Path, required=True)
+    parser.add_argument(
+        "--field", default="reference",
+        help="'reference' for beams (default), or a head name like 'slur' to read "
+        "{field}_reference/{field}_predicted.",
+    )
     args = parser.parse_args()
 
-    print(describe(pair_up(staff_accuracy(args.synthetic), staff_accuracy(args.scanned))))
+    print(describe(pair_up(
+        staff_accuracy(args.synthetic, args.field), staff_accuracy(args.scanned, args.field)
+    )))
 
 
 if __name__ == "__main__":
