@@ -2300,6 +2300,82 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.53 Evaluation was reading the padding, and two runs were scored through it
+
+The height sweep of 27.52 returned nonsense: height 48 scored 30.1% exact where height 32
+scored 88.3%, with **unseen scoring higher than seen**, which is backwards. The misread list
+said why in one line:
+
+```
+'Zü' -> 'Zü\xa0'   'Ant' -> 'Ant\xa0'   'Fried' -> 'Fried\xa0'
+```
+
+Every prediction is the right word with a space stapled to it. Training gives CTC the true
+unpadded lengths; **evaluation decoded every frame, including the padding**. The padding is
+white paper, and the corpus alphabet contains a non-breaking space - from syllables like
+`1.\xa0Es`, where MuseScore draws a verse number and its word as one lyric - so the model had
+a perfectly legitimate white character to put over the padded frames.
+
+**It hid behind the choice of metric, in the direction opposite to 27.49.** There, micro F1
+flattered a head that could not predict its class. Here CER *understated* the damage: one
+extra character on a three-character word is a small edit distance and a total failure of
+exact match, so CER stayed near 23% while exact match collapsed to 30%. A single metric
+would have hidden it either way; two disagreeing metrics are what made it visible.
+
+So **the height sweep measured nothing** and both its arms are void, including the 32px
+baseline of 27.51 - that run was scored through the same bug, so its 88.3%/78.3% is a floor
+rather than a result. The sweep will be rerun.
+
+Found by reading the misread list, which exists because a rate says how often and the
+examples say what kind. Without those six strings this would have been filed as "48 is worse
+than 32, resolution does not help" - a plausible, wrong, and expensive conclusion.
+
+### 27.52 Nearest-x already resolves 98.9% of syllables
+
+Gate C asked what the automatic-beaming rule achieved before a head was built for beams.
+27.45 named the resolve stage - attaching a recognised syllable to its note - the risky
+component, so it gets the same question first: **what does the obvious rule already get
+right?**
+
+The rule is nearest note by horizontal centre. Ground truth is MuseScore's own render, so
+image and labels are one engraving (27.25); note boxes come from the SVG, and only the voice
+staff's notes count.
+
+```
+nearest-x picks the right note        98.9%   (3,079 of 3,113)
+  syllables on one note only          99.2%
+  syllables held across notes         94.8%
+within one note either side           99.5%
+```
+
+**27.42 predicted melismas would be where this breaks. The prediction held in direction and
+was wrong in size** - held syllables are worse, but by 4.4 points, not catastrophically. A
+rule that gets 94.8% of the hard case right is not the weak link it was expected to be.
+
+**The skips relocate the problem, and are the more useful finding:**
+
+```
+309 systems scored, 291 skipped
+  249  more than one lyric line (a second vocal staff)
+   42  no verse-1 syllables
+    0  count disagreements
+```
+
+Zero count disagreements says the join of 27.41 is sound. But 249 of 600 systems carry more
+than one line of lyrics, and for those the question is not *which note* but *which line* -
+a vertical problem this rule does not address and 41% of systems ask. **Horizontal
+attachment is close to solved by geometry; line assignment is the open part.** That is where
+a learned resolver would earn its place, and it is not where 27.45 expected to spend the
+effort.
+
+Two encodings had to be learned by being wrong about them. MuseScore draws lyrics in place,
+with absolute path coordinates, but draws noteheads at the origin with a `transform` matrix -
+so reading a notehead's `d` as absolute puts every note at the top left, and the first run
+found zero notes. And "the voice notes are the ones above the lyrics" assumes one vocal
+staff; with two, the lyric band spanned 777 to 2395 pixels and swallowed the piano.
+
+
+
 ### 27.51 The recogniser, and a metric built so it can fail
 
 `training/architecture/ocr/crnn.py` and `training/ocr/` implement the recognition half of
