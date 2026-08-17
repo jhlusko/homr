@@ -28,9 +28,14 @@ import torch.nn as nn
 #: exactly the detail the sampled render resolution was chosen to provide. 48 downscales 43%
 #: and 64 downscales 5%.
 #:
+#: 27.54 then swept it and found the reasoning sound but the conclusion wrong: 48 and 64 give
+#: CER 11.6% and 11.8%, against 32's 11.7%. Doubling the resolution moves nothing, the loss
+#: plateaus at 0.685 in every arm, and capacity or training length is the remaining lever.
+#: 48 is kept because it is marginally best and cheaper than 64, not because it matters.
+#:
 #: The height must be a multiple of 16: the convolutional stack halves it four times, and
 #: the recurrent layer's input width is that result times the channel count.
-IMAGE_HEIGHT = 64
+IMAGE_HEIGHT = 48
 
 #: CTC's blank. Index 0 by convention, so a character's own index is never 0 and an
 #: all-blank decode is unambiguous.

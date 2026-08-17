@@ -2300,6 +2300,45 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.54 Resolution was not the constraint, and the hypothesis that it was is dead
+
+27.51 reached CER 11.7% and blamed `IMAGE_HEIGHT = 32`, on the reasoning that 32 downscales
+93% of crops and so discards the detail 27.47's sampled render resolution exists to provide.
+That reasoning was sound and the conclusion was wrong.
+
+With the padding bug of 27.53 fixed:
+
+```
+height 48   seen 88.7%   unseen 79.0%   CER 11.6%   loss 0.688
+height 64   seen 88.2%   unseen 76.3%   CER 11.8%   loss 0.685
+height 32   seen 87.1%   unseen 73.8%              (scored through the padding bug)
+```
+
+**Doubling the resolution moves CER by 0.2 points.** 48 is marginally the best and 64 is
+slightly worse than 48, which is noise rather than a trend. The loss plateaus at 0.685 in
+every arm, so the model is converged at this size and simply cannot read better - capacity
+or training length is the remaining lever, not pixels.
+
+A second hypothesis was tested and also died. The misreads after the 27.53 fix were
+systematically missing a final character - `'senkt'` to `'senk'`, `'deckt;'` to `'deck'` -
+which looked exactly like over-correcting the truncation. Decoding with extra slack says
+otherwise:
+
+```
+frames+0   87.0%      frames+2   87.0%
+frames+1   87.0%      frames+4   86.9%      all frames   51.8%
+```
+
+Slack changes nothing; removing the truncation entirely costs 35 points. The boundary is
+right and the dropped characters are the model failing, not the decoder cutting. Two
+plausible explanations for one symptom, both testable in minutes, both wrong - which is
+cheaper than either being adopted.
+
+**What this leaves.** 27.47's resolution work is not wasted: it made the synthetic images
+match the scans they must transfer to, which is a domain-gap argument and remains right.
+It just does not explain this CER, and the height is set to 48 because it is marginally best
+and cheaper than 64, not because it matters.
+
 ### 27.53 Evaluation was reading the padding, and two runs were scored through it
 
 The height sweep of 27.52 returned nonsense: height 48 scored 30.1% exact where height 32
