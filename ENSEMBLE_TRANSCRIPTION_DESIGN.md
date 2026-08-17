@@ -1582,14 +1582,39 @@ that, in order of what the result actually licenses:
                              buys 16 on PDMX, and the quartet-only model turns out not
                              to generalise
 15  a tie head               done (27.35): macro F1 0.842 on PDMX
-16  the scanned track        converted (27.34); training on all three corpora running
-17  Gate C on the combined   the three-corpus script scores each domain but does not
-    model                    dump predictions, so the crosstab and the arbiter sweep
-                             have to be run separately afterwards
+16  the scanned track        done (27.56): trained on all three corpora, 12 epochs.
+                             +4.0 beam and +6.3 stem on scans for 0.8 points of
+                             synthetic - half 27.36's mixing cost. Ties moved
+                             backwards despite more data (27.49's prediction, confirmed).
+17  Gate C on the combined   done (27.58-27.60), and it reframes the track. Gate C
+    model                    fails on scanned: the beam head is a net regression
+                             against the rule (loses 12,027 notes, recovers 4,231)
+                             where it was a clear win on synthetic. The stem arbiter
+                             cannot rescue it either - best threshold uses the head on
+                             3.4% of notes on scans, still below the rule alone. Both
+                             heads are gains on synthetic and regressions on scanned.
+                             Root cause is a bimodal gap (27.60): 45.8% of scanned
+                             staves are unaffected, 10.8% collapse, and the collapse
+                             rate varies 70x by score (27.61) - the bad staves are
+                             faint scans, not misaligned crops.
 18  lieder sidecars          one call added; the corpus has not been downloaded
 19  test_synth               held back deliberately - it is the one split that has not
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
+20  class-imbalance          done (27.62): focal loss (gamma=2) is a clean win, macro
+    instruments               F1 +1.0 and start F1 +4.9 for -0.5 on beam vector -
+                             the change to keep. Class weights (cap 50) make every tie
+                             class worse (macro -8.3), confirming the over-correction
+                             risk named before the run. The `both` arm is checking
+                             whether focal survives combination with weighting's
+                             damage or the damage compounds.
+21  fix for the scan gap      one candidate ruled out (27.63): CLAHE contrast
+                             normalisation does not help - it narrows the cross-score
+                             spread only by damaging the crisp scans, not by lifting
+                             the faint ones, at every clip limit tried. Next candidate
+                             per 27.60's shape (concentrated by score, not spread
+                             evenly): re-weight or oversample the worst-performing
+                             scores at training time, rather than a page-level filter.
 ```
 
 **Every result before 27.36 should be read as "on string quartets".** That section measured
