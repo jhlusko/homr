@@ -2300,6 +2300,40 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.59 The recogniser's errors are diffuse, which is itself the finding
+
+27.54 killed the resolution hypothesis for the 11.6% CER and left capacity or training length.
+Both are expensive, and neither is worth spending until the errors are known to lack a
+cheaper structural cause. `recognizer_errors.py` cuts the same accuracy four ways:
+
+```
+by syllable length          3 chars 90.1%   5 chars 83.2%   7 chars 61.4%
+                            CER flat at 9-12% from 3 chars up
+by punctuation              none 87.8%      with punctuation 83.1%
+by seen / unseen            seen 88.7%      unseen 79.0%
+characters                  dropped 'e' 136 / added 'e' 128    'r' 86/90
+                            'i' 85/87   'n' 85/82   's' 83/77
+```
+
+**Every structural hypothesis fails.** If the frame budget bound, CER would climb with
+length; it is flat from three characters up, and exact match falls only because a longer word
+offers more chances to slip. If thin punctuation were being erased by the downscale, the
+punctuation bucket would collapse; it costs 4.7 points. If one letterform were being lost,
+the confusion list would have a head; instead **dropped and added counts are near-symmetric
+across the common letters** - 136 against 128 for `e`, 86 against 90 for `r` - which is what
+general letterform confusion looks like, not a specific failure.
+
+So there is nothing cheap to fix, and 27.54's remaining levers are the right ones. The
+evidence points at capacity or training length rather than at data or geometry: the loss
+plateaued at 0.685 in all three height arms, which is a model that has stopped learning
+rather than one starved of signal.
+
+**One number in that table is an artefact and should not be read.** Single-character
+syllables show CER 45.0% against exact 83.9%, which looks alarming and is arithmetic: one
+wrong character out of a one-character label is a CER of 100% for that crop. CER over very
+short strings is not comparable with CER over longer ones, and the exact-match column is the
+honest one there.
+
 ### 27.58 phase10: both gates re-run, and a crosstab of zeros that looked like a result
 
 24.2 item 17 recorded that phase9 scores without `--predictions`, so neither Gate C's
