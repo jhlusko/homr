@@ -2300,6 +2300,41 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.57 The resolve rule settles at 98.2%, and the wrapped systems were scoreable after all
+
+27.52 measured nearest-x on the 51% of systems with a single lyric line and got 98.9%. 27.55
+showed the excluded 41% were not second singers but wrapped ones. This scores them, which
+takes the measurement from a subset to the corpus:
+
+```
+26,503 of 26,998 syllables            98.2%
+  on one note only                    98.7%
+  held across notes (melisma)         93.0%
+within one note either side           99.3%
+
+2,584 systems scored, 327 skipped
+lines per system   1: 1,952   2: 619   3: 11   4: 2   6: 2
+```
+
+Eight and a half times the syllables of 27.52, at essentially the same accuracy. **The
+resolve stage's horizontal problem is solved by a rule**, and a learned resolver would be
+competing for the last 1.8 points - against a baseline that costs nothing to run and cannot
+be wrong in surprising ways.
+
+**One wrong turn on the way, and it is the same shape as the others.** Scoring the wrapped
+systems first gave 91.3%, a 7-point drop that looked like wrapped systems being genuinely
+harder. They are not: the note band for a line was taken as everything between the previous
+line's lyrics and its own, and *between two lyric lines sits the piano of the system above*
+as well as the voice of the system below. Counting the piano's noteheads shifted every index
+after them. Bounding each band by the staff lines instead - five close polylines are a staff,
+a jump starts the next - restores 98.5% on the same data.
+
+That is three times now that a plausible reading of a number has been wrong here: melismas as
+the weak point of nearest-x (they are, by 5 points, not by a lot), a second vocal staff as the
+cause of the extra lines, and wrapped systems as intrinsically harder. Each was cheap to test
+and each test took under an hour. The pattern worth keeping is not "be more careful", it is
+that **a number that surprises is worth one experiment before it is worth an explanation.**
+
 ### 27.56 Three-corpus training: scans bought cheaply, and a prediction confirmed the hard way
 
 phase9 trained the heads on all three corpora - OSSQ synthetic 42,088, OSSQ scanned 32,982,
@@ -2356,8 +2391,11 @@ score has parts, 245 times against 4 with two more. One case, opened up:
 
 Fifteen hundred pixels apart, one vocal part. Counting staff lines in the same page settles
 it: six groups of five, where a voice-over-piano system is three. **MuseScore wrapped the
-joined system onto two systems** because it did not fit the page width, and across the corpus
-**132 of 200 rendered pages hold more than one**.
+joined system onto two systems** because it did not fit the page width.
+
+(A first estimate of how often - "132 of 200 rendered pages" - was too high. It counted
+staff-line groups and assumed three staves to a system, which over-flags any score with more.
+Counting lyric lines instead, over the whole corpus, gives **634 of 2,586 systems, 24.5%**.)
 
 So the vertical bands are not two singers, they are one singer continued. Measured directly:
 

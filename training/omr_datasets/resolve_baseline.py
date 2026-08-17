@@ -44,6 +44,7 @@ import argparse
 import collections
 import json
 import re
+import statistics
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -289,22 +290,45 @@ def score_system(
     return True
 
 
-def notes_between(svg_path: Path, width: int, height: int, ceiling: float, floor_: float):
-    """Horizontal centres of noteheads in a horizontal band, left to right.
+def staff_bands(svg: str, sy: float) -> list[tuple[float, float]]:
+    """The vertical extent of each staff on the page, top to bottom.
 
-    A staff's notes sit between the lyrics of the line above and the lyrics of its own line.
-    For the topmost staff the ceiling is the page edge.
+    Read from the `StaffLines` polylines: five close-together lines are one staff, and a
+    jump between them starts the next. Needed because "the notes above these lyrics" is not
+    a band bounded by the previous line's lyrics - between two lyric lines sits the *piano*
+    of the system above as well as the voice of the system below, and counting the piano's
+    notes shifts every index after it.
     """
-    svg = svg_path.read_text(encoding="utf-8")
-    box = re.search(r'viewBox="([^"]+)"', svg)
-    if not box:
+    ys = sorted(
+        float(points.split()[0].split(",")[1]) * sy
+        for points in re.findall(r'class="StaffLines"[^>]*points="([^"]+)"', svg)
+    )
+    if not ys:
         return []
-    _, _, view_width, view_height = (float(value) for value in box.group(1).split())
-    sx, sy = width / view_width, height / view_height
+    gaps = [second - first for first, second in zip(ys, ys[1:])]
+    inside = statistics.median([gap for gap in gaps if gap > 0] or [1.0])
+
+    bands: list[list[float]] = [[ys[0]]]
+    for value in ys[1:]:
+        if value - bands[-1][-1] > inside * 2.5:
+            bands.append([value])
+        else:
+            bands[-1].append(value)
+    return [(band[0], band[-1]) for band in bands]
+
+
+def notes_of_staff(svg: str, sx: float, sy: float, band: tuple[float, float]):
+    """Horizontal centres of the noteheads belonging to one staff, left to right.
+
+    A notehead sits on or near its staff, so the band is widened by its own height to admit
+    ledger lines above and below without reaching the next staff.
+    """
+    top, bottom = band
+    slack = (bottom - top) or 1.0
     return sorted(
         (left + right) / 2 * sx
-        for left, _, right, bottom in placed_boxes(svg, "Note")
-        if ceiling < bottom * sy < floor_
+        for left, note_top, right, note_bottom in placed_boxes(svg, "Note")
+        if top - slack < (note_top + note_bottom) / 2 * sy < bottom + slack
     )
 
 
@@ -319,48 +343,80 @@ class LineCounts:
     def observe(self, found: int, expected: int) -> None:
         self.total += 1
         self.agreed += found == expected
-        self.deltas[found - expected] += 1
+        self.deltas[found] += 1
 
     def describe(self) -> str:
         if not self.total:
-            return "no multi-line systems seen"
-        parts = ", ".join(f"{d:+d}:{c:,}" for d, c in sorted(self.deltas.items())[:7])
+            return "no systems seen"
+        spread = ", ".join(f"{n} line(s):{c:,}" for n, c in sorted(self.deltas.items())[:7])
+        wrapped = sum(c for n, c in self.deltas.items() if n > 1)
         return (
-            f"line count agrees with the score: {self.agreed:,}/{self.total:,} "
-            f"({self.agreed / self.total:.1%})\n    found minus expected: {parts}"
+            f"lines of lyrics per system: {spread}\n"
+            f"    {wrapped:,} of {self.total:,} ({wrapped / self.total:.1%}) are wrapped "
+            "across more than one system by the renderer (27.55)"
         )
 
 
 def score_multiline(
     record_path: Path, score: Path, agreement: Agreement, counts: LineCounts
 ) -> bool:
-    """Score a system by assigning syllables to lines first, then notes within each line."""
+    """Score a system whose lyrics run over several lines.
+
+    27.55 established what those lines are: not two singers, but **one singer continued**.
+    MuseScore wraps the joined system when it does not fit the page width, and 132 of 200
+    rendered pages hold more than one system. So the lines are read in order and the part's
+    notes are distributed across them in order - the assignment is reading order, not a
+    choice between simultaneous voices.
+
+    Each line's notes are the noteheads in the band between the previous line's lyrics and
+    its own. A syllable's position is an index into the whole part, so it is made local to
+    its band before being compared with a nearest-x pick inside that band.
+    """
     record = json.loads(record_path.read_text(encoding="utf-8"))
     syllables = [box for box in record["lyrics"] if box.get("verse", "1") == "1"]
     parts = parts_with_lyrics(score)
-    if not syllables or not parts:
+    if not syllables or len(parts) != 1:
         return False
 
+    positions = parts[0]
     lines = lyric_lines(syllables)
-    counts.observe(len(lines), len(parts))
-    if len(lines) != len(parts):
-        return False
-    if any(len(line) != len(positions) for line, positions in zip(lines, parts)):
+    counts.observe(len(lines), 1)
+    if sum(len(line) for line in lines) != len(positions):
         return False
 
     svg = record_path.parent / (record["image"][: -len(".png")] + ".svg")
     if not svg.is_file():
         return False
 
-    ceiling = 0.0
-    for line, positions in zip(lines, parts):
+    text = svg.read_text(encoding="utf-8")
+    view = re.search(r'viewBox="([^"]+)"', text)
+    if not view:
+        return False
+    _, _, view_width, view_height = (float(value) for value in view.group(1).split())
+    sx, sy = record["width"] / view_width, record["height"] / view_height
+
+    bands = staff_bands(text, sy)
+    if not bands:
+        return False
+
+    taken = 0
+    offset = 0
+    for line in lines:
         top = min(box["top"] for box in line)
-        centres = notes_between(svg, record["width"], record["height"], ceiling, top)
-        ceiling = max(box["bottom"] for box in line)
-        if not centres or positions[-1] >= len(centres):
+        # The singer's staff is the one immediately above this line of lyrics - not the
+        # whole space since the previous line, which also holds the piano above it.
+        above = [band for band in bands if band[1] <= top]
+        here = positions[taken : taken + len(line)]
+        taken += len(line)
+        if not above or not here:
             continue
-        for index, (box, position) in enumerate(zip(line, positions)):
-            following = positions[index + 1] if index + 1 < len(positions) else position + 1
+        centres = notes_of_staff(text, sx, sy, above[-1])
+        local = [position - offset for position in here]
+        offset += len(centres)
+        if not centres or local[0] < 0 or local[-1] >= len(centres):
+            continue
+        for index, (box, position) in enumerate(zip(line, local)):
+            following = local[index + 1] if index + 1 < len(local) else position + 1
             agreement.observe(
                 nearest((box["left"] + box["right"]) / 2, centres), position,
                 following - position > 1,
