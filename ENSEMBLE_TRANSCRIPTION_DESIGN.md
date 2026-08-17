@@ -1790,6 +1790,54 @@ What this run is expected to settle: whether the scanned Gate C failure of 27.58
 more often, and whether combining that with focal loss compounds the tie-head gain of 27.66
 or interacts with it the way weighting's compound did.
 
+### 27.68 The detector half of 27.45 was never built - and its data now is
+
+27.45 settled the text pass as detection then recognition. Checking what actually exists
+found only the second half was: every crop the recogniser has been trained or measured on
+came from MuseScore's own SVG boxes, ground truth handed to it rather than found. Nothing in
+this project yet locates a syllable, or any other text, on a page it has not already been
+told the layout of - which is what a real scanned page is, at inference. The recogniser as
+it stands has no way to be pointed at one.
+
+`training/ocr/detector_data.py` builds the missing half's data: one row per box, image path,
+class, and the box itself, from the `.boxes.json` corpus `musescore_boxes.py` already
+produces. No string is needed, since detection only has to find and classify a region -
+which is why every text class from 27.44 trains the same detector, `Dynamic` still excluded
+per 27.45's finding that it is a music glyph rather than text.
+
+Run against the full 2,926-system corpus:
+
+```
+37,356 boxes across 2,847 images
+
+Lyrics            34,325   91.9%
+StaffText          1,262    3.4%
+MeasureNumber        806    2.2%
+Tempo                493    1.3%
+Expression           423    1.1%
+Fingering             27    0.1%
+SystemText            20    0.1%
+
+imbalance: Lyrics is 1,716x SystemText
+```
+
+**`InstrumentName` does not appear**, correctly - 27.46's part-name suppression already
+removed it from the render, and this confirms that fix reached the data a detector would
+train on, not only the syllable boxes it was checked against at the time. `Harmony` and
+`RehearsalMark` are absent too, plausibly because solo Lieder carry neither chord symbols nor
+rehearsal marks - unverified, but consistent with the repertoire.
+
+**The imbalance is worse than the tie head's, by three orders of magnitude**, and 27.62 is
+now direct precedent rather than an analogy: an uncorrected classifier facing this shape of
+imbalance stops predicting the starved class, and a detector is a classifier at every anchor
+it considers. Whatever detector architecture is chosen needs the same correction - focal
+loss, validated, not class weighting, refuted twice - built in from the first training run
+rather than discovered as a regression afterward.
+
+**What remains open, deliberately.** The detector's own architecture is not chosen here. It
+is a separate decision from the data it will train on, and this section stops at making that
+data ready.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
