@@ -2390,6 +2390,25 @@ own durations and meter. At inference those come from the model, so a deployed r
 predicted rhythm and would not reach 84.7%. What the comparison establishes is that the head
 has no advantage to offer on scans, not that the rule alone is a finished answer.
 
+**The stem head tells the same story, more starkly.** On scans:
+
+```
+              head alone   rule alone   oracle    best arbitration
+scanned          72.47%       93.76%    96.96%    93.66%  (head on 3.4% of notes)
+synthetic        92.70%       94.34%    98.24%    95.28%  (head on 77.0% of notes)
+```
+
+On synthetic the arbiter uses the head on 77% of notes and beats the rule by a point. On
+scans the best threshold it can find uses the head on **3.4%** of notes and still lands at
+93.66%, marginally *below* the rule's own 93.76%. The arbiter of 27.20 was built because the
+head and the rule failed on disjoint notes; on scans the head's failures are no longer
+disjoint, they are a superset.
+
+**So both structured heads are net regressions on scanned input** - the domain that matters
+for reading real sheet music - while both are gains on synthetic. That is the finding phase10
+existed to produce, and it reframes the track: the work is not to add more heads but to close
+the domain gap on the ones that exist.
+
 The synthetic arm, which was correct throughout:
 
 **Gate C, judged by the crosstab rather than the totals** - 27.16's rule, because two equal
