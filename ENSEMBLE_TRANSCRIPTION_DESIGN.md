@@ -2491,10 +2491,36 @@ p1-s2 parses as 2 voices       voice 0: 21 symbols, F4 - the singer
 to the score's total only if every measure landed in exactly one system - nothing dropped,
 nothing duplicated. Coverage in 27.40 could not verify its own fix; this number can.
 
+**At scale, all 200 scores:**
+
+```
+2,926 systems joined
+34,609 lyric elements recovered of the published 34,657   99.9%
+5 systems refused: voice part is missing measure '0'      the pickup-measure edge case
+```
+
+The 48 unrecovered lyrics are exactly those five refusals. They refused rather than
+mis-joining, which is the guard doing its job.
+
+**A bug found here, and worth recording because of how it presented.** `slice_part` appended
+the source measure elements rather than copies, so the slice and the score shared them, and
+`_carry_attributes` then wrote its header *into the source*. Every later system inherited
+the attributes injected for the earlier ones:
+
+```
+lc5837811, voice part <attributes> count as systems are processed:  5 5 6 7 8 9
+```
+
+It showed up as speed - the 200-score run crawled to two systems in fifteen minutes,
+because the walk that gathers running attributes got longer each pass. After copying, the
+same run finishes in under 25 seconds. **The speed was the harmless symptom.** The damage
+was that every run produced plausible output, each carrying more duplicated clefs and keys
+than the last, and nothing in the output said so. A test that joins the same sample four
+times and compares now pins it.
+
 **What is still missing is the vocabulary.** homr's `EncodedSymbol` has six fields and none
 of them is text. The data for a lyric stage now exists - images showing lyrics, labels
-containing them, aligned - but reading lyrics needs a seventh channel or a separate head,
-and that is the design question 27.39 opened and this does not answer.
+containing them, aligned - but reading lyrics needs its own model, which is 27.42.
 
 ### 27.40 OLiMPiC's lyrics are recoverable, and it took looking to know it
 
