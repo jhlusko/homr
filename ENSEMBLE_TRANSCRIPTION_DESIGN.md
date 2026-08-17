@@ -2300,6 +2300,36 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.38 The synthetic-to-scan gap is far worse for notation than for notes
+
+23 framed a domain gap and 27.14 measured it: mean OMR-NED 7.79% on synthetic against
+10.00% on scanned, a factor of 1.28 across homr's existing six channels. The notation
+heads were assumed to inherit something similar.
+
+They do not. The OSSQ+PDMX model, which has never seen a scan, on OSSQ's scanned
+validation split:
+
+```
+                        on synthetic    on scanned
+exact beam vector            0.911          0.661
+hooks F1                     0.834          0.623
+stem direction only          0.929          0.721
+slur spans F1                0.884          0.494
+ties macro F1                0.816          0.560
+```
+
+Exact beam vector falls 25 points. Slur spans nearly halve. Against 1.28x on the existing
+channels, this is a different order of problem, and it says the notation heads depend on
+fine ink - the presence or absence of a short beam stub, the exact curvature of a slur end -
+in a way that note and pitch recognition does not.
+
+**This is the strongest argument yet for the scanned corpus**, and it was worth measuring
+before training rather than after: a good scanned figure from the three-corpus run would
+otherwise have been unattributable, exactly as 27.33's crop-guard measurement showed when
+scans turned out *not* to be harder for staff detection. Two "scans are harder" intuitions,
+one wrong and one badly understated, both settled by measuring the specific stage rather
+than reasoning from the general claim.
+
 ### 27.37 Other corpora: what is worth preparing, and what each would cost
 
 27.25's test decides eligibility - does the training image show the engraving the labels
