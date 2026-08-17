@@ -189,6 +189,35 @@ class TestJoin(unittest.TestCase):
                 join(sample, _full())
 
 
+class TestTheSourceIsLeftAlone(unittest.TestCase):
+    """Slicing shared the source measures, so writing an attributes header into a slice
+    wrote it into the score every later system would be read from."""
+
+    def test_joining_does_not_change_the_score_it_read(self) -> None:
+        full = _full()
+        voice = voice_parts(full)[0]
+        before = len(voice.findall(".//attributes"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            for _ in range(4):
+                join(_sample(Path(tmp)), full)
+
+        self.assertEqual(len(voice.findall(".//attributes")), before)
+
+    def test_repeated_joins_give_the_same_answer(self) -> None:
+        # The accumulation was silent: every run produced output, each one carrying more
+        # duplicated clefs and keys than the last.
+        full = _full()
+        with tempfile.TemporaryDirectory() as tmp:
+            sample = _sample(Path(tmp))
+            first = ET.tostring(join(sample, full).score.getroot())
+            for _ in range(3):
+                join(sample, full)
+            again = ET.tostring(join(sample, full).score.getroot())
+
+        self.assertEqual(first, again)
+
+
 class TestReadMxl(unittest.TestCase):
     def test_the_score_is_taken_not_the_container(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

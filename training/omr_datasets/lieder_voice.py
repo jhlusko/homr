@@ -31,6 +31,7 @@ under the wrong note.
 # flake8: noqa: T201
 
 import argparse
+import copy
 import xml.etree.ElementTree as ET
 import zipfile
 from dataclasses import dataclass
@@ -118,7 +119,12 @@ def slice_part(part: ET.Element, wanted: tuple[str, ...]) -> ET.Element:
 
     sliced = ET.Element("part", {"id": part.get("id", "P1")})
     for number in wanted:
-        sliced.append(by_number[number])
+        # Copied, not shared. Appending the source element leaves both trees pointing at
+        # one measure, and `_carry_attributes` then writes its header *into the source* -
+        # so every later system inherits the attributes injected for the earlier ones, and
+        # the score grows as it is read. Measured before this line existed: the voice part
+        # gained one <attributes> per system processed.
+        sliced.append(copy.deepcopy(by_number[number]))
     return sliced
 
 
