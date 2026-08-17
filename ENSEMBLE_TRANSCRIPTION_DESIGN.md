@@ -1602,19 +1602,20 @@ that, in order of what the result actually licenses:
                              been looked at, and it should stay that way until a
                              configuration is being reported rather than explored
 20  class-imbalance          done (27.62): focal loss (gamma=2) is a clean win, macro
-    instruments               F1 +1.0 and start F1 +4.9 for -0.5 on beam vector -
-                             the change to keep. Class weights (cap 50) make every tie
-                             class worse (macro -8.3), confirming the over-correction
-                             risk named before the run. The `both` arm is checking
-                             whether focal survives combination with weighting's
-                             damage or the damage compounds.
-21  fix for the scan gap      one candidate ruled out (27.63): CLAHE contrast
-                             normalisation does not help - it narrows the cross-score
-                             spread only by damaging the crisp scans, not by lifting
-                             the faint ones, at every clip limit tried. Next candidate
-                             per 27.60's shape (concentrated by score, not spread
-                             evenly): re-weight or oversample the worst-performing
-                             scores at training time, rather than a page-level filter.
+    instruments               F1 +1.0 and start F1 +4.9 for -0.5 on beam vector - done
+                             (27.66): confirmed the winner after all four arms. `both`
+                             compounds the damage rather than offsetting it (macro
+                             0.630, worse than weights alone) - class weighting is set
+                             aside, not iterated on.
+21  fix for the scan gap      one page-level candidate ruled out (27.63): CLAHE damages
+                             crisp scans faster than it helps faint ones. Rebuilt around
+                             per-image contrast after finding (27.65) that the
+                             score-level version could not fire at all - the nine
+                             measured collapse rates are entirely in validation, zero
+                             overlap with training. phase12 running: reweighted index
+                             (4,326 of 32,982 scanned images boosted) + focal loss
+                             together, scored and gated the same way as phase9/10 for
+                             a direct comparison.
 ```
 
 **Every result before 27.36 should be read as "on string quartets".** That section measured
@@ -1767,6 +1768,27 @@ Assembled into a full reweighted training index at 112,459 lines (107,521 origin
 whether a mechanism can fire on the actual data before spending the run that would have
 revealed it firing on nothing.** Four times now the mechanism was correct in isolation and
 wrong against the data it was meant to touch.
+
+### 27.67 phase12: the two prepared fixes combined into one run
+
+27.65's reweighted training index and 27.66's focal loss were each validated separately -
+the reweighting on CPU against real data, focal against three alternatives in phase11 - and
+neither had yet been trained together, or scored against phase9's scanned Gate C failure
+that motivated both. `phase12.sh` does that: trains from the same frozen-core checkpoint
+every phase has used, on the 112,459-line reweighted index, with `--focal-gamma 2.0`, then
+scores and gates all three domains the way phase9 and phase10 did - synthetic and scanned get
+the crosstab and stem arbiter, PDMX gets evaluation only, per 27.58's note that both tools are
+OSSQ-shaped and cannot read it.
+
+**A smoke test before committing the GPU time**, given how many "ready" scripts this session
+have had a bug surface only when run: 20 lines of the reweighted index, one epoch, batch size
+4. It trained cleanly - the only failure was the smoke test's own scratch directory missing,
+not the training command - so the full run was launched rather than iterated on further.
+
+What this run is expected to settle: whether the scanned Gate C failure of 27.58 (head loses
+12,027 notes to the rule, recovers 4,231) narrows when the faintest training crops are seen
+more often, and whether combining that with focal loss compounds the tie-head gain of 27.66
+or interacts with it the way weighting's compound did.
 
 ## 25. Settled decisions and open measurements
 
