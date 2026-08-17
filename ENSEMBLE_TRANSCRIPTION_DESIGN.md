@@ -1690,6 +1690,58 @@ reference, caught by running it against real data before trusting the arithmetic
 Not yet trained against - it builds and verifies on CPU; whether oversampling actually
 narrows the domain gap needs a training run, queued behind phase11.
 
+### 27.65 27.64's oversampling design could not work at all - the split makes score names disjoint
+
+Preparing to actually run 27.64's tool found it broken more deeply than the scaling bug
+already fixed. Checked before spending a training run on it: the nine scores with measured
+collapse rates are every one of them in validation, and the training index has **zero
+overlap** with those score names.
+
+```
+training index distinct scores    32,551
+validation scores measured         9
+overlap                            0
+```
+
+That is not incidental - it is 13.5's own principle working correctly. OSSQ is split by
+score precisely so a crop-level leak cannot inflate a number, and the collapse rates were
+computed from held-out predictions for the same reason. A design that oversamples "scores
+that collapse" in the training set is asking the training set to contain the very data that
+was held out to measure it; it cannot, by the split's own construction, and 27.64's tool
+would have run to completion, repeated nothing, and reported success on an index identical
+to its input.
+
+**`score_reweight.py` is rebuilt around the measurement that does not have this dependency.**
+27.61 found contrast and ink fraction correlate with collapse *from the image alone* - no
+prediction, no model, no score identity required. Weighting directly by each training
+image's own contrast sidesteps the split entirely, and is finer-grained besides: 27.60 found
+45.8% of a "bad" score's own staves are unaffected, so a score-level weight would have
+boosted good pages inside bad scores for no reason a per-image weight avoids.
+
+Run for real, on the scanned training index alone (32,982 images, the synthetic and PDMX
+lines are untouched by construction):
+
+```
+32,982 images measured, 4,326 boosted above x1
+contrast: min 84   median 238   max 255
+
+worst training images (untouched by the validation split, confirming this works on data
+the earlier design could not reach):
+  sq7362818_0055_0003_4.png   contrast 84   x4
+  sq9961690_0006_0001_4.png   contrast 87   x4
+  sq9961690_0013_0001_2.png   contrast 91   x4
+
+32,982 lines -> 37,920 lines
+```
+
+Assembled into a full reweighted training index at 112,459 lines (107,521 original plus
+4,938 repeats), ready for the next training slot.
+
+**The pattern across 27.53, 27.60's first framing, 27.64, and this: build the check for
+whether a mechanism can fire on the actual data before spending the run that would have
+revealed it firing on nothing.** Four times now the mechanism was correct in isolation and
+wrong against the data it was meant to touch.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design

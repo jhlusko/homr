@@ -2,103 +2,109 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from training.transformer.domain_gap import Pair
+import cv2
+import numpy as np
+
 from training.omr_datasets.score_reweight import (
-    ScoreWeight,
-    collapse_rates,
-    reweight_index,
+    ImageWeight,
+    measure_contrast,
     repeat_counts,
+    reweight_index,
 )
 
 
-def _pair(score: str, drop: float, index: int = 1) -> Pair:
-    return Pair(f"{score}_0001_0001_{index}.txt", 0.9, 0.9 - drop, 10)
+def _image(directory: Path, name: str, level: int) -> str:
+    """A page at a given gray level - lower `level` variation means lower contrast."""
+    path = directory / f"{name}.png"
+    page = np.full((40, 40), 200, dtype=np.uint8)
+    page[10:30, 10:30] = level
+    cv2.imwrite(str(path), page)
+    return str(path)
 
 
-class TestCollapseRates(unittest.TestCase):
-    def test_the_rate_is_the_share_past_the_threshold(self) -> None:
-        pairs = [_pair("a", 0.6, 1), _pair("a", 0.6, 2), _pair("a", 0.1, 3), _pair("a", 0.1, 4)]
+class TestMeasureContrast(unittest.TestCase):
+    def test_a_faint_image_measures_lower_than_a_crisp_one(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            faint = _image(directory, "faint", 180)
+            crisp = _image(directory, "crisp", 0)
 
-        self.assertAlmostEqual(collapse_rates(pairs)["a"], 0.5)
+            values = measure_contrast([faint, crisp])
 
-    def test_scores_are_kept_separate(self) -> None:
-        pairs = [_pair("a", 0.9, 1), _pair("b", 0.0, 1)]
+        self.assertLess(values[faint], values[crisp])
 
-        rates = collapse_rates(pairs)
+    def test_an_unreadable_path_is_skipped_not_fatal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            crisp = _image(Path(tmp), "crisp", 0)
 
-        self.assertGreater(rates["a"], rates["b"])
+            values = measure_contrast([crisp, str(Path(tmp) / "absent.png")])
+
+        self.assertEqual(list(values), [crisp])
 
 
 class TestRepeatCounts(unittest.TestCase):
-    def test_a_score_below_the_floor_keeps_its_natural_weight(self) -> None:
-        # Sampling noise in a low collapse rate should not produce a meaningless x1.02.
-        weights = repeat_counts({"a": 0.05}, floor=0.1)
+    def test_faintest_images_get_the_most_repeats(self) -> None:
+        weights = repeat_counts({"a": 50, "b": 100, "c": 250}, floor_percentile=50)
 
-        self.assertEqual(weights["a"].repeats, 1)
+        self.assertGreater(weights["a"].repeats, weights["c"].repeats)
 
-    def test_a_higher_collapse_rate_gets_more_repeats(self) -> None:
-        weights = repeat_counts({"a": 0.9, "b": 0.2}, floor=0.1, max_repeats=6)
+    def test_the_floor_is_a_percentile_not_a_fixed_value(self) -> None:
+        # A percentile stays stable across corpora of different average quality; a fixed
+        # contrast threshold would need re-tuning for every new source.
+        low_quality = repeat_counts({"a": 50, "b": 60, "c": 70, "d": 80}, floor_percentile=25)
+        high_quality = repeat_counts(
+            {"a": 200, "b": 210, "c": 220, "d": 230}, floor_percentile=25
+        )
 
-        self.assertGreater(weights["a"].repeats, weights["b"].repeats)
+        self.assertGreater(low_quality["a"].repeats, 1)
+        self.assertGreater(high_quality["a"].repeats, 1)
+
+    def test_images_at_or_above_the_floor_are_untouched(self) -> None:
+        weights = repeat_counts({"a": 50, "b": 100, "c": 250, "d": 260}, floor_percentile=25)
+
+        self.assertEqual(weights["d"].repeats, 1)
 
     def test_the_repeat_count_is_capped(self) -> None:
-        # An uncapped multiplier turns a handful of documents into most of an epoch -
-        # the same risk 27.50 named for loss weighting, applied to sampling. The worst
-        # score in the batch always reaches the cap by construction, since the scale is
-        # calibrated against it.
-        weights = repeat_counts({"a": 1.0, "b": 0.1}, floor=0.1, max_repeats=6)
+        weights = repeat_counts({"a": 1, "b": 250}, floor_percentile=90, max_repeats=4)
 
-        self.assertEqual(weights["a"].repeats, 6)
+        self.assertLessEqual(weights["a"].repeats, 4)
 
-    def test_scaling_is_against_the_observed_worst_not_a_hypothetical_100_percent(self) -> None:
-        # The first version scaled toward rate=1.0. On real data whose worst score is
-        # 21.9%, that put every real score within rounding distance of x1 - a scale
-        # calibrated to data nothing produces does not fire on the data that exists.
-        weights = repeat_counts({"a": 0.219, "b": 0.05}, floor=0.1, max_repeats=6)
-
-        self.assertEqual(weights["a"].repeats, 6)
-
-    def test_a_batch_where_nothing_clears_the_floor_repeats_nothing(self) -> None:
-        weights = repeat_counts({"a": 0.05, "b": 0.02}, floor=0.1, max_repeats=6)
-
-        self.assertEqual(weights["a"].repeats, 1)
-        self.assertEqual(weights["b"].repeats, 1)
-
-    def test_an_empty_batch_produces_no_weights(self) -> None:
+    def test_an_empty_input_produces_no_weights(self) -> None:
         self.assertEqual(repeat_counts({}), {})
 
-    def test_a_fully_clean_score_at_exactly_the_floor_is_untouched(self) -> None:
-        weights = repeat_counts({"a": 0.1}, floor=0.1)
+    def test_uniform_contrast_leaves_everything_at_one(self) -> None:
+        # Floor equals the worst value, so there is no faint tail to boost.
+        weights = repeat_counts({"a": 200, "b": 200, "c": 200}, floor_percentile=25)
 
-        self.assertEqual(weights["a"].repeats, 1)
+        self.assertTrue(all(w.repeats == 1 for w in weights.values()))
 
 
 class TestReweightIndex(unittest.TestCase):
-    def test_lines_are_repeated_by_their_scores_weight(self) -> None:
+    def test_lines_are_repeated_by_their_images_weight(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             index = directory / "index.txt"
             index.write_text(
-                "img_a.png,/data/a_0001_0001_1.txt\nimg_b.png,/data/b_0001_0001_1.txt\n",
-                encoding="utf-8",
+                "/data/a.png,/data/a.txt\n/data/b.png,/data/b.txt\n", encoding="utf-8"
             )
-            weights = {"a": ScoreWeight("a", 0.9, 3), "b": ScoreWeight("b", 0.0, 1)}
+            weights = {
+                "/data/a.png": ImageWeight("/data/a.png", 50.0, 3),
+                "/data/b.png": ImageWeight("/data/b.png", 250.0, 1),
+            }
 
             before, after = reweight_index(index, weights, directory / "out.txt")
             lines = (directory / "out.txt").read_text(encoding="utf-8").splitlines()
 
         self.assertEqual(before, 2)
         self.assertEqual(after, 4)
-        self.assertEqual(sum(1 for line in lines if "a_0001" in line), 3)
-        self.assertEqual(sum(1 for line in lines if "b_0001" in line), 1)
+        self.assertEqual(sum(1 for line in lines if "a.png" in line), 3)
+        self.assertEqual(sum(1 for line in lines if "b.png" in line), 1)
 
-    def test_an_unmeasured_score_is_kept_once_not_guessed_at(self) -> None:
-        # Repeating a score with no measurement would be acting on a weight that was never
-        # computed, not on evidence.
+    def test_an_unmeasured_image_is_kept_once_not_guessed_at(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             index = directory / "index.txt"
-            index.write_text("img.png,/data/unmeasured_0001_0001_1.txt\n", encoding="utf-8")
+            index.write_text("/data/unmeasured.png,/data/x.txt\n", encoding="utf-8")
 
             _, after = reweight_index(index, {}, directory / "out.txt")
 
@@ -108,14 +114,33 @@ class TestReweightIndex(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             index = directory / "index.txt"
-            index.write_text(
-                "img.png,/data/a_0001_0001_1.txt\n\n\n", encoding="utf-8"
-            )
-            weights = {"a": ScoreWeight("a", 0.9, 4)}
+            index.write_text("/data/a.png,/data/a.txt\n\n\n", encoding="utf-8")
+            weights = {"/data/a.png": ImageWeight("/data/a.png", 50.0, 4)}
 
             _, after = reweight_index(index, weights, directory / "out.txt")
 
         self.assertEqual(after, 4)
+
+    def test_it_reweights_by_image_path_not_by_score_name(self) -> None:
+        # The design this replaces keyed on score identity from the token filename, which
+        # could not work: OSSQ's split is by score, so scores measured as faint in
+        # validation never appear in the training index at all. Weighting by the image path
+        # itself has no such dependency.
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            index = directory / "index.txt"
+            index.write_text(
+                "/data/sq111_p1-s1.png,/data/sq111_p1-s1.txt\n"
+                "/data/sq222_p1-s1.png,/data/sq222_p1-s1.txt\n",
+                encoding="utf-8",
+            )
+            weights = {"/data/sq111_p1-s1.png": ImageWeight("x", 50.0, 3)}
+
+            _, after = reweight_index(index, weights, directory / "out.txt")
+            lines = (directory / "out.txt").read_text(encoding="utf-8").splitlines()
+
+        self.assertEqual(sum(1 for line in lines if "sq111" in line), 3)
+        self.assertEqual(sum(1 for line in lines if "sq222" in line), 1)
 
 
 if __name__ == "__main__":
