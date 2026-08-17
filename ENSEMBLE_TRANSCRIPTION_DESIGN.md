@@ -2300,6 +2300,57 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.43 MuseScore earns the dependency: exact syllable boxes from the engraving it drew
+
+27.42 left one thing for the user to decide - which renderer draws the synthetic stage -
+because 27.25 requires the image and the boxes to come from the *same* engraving, and
+Verovio boxes over MuseScore images would be that mismatch exactly. The answer turned on
+whether MuseScore actually yields positions, which is a question rather than a preference.
+
+It does. Already installed at `/usr/local/bin/mscore`; the AppImage aborts under
+`QT_QPA_PLATFORM=offscreen` but runs fine under `xvfb-run -a`:
+
+```
+xvfb-run -a mscore --export-to out.svg system.musicxml
+```
+
+Its SVG tags every element by type. On one joined system:
+
+```
+Note 146   Stem 104   Beam 31   Hook 20   LedgerLine 16   Tuplet 16
+Lyrics 15                      one <path class="Lyrics"> per syllable
+LyricsLineSegment 5            the melisma extender lines
+SlurSegment 1   HairpinSegment 1   Clef 3   KeySig 15   BarLine 12
+```
+
+**15 Lyrics paths against 15 syllables in the source** - one path per syllable, not per
+glyph, left to right and non-overlapping. Bounding boxes come straight out of the path
+data:
+
+```
+source syllables  ['va', 'gues', 'des', 'mers,', 'Les', 'vents', ...]
+first boxes       (793, 802, 846, 827)  (904, 801, 1007, 836)  (1015, 789, 1087, 827)
+```
+
+So the join is ordinal and checkable: sort the lyric paths by x within a staff, pair with
+the syllables in document order, and refuse when the counts disagree. That refusal is the
+whole point - it is the same guard 27.41 put on the measure range, and the same lesson as
+27.11.
+
+**What this buys.** Exact syllable boxes and note boxes in one coordinate system, plus a
+raster of the same layout, all from the engraving the labels describe. That is positional
+supervision for the resolve stage, which the scanned corpus cannot provide at all - the
+published MusicXML carries no `default-x` on either notes or lyrics.
+
+**What still needs checking before it is relied on:** that MuseScore's SVG and PNG exports
+lay a page out identically. The whole value is that image and boxes agree, and that is an
+assumption until measured - the kind that produced 27.11 and the sidecar substitution.
+
+**One limitation.** MuseScore's SVG carries no element identity - no id linking a Lyrics
+path back to its `<lyric>`. Reading order is the only join available. It is sound here
+because syllables do not overlap and read left to right, but it means the count check is
+load-bearing rather than a formality.
+
 ### 27.42 The lyric stage is OCR plus a resolve, and the numbers say why
 
 The first framing here was "a seventh channel or another head". That was loose and it was
