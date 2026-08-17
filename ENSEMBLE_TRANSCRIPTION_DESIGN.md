@@ -2300,6 +2300,43 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.48 A recogniser's corpus, split by score, and the chain checked end to end
+
+`musescore_boxes` feeds the detector; `lyric_crops` feeds the recogniser - one image per
+syllable and the string it says. The annotation run finished at:
+
+```
+2,911 of 2,926 systems annotated       99.5%
+34,325 syllables paired to boxes
+8,044 other text boxes, typed, unpaired (27.44)
+3 refused by mscore, 8 on a count mismatch
+```
+
+The part-id fix of 27.46 took the render failures from 217 to 3. The 8 remaining are the
+count guard firing, which is what it is for.
+
+**The split is by score, not by system or crop.** A Lied's systems share its engraving, its
+typesetting and most of its words - *Es*, *und*, *die* recur through a song - so a crop-level
+split would put the same syllable, in the same font, at the same size, on both sides of it.
+That measures memorisation and reports it as recognition. 13.5 took score-level splits for
+OSSQ; the argument is stronger here, because text repeats far more than music does.
+
+Crops keep their native resolution. 27.47 sampled that resolution across the range the scans
+span deliberately, and normalising at corpus-build time would discard what was just paid
+for. Height normalisation belongs in the training loop, where it can be augmentation.
+
+**The chain was checked by looking, which is the check that has worked.** Six crops drawn at
+random, each with its stored label printed under it:
+
+```
+klagst,   du   klagst,   Lei   den   schaft!
+```
+
+Every crop shows the word its label claims, and *Lei-den-schaft!* is one word correctly
+split across three syllables - so hyphenation and syllabic position survive the whole path
+from MusicXML through render, box, crop and manifest. That path had three defects in it
+before this section; none of them survived to here.
+
 ### 27.47 The synthetic stage was lower-resolution than the scans, which is backwards
 
 150 dpi was chosen for the render with the comment that it was "close to the scanned
