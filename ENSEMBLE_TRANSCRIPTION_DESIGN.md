@@ -2300,6 +2300,48 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.44 The page is not only lyrics, and MuseScore types the rest for free
+
+The lyric framing was too narrow. A page carries title, composer, tempo marks, dynamics,
+staff and system directions, fingerings and rehearsal marks, and an OCR pass cropping a band
+under a staff meets all of them whether or not it expects to. 27.40 caught this without
+noticing: the crop that recovered the voice staff also pulled in *"sempre legato"*, and the
+trim that removed it was described there as an acceptable loss. It is only acceptable while
+the target is lyrics.
+
+**homr represents none of this.** Its six fields are rhythm, pitch, lift, articulation, slur
+and position. The dynamics vocabulary exists but is *commented out*
+(`homr/transformer/vocabulary.py`), and tempo, rehearsal marks, fingerings and titles were
+never there at all. So a typed-text pass is capability homr does not have, not a second
+implementation of something it does - which changes what the OCR stage is worth. It is not
+only a lyric feature.
+
+**MuseScore already types every text element**, in the same SVG class attribute the boxes
+come from, so reading all page text costs no more annotation than reading only lyrics.
+Across 11 rendered pages of two scores:
+
+```
+Lyrics 503   LyricsLineSegment 155   Dynamic 45   MeasureNumber 32   StaffText 18
+Tempo 15     Text 13                 TextLineSegment 10   InstrumentName 7   Expression 2
+```
+
+**Which of these can be joined to a string is measured, not assumed:**
+
+| Class | Rendered vs source | Joinable |
+|---|---|---|
+| Lyrics | 134/134 and 155/155 | yes - one path per syllable |
+| Dynamic | 28/28 | yes - one path per `<dynamics>` |
+| Tempo, StaffText, Expression | 21 rendered vs 23 source `<words>` | no |
+
+The direction texts fail for a specific reason: MuseScore decides whether a `<words>`
+renders as a Tempo, a StaffText or an Expression, and the MusicXML does not record which.
+Their boxes are still extracted - a detection and classification target needs no string -
+but the pairing is withheld, because an unverifiable join is precisely what this module
+exists to avoid.
+
+**Cost.** 50 systems rendered and boxed in 1m28s, 1.77s per system, zero refusals. The full
+2,926 joined systems is about 86 minutes.
+
 ### 27.43 MuseScore earns the dependency: exact syllable boxes from the engraving it drew
 
 27.42 left one thing for the user to decide - which renderer draws the synthetic stage -
