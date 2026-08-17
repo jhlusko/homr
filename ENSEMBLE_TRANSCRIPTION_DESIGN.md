@@ -2359,6 +2359,37 @@ a loud diagnostic was filtered into silence by the thing meant to summarise it. 
 keeps it, with a comment saying why. It is a smaller cousin of 27.53 - a number that looked
 like a measurement and was an artefact of how it was collected.
 
+**Gate C passes on synthetic and fails on scanned, and only the crosstab says so.** The
+scanned arm, once pointed at the right root:
+
+```
+scanned              head right   head wrong        synthetic       head right   head wrong
+  rule right             30,409       12,027          rule right        58,728        4,761
+  rule wrong              4,231        3,445          rule wrong         8,953        2,775
+
+  rule accuracy  84.7%   head 69.1%                   rule 84.4%   head 90.0%
+  recovers 55.1% (4,231)  loses 28.3% (12,027)        recovers 76.3%  loses 7.5%
+```
+
+On scans the head **loses 12,027 notes the rule had right and recovers 4,231** - a net loss of
+7,796 notes. The rule is domain-independent by construction, since it is derived from the
+score rather than the image, and it holds at 84.4% and 84.7%. The head falls from 90.0% to
+69.1%. That is a 21-point collapse where 27.38 measured 20 points on the exact-beam-vector
+total, and it is the same phenomenon seen against a fixed reference instead of against
+itself.
+
+**Nothing in the totals shows this.** Exact beam vector on scans is 0.700, which reads as a
+serviceable head. It is serviceable only in the sense that it is right more often than not;
+against the rule it is a regression, and shipping it on scanned input would make transcription
+worse than not having it. 27.16's insistence on the crosstab over the totals was argued from a
+case where the two failed on disjoint notes; this is the stronger case, where the totals are
+not merely uninformative but point the wrong way.
+
+**One caveat that limits what may be concluded.** The rule here is computed from the score's
+own durations and meter. At inference those come from the model, so a deployed rule runs on
+predicted rhythm and would not reach 84.7%. What the comparison establishes is that the head
+has no advantage to offer on scans, not that the rule alone is a finished answer.
+
 The synthetic arm, which was correct throughout:
 
 **Gate C, judged by the crosstab rather than the totals** - 27.16's rule, because two equal
