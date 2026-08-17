@@ -28,6 +28,7 @@ import argparse
 import collections
 import json
 import multiprocessing
+import random
 import re
 import subprocess
 import xml.etree.ElementTree as ET
@@ -81,9 +82,27 @@ TEXT_CLASSES = frozenset(
 #: module exists to avoid.
 VERIFIABLE_CLASSES = frozenset({"Lyrics", "Dynamic"})
 
-#: Rendering resolution. 150 gives roughly a 1240x1754 A4 page, close to the scanned
-#: corpus, so the curriculum's two stages are not also a resolution change.
-DPI = 150
+#: Rendering resolution, sampled per system from this range rather than fixed.
+#:
+#: 150 was the first choice and it was wrong, in a direction worth recording. Measured
+#: staff space - the scale everything else on a page follows from:
+#:
+#:     synthetic at 150dpi   10.3px, and lyric text 16px, or 1.55 staff spaces
+#:     scanned IMSLP         26.0px median, quartiles 19 and 37, range 5 to 76
+#:
+#: So a fixed 150 puts the synthetic stage *below the first quartile* of the real data -
+#: the synthetic images are lower-resolution than nearly every scan, which is the reverse
+#: of the usual gap where synthetic is the cleaner domain.
+#:
+#: And no single value fixes it, because the scans themselves vary fourfold. Matching the
+#: quartiles takes 277 to 539 dpi, so the resolution is sampled across that range and the
+#: spread becomes something the model sees in training rather than meets for the first time
+#: at inference. Crops still have to be height-normalised downstream; this is about how much
+#: detail is there to normalise.
+DPI_RANGE = (280, 540)
+
+#: Kept for callers that want one fixed resolution, and for tests.
+DPI = 300
 
 
 class Unrenderable(Exception):
@@ -130,6 +149,15 @@ def without_part_names(score: Path, target: Path) -> Path:
             element.text = ""
     tree.write(target, encoding="utf-8", xml_declaration=True)
     return target
+
+
+def sampled_dpi(name: str, span: tuple[int, int] = DPI_RANGE) -> int:
+    """A resolution for this system, drawn from the range the scans actually span.
+
+    Seeded on the name so a rebuild produces the same corpus - an image whose resolution
+    changed between runs would silently invalidate boxes computed against the old one.
+    """
+    return random.Random(name).randint(*span)
 
 
 def render(score: Path, out_dir: Path, dpi: int = DPI) -> tuple[list[Path], list[Path]]:
@@ -298,7 +326,7 @@ def pair(score: Path, svg_path: Path, png_path: Path) -> list[Syllable]:
     ]
 
 
-def annotate(score: Path, out_dir: Path, dpi: int = DPI) -> dict:
+def annotate(score: Path, out_dir: Path, dpi: int | None = None) -> dict:
     """Render one system and write everything readable about its text.
 
     The lyric boxes are paired to their syllables; every other text class is recorded as
@@ -306,7 +334,7 @@ def annotate(score: Path, out_dir: Path, dpi: int = DPI) -> dict:
     the source (27.44). Recording the unpaired classes anyway is deliberate: detection and
     classification need a box and a type, not a string.
     """
-    svgs, pngs = render(score, out_dir, dpi)
+    svgs, pngs = render(score, out_dir, dpi or sampled_dpi(score.stem))
     if len(svgs) != 1:
         # `pair` matches one page's boxes against the whole score's syllables, so a score
         # spilling onto a second page would pair the first page's boxes against all of
@@ -322,6 +350,7 @@ def annotate(score: Path, out_dir: Path, dpi: int = DPI) -> dict:
     syllables = pair(score, svgs[0], pngs[0])
     record = {
         "image": pngs[0].name,
+        "dpi": dpi or sampled_dpi(score.stem),
         "width": image.shape[1],
         "height": image.shape[0],
         "lyrics": [
@@ -356,7 +385,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--scores", type=Path, required=True, help="A dir of .musicxml systems.")
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--dpi", type=int, default=DPI)
+    parser.add_argument(
+        "--dpi", type=int, help="Fix the resolution; omitted, it is sampled per system."
+    )
     parser.add_argument(
         "--workers", type=int, default=1, help="Renders in parallel; each is its own mscore."
     )

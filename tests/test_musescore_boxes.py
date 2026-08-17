@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 
 from training.omr_datasets.musescore_boxes import (
+    DPI_RANGE,
     VERIFIABLE_CLASSES,
     Box,
     Unrenderable,
@@ -14,6 +15,7 @@ from training.omr_datasets.musescore_boxes import (
     _scale,
     boxes_of_class,
     pair,
+    sampled_dpi,
     source_dynamics,
     source_syllables,
     without_part_names,
@@ -175,6 +177,29 @@ class TestSourceDynamics(unittest.TestCase):
             path.write_text(SCORE.format(notes=_note(_lyric("x"))), encoding="utf-8")
 
             self.assertEqual(source_dynamics(path), [])
+
+
+class TestSampledDpi(unittest.TestCase):
+    """A fixed 150dpi put the synthetic stage below the first quartile of the scans, and no
+    single value fits, because the scans vary fourfold themselves."""
+
+    def test_the_same_system_always_gets_the_same_resolution(self) -> None:
+        # A rebuild that changed an image's resolution would invalidate boxes computed
+        # against the old one, silently.
+        self.assertEqual(sampled_dpi("6007571_p1-s1"), sampled_dpi("6007571_p1-s1"))
+
+    def test_different_systems_spread_across_the_range(self) -> None:
+        values = {sampled_dpi(f"system{index}") for index in range(200)}
+
+        self.assertGreater(len(values), 100)
+        self.assertGreaterEqual(min(values), DPI_RANGE[0])
+        self.assertLessEqual(max(values), DPI_RANGE[1])
+
+    def test_the_range_covers_the_measured_scan_quartiles(self) -> None:
+        # Scanned staff space quartiles 19 and 37 px against synthetic 10.3px at 150dpi
+        # imply 277 to 539.
+        self.assertLessEqual(DPI_RANGE[0], 280)
+        self.assertGreaterEqual(DPI_RANGE[1], 539)
 
 
 class TestWithoutPartNames(unittest.TestCase):
