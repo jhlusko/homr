@@ -2300,6 +2300,51 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.58 phase10: both gates re-run on the three-corpus model (synthetic arm)
+
+24.2 item 17 recorded that phase9 scores without `--predictions`, so neither Gate C's
+crosstab nor the stem arbiter could read it. `phase10.sh` re-scores each domain with
+predictions and then runs both. The synthetic arm:
+
+**Gate C, judged by the crosstab rather than the totals** - 27.16's rule, because two equal
+totals can hide an oracle far above either:
+
+```
+                head right   head wrong
+  rule right       58,728        4,761
+  rule wrong        8,953        2,775
+
+  rule accuracy on these notes   84.4%
+  head accuracy on these notes   90.0%
+  exceptions the head recovers   76.3%   (8,953 notes)
+  agreements the head loses       7.5%   (4,761 notes)
+```
+
+The head recovers ten times what it loses, so the gate clears comfortably. It clears lower
+than the 81.2% recorded in 27.16 for the two-corpus model, which is consistent with 27.36's
+finding that mixing corpora costs something on any single one - though the two figures come
+from different models and are not a controlled comparison.
+
+**The stem arbiter, and a result worth stating plainly:**
+
+```
+  head alone    92.70%
+  rule alone    94.34%
+  oracle        98.24%    (upper bound if an oracle chose per note)
+  arbitrated    95.28%    head if confidence >= 0.8, head used on 77.0% of notes
+```
+
+**The head alone is now worse than the rule** - 92.70 against 94.34, where the earlier
+two-corpus model gave 94.2 against 94.5. Three-corpus training cost the stem head about a
+point and a half of standalone accuracy. Taken alone that reads as an argument for deleting
+it, which is the argument that was already made once and already refuted.
+
+It is still wrong, for the same reason as before: **the oracle is 98.24%**. Head and rule
+remain complementary, not redundant, and arbitration on head confidence gives 95.28% - a
+point better than the better of the two, using the head on 77% of notes. A head that loses
+to the rule on its own and beats it in combination is exactly the case a totals-only reading
+would discard.
+
 ### 27.57 The resolve rule settles at 98.2%, and the wrapped systems were scoreable after all
 
 27.52 measured nearest-x on the 51% of systems with a single lyric line and got 98.9%. 27.55
