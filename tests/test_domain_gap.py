@@ -46,6 +46,64 @@ class TestStaffAccuracyField(unittest.TestCase):
             self.assertEqual(staff_accuracy(path, field="slur"), {})
 
 
+class TestExcludeTrivial(unittest.TestCase):
+    """Slur event is supervised on every note, and 98.6% of real notes carry no slur
+    content - an accuracy over every position is 98.6% before the head does anything."""
+
+    def _write(self, tmp: str, reference, predicted) -> Path:
+        path = Path(tmp) / "p.jsonl"
+        path.write_text(
+            json.dumps({
+                "tokens": "a.txt", "reference": [["x"]], "predicted": [["x"]],
+                "slur_reference": reference, "slur_predicted": predicted,
+            }) + "\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def test_all_none_positions_are_dropped_when_excluded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(
+                tmp,
+                [["none", "unspecified"], ["start", "above"]],
+                [["none", "unspecified"], ["stop", "above"]],  # the real event, wrong
+            )
+
+            found = staff_accuracy(path, field="slur", exclude_trivial=True)
+
+        # Only the real event counts, and it was predicted wrong.
+        self.assertEqual(found["a.txt"], (0.0, 1))
+
+    def test_without_exclusion_the_trivial_positions_dominate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(
+                tmp,
+                [["none", "unspecified"], ["start", "above"]],
+                [["none", "unspecified"], ["stop", "above"]],
+            )
+
+            found = staff_accuracy(path, field="slur", exclude_trivial=False)
+
+        self.assertEqual(found["a.txt"], (0.5, 2))
+
+    def test_a_staff_with_no_real_slur_content_contributes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(tmp, [["none", "unspecified"]], [["none", "unspecified"]])
+
+            found = staff_accuracy(path, field="slur", exclude_trivial=True)
+
+        self.assertEqual(found, {})
+
+    def test_exclusion_does_not_affect_beam_vectors(self) -> None:
+        # Beam vectors never contain "none"/"unspecified", so nothing should be dropped.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(tmp, [], [])
+
+            found = staff_accuracy(path, field="reference", exclude_trivial=True)
+
+        self.assertEqual(found["a.txt"], (1.0, 1))
+
+
 class TestPairUp(unittest.TestCase):
     """The two tracks write the same token filenames into different directories, which is
     what makes a staff comparable with itself."""

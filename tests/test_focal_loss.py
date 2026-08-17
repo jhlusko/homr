@@ -223,3 +223,57 @@ class TestTheCapIsTheRebalancingDial(unittest.TestCase):
         mass = [alpha[index].item() * self.TIE[index] for index in range(4)]
 
         self.assertAlmostEqual(mass[3] / sum(mass), 0.25, places=2)
+
+
+class TestPerHeadGamma(unittest.TestCase):
+    """phase12 measured a single global gamma costing beam and slur across every domain,
+    including two that reweighting never touched - only the tie head was starved."""
+
+    def _logits_and_targets(self):
+        logits = {
+            "beam.level.1": _logits([[10.0, 0.0], [10.0, 0.0]]),
+            "tie.state": _logits([[10.0, 0.0], [10.0, 0.0]]),
+        }
+        targets = {"beam.level.1": _targets([0, 0]), "tie.state": _targets([0, 0])}
+        return logits, targets
+
+    def test_a_head_named_in_the_dict_gets_its_gamma(self) -> None:
+        from training.architecture.transformer.structured_losses import structured_loss
+
+        # Uncertain logits, not confident ones: focal's discount is on confident positions,
+        # so near-zero-loss confident logits leave too little for the two totals to differ
+        # at any sane precision even though the ratio between them is real.
+        logits = {"tie.state": _logits([[0.6, 0.4], [0.6, 0.4]])}
+        targets = {"tie.state": _targets([0, 1])}
+
+        plain = structured_loss(logits, targets, gamma={"tie.state": 0.0}).total
+        focal = structured_loss(logits, targets, gamma={"tie.state": 2.0}).total
+
+        self.assertLess(focal.item(), plain.item())
+
+    def test_a_head_absent_from_the_dict_gets_plain_cross_entropy(self) -> None:
+        from training.architecture.transformer.structured_losses import (
+            masked_cross_entropy,
+            structured_loss,
+        )
+
+        logits, targets = self._logits_and_targets()
+
+        result = structured_loss(logits, targets, gamma={"tie.state": 5.0})
+        beam_head = next(h for h in result.heads if h.name == "beam.level.1")
+        expected, _ = masked_cross_entropy(logits["beam.level.1"], targets["beam.level.1"])
+
+        self.assertAlmostEqual(beam_head.loss.item(), expected.item(), places=5)
+
+    def test_a_scalar_gamma_still_applies_to_every_head(self) -> None:
+        # Backward compatible: phase9-12's runs all used a scalar and must not change.
+        from training.architecture.transformer.structured_losses import structured_loss
+
+        logits, targets = self._logits_and_targets()
+
+        scalar = structured_loss(logits, targets, gamma=2.0).total
+        both_named = structured_loss(
+            logits, targets, gamma={"beam.level.1": 2.0, "tie.state": 2.0}
+        ).total
+
+        self.assertAlmostEqual(scalar.item(), both_named.item(), places=5)

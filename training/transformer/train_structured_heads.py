@@ -172,7 +172,7 @@ def train_epoch(
     head_targets: Sequence[str],
     epoch: int,
     device: str = "cpu",
-    gamma: float = 0.0,
+    gamma: float | dict[str, float] = 0.0,
     alpha: dict[str, torch.Tensor] | None = None,
 ) -> EpochReport:
     """One pass, updating only the structured heads.
@@ -348,8 +348,19 @@ def main() -> None:
         "--focal-gamma",
         type=float,
         default=0.0,
-        help="Focal exponent. 0 is plain cross-entropy, the baseline every earlier "
-        "result used. 2 is the usual starting point (27.49).",
+        help="Focal exponent applied to every head. 0 is plain cross-entropy, the "
+        "baseline every earlier result used. Superseded by --focal-gamma-head for a "
+        "scoped correction (27.71): a global gamma cost beam 1-8 points and slur 5-8 "
+        "across all three domains to buy ties 0.6-2.7.",
+    )
+    parser.add_argument(
+        "--focal-gamma-head",
+        action="append",
+        default=[],
+        metavar="HEAD=GAMMA",
+        help="Apply gamma to one head only, e.g. --focal-gamma-head tie.state=2.0. "
+        "Repeatable. Heads not named here get gamma 0.0 (plain cross-entropy), "
+        "overriding --focal-gamma entirely once any --focal-gamma-head is given.",
     )
     parser.add_argument(
         "--class-weights",
@@ -396,9 +407,15 @@ def main() -> None:
     optimizer = torch.optim.Adam(structured_parameters(model), lr=args.lr)
     reports = []
     for epoch in range(1, args.epochs + 1):
+        gamma: float | dict[str, float] = args.focal_gamma
+        if args.focal_gamma_head:
+            gamma = {}
+            for entry in args.focal_gamma_head:
+                head_name, _, value = entry.partition("=")
+                gamma[head_name] = float(value)
         report = train_epoch(
             model, batches, optimizer, names, epoch,
-            device=args.device, gamma=args.focal_gamma, alpha=alpha,
+            device=args.device, gamma=gamma, alpha=alpha,
         )
         print(report.describe())
         reports.append(report)

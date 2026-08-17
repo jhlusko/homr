@@ -44,8 +44,19 @@ class Pair:
         return self.synthetic - self.scanned
 
 
+#: Values a slur vector element takes when nothing is happening at that note - "no slot
+#: carries an event" is the vector `["none", "unspecified", "none", "unspecified", ...]`.
+#: Comparing full vectors without excluding these first was tried and measured: 98.6% of
+#: notes carry no slur content at all, so an accuracy over every note is 98.6% floor before
+#: the head does anything, the same trap 27.49 found in tie micro F1 wearing beam's own
+#: comparison shape. Beam vectors need no such filter because non-beamable notes are
+#: already excluded upstream, at the point `dump_predictions` decides what is supervised;
+#: slur event is supervised on every note, so nothing upstream did this for it.
+TRIVIAL_SLUR_VALUES = frozenset({"none", "unspecified"})
+
+
 def staff_accuracy(
-    predictions: Path, field: str = "reference"
+    predictions: Path, field: str = "reference", exclude_trivial: bool = False
 ) -> dict[str, tuple[float, int]]:
     """Per token file, the share of positions whose whole vector for `field` is right.
 
@@ -57,6 +68,10 @@ def staff_accuracy(
     `{field}_predicted` - so `field="slur"` reads the slur vectors 27.60 originally had no
     way to ask this question of. Every vector is a list, and Python's list equality treats
     it as one unit, which is what "does this note's whole state match" means for either head.
+
+    `exclude_trivial`, when set, drops positions whose reference vector is entirely
+    `TRIVIAL_SLUR_VALUES` - required for a slur comparison to mean anything, harmless for
+    beam since beam vectors do not contain those strings and nothing would match them.
     """
     ref_key = "reference" if field == "reference" else f"{field}_reference"
     pred_key = "predicted" if field == "reference" else f"{field}_predicted"
@@ -69,10 +84,18 @@ def staff_accuracy(
             predicted = record.get(pred_key)
             if not reference or not predicted:
                 continue
-            matched = sum(1 for want, got in zip(reference, predicted) if want == got)
-            total = min(len(reference), len(predicted))
-            if total:
-                found[Path(record["tokens"]).name] = (matched / total, total)
+            if exclude_trivial:
+                pairs = [
+                    (want, got)
+                    for want, got in zip(reference, predicted)
+                    if not set(want) <= TRIVIAL_SLUR_VALUES
+                ]
+            else:
+                pairs = list(zip(reference, predicted))
+            if not pairs:
+                continue
+            matched = sum(1 for want, got in pairs if want == got)
+            found[Path(record["tokens"]).name] = (matched / len(pairs), len(pairs))
     return found
 
 
@@ -144,10 +167,16 @@ def main() -> None:
         help="'reference' for beams (default), or a head name like 'slur' to read "
         "{field}_reference/{field}_predicted.",
     )
+    parser.add_argument(
+        "--exclude-trivial", action="store_true",
+        help="Drop all-none/unspecified positions before comparing - required for slur, "
+        "since it is supervised on every note and 98.6%% carry no slur content at all.",
+    )
     args = parser.parse_args()
 
     print(describe(pair_up(
-        staff_accuracy(args.synthetic, args.field), staff_accuracy(args.scanned, args.field)
+        staff_accuracy(args.synthetic, args.field, args.exclude_trivial),
+        staff_accuracy(args.scanned, args.field, args.exclude_trivial),
     )))
 
 

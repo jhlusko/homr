@@ -164,7 +164,7 @@ def structured_loss(
     logits: dict[str, torch.Tensor],
     targets: dict[str, torch.Tensor],
     weights: dict[str, float] | None = None,
-    gamma: float = 0.0,
+    gamma: float | dict[str, float] = 0.0,
     alpha: dict[str, torch.Tensor] | None = None,
 ) -> StructuredLoss:
     """Sum the per-head losses over the heads the model actually has.
@@ -181,6 +181,14 @@ def structured_loss(
     each other. They are separate knobs on purpose - the first two are about a class the
     model can afford to ignore inside one head, the third is about how much one head
     matters against another - and 27.49 is about the first problem only.
+
+    `gamma` as a single number applies to every head, which phase12 measured the cost of:
+    beam and slur lost 1 to 8 points across all three domains, including synthetic and
+    PDMX where nothing else about training changed, while ties gained 0.6 to 2.7. Only the
+    tie head was starved; every head paid focal's discount on its own confident positions.
+    A dict scopes gamma per head name so the correction can be applied only where it was
+    diagnosed, defaulting absent heads to 0.0 - ordinary cross-entropy, not a guess at what
+    they might need.
     """
     unknown = sorted(set(targets) - set(logits))
     if unknown:
@@ -190,13 +198,15 @@ def structured_loss(
         )
 
     scale = weights or {}
+    per_head_gamma = gamma if isinstance(gamma, dict) else None
     heads: list[HeadLoss] = []
     total = None
     for name, head_logits in logits.items():
         if name not in targets:
             continue
+        head_gamma = per_head_gamma.get(name, 0.0) if per_head_gamma is not None else gamma
         loss, supervised = focal_cross_entropy(
-            head_logits, targets[name], gamma=gamma, alpha=(alpha or {}).get(name)
+            head_logits, targets[name], gamma=head_gamma, alpha=(alpha or {}).get(name)
         )
         heads.append(
             HeadLoss(

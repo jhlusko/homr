@@ -1953,6 +1953,85 @@ exercises `dump_predictions` end to end with a real model, and it passed unchang
 extension, which is what confirmed the new fields did not disturb the beam/stem path they sit
 beside.
 
+### 27.72 phase12 complete: the combined fix hurt beam and slur everywhere, and isolated a cause
+
+phase12 trained on the reweighted index with focal loss, scored all three domains against
+phase9's baseline the same way phase9/phase10 were:
+
+```
+                    beam (exact vector)      slur spans F1         tie macro F1
+synthetic       0.903 -> 0.880  (-2.3)   0.884 -> 0.832  (-5.2)   0.774 -> 0.789  (+1.5)
+scanned         0.701 -> 0.690  (-1.1)   0.509 -> 0.456  (-5.3)   0.545 -> 0.572  (+2.7)
+pdmx            0.855 -> 0.836  (-1.9)   0.737 -> 0.660  (-7.7)   0.805 -> 0.811  (+0.6)
+```
+
+**Beam and slur are worse in every domain; ties are better in every domain.** The scanned
+Gate C regression that motivated the whole experiment did not narrow - recovery fell from
+55.1% to 53.1%, loss rose from 28.3% to 29.3%. This is a negative result for the combined
+fix as tried, but the pattern across domains isolates *why*, and that turns out to be the
+valuable part.
+
+**Synthetic and PDMX were never touched by the reweighted index** - `score_reweight.py`
+only duplicates lines under the scanned track's own directory, and neither synthetic nor
+PDMX training data changed at all between phase9 and phase12. Yet beam and slur regressed
+there too, by nearly as much as on scanned. The one thing that *did* change everywhere was
+focal loss, applied with a single scalar `gamma` to every head in the loop, including three
+that were never shown to need it. **The correction 27.62 validated for the tie head's
+specific starvation was applied globally, and paid for by every head that did not have that
+problem.** phase11 never caught this because it only ever scored on synthetic.
+
+**`structured_loss`'s `gamma` now accepts a per-head dict**, defaulting any head not named
+to plain cross-entropy (0.0) rather than to a guess. `--focal-gamma-head tie.state=2.0`
+scopes it from the CLI. Existing scalar behaviour is unchanged and pinned by a test - every
+earlier phase's runs used a scalar and must not be retroactively reinterpreted.
+
+`phase13.sh` is running: the same reweighted index, focal scoped to `tie.state` alone. If
+beam and slur recover to something near phase9's numbers while tie keeps its gain, the
+mechanism is confirmed and the two fixes can be evaluated independently for the first time.
+If they do not, the reweighted index carries its own cost distinct from what 27.65 measured
+on CPU, and that would need its own isolation.
+
+### 27.73 The first real slur domain-gap reading - and a self-inflicted trap caught on first use
+
+27.71 built the tooling to ask whether slurs' domain gap concentrates the way beams' does.
+The first run answered a different question than intended: 99.7% synthetic against 99.2%
+scanned, a gap of essentially nothing - flatly contradicting the 30-40 point gap the span-F1
+metric has shown throughout this design.
+
+**The tool's own first output was the tell.** Checked before trusting it: only 1.4% of notes
+carry any non-`none` slur content. Slur event is supervised on every note - unlike beam,
+which is masked to beamable notes upstream, in the writer, before this tool ever sees it -
+so an unfiltered per-note accuracy is 98.6% before the head predicts anything, the exact
+shape of trap 27.49 found in tie micro F1. The tool built to give slurs the same treatment
+beams already had reproduced, on its first real use, the precise failure mode that treatment
+exists to catch.
+
+`staff_accuracy` now takes `exclude_trivial`, dropping positions whose reference vector is
+entirely `none`/`unspecified` before comparing - required for slur, inert for beam, since
+beam vectors never contain those strings. With it:
+
+```
+2,733 staves scored under both renderings
+  mean accuracy  synthetic 76.8%   scanned 43.7%
+
+collapsed (> 50 points): 750 (27.4%)     unchanged (<= 10 points): 904 (33.1%)
+share of lost notes in the worst 10% of staves: 20.6%
+
+collapse rate by score:
+  sq8806881   52.2%    sq8907120   41.5%    sq8885571  35.4%   sq8806134  17.9%
+  sq8075304   42.2%    sq10414906  41.0%    sq10307350 28.1%   sq7354505  15.5%
+  sq12772795   2.2%
+```
+
+**A real 33-point gap, and a different shape from beam's.** Beam's collapse concentrated in
+20.4% of staves carrying 28.1% of the loss (27.60); here 27.4% of staves collapse outright
+and only 20.6% of the loss sits in the worst decile - *less* concentrated than beam, spread
+more broadly across scores including the best one (sq12772795 still loses 2.2% of its
+slur-bearing notes, where its beam collapse rate was near zero). **A fix aimed at a handful
+of bad documents fits beam's shape better than slur's.** Slurs need something closer to a
+uniform correction, or a different mechanism than per-score reweighting was ever going to
+reach.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
