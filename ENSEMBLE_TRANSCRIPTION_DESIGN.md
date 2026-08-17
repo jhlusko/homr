@@ -2300,6 +2300,53 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.37 Other corpora: what is worth preparing, and what each would cost
+
+27.25's test decides eligibility - does the training image show the engraving the labels
+came from - and 27.36 gives the reason to care: a model trained on one genre scored 0.927
+on it and 0.706 on ordinary music, so corpus breadth is not a nice-to-have.
+
+**OLiMPiC** (ufal/olimpic-icdar24, CC BY-SA, built on OpenScore Lieder) is the strongest
+candidate and needs no new label machinery. Verified on 300 sampled files of the scanned
+subset:
+
+```
+24,576 notes    beams on 32.5%   stems on 89.3%
+slurs 10.0% of notes             placement stated on exactly 50.0% of them
+ties 6.8% of notes
+```
+
+Slur density sits between quartets (25.4%) and PDMX (3.8%), which is useful on its own -
+the two corpora currently in hand are at the extremes. And placement at 50.0% in a third
+independent corpus settles that it is a property of MuseScore's export rather than of
+genre.
+
+Two subsets, and they are worth different things:
+
+- *synthetic* (train/dev/test), images rendered from the MusicXML - eligible as training
+  data by 27.25's test.
+- *scanned* (dev/test only), **independently photographed from physical sheet music** and
+  manually annotated. This is the valuable one: every scan figure this work has produced
+  comes from OSSQ, so "scans are handled" currently rests on a single provenance. 2,931
+  images with paired MusicXML.
+
+**The catch is the training unit.** OLiMPiC is pianoform: one part, two staves, one image
+per system. `convert_ossq` refuses grand staffs outright (27.11), so it cannot be used -
+but nothing needs cropping either, because the image already *is* the unit. A converter
+for it is simpler than the two that exist, with no crop-to-part correspondence to get
+wrong, which is where three of this work's bugs have lived.
+
+**GrandStaff** passes the image test - its JPEGs ship paired with the source and are not
+regenerated from tokens - but its labels are `**kern`. Beams (`L`/`J`) and stems (`/`,`\`)
+are in kern, so the information is there, but `NotationExtractor` is a MusicXML walker and
+a second extractor would have to be written and validated against the first. Deferred
+behind OLiMPiC, which needs none. Note the OLiMPiC release also ships `grandstaff-lmx`,
+which may sidestep the kern parsing entirely.
+
+**Primus** is a `.semantic` encoding that most likely carries no beaming at all, and
+**musetrainer** renders from tokens and is ineligible for the same reason PDMX was before
+27.25. **Lieder** remains eligible and undownloaded.
+
 ### 27.36 Both models on both splits: mixing was right, and quartets do not generalise
 
 27.35 could not tell whether mixing helped or hurt, because PDMX had no held-out split.
