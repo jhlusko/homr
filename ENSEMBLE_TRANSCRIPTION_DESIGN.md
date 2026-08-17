@@ -2296,6 +2296,49 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.36 Both models on both splits: mixing was right, and quartets do not generalise
+
+27.35 could not tell whether mixing helped or hurt, because PDMX had no held-out split.
+With one - split by score, never by window, since windows of one score share an engraving -
+both models were run against both validation sets:
+
+```
+                      OSSQ-only model         OSSQ+PDMX model
+                     on OSSQ    on PDMX      on OSSQ    on PDMX
+exact beam vector      0.927      0.706        0.911      0.867
+hooks F1               0.818      0.523        0.834      0.832
+stem direction only    0.943      0.773        0.929      0.817
+slur spans F1          0.919      0.145        0.884      0.752
+```
+
+**The trade is not close.** Mixing costs 1.6 points of exact beam vector on OSSQ and buys
+16 on PDMX; it costs 3.5 points of slur span F1 on OSSQ and buys 61 on PDMX. Every
+regression 27.35 recorded is real and every one is small beside the corresponding gain.
+
+**The quartet-only model does not generalise**, which is the finding worth carrying. Read
+on its own, 27.32's numbers describe a model that appears excellent - 0.927 exact beam
+vector, 0.919 slur spans. The same weights score 0.706 and 0.145 on ordinary published
+music. Nothing in the OSSQ-only evaluation could have revealed that, and the design's
+assumption in 25.1 that "OSSQ is the first adaptation corpus, not the definition of a
+quartet-only model" was until now an intention rather than a fact.
+
+**The slur collapse is the sharpest illustration.** The OSSQ-only model scores 0.145 on
+PDMX slur spans at precision 0.080 - it predicts slurs almost everywhere. That is exactly
+what 27.30 measured: slurs cover 25.4% of notes in quartets and 3.8% in PDMX, because
+quartet writing notates bowing. The model learned "slurs are everywhere" from the only
+corpus it saw and applied it to lead sheets. A distribution difference measured in the
+symbolic files turned into a precise, predictable failure in the trained model.
+
+**The tie asymmetry is OSSQ-specific.** 27.35 flagged tie starts (0.638) scoring far below
+tie stops (0.827) with no explanation. On PDMX the same model gives 0.788 and 0.808 - nearly
+symmetric. PDMX carries 74,687 tie starts against OSSQ's 31,198, so the gap looks like a
+data-quantity effect rather than anything about how a tie's two ends are drawn.
+
+**What this changes.** Training on OSSQ alone is not a step toward an ensemble
+transcription model; it is a way to get numbers that do not survive contact with other
+music. Every figure in 27.21 through 27.32 should be read as "on string quartets", and the
+combined model is the one to carry forward.
+
 ### 27.35 Mixing corpora: the predicted gain arrives, and so does a cost
 
 Trained on OSSQ and PDMX together (77,888 examples) and evaluated on the OSSQ validation

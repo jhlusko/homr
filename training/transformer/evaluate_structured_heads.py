@@ -214,29 +214,17 @@ def trained_heads(manifest_path: Path | None, available: list[str]) -> list[str]
     return declared
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    parser.add_argument("--index", type=Path, required=True, help="Dataset index.txt.")
-    parser.add_argument("--checkpoint", type=Path, required=True, help="Pinned core .pth.")
-    parser.add_argument("--weights", type=Path, required=True, help="Trained head weights.")
-    parser.add_argument("--manifest", type=Path, help="Capability manifest from the run.")
-    parser.add_argument("--out", type=Path, help="Write the report as JSON.")
-    parser.add_argument(
-        "--predictions",
-        type=Path,
-        help="Write per-staff beam vectors as JSONL, for rule_vs_head.py to join.",
-    )
-    parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    args = parser.parse_args()
+def run_evaluation(args: Any, config: Any) -> Evaluation:
+    """Everything main() does once the arguments are parsed and a config exists.
 
-    from homr.transformer.configs import Config
+    Split out so it can be tested. Three defects in this session lived in entry-point
+    bodies that no test exercised - a missing import, a version skew, and a statement
+    ordered before the value it depended on - because `main()` built its own Config and
+    could only be run for real. Taking the config as an argument makes the whole path
+    reachable from a test with a model small enough to construct.
+    """
     from training.architecture.transformer.tromr_arch import TrOMR
     from training.transformer.train_structured_heads import load_pinned
-
-    config = Config()
-    config.enable_structured_heads = True
 
     # The manifest is read first: it decides which heads are scored, and therefore which
     # may legitimately be missing from an older set of weights.
@@ -247,6 +235,7 @@ def main() -> None:
     heads = torch.load(args.weights, map_location="cpu", weights_only=True)
     load_head_weights(model.decoder.structured_heads, heads, names)
     model.to(args.device)
+
     # Unshuffled so the prediction dump can name examples by counting along the index,
     # and in validation mode so the images are not distorted before being scored.
     batches, examples = build_batches(
@@ -278,6 +267,31 @@ def main() -> None:
     if args.out:
         args.out.write_text(json.dumps(evaluation.to_dict(), indent=2), encoding="utf-8")
         print(f"report: {args.out}")
+    return evaluation
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument("--index", type=Path, required=True, help="Dataset index.txt.")
+    parser.add_argument("--checkpoint", type=Path, required=True, help="Pinned core .pth.")
+    parser.add_argument("--weights", type=Path, required=True, help="Trained head weights.")
+    parser.add_argument("--manifest", type=Path, help="Capability manifest from the run.")
+    parser.add_argument("--out", type=Path, help="Write the report as JSON.")
+    parser.add_argument(
+        "--predictions",
+        type=Path,
+        help="Write per-staff beam vectors as JSONL, for rule_vs_head.py to join.",
+    )
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    args = parser.parse_args()
+
+    from homr.transformer.configs import Config
+
+    config = Config()
+    config.enable_structured_heads = True
+    run_evaluation(args, config)
 
 
 if __name__ == "__main__":
