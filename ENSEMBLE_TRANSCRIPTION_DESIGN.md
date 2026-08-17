@@ -2300,11 +2300,32 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
-### 27.58 phase10: both gates re-run on the three-corpus model (synthetic arm)
+### 27.58 phase10: both gates re-run, and a crosstab of zeros that looked like a result
 
 24.2 item 17 recorded that phase9 scores without `--predictions`, so neither Gate C's
 crosstab nor the stem arbiter could read it. `phase10.sh` re-scores each domain with
-predictions and then runs both. The synthetic arm:
+predictions and then runs both.
+
+**The first run produced a crosstab of zeros for two of three domains and reported them as
+though they were findings** - `exceptions the head recovers: 0.0%`, `head used on 0.0% of
+notes`, four zeros in a 2x2 table. Two separate faults, and the more useful one is mine:
+
+  * *The scanned arm had the wrong root.* `rule_vs_head.segment_for` globs
+    `dataset_root/scores/*/*/musicxml/unaligned/{name}`, and the arm was pointed at
+    `/workspace/b0/phase7`, which holds the index but not the scores. The scanned track
+    re-photographs the same OSSQ scores - its token files carry identical names,
+    `sq8907120_0001_0001_1.txt` - so the correct root was OSSQ's all along.
+  * *PDMX can never work.* Both tools decompose `convert_ossq`'s filenames and expect its
+    directory layout; they are OSSQ-shaped by construction. PDMX now gets scored without
+    them rather than reported as zeros.
+
+**The tools were not at fault and said so plainly**: `0 staves joined, 0 beamable notes,
+3,549 skipped`. The reporting script's `grep` kept the summary lines and dropped that one, so
+a loud diagnostic was filtered into silence by the thing meant to summarise it. The grep now
+keeps it, with a comment saying why. It is a smaller cousin of 27.53 - a number that looked
+like a measurement and was an artefact of how it was collected.
+
+The synthetic arm, which was correct throughout:
 
 **Gate C, judged by the crosstab rather than the totals** - 27.16's rule, because two equal
 totals can hide an oracle far above either:
