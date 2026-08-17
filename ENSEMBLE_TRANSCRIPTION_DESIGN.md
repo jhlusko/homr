@@ -2300,6 +2300,80 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.42 The lyric stage is OCR plus a resolve, and the numbers say why
+
+The first framing here was "a seventh channel or another head". That was loose and it was
+challenged. Measuring the corpus settles it against the head, and not for the reason first
+given.
+
+**What rules out a head is melismas, not vocabulary.** Across all 200 scores, 34,657 lyric
+occurrences:
+
+```
+syllables spanning more than one note   7,001 of 21,287   32.9%   spans up to 8 notes
+notes carrying more than one verse      3,797 of 30,038   12.6%   up to 4 verses
+lyric-bearing notes                    30,038 of 35,172   85.4%   of notes in vocal parts
+```
+
+The decoder emits one token per note and every field on it is a per-token closed class. One
+syllable across eight notes has nowhere to live in that; nor do four verses on one note. The
+structure is dense but it is emphatically not 1:1.
+
+**A claim made in the first framing was wrong.** It asserted a long open tail no closed
+vocabulary could hold. Within these 200 scores, 7,112 syllables account for *every*
+occurrence - not a long tail. Coverage measured inside one corpus is circular and can only
+ever reach 100%; the honest measure is a holdout:
+
+```
+vocabulary from 80% of the scores   6,234 syllables
+fails on the remaining 20%          20.3% of occurrences, 39.3% of types
+```
+
+Still fatal for a closed set - one syllable in five unreadable means most lines of text
+contain a hole - but that is the argument, and the coverage curve was not.
+
+**What the OCR pass faces is small.** Alphabet 104 characters, 2.31% of characters non-ascii
+(French and German diacritics, curly quotes, dashes). Syllable length median 3, mean 3.3,
+99th percentile 7, max 46.
+
+**Model choice: CRNN + CTC.** Three reasons, each from the numbers above rather than from
+taste:
+
+| Reason | Consequence |
+|---|---|
+| Targets are fragments - `ter`, `nel`, `Ê`, `va` | Any LM prior (TrOCR, PARSeq, ABINet) corrects fragments into words. The strongest general recognizers are the wrong ones here. |
+| CTC alignment gives an x-position per character | The OCR pass and the positional estimate become one model, which is exactly what the resolve stage needs. |
+| 104 symbols, median 3 characters | A modest CRNN suffices; a large pretrained model buys little and brings the LM problem. |
+
+Kraken or Calamari as the off-the-shelf baseline to beat - both built for historical printed
+documents, which IMSLP scans are, both CTC. TrOCR-printed worth one measurement to know the
+ceiling. Donut and Pix2Struct are far too much machinery, and homr's own encoder has
+music-tuned features and the wrong receptive field for a band of text.
+
+The OCR should emit **hyphens and extender lines as tokens** rather than stripping them.
+They encode syllabic position - begin, middle, end - which is the melismatic structure the
+resolve stage otherwise has to recover from geometry a second time.
+
+**The resolve stage is the risky component.** Attaching syllables to notes is the same
+correspondence problem that has produced three bugs in this work: crop-to-part indexing
+(27.11), the sidecar image substitution, the slur placement transfer. Two sequences paired by
+position, neither malformed alone. It wants a verifiable join with a refusal path.
+
+**Positional supervision, and the renderer constraint.** The published scores carry no
+`default-x` on notes or lyrics, so scans give ordinal supervision only - within a vocal part
+the k-th syllable belongs to the k-th lyric-bearing note, with melismas and verses making
+"k-th" non-trivial. Exact boxes have to come from a renderer, and 27.25 constrains which:
+**the image and the boxes must come from the same engraving.** Verovio does tag every
+syllable (`class="syl"` with a `<rect>`), but OLiMPiC's synthetic images are MuseScore's
+engraving, and Verovio boxes over MuseScore images would be that mismatch exactly. Whichever
+renderer draws the synthetic image must also emit the boxes.
+
+**Curriculum:** synthetic with exact boxes, both recognition and alignment supervised, then
+scanned with ordinal supervision only. 27.38 is the warning attached to it - notation heads
+lost 25 points crossing synthetic to scanned against 1.28x for homr's existing channels, and
+the alignment component is the part most likely to have learned clean-engraving geometry
+that does not survive. That transfer deserves its own crosstab, not a single number.
+
 ### 27.41 The voice comes back by arithmetic, and MuseScore is not needed
 
 27.40 fixed OLiMPiC's images. The labels stayed a piano reduction: `get_piano_part()` is
