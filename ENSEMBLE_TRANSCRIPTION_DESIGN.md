@@ -2300,6 +2300,67 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.40 OLiMPiC's lyrics are recoverable, and it took looking to know it
+
+27.39 ended with a prediction: the boxes bound the piano, so extending them upward should
+bring back the voice staff and its lyrics. `training/omr_datasets/olimpic_repair.py` does
+that. Each box grows up towards the previous system's lower edge; the first on a page uses
+the page's own typical gap, having no predecessor to measure against.
+
+Run over all 122 annotated documents, 788 pages:
+
+```
+coverage before   40%
+coverage after    98%
+```
+
+**That second number is worthless and it is worth saying why.** Once each box reaches to
+just below the one above, coverage reads near 100% whether or not the voice staff is inside
+it. The measure that diagnosed the problem cannot verify the fix, because the fix changes
+the thing it measures by construction. It confirms the boxes grew, which was never in
+doubt.
+
+So the check had to be about content. The first attempt counted staves - a Lieder crop
+should hold two before and three after - which meant writing a staff detector. Three
+attempts:
+
+| Attempt | Result on crops known to hold exactly 2 staves |
+|---|---|
+| Rows that are >50% ink | 36% read as 2; a third read as 0 |
+| Plus deskew over ±2° | no better; IMSLP scans tilt, but that was not the whole problem |
+| Plus staff space read off the image | 37% read as 2, and 70 of 200 read as 0 |
+
+Each round was calibrated against OLiMPiC's own shipped crops, which are known to be one
+grand staff each, and each round failed that calibration. **The detector was never good
+enough to conclude anything from, and its numbers looked plausible throughout** - the
+first run reported "55% of crops gained at least one staff", which reads like a finding.
+It was noise from a detector that could not count to two.
+
+The verification that worked was rendering three before/after pairs and looking at them.
+All three gained the voice staff; two of them carry legible lyrics under it - *"wir kennen
+der das..."*, *"in dem Wald ein Haus"*. That is the whole claim of 27.39 confirmed, at a
+fraction of the cost of the detector work, and homr already has a real staff detector had
+one actually been needed.
+
+**A sliver of the system above survived into some crops**, visible at the top edge of two of
+the three. The fixed margin guesses how far stems and slurs overhang their own box, and it
+guessed low - the same class of error as 27.11, one system's ink in another's image. The
+page itself knows where the overhang ends, so `trim_to_gutter` scans down from the ceiling
+for the first clear band and cuts there. On the sampled systems it moved the top down 34,
+82 and 87 pixels. It also drops directions printed above the voice staff (*"sempre
+legato"*), which homr's vocabulary does not encode; lyrics sit below the voice staff and
+are never at risk.
+
+The geometric path is kept for when no page image is available: it still recovers the voice
+staff, it just leaves the sliver.
+
+**What this does not do.** The images are now right and the labels are still wrong -
+OLiMPiC's per-sample MusicXML remains the pianoform reduction, with no voice part and no
+lyrics in it. 27.39's "remaining work is symbolic" is untouched by this. What has changed
+is that it is now worth doing: before this, re-slicing the full Lieder score would have
+produced lyric labels for images with no lyrics in them, which 27.25's eligibility test
+rejects outright.
+
 ### 27.39 A lyric track, and what OLiMPiC would have to be repaired to
 
 18.2 designs the lyric stage; this is about where its supervision could come from. The
