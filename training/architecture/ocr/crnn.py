@@ -20,11 +20,17 @@ language prior this design is avoiding.
 import torch
 import torch.nn as nn
 
-#: Every crop is scaled to this height, keeping its aspect ratio. 27.47 sampled the render
-#: resolution across the range the scans span, so crops arrive between 28 and 78 pixels
-#: tall; the model sees one height and the variation survives as the blur and stroke weight
-#: that rescaling leaves behind, which is the part worth learning from.
-IMAGE_HEIGHT = 32
+#: Every crop is scaled to this height, keeping its aspect ratio.
+#:
+#: 32 was the first value, taken from scene-text convention without measuring - one section
+#: after 27.47 established that assuming a resolution was how the render went wrong. Crops
+#: are 28 to 78 pixels tall with a median of 46, so **32 downscales 93% of them**, discarding
+#: exactly the detail the sampled render resolution was chosen to provide. 48 downscales 43%
+#: and 64 downscales 5%.
+#:
+#: The height must be a multiple of 16: the convolutional stack halves it four times, and
+#: the recurrent layer's input width is that result times the channel count.
+IMAGE_HEIGHT = 64
 
 #: CTC's blank. Index 0 by convention, so a character's own index is never 0 and an
 #: all-blank decode is unambiguous.
@@ -68,8 +74,17 @@ class Alphabet:
 
 
 class CRNN(nn.Module):
-    def __init__(self, alphabet_size: int, channels: int = 1, hidden: int = 192) -> None:
+    def __init__(
+        self,
+        alphabet_size: int,
+        channels: int = 1,
+        hidden: int = 192,
+        image_height: int = IMAGE_HEIGHT,
+    ) -> None:
         super().__init__()
+        if image_height % 16:
+            raise ValueError(f"image height must be a multiple of 16, got {image_height}")
+        self.image_height = image_height
         # Height is halved four times, 32 -> 2, then a final 2-high kernel flattens it.
         # Width is halved only twice, so a 3-character syllable still gets several frames
         # per character and CTC has room to place them.
@@ -83,8 +98,11 @@ class CRNN(nn.Module):
             nn.Conv2d(128, 128, 3, padding=1), nn.BatchNorm2d(128), nn.ReLU(),
             nn.MaxPool2d((2, 1), (2, 1)),
         )
+        # Four height-halving pools, so each frame is the surviving rows times the
+        # channels. Hardcoding this to the 32px case is what made the height unswappable.
         self.recurrent = nn.GRU(
-            128 * 2, hidden, num_layers=2, bidirectional=True, batch_first=True
+            128 * (image_height // 16), hidden, num_layers=2, bidirectional=True,
+            batch_first=True,
         )
         self.classify = nn.Linear(hidden * 2, alphabet_size)
 

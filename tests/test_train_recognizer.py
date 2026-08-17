@@ -91,6 +91,24 @@ class TestSeenUnseenSplit(unittest.TestCase):
         self.assertIn("nothing", novel.describe("unseen"))
 
 
+class TestCropHeight(unittest.TestCase):
+    """32 was taken from scene-text convention without measuring, and downscales 93% of
+    crops - discarding the detail 27.47's sampled render resolution exists to provide."""
+
+    def test_the_recurrent_layer_follows_the_height(self) -> None:
+        import torch
+
+        for height in (32, 48, 64):
+            with self.subTest(height=height):
+                model = CRNN(8, image_height=height)
+                output = model(torch.rand(1, 1, height, 64))
+                self.assertEqual(output.shape[2], 8)
+
+    def test_a_height_the_stack_cannot_halve_is_refused(self) -> None:
+        with self.assertRaises(ValueError):
+            CRNN(8, image_height=40)
+
+
 class TestTrainEntryPoint(unittest.TestCase):
     """The three defects of this project that reached production all lived in entry points
     no test executed."""
@@ -101,6 +119,7 @@ class TestTrainEntryPoint(unittest.TestCase):
             "valid": _corpus(directory, "valid", ["va", "novel"]),
             "weights": directory / "w.pth",
             "out": directory / "history.json",
+            "height": 32,
             "epochs": 1,
             "lr": 3e-4,
             "batch_size": 2,

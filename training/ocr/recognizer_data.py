@@ -57,14 +57,17 @@ def alphabet_of(samples: list[Sample]) -> Alphabet:
     return Alphabet("".join(sample.text for sample in samples))
 
 
-def scaled_width(width: int, height: int) -> int:
-    """Width after scaling to IMAGE_HEIGHT, keeping the aspect ratio."""
-    return max(8, int(round(width * IMAGE_HEIGHT / max(1, height))))
+def scaled_width(width: int, height: int, target: int = IMAGE_HEIGHT) -> int:
+    """Width after scaling to `target` height, keeping the aspect ratio."""
+    return max(8, int(round(width * target / max(1, height))))
 
 
 class SyllableCrops(Dataset):
-    def __init__(self, samples: list[Sample], alphabet: Alphabet, frames_for) -> None:
+    def __init__(
+        self, samples: list[Sample], alphabet: Alphabet, frames_for, height: int = IMAGE_HEIGHT
+    ) -> None:
         self.alphabet = alphabet
+        self.height = height
         self.samples: list[Sample] = []
         self.too_long = 0
         self.unreadable = 0
@@ -74,7 +77,7 @@ class SyllableCrops(Dataset):
             if image is None:
                 self.unreadable += 1
                 continue
-            width = scaled_width(image.shape[1], image.shape[0])
+            width = scaled_width(image.shape[1], image.shape[0], height)
             if frames_for(width) < len(sample.text):
                 # CTC has nowhere to put the characters, so the loss would be infinite.
                 self.too_long += 1
@@ -88,7 +91,7 @@ class SyllableCrops(Dataset):
         sample = self.samples[index]
         image = cv2.imread(str(sample.image), cv2.IMREAD_GRAYSCALE)
         image = cv2.resize(
-            image, (scaled_width(image.shape[1], image.shape[0]), IMAGE_HEIGHT),
+            image, (scaled_width(image.shape[1], image.shape[0], self.height), self.height),
             interpolation=cv2.INTER_AREA,
         )
         tensor = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
@@ -98,7 +101,8 @@ class SyllableCrops(Dataset):
 def collate(batch: list[tuple[torch.Tensor, torch.Tensor, str]]) -> dict:
     """Pad to the widest crop, on the right, with paper rather than ink."""
     widest = max(item[0].shape[2] for item in batch)
-    images = torch.full((len(batch), 1, IMAGE_HEIGHT, widest), PAD_VALUE / 255.0)
+    height = batch[0][0].shape[1]
+    images = torch.full((len(batch), 1, height, widest), PAD_VALUE / 255.0)
     widths = []
     for index, (image, _, _) in enumerate(batch):
         images[index, :, :, : image.shape[2]] = image

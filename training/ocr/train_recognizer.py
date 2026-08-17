@@ -32,7 +32,7 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from torch.utils.data import DataLoader
 
-from training.architecture.ocr.crnn import BLANK, CRNN, Alphabet
+from training.architecture.ocr.crnn import BLANK, IMAGE_HEIGHT, CRNN, Alphabet
 from training.ocr.recognizer_data import (
     SyllableCrops,
     alphabet_of,
@@ -111,10 +111,11 @@ def train(args: argparse.Namespace) -> dict:
         sample.text for sample in valid_samples if set(sample.text) - set(alphabet.characters)
     }
 
-    model = CRNN(len(alphabet)).to(args.device)
-    train_set = SyllableCrops(train_samples, alphabet, model.frame_count)
+    model = CRNN(len(alphabet), image_height=args.height).to(args.device)
+    train_set = SyllableCrops(train_samples, alphabet, model.frame_count, height=args.height)
     valid_set = SyllableCrops(
-        [s for s in valid_samples if s.text not in unrepresentable], alphabet, model.frame_count
+        [s for s in valid_samples if s.text not in unrepresentable],
+        alphabet, model.frame_count, height=args.height,
     )
 
     print(f"train {len(train_set):,} crops, valid {len(valid_set):,}")
@@ -188,6 +189,13 @@ def main() -> None:
     parser.add_argument("--valid", type=Path, required=True)
     parser.add_argument("--weights", type=Path)
     parser.add_argument("--out", type=Path, help="Where to write the history as json.")
+    parser.add_argument(
+        "--height",
+        type=int,
+        default=IMAGE_HEIGHT,
+        help="Crops are normalised to this height. Must be a multiple of 16. 32 downscales "
+        "93%% of crops, 48 downscales 43%%, 64 downscales 5%%.",
+    )
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--batch-size", type=int, default=64)
