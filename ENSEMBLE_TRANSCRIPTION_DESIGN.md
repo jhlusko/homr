@@ -2300,6 +2300,52 @@ predate tie extraction, and decoding them as "no tie" is correct rather than los
 field was absent from the writer, not from the file. An unrecognised schema is still
 refused.
 
+### 27.50 The class-imbalance instruments, and a sweep to choose between them
+
+27.49 established the problem and its precedent. `structured_losses.py` had already written
+down the condition for acting: *"the design's instruction is to measure the unweighted
+baseline before reaching for class weighting or focal loss, so this computes plain
+cross-entropy and reports what would justify the alternative."* The baseline is measured, so
+this builds the alternative.
+
+**Both instruments, not one.** Upstream converged on focal loss - as oemer's UNet uses - or
+class weights at 50x, without settling which, so `focal_cross_entropy` takes a focal
+exponent and a per-class weight vector and either can be zero. At `gamma=0, alpha=None` it
+*is* `cross_entropy`, pinned by a test, so every earlier result stays comparable and a sweep
+moves one thing at a time.
+
+Measured spreads, from one pass over the training data:
+
+```
+tie.state          47.1x      slur.slot.1.event  37.4x     beam.level.1  19.7x
+slur.slot.2.event  49.8x      stem.direction     25.9x     slur.slot.2.side  2.0x
+```
+
+The imbalance is not a tie-head peculiarity - six of eight heads sit above 19x, and
+`slur.slot.2.event` is pinned at the cap. Only `slur.slot.2.side` is genuinely balanced.
+
+**Three decisions worth stating, because each could have been hidden:**
+
+  * *The 50x cap flattens the rarest classes together.* `start` at 0.109% and
+    `start_and_stop` at 0.014% come out equal despite one being eight times rarer. Past the
+    cap every class is simply as boosted as this scheme goes; if that ordering turns out to
+    matter the answer is a gentler curve, not a higher cap, which is the mirror-image
+    collapse the cap exists to prevent.
+  * *Alpha normalises by the applied weight, not the count.* Otherwise raising a rare
+    class's weight would also raise that head's share of the summed multi-head loss, and the
+    two knobs would silently interact.
+  * *Weights are measured in a separate pass, not per batch.* A batch holding no `start`
+    tie would weight that class from a sample of zero, and the objective would wobble worst
+    on exactly the classes least able to learn.
+
+`phase11.sh` runs the sweep: baseline, focal alone, weights alone, both - same data, same
+epochs, only the loss differing. It greps macro figures and never micro, because 27.49's
+tie micro F1 of 0.997 is almost entirely `none`.
+
+**Found by running it, not by the tests:** the weight-measuring pass fed CPU tensors to a
+CUDA model. No unit test would catch it - they all run on cpu - and it is the fourth defect
+in this stretch that only appeared under a real execution.
+
 ### 27.49 Why dynamics are commented out - and the same failure is in our tie head
 
 27.45 claimed dynamics "belong in homr's symbol vocabulary, which is already written and
