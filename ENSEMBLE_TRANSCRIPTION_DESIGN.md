@@ -2364,8 +2364,21 @@ slur spans. 27.38 measured the untrained gap at 25 points on beams; it is now 20
 the worst channel by a wide margin** - 37.5 points - and that is where the next effort on
 this track belongs.
 
-**The tie head got worse with more data, which 27.49 predicted.** 0.560 to 0.545 macro F1 on
-scans, while every other channel improved. The prediction there was explicit: *more data at
+**PDMX, the third domain, makes the mechanism visible.** The same head, same weights, scores
+tie macro F1 **0.805** there against **0.545** on scans - `start` 0.724 against 0.248. The
+difference is not the domain's difficulty but its class ratio: PDMX carries 5,533 `start`
+ties in 1,942,885 tokens, 0.28%, against the scanned set's 2,342 in 2,149,263, 0.109%. **Two
+and a half times the frequency, three times the F1.** That is the imbalance hypothesis of
+27.49 tested across domains rather than argued, and it holds.
+
+```
+domain      start ties   share of tokens   tie macro F1
+PDMX             5,533            0.285%          0.805
+scanned          2,342            0.109%          0.545
+```
+
+**The tie head also got worse with more data, which 27.49 predicted.** 0.560 to 0.545 macro F1
+on scans, while every other channel improved. The prediction there was explicit: *more data at
 the same class ratio does not fix a ratio problem*, because the ratio is what starves the
 class. Three corpora instead of two gave the tie classes three times as many examples and
 three times as many `none`s, and the head moved backwards. This is the confirmation that
