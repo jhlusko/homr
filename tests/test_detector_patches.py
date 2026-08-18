@@ -11,7 +11,7 @@ from training.ocr.detector_patches import (
     PATCH_SIZE,
     DetectorPatches,
     Sample,
-    box_centres,
+    box_centres_by_class,
     extract_patch,
     patch_origin,
     read_index,
@@ -43,11 +43,15 @@ class TestReadIndex(unittest.TestCase):
             self.assertEqual(len(read_index(path)), 1)
 
 
-class TestBoxCentres(unittest.TestCase):
+class TestBoxCentresByClass(unittest.TestCase):
+    """`_mask_with_boxes` writes class value 1, which `CLASS_INDEX` assigns to
+    "SystemText" (the first entry in `CLASS_ORDER`) - these boxes land there.
+    """
+
     def test_one_box_gives_one_centre(self) -> None:
         mask = _mask_with_boxes((100, 100), [(10, 10, 30, 50)])
 
-        centres = box_centres(mask)
+        centres = box_centres_by_class(mask)["SystemText"]
 
         self.assertEqual(len(centres), 1)
         y, x = centres[0]
@@ -56,10 +60,21 @@ class TestBoxCentres(unittest.TestCase):
     def test_two_separate_boxes_give_two_centres(self) -> None:
         mask = _mask_with_boxes((100, 100), [(0, 0, 10, 10), (80, 80, 90, 90)])
 
-        self.assertEqual(len(box_centres(mask)), 2)
+        self.assertEqual(len(box_centres_by_class(mask)["SystemText"]), 2)
 
-    def test_an_empty_mask_has_no_centres(self) -> None:
-        self.assertEqual(box_centres(np.zeros((50, 50), dtype=np.uint8)), [])
+    def test_an_empty_mask_has_no_classes(self) -> None:
+        self.assertEqual(box_centres_by_class(np.zeros((50, 50), dtype=np.uint8)), {})
+
+    def test_different_classes_are_kept_separate(self) -> None:
+        mask = np.zeros((100, 100), dtype=np.uint8)
+        mask[10:30, 10:30] = 1  # SystemText
+        mask[60:80, 60:80] = 2  # Fingering
+
+        by_class = box_centres_by_class(mask)
+
+        self.assertEqual(set(by_class), {"SystemText", "Fingering"})
+        self.assertEqual(len(by_class["SystemText"]), 1)
+        self.assertEqual(len(by_class["Fingering"]), 1)
 
 
 class TestPatchOrigin(unittest.TestCase):

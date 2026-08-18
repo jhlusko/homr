@@ -32,6 +32,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, Sampler
 
+from training.ocr.detector_masks import CLASS_INDEX, CLASS_ORDER
+
 #: Matches homr's own segmentation patch size (training/segmentation/train.py), so a
 #: detector trained on this data could share inference-time tiling logic with the existing
 #: segmentation model if that turns out to be worth doing later.
@@ -65,12 +67,25 @@ def read_index(path: Path) -> list[Sample]:
     return samples
 
 
-def box_centres(mask: np.ndarray) -> list[tuple[int, int]]:
-    """Centre of every connected foreground region in a class mask, in (y, x)."""
-    binary = (mask != PAD_MASK_VALUE).astype(np.uint8)
-    count, _, stats, centroids = cv2.connectedComponentsWithStats(binary, connectivity=8)
-    # Label 0 is always the background component; connectedComponentsWithStats guarantees it.
-    return [(int(round(cy)), int(round(cx))) for cx, cy in centroids[1:count]]
+def box_centres_by_class(mask: np.ndarray) -> dict[str, list[tuple[int, int]]]:
+    """Centres grouped by class, not pooled - 27.87 found whole-page precision collapses
+    for every class except Lyrics and MeasureNumber, and the leading suspect is this
+    sampler: a page's positive centre used to be drawn uniformly from *all* connected
+    foreground regions regardless of class, so a page with dozens of Lyrics boxes and one
+    Tempo mark almost never centred a patch on the Tempo mark - the model saw far fewer
+    positive examples of rare classes than their corpus-wide box count suggests. Grouping
+    by class lets the caller weight classes evenly instead of by how much of the page they
+    cover.
+    """
+    found: dict[str, list[tuple[int, int]]] = {}
+    for label in CLASS_ORDER:
+        class_index = CLASS_INDEX[label]
+        binary = (mask == class_index).astype(np.uint8)
+        if not binary.any():
+            continue
+        count, _, _, centroids = cv2.connectedComponentsWithStats(binary, connectivity=8)
+        found[label] = [(int(round(cy)), int(round(cx))) for cx, cy in centroids[1:count]]
+    return found
 
 
 def patch_origin(
@@ -140,10 +155,15 @@ class DetectorPatches(Dataset):
                 raise FileNotFoundError(f"cannot read {sample.image} or {sample.mask}")
             self._cache_index, self._cache_image, self._cache_mask = image_index, image, mask
 
-        centres = box_centres(mask)
-        positive = centres and self.rng.random() < self.positive_ratio
+        centres_by_class = box_centres_by_class(mask)
+        positive = centres_by_class and self.rng.random() < self.positive_ratio
         if positive:
-            center = self.rng.choice(centres)
+            # Pick a class uniformly among those present on this page, then a centre of
+            # that class - not a centre uniformly among all boxes, which would draw a
+            # class in proportion to how much of the page it covers rather than giving
+            # every class an equal share of positive training examples.
+            label = self.rng.choice(sorted(centres_by_class))
+            center = self.rng.choice(centres_by_class[label])
         else:
             center = (
                 self.rng.randint(0, mask.shape[0] - 1), self.rng.randint(0, mask.shape[1] - 1)

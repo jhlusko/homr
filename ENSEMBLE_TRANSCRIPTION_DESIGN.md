@@ -2660,6 +2660,51 @@ syllables sit close enough together that box precision genuinely blurs which syl
 which; the full run's aggregate numbers are not dominated by this and it is recorded as a
 known edge case (tightly-kerned hyphenated syllables) rather than a bug.
 
+**27.89 class-balanced positive sampling: real improvement, two classes still at zero.**
+27.87's leading suspect for the whole-page precision collapse was `DetectorPatches`'
+positive-centre selection: `box_centres` pooled every connected foreground region
+regardless of class, so a page's positive training centre was drawn in proportion to how
+much of the page a class covered, not evenly across classes - a page with dozens of Lyrics
+boxes and one Tempo mark almost never centred a patch on the Tempo mark. Replaced with
+`box_centres_by_class` (separate connected components per class) plus a two-step draw in
+`DetectorPatches.__getitem__` - pick a class uniformly among those present on the page,
+then a centre of that class - so every class present gets an equal share of positive
+training examples regardless of corpus-wide frequency. 4 new/updated tests
+(`TestBoxCentresByClass`), the old pooled `box_centres` removed (unused once its only
+caller changed shape).
+
+Retrained from scratch (same 20 epochs, same train/valid split) and re-ran
+`detector_box_eval.py` on the identical 305 held-out pages:
+
+```
+class            v1 F1    v2 F1     v1 precision   v2 precision
+Expression        9.5%    13.3%          5.0%           7.3%
+Fingering         0.0%     0.0%          0.0%           0.0%
+Lyrics            80.1%   83.8%         68.6%          74.5%
+MeasureNumber     81.3%   95.7%         68.4%          91.8%
+StaffText         16.4%   15.0%          9.3%           8.3%
+SystemText         0.0%     0.0%          0.0%           0.0%
+Tempo               3.7%    18.4%          1.9%          10.5%
+overall            58.6%   70.5%         42.4%          56.2%
+```
+
+A real, broad improvement - overall F1 58.6%→70.5%, Tempo's precision roughly quintupled,
+MeasureNumber and Lyrics (already the two working classes) both improved further as a
+side effect of less contention for positive-sampling attention. But Fingering and
+SystemText - the two rarest classes in 27.68's own count (12 and 3 ground-truth boxes in
+this entire 305-page validation split) - stayed at exactly 0% precision and recall,
+unmoved by the fix. The diagnosis this narrows to: within-page class balance was a real
+and fixable problem, but it cannot manufacture positive examples on pages that never
+contain the class at all, which is the corpus-level shape of Fingering/SystemText's
+rarity, not a page-level sampling one. The next lever, not yet tried, is corpus-level image
+reweighting - oversampling the (few) images that do contain a rare class, on top of the
+within-page fix already made - or accepting that two classes this rare may need a
+different strategy (e.g. a dedicated few-shot pass, or simply not detecting them
+automatically) rather than more of this detector's own training data.
+
+Lyrics' improvement (80.1%→83.8% F1) also revises 27.88's end-to-end number upward as a
+side effect, though that pipeline has not been re-run against these new weights yet.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
