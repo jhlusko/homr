@@ -2064,6 +2064,43 @@ correct is real, not assumed. Run against the real mask corpus, 2,847 images: 36
 sampled patches contained text, 72.8% against a 70% target ratio - matching design on the
 data it will actually train on, not only on synthetic test fixtures.
 
+### 27.75 The detector training script - a missing dependency, and a repeated smoke-test mistake
+
+27.68/27.69/27.74 built the detector's data, masks and patch sampler. `train_detector.py`
+closes the loop: `CamVidModel` (`training/architecture/segmentation/model.py`) - homr's own
+U-Net over a resnet18 encoder, already used for staff and notehead segmentation - reused as
+a plain `nn.Module` rather than reinvented, driven by a plain training loop consistent with
+`train_structured_heads.py` and `train_recognizer.py` rather than through PyTorch Lightning's
+`Trainer`, which `training/segmentation/train.py` uses and nothing else in this project does.
+
+**No focal loss, and that absence is a decision, not an oversight.** 27.68 measured the
+detector's class imbalance at up to 1,716x - three orders of magnitude past the tie head's -
+which invites reapplying 27.62's fix on the strength of that number alone. 27.72 is the
+reason this does not: a correction validated for one head, applied without checking whether
+another needed it, cost every head that did not. `CamVidModel`'s loss is multiclass Dice,
+computed from per-class overlap rather than per-token cross-entropy, and whether that
+already tolerates this imbalance or collapses the same way ties did is unmeasured - so
+`per_class_iou` reports every class's IoU every epoch, absent classes marked absent rather
+than zero, so a starved class and an unlucky batch cannot be confused. The baseline gets
+measured before anything is added to fix it, the same order `structured_losses.py` asked
+for the first time this project reached for a class correction.
+
+**A declared dependency was missing from the environment.** `import segmentation_models_pytorch`
+failed outright - `pyproject.toml` lists it and `pytorch-lightning` as main dependencies, but
+the instance's venv had never needed them until this track reached for `CamVidModel`.
+Installed with `uv pip install --python .venv/bin/python`, since the venv has no `pip`
+binary of its own; verified phase13's training process was undisturbed by the install before
+and after.
+
+**A smoke test aimed at the full corpus, the same mistake made once before with the OCR
+sweep.** The first run pointed `--index` at all 2,847 images on CPU and did not return
+inside a generous timeout - not a bug, a resnet18 U-Net's forward and backward pass on CPU
+over the full patch set is genuinely slow, confirming training needs the GPU rather than
+indicating anything wrong. Restarted against a 10-image slice: 20 patches, one epoch, 34.5
+seconds wall clock. That is the smoke test this needed the first time.
+
+Ready for the next GPU slot behind phase13.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
@@ -5065,3 +5102,4 @@ gap.
   pages 3-58, matching that score's curated `3:58` range).
 - The non-regression tolerance for Gate D has not been declared. B0 variance is now
   measurable, which is the precondition §22 sets for declaring it.
+

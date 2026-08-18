@@ -1,0 +1,161 @@
+"""
+Train the text detector on the sampled patches - and measure per class before reaching for
+any correction.
+
+27.68 measured the detector's classes at up to 1,716x apart, more than three orders of
+magnitude worse than the tie head's imbalance. 27.72 is the reason this file does not treat
+that measurement as a decision by itself: a correction validated for one starved head,
+applied globally, cost every head that was not starved. `structured_losses.py` said it
+first - "measure the unweighted baseline before reaching for class weighting or focal loss"
+- and this is that principle applied a second time, to a different architecture, rather than
+carrying 27.62's fix over on the strength of a superficially similar imbalance number.
+
+**The model is homr's own** - `CamVidModel` from `training/architecture/segmentation/model.py`,
+a U-Net over a resnet18 encoder, already used for staff and notehead segmentation and reused
+here rather than reinvented, per 27.69's reasoning. Its loss is multiclass Dice, which is not
+cross-entropy: Dice is computed from per-class overlap (intersection over union-shaped), so a
+class that covers a tiny fraction of every image does not automatically vanish into a
+loss term dominated by background the way per-token cross-entropy does. Whether that is
+enough on its own, for imbalance this severe, is the thing this file measures rather than
+assumes - in either direction.
+
+**Training uses `CamVidModel` as a plain `nn.Module`, not through PyTorch Lightning.**
+`training/segmentation/train.py` drives it with `pl.Trainer.fit()`; every other training
+script in this project - `train_structured_heads.py`, `train_recognizer.py` - is a plain
+loop, and introducing Lightning for one corner of one track would be a second training
+idiom for no measured benefit. `CamVidModel` is a `LightningModule`, which is still an
+`nn.Module`; nothing about calling `.forward()` and `.parameters()` directly requires the
+part of it this file does not use.
+"""
+
+# flake8: noqa: T201
+
+import argparse
+import collections
+import json
+from pathlib import Path
+
+import numpy as np
+import segmentation_models_pytorch as smp
+import torch
+from torch.utils.data import DataLoader
+
+from training.architecture.segmentation.model import CamVidModel
+from training.ocr.detector_masks import CLASS_ORDER
+from training.ocr.detector_patches import DetectorPatches, read_index
+
+#: Background plus every detection class.
+NUM_CLASSES = len(CLASS_ORDER) + 1
+CLASS_NAMES = ("background", *CLASS_ORDER)
+
+
+def collate(batch: list[tuple[np.ndarray, np.ndarray]]) -> dict:
+    images = torch.stack(
+        [torch.from_numpy(image).permute(2, 0, 1).float() / 255.0 for image, _ in batch]
+    )
+    masks = torch.stack([torch.from_numpy(mask).long() for _, mask in batch])
+    return {"images": images, "masks": masks}
+
+
+def per_class_iou(
+    model: CamVidModel, logits: torch.Tensor, masks: torch.Tensor
+) -> dict[str, float]:
+    """IoU for every class the model has, whether or not it appeared in this batch."""
+    predicted = logits.softmax(dim=1).argmax(dim=1)
+    tp, fp, fn, _ = smp.metrics.get_stats(
+        predicted, masks, mode="multiclass", num_classes=NUM_CLASSES
+    )
+    iou = smp.metrics.iou_score(tp, fp, fn, torch.zeros_like(tp), reduction="none")
+    # iou_score returns one row per image in the batch; average over the batch, per class,
+    # and let 0/0 (a class absent from every image in this batch) read as "no data" rather
+    # than a false zero - a class truly starved and a class merely unlucky this batch look
+    # identical otherwise.
+    present = tp.sum(dim=0) + fn.sum(dim=0) > 0
+    mean_iou = iou.mean(dim=0)
+    return {
+        CLASS_NAMES[index]: float(mean_iou[index])
+        for index in range(NUM_CLASSES)
+        if present[index]
+    }
+
+
+def train(args: argparse.Namespace) -> dict:
+    samples = read_index(args.index)
+    dataset = DetectorPatches(samples, patches_per_image=args.patches_per_image, seed=args.seed)
+    loader = DataLoader(
+        dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers,
+        collate_fn=collate,
+    )
+
+    model = CamVidModel(
+        arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=NUM_CLASSES,
+        skip_weights_download=args.skip_pretrained,
+    ).to(args.device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+
+    print(f"{len(dataset):,} patches from {len(samples):,} images, {NUM_CLASSES} classes")
+
+    history = []
+    for epoch in range(1, args.epochs + 1):
+        model.train()
+        totals = collections.defaultdict(list)
+        running_loss = 0.0
+        batches = 0
+        for batch in loader:
+            images = batch["images"].to(args.device)
+            masks = batch["masks"].to(args.device)
+            logits = model(images)
+            loss = model.loss_fn(logits.contiguous(), masks)
+
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += float(loss.item())
+            batches += 1
+            with torch.no_grad():
+                for name, value in per_class_iou(model, logits.detach(), masks).items():
+                    totals[name].append(value)
+
+        per_class = {name: sum(values) / len(values) for name, values in totals.items()}
+        missing = [name for name in CLASS_NAMES if name not in per_class]
+        print(f"epoch {epoch}: loss {running_loss / max(1, batches):.4f}")
+        for name in CLASS_NAMES:
+            if name in per_class:
+                print(f"  {name:<14} IoU {per_class[name]:.3f}")
+        if missing:
+            print(f"  no data this epoch for: {', '.join(missing)}")
+        history.append({"epoch": epoch, "loss": running_loss / max(1, batches), **per_class})
+
+    if args.weights:
+        args.weights.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(model.state_dict(), args.weights)
+    return {"history": history, "classes": list(CLASS_NAMES)}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument("--index", type=Path, required=True, help="detector_masks index.txt")
+    parser.add_argument("--weights", type=Path)
+    parser.add_argument("--out", type=Path)
+    parser.add_argument("--patches-per-image", type=int, default=8)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--skip-pretrained", action="store_true",
+        help="Skip downloading imagenet encoder weights (offline runs, or tests).",
+    )
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    args = parser.parse_args()
+
+    report = train(args)
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(report, indent=1), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
