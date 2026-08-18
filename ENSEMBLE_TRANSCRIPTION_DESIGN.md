@@ -2101,6 +2101,47 @@ seconds wall clock. That is the smoke test this needed the first time.
 
 Ready for the next GPU slot behind phase13.
 
+### 27.76 U-Net was chosen for reuse, not for merit - an architecture search stays open
+
+27.75 picked `CamVidModel` substantially because homr already has it: shared training idiom,
+smaller footprint, one segmentation architecture in the project instead of two. Asked
+directly whether that was the right call rather than merely the convenient one, and the
+honest answer is that no comparison was run. U-Net is a 2015 architecture; nothing about
+its age disqualifies it for a small, dense, per-pixel localization task like this one, but
+nothing about its age recommends it either - reuse was the deciding factor, not measurement.
+
+**A large multimodal model was also considered and is not the right comparison.** The
+question that prompted this was whether a VLM (served through something like Ollama) should
+replace the detector, or even the whole detect-then-recognise pipeline. Three reasons this
+design already argues against it, not new ones invented for the question:
+
+  * **Language-prior contamination**, the same failure 27.51 built the recogniser against.
+    Targets are syllable fragments - `ter`, `nel`, `schaft!` - and a VLM's language prior is
+    stronger than a small CTC recogniser's, so it would "correct" fragments into words more
+    aggressively, not less.
+  * **Small-object localization**, the same failure 27.47 measured for whole-page
+    downsampling. A VLM's image encoder tokenizes into a coarse patch grid; a 34x16px
+    syllable (27.44) does not survive that any better than it survived a naively-resized
+    training crop.
+  * **Verifiable joins over free text.** This pipeline's discipline throughout - ordinal
+    pairing, count checks, refuse rather than guess (27.11, 27.41, 27.43, 27.57) - needs a
+    pixel coordinate and a class, not prose. A VLM's output is harder to build that
+    discipline around, not merely different in style.
+
+**What stays genuinely open is purpose-built detector architectures against each other** -
+U-Net-style dense segmentation against a proper object detector: YOLO-family single-shot
+detectors, DETR-style transformer detectors, or anchor-free detectors like FCOS or
+CenterNet. Each frames the problem differently (boxes directly vs. per-pixel class then
+connected components) and none has been measured against this corpus. The user was asked and
+is open to running that comparison.
+
+**When to run it, and what would decide it:** once `train_detector.py` produces a real
+baseline - per-class IoU from an actual training run rather than the untrained smoke test of
+27.75 - which is the same order this project has kept everywhere else: measure the reused,
+already-available architecture first, and let its shortfall (or lack of one) decide whether
+a search is worth the GPU hours. Comparing architectures before any of them have been run on
+this data would be arguing from priors the corpus itself can settle.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
