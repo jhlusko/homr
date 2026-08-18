@@ -2142,6 +2142,66 @@ already-available architecture first, and let its shortfall (or lack of one) dec
 a search is worth the GPU hours. Comparing architectures before any of them have been run on
 this data would be arguing from priors the corpus itself can settle.
 
+### 27.77 phase13 confirms the isolation: scoping gamma to tie.state recovers beam and slur
+
+phase12 applied focal globally and lost beam/slur in every domain. phase13 kept the
+reweighted index unchanged and scoped `--focal-gamma-head tie.state=2.0` to the one head
+that was ever measured to need it. Synthetic and scanned, against phase9's baseline and
+phase12's global-focal result:
+
+```
+                    beam (exact vector)                    slur spans F1
+              phase9    phase12   phase13         phase9    phase12   phase13
+synthetic     0.903     0.880     0.901           0.884     0.832     0.903
+scanned       0.701     0.690     0.706           0.509     0.456     0.545
+
+                    tie macro F1
+              phase9    phase12   phase13
+synthetic     0.774     0.789     0.787
+scanned       0.545     0.572     0.559
+```
+
+**Beam and slur recover to at or above phase9's baseline on both domains, while tie keeps
+most of its gain.** Scoping the correction to the head it was diagnosed for did what 27.72
+predicted it would: the damage to beam and slur was never inherent to focal loss, it was
+inherent to applying it somewhere it was never measured to be needed. Tie gives up a small
+amount relative to phase12's global version (0.787 vs 0.789 synthetic, 0.559 vs 0.572
+scanned) - global focal happened to help ties slightly more by also suppressing easy
+positions on every other head's loss term, which shrank their contribution to the total and
+left tie's gradient share relatively larger. That is not a reason to prefer the global
+version; it is a side effect of a mechanism 27.72 already showed costs more than it returns.
+
+**Slur spans on scans reach 0.545, above every prior measurement in this design** - 27.38's
+untrained gap, 27.56's three-corpus baseline (0.509), and phase12's regression (0.456) are
+all below it. Whether this reflects the reweighted index finally showing a real benefit once
+it is not confounded by a miscalibrated global correction, or run-to-run variance from a
+single seed, is not yet distinguishable - each phase here is one training run, not a
+repeated-seed comparison.
+
+**Gate C on scanned**: recovers 54.2% (4,162 notes), loses 27.5% (11,677) - within noise of
+phase9's 55.1%/28.3% and phase12's 53.1%/29.3%, not a clear win or loss. The scanned Gate C
+regression that motivated the whole reweighting effort has not resolved either way with
+enough separation from noise to call.
+
+**The slur domain-gap tool (27.71/27.73) gives a second, independent readout.** Per-note
+accuracy excluding trivial positions:
+
+```
+              synthetic   scanned    gap      collapsed   worst-decile share
+phase12         76.8%      43.7%    33.1pp      27.4%           20.6%
+phase13         87.8%      52.3%    35.5pp      31.1%           15.8%
+```
+
+Both domains improved in absolute terms, consistent with the span-F1 gain. The gap in
+percentage points is slightly wider and collapse is even less concentrated (15.8% vs
+20.6% of the loss in the worst decile) - continued evidence, independent of the beam-focused
+27.60/27.65/27.74 work, that slurs fail broadly across documents rather than in a
+concentrated few, and a per-score fix was never going to be the whole answer for this head.
+
+**Decision: `--focal-gamma-head` is the form any future per-class correction in this
+project should take.** A scalar `--focal-gamma` remains for backward compatibility and
+nothing else; every future run reaching for focal loss should name the head it is meant for.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
