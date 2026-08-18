@@ -2240,6 +2240,54 @@ that argues for more scanned data for the heads specifically. If the core degrad
 heads were never going to fix it alone, and the domain gap says as much about run 426's own
 training mix as about anything this design built afterward. Nothing here has checked which.
 
+### 27.79 The frozen core also degrades on scans - but far less than the structured heads, and on the same documents
+
+27.78 asked whether the scanned regression is specific to the structured heads or also
+present in run 426's own predictions. Measured with `base_domain_gap.py` against
+`validation/ossq.py`'s plain pipeline (zero structured heads, 211 pages paired):
+
+```
+overall NED       synthetic 7.5%    scanned 12.9%    median page increase  1.7pp
+rhythm NED        synthetic 5.4%    scanned  9.3%    median page increase  0.7pp
+
+worst degrading scores (overall NED):
+  sq10414906   +42.6%     sq8806881   +25.8%     sq8806134   +17.1%
+  sq8075304     +6.0%     sq12772795   +2.0%     sq7354505    +1.7%
+  sq8885571     +1.0%     sq10307350   -1.6%     sq8907120    -5.3%
+```
+
+**A found bug before trusting any of this**: the first run read the database's `ned` column
+as a percentage and divided by 100 again, producing a mean of 0.1% against printed log
+lines showing individual pages at 2-14%. The database stores the same 0-1 fraction the log
+formats for display; caught by checking the raw column values directly rather than trusting
+a suspiciously good number.
+
+**The answer is neither of 27.78's two clean alternatives.** The frozen core is not immune -
+overall NED nearly doubles on scans (7.5% to 12.9%) and rhythm NED does the same (5.4% to
+9.3%). But it is nowhere near as damaged as the structured heads: an NED increase from 5.4%
+to 9.3% is a small absolute degradation on an already-good baseline, where the beam head's
+accuracy fell from 90.3% to 70.1% - a 20-point collapse on a metric that was not
+edit-distance-forgiving to begin with. Different scales, but the qualitative gap in severity
+is not close.
+
+**And the degradation is concentrated on exactly the same documents 27.61 already diagnosed
+as faint.** `sq10414906`, `sq8806881` and `sq8806134` are the frozen core's three worst
+scores here, and they are also the beam head's three worst scores in 27.60 (collapse rates
+16.9%, 21.9%, 5.4% respectively - not identically ranked, but the same set). This is
+independent confirmation of 27.61's contrast finding from a measurement path that shares
+nothing with it - no structured head, no reweighted index, no focal loss, just the frozen
+decoder reading the same bad photographs.
+
+**What this settles, for the "is it worth it" question 27.58 raised:** these are bad scans,
+not an unfixable property of scanned sheet music in general - the frozen core, with its
+much richer original pretraining diet (lieder+grandstaff+primus+pdmx+musetrainer, 27.78),
+handles the same faint documents with only a mild NED increase. The structured heads,
+trained on a narrower and more recent slice of scanned data, are simply less robust to the
+same bad documents the core shrugs off more easily. That argues for more and more varied
+scanned training data for the heads specifically - closing the gap between their training
+diet and the core's - rather than for concluding the domain gap is inherent to real scans
+or that the heads are a lost cause on this input.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
