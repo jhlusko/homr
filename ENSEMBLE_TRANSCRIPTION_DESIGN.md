@@ -2837,6 +2837,52 @@ Added a `valid_index=None` default and a new test exercising the valid-loader pa
 this. All 44 tests across `test_detector_masks.py`, `test_detector_patches.py` and
 `test_train_detector.py` pass.
 
+**27.94 a strategy for dynamics, and why inline decoder tokens are ruled out.** Dynamic was
+excluded from the OCR detector by 27.45 on a correctness argument (MusicXML stores
+dynamics as element names, not strings - reading `f` the dynamic as `f` the letter would
+recognise the wrong thing correctly), not a scarcity one. Checked directly against the raw
+corpus: Dynamic is the *most common* non-Lyrics text class by a wide margin -
+`Dynamic 5,013, StaffText 1,262, MeasureNumber 806, Tempo 493, Expression 423` - so unlike
+Fingering/SystemText, adding it to the detector should not need 27.90's synthetic-data
+treatment at all.
+
+The remaining question is how a detected, classified dynamic gets attached to the score,
+and 27.49 already answered it - a fact this thread initially failed to connect before
+proposing inline decoder tokens as a live option. 27.49 found the "just uncomment
+`vocabulary.py`'s commented-out dynamics tokens" path was not merely untried: it was tried
+upstream (run 318, ~70 epochs) and it collapsed - SER jumped from a 26% baseline to 132%,
+dynamics were never predicted at all, because they are ~0.05% of tokens in the shared
+decoder vocabulary and the model learned to ignore them entirely to minimise loss. The
+maintainer's proposed remedies (focal loss, 50x class weighting, more data, a
+dynamics-enriched subset) were never tried. This rules out inline tokens as a first attempt
+- the failure mode is structural (competing against the entire shared vocabulary's softmax
+at a token frequency this low), not a training-recipe oversight fixable by being more
+careful the second time.
+
+**Decided: dynamics get a new structured-notation head, the same pattern as beam/stem/slur/
+tie**, not inline tokens. Reasons, weighed directly against the failed alternative:
+
+  - A head's own softmax is small (~12 dynamics classes plus "none"), not competing against
+    thousands of rhythm/pitch tokens for probability mass - this is exactly the shape of
+    difference that would have prevented run 318's collapse, not a hopeful guess that this
+    time is different.
+  - This project already has validated tools for within-head class imbalance specifically
+    (`--focal-gamma-head`, the reweighted training index) proven on the tie head (27.55,
+    27.77) - directly transferable, not hypothetical remedies like the ones the maintainer
+    only proposed.
+  - Output-only, frozen core untouched - the pattern this session has repeatedly found
+    lower-risk than anything that reaches into a shared component (27.72's global focal
+    loss, 27.92's synthetic data both regressed things they were never meant to touch).
+  - Traded away: dynamics attach to *events* more loosely than beam/stem do (a dynamic can
+    span or precede a note rather than always coincide with one), so the resolve-stage
+    attachment logic needs its own design, not a copy of tie/beam's; and a structured head
+    keeps dynamics invisible to the base decoder's own rhythm/pitch generation, unlike
+    inline tokens which (if they had worked) would share sequence context.
+
+**Sequencing:** the detector side is ready to build now (real, abundant data, no synthetic
+augmentation needed); the structured-head design and resolve-stage attachment are separate,
+later work not yet started.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
