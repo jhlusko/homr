@@ -2340,6 +2340,45 @@ itself prove the *specific* documents matter (that needs the synthetic pairing t
 declined to run), but it rules out "nine scores was a fluke" as the explanation for the
 pattern - a second, disjoint sample shows the same shape.
 
+### 27.82 OLiMPiC scanned scored: the gap is head-dependent, not a uniform "scans are hard"
+
+phase13's weights (the best configuration found) scored against OLiMPiC's scanned `dev`
+split - 1,350 systems, converted cleanly (94% success rate, 27.80's conversion work) - with
+no Gate C or arbiter, the same limitation PDMX already has: both tools are OSSQ-shaped by
+construction (27.58).
+
+```
+                    beam       hooks F1   stem (up/down)   slur spans F1   tie macro F1
+OSSQ synthetic     0.901        0.819         0.929            0.903           0.787
+OSSQ scanned       0.706        0.661         0.794            0.545           0.559
+PDMX               0.845        0.788         0.806            0.779           0.803
+OLiMPiC scanned    0.815        0.549         0.764            0.583           0.647
+```
+
+**Beam does markedly better on OLiMPiC scanned than on OSSQ scanned** - 0.815 against 0.706,
+close to PDMX's clean-but-cross-genre 0.845 rather than to OSSQ's collapsed figure. If the
+whole scanned-domain problem were "scans are hard," OLiMPiC scanned should sit near OSSQ
+scanned. It does not, for this head.
+
+**Hooks and stem go the other way** - hooks F1 0.549 against OSSQ scanned's 0.661, stem
+0.764 against 0.794 - both *worse* on OLiMPiC than on OSSQ's own scans. Slur (0.583) and tie
+(0.647) sit between OSSQ scanned and PDMX, closer to neither.
+
+**No single story fits all four heads**, which is itself the finding. The domain gap is not
+a property of "scanned" as one category that every head suffers from equally - it is
+head-specific, and a fix aimed at one head's failure on OSSQ scanned (the reweighted index,
+scoped to contrast) has no reason to transfer to a different head's failure on a different
+scanning source, even before asking whether it transfers to a different scanning source at
+all.
+
+**A real limitation on how far to read this.** OLiMPiC is pianoform reduction from Lieder -
+a different genre, different typical beam-group complexity, different note density per
+staff than OSSQ's string quartet parts - converted through an entirely separate pipeline.
+This is not a controlled comparison in the way 27.79's paired-page NED was; it is two
+different corpora scored with the same weights, which answers "does performance transfer"
+but not "why," and the genre difference is a live confound for every number above, not just
+a caveat to mention once.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
