@@ -2751,6 +2751,18 @@ the two classes it could not move) is training against this index; the result wi
 compared against 27.89's numbers on the identical unchanged 305-page validation set. Not
 yet complete as of this entry.
 
+**27.91 `train_detector.py` has no per-epoch checkpointing - a gap, not yet fixed.**
+Mid-run on detector v3, patch-level valid IoU had clearly plateaued by epoch 12-14
+(noisy, not trending up: SystemText 0.947→0.922→0.886 across three epochs) - the same
+shape 27.55's structured-heads training found, where 12 epochs turned out to be enough.
+But `train_detector.py`'s `torch.save` sits after the full epoch loop, not inside it, so
+stopping a run early to save the wait produces no usable weights at all, not merely a
+slightly-undertrained checkpoint. Decided to let this run finish its full 20 epochs rather
+than lose it, and record the gap rather than fix it under time pressure mid-run: a future
+long detector run should save every epoch (or the best-so-far by valid loss) the way
+`train_recognizer.py` already doesn't either, so this class of "the good checkpoint several
+epochs ago is gone" problem (already hit once for the recognizer, 27.88) stops recurring.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
