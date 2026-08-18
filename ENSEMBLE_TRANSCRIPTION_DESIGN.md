@@ -2307,6 +2307,39 @@ stated, and 27.79's finding that a handful of specific documents are unusually f
 be read as being about *those documents*, not about a category of scanning distinct from
 what OLiMPiC would offer.
 
+### 27.81 The concentrated-collapse pattern replicates on an independent sample - without touching the held-back split
+
+Following up on whether nine scores were enough (27.60's own caveat, repeated at 27.79):
+`test_scanned`, ten scores fully disjoint from `valid`, run through the same frozen-core NED
+benchmark.
+
+**Its synthetic counterpart is `test_synth`** - the split 24.2 held back deliberately,
+"the one split that has not been looked at, and it should stay that way until a
+configuration is being reported rather than explored." Pairing `test_scanned` against it for
+a synthetic/scanned gap, the way 27.79 did for `valid`, would mean looking at test_synth for
+an exploratory diagnostic. That crosses a rule this design set for itself on purpose, so it
+was not done. Whether to lift that restriction for a diagnostic that feeds no tuning
+decision, rather than a configuration score, is the user's call and has been raised as
+such rather than decided here.
+
+**What test_scanned answers on its own, no synthetic pairing needed:**
+
+```
+191 pages, 8 scores with any scored pages (2 of the 10 nominal scores produced none)
+overall mean NED: 10.2%    (valid's scanned mean was 12.9% - comparable)
+
+sq9146376   28.4%   sq9631717   11.9%   sq8071278    6.9%   sq7127785   5.6%
+sq8807667   18.1%   sq7294793    7.5%   sq7302602    6.8%   sq7358579   4.2%
+```
+
+**The same shape replicates.** A greater-than-sixfold spread between the worst score
+(28.4%) and the best (4.2%), with two scores standing well clear of the rest - the same
+concentrated-collapse pattern 27.60 found for the beam head and 27.79 found for the frozen
+core on `valid`, now confirmed on a fully independent set of documents. This does not by
+itself prove the *specific* documents matter (that needs the synthetic pairing this section
+declined to run), but it rules out "nine scores was a fluke" as the explanation for the
+pattern - a second, disjoint sample shows the same shape.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
