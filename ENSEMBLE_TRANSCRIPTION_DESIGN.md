@@ -2379,6 +2379,58 @@ different corpora scored with the same weights, which answers "does performance 
 but not "why," and the genre difference is a live confound for every number above, not just
 a caveat to mention once.
 
+### 27.83 On OLiMPiC the head's advantage over the rule disappears - and the fuller crosstab was blocked, not built
+
+27.82 gave beam=0.815 on OLiMPiC with nothing to compare it against. `beam_baseline.py`'s
+rule (`measure_part`) is generic MusicXML and needed no OSSQ-specific change; only its file
+discovery did. Adapted to read whole-score piano parts from the OpenScore Lieder `.mxl`
+downloads kept from 27.41's lyric work (the same `piano_part_id` selecting the same part
+OLiMPiC's own build selects), scored on the 100 scores in the `dev` split:
+
+```
+rule alone       84.0%   (29,338 / 34,917, whole-score, not systemwise segments - the
+                          fragmentation beam_baseline.py's own docstring already measured
+                          costs 91.9% vs 79.4% for OSSQ)
+head alone       81.5%   (27.82's exact beam vector on the same split)
+```
+
+**On OSSQ synthetic the head clearly beats the rule - 90.3% against roughly 84%. On
+OLiMPiC, that gap is gone**, and the rule is a little ahead. Read alone this already answers
+part of "should we give up on them": whatever advantage the head has on quartets, it is not
+showing up on Lieder piano reduction.
+
+**But a totals comparison is exactly what 27.16 warned against trusting** - two similar
+numbers can hide an oracle above either, if the head and the rule fail on different notes.
+Building the fuller crosstab (recovers/loses, the way Gate C measured OSSQ) was attempted
+and stopped before producing a number, for a reason worth recording precisely rather than
+papering over.
+
+**`rule_vectors` walks notes in document order** - `measure.findall("note")`, whatever
+order the raw MusicXML interleaves staves and voices in. **`convert_olimpic.py`'s own build
+flattens voice-major** - `for voice in voices for measure in voice for symbol in measure`,
+all of one voice's measures before the next - which is what `predictions.jsonl`'s
+`reference`/`predicted` fields are ordered by, since they come from the same token stream.
+For a single-voice part these coincide; for a piano grand staff, the case this measurement
+is actually about, they generally do not. A position-based zip between the two would
+silently pair the wrong notes - the same shape of bug as 27.11, the sidecar substitution,
+and the slur-transfer bug, each of which looked like a working join until checked.
+
+**This was caught by reading the two orderings side by side before running anything, not by
+a result that looked wrong.** No crosstab was produced, rather than producing one that could
+not be trusted. Fixing it needs `rule_vectors`' logic re-applied over a voice-ordered walk
+- reusing `music_xml_file_to_tokens`'s own grouping rather than `part.findall("measure")`
+directly - which is a rewrite of the traversal, not a small patch, and is left for the next
+session on this question.
+
+**Where this leaves "should we give up on them."** The solid evidence is the totals: the
+head's advantage over the rule, clear on the genre it was tuned on, is not visible on
+Lieder piano. That is a real, concerning signal on its own, even without the recovers/loses
+breakdown. It does not yet establish a *regression* the way 27.58 did for OSSQ scanned -
+that needs the crosstab this section could not safely build - so the honest answer is
+narrower than either "yes" or "no": the case for keeping the heads is weaker on this genre
+than anywhere else they have been measured, and the question of whether they are a net
+loss specifically, rather than merely no longer a clear win, is still open.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
