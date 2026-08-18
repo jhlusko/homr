@@ -2503,6 +2503,61 @@ crosstab, where the heads showed a clear net gain. The honest summary across bot
 now measured: the heads earn their keep clearly on the genre they were tuned on, and cost
 nothing on a genre they were not.
 
+**27.86 the real detector baseline (27.76's gate), and what it means for the architecture
+search.** 27.76 recorded the user's openness to an architecture search for the text
+detector - U-Net vs. something more modern - gated on `train_detector.py` producing a real
+number rather than the 10-image CPU smoke test that was all that existed. Two things had
+to happen first: a score-level train/valid split (`detector_split.py`, hashing the score id
+so a score's pages never appear on both sides - 200 scores, 178 train / 22 valid, 2,542 /
+305 pages) and a fix to a real inefficiency `train_detector.py` had never been run long
+enough to expose: `DetectorPatches.__getitem__` called `cv2.imread` on the full page for
+every one of `patches_per_image` (8) patches independently, and `shuffle=True` scattered
+those 8 draws randomly across the whole epoch, so a page was decoded up to 8x with
+essentially no cache locality. Measured directly: epoch 1 was still not done after 12
+minutes with 0% average GPU utilisation, CPU workers pegged on decode. Fixed with a
+one-slot decode cache in the dataset plus `ImageBlockSampler`, which shuffles image order
+but keeps one image's patches consecutive so the cache actually hits (a 20-image slice
+went from not finishing to 18.6 seconds); relaunched, GPU utilisation went to 47%+ and the
+full run completed in under two hours.
+
+Final per-class IoU, 20 epochs, plain Dice loss, no imbalance correction:
+
+```
+                train    valid
+background      0.995    0.996
+SystemText       0.929    0.969
+Fingering        0.938    0.812
+Expression       0.967    0.929
+Tempo            0.968    0.966
+MeasureNumber    0.997    0.996
+StaffText        0.954    0.954
+Lyrics           0.949    0.957
+```
+
+Fingering - the rarest class, 1,716x apart from the most common in 27.68's count - is the
+one place train and valid pull apart (0.938 vs 0.812), the shape a genuinely under-sampled
+class takes, but it is still the model's *worst* number, not a collapse: no class reads
+near zero the way 27.62's uncorrected recogniser did on its starved class. Dice's
+intersection-over-union shape, not per-token cross-entropy, is doing real work here - this
+confirms 27.69's reasoning rather than assuming it, the same "measure the unweighted
+baseline first" discipline 27.75 stated and 27.72 validated the cost of skipping.
+
+**This changes the answer to the architecture search question.** 27.76 recorded the user's
+willingness to explore alternatives as conditional on this baseline existing; it did not
+promise the search would still look worth running once it did. It does not, on this
+evidence: U-Net-over-resnet18, unmodified, already resolves every detection class at
+0.81-0.997 IoU on held-out scores with a severity of imbalance that was the leading reason
+to doubt it. A search across YOLO/DETR/anchor-free alternatives is warranted when a
+baseline is failing in a way a different inductive bias would plausibly fix - it is not
+warranted to replace a baseline that is not failing. The open question this baseline
+actually raises is different: whether Fingering's gap (train 0.938, valid 0.812, the widest
+of any class) is a data-quantity problem worth more scans or crops, not an architecture
+problem - and whether this detector, now real, should be wired into the recognizer
+(`train_recognizer.py`) to close the gap 27.68 opened (nothing before this measured a
+syllable's *location* on a scan the recognizer was not already told the layout of).
+Recommending the latter as the next step over the architecture search, and leaving the
+final call to the user.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design

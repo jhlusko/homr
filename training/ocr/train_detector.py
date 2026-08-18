@@ -42,7 +42,7 @@ from torch.utils.data import DataLoader
 
 from training.architecture.segmentation.model import CamVidModel
 from training.ocr.detector_masks import CLASS_ORDER
-from training.ocr.detector_patches import DetectorPatches, read_index
+from training.ocr.detector_patches import DetectorPatches, ImageBlockSampler, read_index
 
 #: Background plus every detection class.
 NUM_CLASSES = len(CLASS_ORDER) + 1
@@ -79,13 +79,44 @@ def per_class_iou(
     }
 
 
+def evaluate(model: CamVidModel, loader: DataLoader, device: str) -> dict[str, float]:
+    model.eval()
+    totals = collections.defaultdict(list)
+    with torch.no_grad():
+        for batch in loader:
+            images = batch["images"].to(device)
+            masks = batch["masks"].to(device)
+            logits = model(images)
+            for name, value in per_class_iou(model, logits, masks).items():
+                totals[name].append(value)
+    return {name: sum(values) / len(values) for name, values in totals.items()}
+
+
 def train(args: argparse.Namespace) -> dict:
     samples = read_index(args.index)
     dataset = DetectorPatches(samples, patches_per_image=args.patches_per_image, seed=args.seed)
+    # A plain `shuffle=True` scatters one image's patches randomly across the whole epoch,
+    # defeating DetectorPatches' one-slot decode cache - up to `patches_per_image` reads
+    # of the same full-resolution page per epoch instead of one. ImageBlockSampler shuffles
+    # image order but keeps one image's patches consecutive, so the cache actually hits.
+    sampler = ImageBlockSampler(len(samples), args.patches_per_image, seed=args.seed)
     loader = DataLoader(
-        dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers,
+        dataset, batch_size=args.batch_size, sampler=sampler, num_workers=args.workers,
         collate_fn=collate,
     )
+    valid_loader = None
+    if args.valid_index:
+        valid_samples = read_index(args.valid_index)
+        # Fewer patches per image and no jitter randomness across epochs would be nicer,
+        # but a fixed seed already makes every epoch's validation set the same crops -
+        # good enough to compare epochs against each other, not meant as a held-out score.
+        valid_dataset = DetectorPatches(
+            valid_samples, patches_per_image=args.patches_per_image, seed=12345
+        )
+        valid_loader = DataLoader(
+            valid_dataset, batch_size=args.batch_size, shuffle=False,
+            num_workers=args.workers, collate_fn=collate,
+        )
 
     model = CamVidModel(
         arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=NUM_CLASSES,
@@ -94,6 +125,7 @@ def train(args: argparse.Namespace) -> dict:
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
     print(f"{len(dataset):,} patches from {len(samples):,} images, {NUM_CLASSES} classes")
+    total_batches = -(-len(dataset) // args.batch_size)  # ceil div
 
     history = []
     for epoch in range(1, args.epochs + 1):
@@ -102,6 +134,8 @@ def train(args: argparse.Namespace) -> dict:
         running_loss = 0.0
         batches = 0
         for batch in loader:
+            if batches % 50 == 0:
+                print(f"  epoch {epoch} batch {batches}/{total_batches}")
             images = batch["images"].to(args.device)
             masks = batch["masks"].to(args.device)
             logits = model(images)
@@ -125,7 +159,17 @@ def train(args: argparse.Namespace) -> dict:
                 print(f"  {name:<14} IoU {per_class[name]:.3f}")
         if missing:
             print(f"  no data this epoch for: {', '.join(missing)}")
-        history.append({"epoch": epoch, "loss": running_loss / max(1, batches), **per_class})
+        record = {"epoch": epoch, "loss": running_loss / max(1, batches), **per_class}
+
+        if valid_loader is not None:
+            valid_per_class = evaluate(model, valid_loader, args.device)
+            print("  valid:")
+            for name in CLASS_NAMES:
+                if name in valid_per_class:
+                    print(f"    {name:<14} IoU {valid_per_class[name]:.3f}")
+            record["valid"] = valid_per_class
+
+        history.append(record)
 
     if args.weights:
         args.weights.parent.mkdir(parents=True, exist_ok=True)
@@ -136,6 +180,7 @@ def train(args: argparse.Namespace) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--index", type=Path, required=True, help="detector_masks index.txt")
+    parser.add_argument("--valid-index", type=Path, help="detector_split.py's valid_index.txt")
     parser.add_argument("--weights", type=Path)
     parser.add_argument("--out", type=Path)
     parser.add_argument("--patches-per-image", type=int, default=8)

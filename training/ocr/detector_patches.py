@@ -29,7 +29,8 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from torch.utils.data import Dataset
+import torch
+from torch.utils.data import Dataset, Sampler
 
 #: Matches homr's own segmentation patch size (training/segmentation/train.py), so a
 #: detector trained on this data could share inference-time tiling logic with the existing
@@ -112,16 +113,32 @@ class DetectorPatches(Dataset):
         self.patches_per_image = patches_per_image
         self.positive_ratio = positive_ratio
         self.rng = random.Random(seed)
+        # Every image is decoded up to `patches_per_image` times per epoch - once per
+        # patch drawn from it. A one-slot cache turns that into one decode per image, as
+        # long as those draws arrive consecutively (see ImageBlockSampler), which a plain
+        # `shuffle=True` DataLoader does not guarantee: it shuffles every patch index
+        # independently, so a given image's 8 patches land scattered across the epoch and
+        # this cache would almost never hit. Measured: full-corpus epoch 1 was still not
+        # done after 12 minutes with 0% average GPU utilisation, workers pegged decoding -
+        # not a hang, just 8x more image decoding than the data needs.
+        self._cache_index: int | None = None
+        self._cache_image: np.ndarray | None = None
+        self._cache_mask: np.ndarray | None = None
 
     def __len__(self) -> int:
         return len(self.samples) * self.patches_per_image
 
     def __getitem__(self, index: int) -> tuple[np.ndarray, np.ndarray]:
-        sample = self.samples[index // self.patches_per_image]
-        image = cv2.imread(sample.image)
-        mask = cv2.imread(sample.mask, cv2.IMREAD_GRAYSCALE)
-        if image is None or mask is None:
-            raise FileNotFoundError(f"cannot read {sample.image} or {sample.mask}")
+        image_index = index // self.patches_per_image
+        sample = self.samples[image_index]
+        if self._cache_index == image_index:
+            image, mask = self._cache_image, self._cache_mask
+        else:
+            image = cv2.imread(sample.image)
+            mask = cv2.imread(sample.mask, cv2.IMREAD_GRAYSCALE)
+            if image is None or mask is None:
+                raise FileNotFoundError(f"cannot read {sample.image} or {sample.mask}")
+            self._cache_index, self._cache_image, self._cache_mask = image_index, image, mask
 
         centres = box_centres(mask)
         positive = centres and self.rng.random() < self.positive_ratio
@@ -137,3 +154,30 @@ class DetectorPatches(Dataset):
             extract_patch(image, origin, PAD_IMAGE_VALUE),
             extract_patch(mask, origin, PAD_MASK_VALUE),
         )
+
+
+class ImageBlockSampler(Sampler[int]):
+    """Yields every image's `patches_per_image` indices consecutively, image order
+    shuffled per epoch - what makes `DetectorPatches`' one-slot decode cache actually hit.
+    A DataLoader worker fetches one batch's indices in one call, in order, so as long as a
+    batch does not straddle two images in a way that interleaves them (it does not here:
+    the sampler emits whole image-blocks back to back), the cache sees the same image
+    across consecutive `__getitem__` calls instead of never twice in a row.
+    """
+
+    def __init__(self, num_images: int, patches_per_image: int, seed: int = 0) -> None:
+        self.num_images = num_images
+        self.patches_per_image = patches_per_image
+        self.seed = seed
+        self.epoch = 0
+
+    def __iter__(self):
+        generator = torch.Generator()
+        generator.manual_seed(self.seed + self.epoch)
+        self.epoch += 1
+        for image_index in torch.randperm(self.num_images, generator=generator).tolist():
+            base = image_index * self.patches_per_image
+            yield from range(base, base + self.patches_per_image)
+
+    def __len__(self) -> int:
+        return self.num_images * self.patches_per_image
