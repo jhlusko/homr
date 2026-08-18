@@ -2705,6 +2705,52 @@ automatically) rather than more of this detector's own training data.
 Lyrics' improvement (80.1%→83.8% F1) also revises 27.88's end-to-end number upward as a
 side effect, though that pipeline has not been re-run against these new weights yet.
 
+**27.90 manufacturing real training data for Fingering and SystemText.** 27.89 left
+Fingering and SystemText at 0% precision/recall, unmoved by within-page resampling,
+because the source corpus only ever contained 12 and 3 boxes of each (27.68) - too few for
+any resampling strategy to work with. The corpus is built by rendering MusicXML through
+MuseScore (`musescore_boxes.py`), which is the way out: a `<fingering>` added to a note, or
+a `<direction>` added to a measure, is drawn by the same renderer and turned into a box by
+the same SVG-class extraction as every other page - genuinely rendered engraving, not a
+faked image, satisfying 27.25's rule that boxes have to come from the renderer that drew
+the image.
+
+Built `rare_class_synthesis.py`. `inject_fingering` adds a `<technical><fingering>` to
+random notes (inserted before any `<lyric>` to keep MusicXML's declared element order
+valid - the corpus is Lieder, so many candidate notes have one). `inject_system_text` adds
+a `<direction system="only-top">` word annotation to random measures, on the hypothesis
+that `system="only-top"` is what MuseScore's own SystemText-vs-StaffText choice keys off
+(undocumented; `musescore_boxes.py`'s own docstring says MuseScore decides this
+internally and does not record which).
+
+Verified against a real render before trusting it at scale: `xvfb-run mscore` on an
+augmented score, then reading the resulting SVG's classes directly rather than assuming
+the hypothesis held. First pass looked like a problem - 2 "Tempo" paths appeared alongside
+6 correct "Fingering" and correct "SystemText" glyphs, which read like some injected words
+("Coda", "D.C.") were being reclassified. Checking the *unmodified* baseline render of the
+same score before concluding anything found it already carried one genuine Tempo marking
+of its own (the piece's actual tempo indication) - the "misclassification" was never the
+injected content at all, just a pre-existing element this check had not accounted for.
+Recorded as a reminder to check the baseline before attributing a surprising count to the
+change under test, not as a bug that needed fixing (the word-narrowing done while chasing
+it - excluding "Coda"/"D.C." from `SYSTEM_TEXT_WORDS`, excluding each part's first measure
+in `_measures` - was unnecessary but left in place since it is still correct and no less
+safe).
+
+`build_batch` (reusing `musescore_boxes.annotate` directly rather than reimplementing
+render+extract) ran on 80 scores drawn only from the detector's *train* split - excluded
+every score present in `valid_index.txt` first, so the held-out set used for 27.87/27.89's
+comparisons stays uncontaminated by synthetic siblings of its own scores. 79/80 rendered
+(one refused on a pre-existing lyric-count mismatch, unrelated to the injection), adding
+316 Fingering and 156 SystemText boxes - roughly 26x and 52x the corpus's original count
+of each. Masked with `detector_masks.py` and appended to a new `train_index_v3.txt`
+(2,542 real + 79 synthetic = 2,621 images); `valid_index.txt` is untouched.
+
+Detector v3 (class-balanced sampling from 27.89, now also with real synthetic exposure to
+the two classes it could not move) is training against this index; the result will be
+compared against 27.89's numbers on the identical unchanged 305-page validation set. Not
+yet complete as of this entry.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
