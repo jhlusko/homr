@@ -2288,6 +2288,25 @@ scanned training data for the heads specifically - closing the gap between their
 diet and the core's - rather than for concluding the domain gap is inherent to real scans
 or that the heads are a lost cause on this input.
 
+### 27.80 Correction: OSSQ's scans are IMSLP too - OLiMPiC differs in genre and document, not in provenance category
+
+Proposing OLiMPiC as a second scanned domain, this design characterised OSSQ's scans as
+distinct from OLiMPiC's - "personal photography" against "IMSLP archival scans" - without
+checking. Wrong, and checked properly this time: `ossq-omr`'s own README documents
+`sq<id>_scanned.pdf  # optional scanned version from IMSLP` and ships
+`scores_w_url.yaml: per-score IMSLP source metadata (catalog number and direct scan URL)`.
+Both corpora's scans are IMSLP-derived.
+
+What actually differs between them is genre - string quartets against Lieder piano - and
+which specific documents and scanning batches, since IMSLP itself is an aggregation from
+many contributors across many years, not a single uniform scanning source. Testing on
+OLiMPiC is still worth doing for that reason: a different set of IMSLP documents, a
+different repertoire, possibly different scan eras and equipment within IMSLP's own
+heterogeneous holdings - but it is not the "archival vs. personal" contrast this design
+stated, and 27.79's finding that a handful of specific documents are unusually faint should
+be read as being about *those documents*, not about a category of scanning distinct from
+what OLiMPiC would offer.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
