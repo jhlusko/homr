@@ -2558,6 +2558,57 @@ syllable's *location* on a scan the recognizer was not already told the layout o
 Recommending the latter as the next step over the architecture search, and leaving the
 final call to the user.
 
+**27.87 patch-level IoU hid a real page-level precision problem - Lyrics is fine, the
+rest are not.** 27.86 measured the detector against the same patch distribution it trained
+on (`DetectorPatches`, 70% of draws centred on a box) and called the baseline strong enough
+to skip the architecture search. That measurement never asked the question inference
+actually depends on: run whole-page, tiled, at true class frequency, does the model still
+find boxes without inventing them. Built `detector_inference.py` (tiled prediction with
+50%-overlap stitching, following the convention `detector_masks.py` already pointed at from
+homr's own segmentation inference, boxes recovered by the same
+`connectedComponentsWithStats` the ground-truth rasterizer uses) and
+`detector_box_eval.py` (greedy one-to-one IoU matching per class, precision/recall/F1 -
+ground truth filtered to `detector_masks.CLASS_ORDER`'s 7 classes, since `collect()`'s
+source manifest carries 4 more that were never rasterized into a training mask and would
+have counted as missed recall for classes the detector was never asked to find).
+
+Run against all 305 held-out pages:
+
+```
+class           precision     recall         f1   gt boxes
+Expression           5.0%      88.6%       9.5%         44
+Fingering            0.0%       0.0%       0.0%         12
+Lyrics              68.6%      96.3%      80.1%      3,555
+MeasureNumber       68.4%     100.0%      81.3%         78
+StaffText            9.3%      70.9%      16.4%        103
+SystemText           0.0%       0.0%       0.0%          3
+Tempo                1.9%      69.8%       3.7%         53
+overall             42.4%      94.8%      58.6%      3,848
+```
+
+Recall is high almost everywhere - the model does find real boxes. Precision collapses for
+every class except Lyrics and MeasureNumber: Tempo's 1.9% means roughly 50 predicted boxes
+for every real one; Fingering and SystemText, the two rarest classes in 27.68's own count,
+recover nothing at all in a plain 88.6%-recall Expression column at 5.0% precision. This
+was invisible in 27.86's per-pixel numbers because that measurement only ever showed the
+model 70%-positive-biased crops; a full page is >99% background outside boxes (27.69), and
+whatever the model does across all that background it was never sampled at that ratio
+during training - it is a domain-gap pattern this project has hit before (27.60), here
+between the training patch distribution and the inference deployment distribution rather
+than between synthetic and scanned images.
+
+**This narrows, rather than reverses, 27.86's conclusion.** Lyrics - the one class this
+track exists for (`detector_data.py`'s own docstring: only lyrics carry a label to
+recognise afterwards) - holds up at 80.1% F1 whole-page, close to the discipline the
+recogniser itself needs; MeasureNumber is comparably solid. The other five classes have a
+real precision failure that is not yet diagnosed as architecture or as training-distribution
+mismatch - `DetectorPatches`' `POSITIVE_RATIO=0.7` is the first suspect, since it directly
+controls how much true-negative background the model ever saw relative to a real page, and
+raising the negative share is a training-recipe change to try before concluding U-Net
+itself cannot suppress background at this imbalance. Recommending: proceed with wiring
+Lyrics detection into the recognizer now (it is ready), and treat the other six classes'
+precision collapse as a separate, not-yet-blocking problem to return to.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
