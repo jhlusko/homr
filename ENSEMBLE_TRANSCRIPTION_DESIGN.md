@@ -2609,6 +2609,57 @@ itself cannot suppress background at this imbalance. Recommending: proceed with 
 Lyrics detection into the recognizer now (it is ready), and treat the other six classes'
 precision collapse as a separate, not-yet-blocking problem to return to.
 
+**27.88 the gap 27.45 opened, closed: detection + recognition end to end.** Every recogniser
+number before this used a ground-truth box - nothing had yet asked whether the detector's
+own localisation, handed to the recogniser, still reads correctly. 27.87 restricted this to
+Lyrics (80.1% whole-page F1; the other six classes' precision collapse is a separate,
+unresolved problem, per that section).
+
+Trained the recogniser for the first time on this instance (`train_recognizer.py`, 30,031
+train / 4,293 valid crops from `lyric_crops`, 25 epochs; only the final epoch's weights are
+saved, and this run's own history shows unseen-exact peaking earlier at epoch 21 (78.7%)
+before ending at epoch 25 (72.8%) - the run used what was saved rather than the peak,
+recorded so a future session knows early stopping is worth adding, not blocking this one).
+
+Built `end_to_end_eval.py`: for each of the 305 held-out pages, match the detector's
+predicted Lyrics boxes to `*.boxes.json`'s ground truth (same greedy IoU matching as
+27.87's `detector_box_eval.py`, reused rather than reimplemented), crop the page at the
+*predicted* box, and read it with the recogniser - alongside the same matched syllables
+read from the *ground-truth* box, so a drop is attributable to localisation rather than
+reading.
+
+First run measured something wrong: exact match was 22.9%/17.1%, both far below the
+recogniser's own training-time accuracy, and the oracle number came out *lower* than the
+detected-box number - backwards, since a ground-truth box can only be at least as good as
+an imprecise one. Traced to a real preprocessing gap: `lyric_crops.py`'s `crop_syllables`
+keeps a 4px `MARGIN` of air around every box before cropping ("a recogniser reads better
+with room for a hyphen or a descender than a box cut exactly to the ink") - the first
+version of this eval cropped tight to the box, cutting exactly the content the recogniser
+was trained to expect padding around. Fixed by applying the same `MARGIN`.
+
+Full run against all 3,555 ground-truth Lyrics boxes across 305 pages:
+
+```
+3,555 ground-truth lyric boxes, 3,422 matched to a detected box (96.3%, matches 27.87's recall)
+
+read from the detector's own box  : exact 80.9% (2,767/3,422), CER 15.9%
+read from the ground-truth box    : exact 84.3% (2,886/3,422), CER 11.9%
+```
+
+The detector's own localisation costs 3.4 points of exact match against the oracle ceiling
+- a real but modest cost, not the dominant error source. Combined with 96.3% of boxes being
+found at all, this is a working end-to-end pipeline for the one class this track exists
+for: on a held-out page, detect a syllable's box and read it correctly 80.9% of the time,
+with no ground truth involved anywhere in the process. This is the number 27.45 opened the
+question for and 27.68 first measured the data half of - it is now answered.
+
+A small-sample smoke test (3 pages, 70 boxes) before the full run showed what looked like a
+neighbour-swap pattern in the misreads (`'Wal'->'des'`, `'des'->'Wip'`, ...) - traced to a
+hyphenated compound word ("Wal-des-Wip-fel", plausibly "Waldeswipfel") whose sub-word
+syllables sit close enough together that box precision genuinely blurs which syllable is
+which; the full run's aggregate numbers are not dominated by this and it is recorded as a
+known edge case (tightly-kerned hyphenated syllables) rather than a bug.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
