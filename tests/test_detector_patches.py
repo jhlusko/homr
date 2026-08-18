@@ -45,13 +45,14 @@ class TestReadIndex(unittest.TestCase):
 
 class TestBoxCentresByClass(unittest.TestCase):
     """`_mask_with_boxes` writes class value 1, which `CLASS_INDEX` assigns to
-    "SystemText" (the first entry in `CLASS_ORDER`) - these boxes land there.
+    "Fingering" (the first entry in `CLASS_ORDER` - 27.92 folded SystemText into
+    StaffText and dropped it from the order, so Fingering moved up to index 1).
     """
 
     def test_one_box_gives_one_centre(self) -> None:
         mask = _mask_with_boxes((100, 100), [(10, 10, 30, 50)])
 
-        centres = box_centres_by_class(mask)["SystemText"]
+        centres = box_centres_by_class(mask)["Fingering"]
 
         self.assertEqual(len(centres), 1)
         y, x = centres[0]
@@ -60,21 +61,21 @@ class TestBoxCentresByClass(unittest.TestCase):
     def test_two_separate_boxes_give_two_centres(self) -> None:
         mask = _mask_with_boxes((100, 100), [(0, 0, 10, 10), (80, 80, 90, 90)])
 
-        self.assertEqual(len(box_centres_by_class(mask)["SystemText"]), 2)
+        self.assertEqual(len(box_centres_by_class(mask)["Fingering"]), 2)
 
     def test_an_empty_mask_has_no_classes(self) -> None:
         self.assertEqual(box_centres_by_class(np.zeros((50, 50), dtype=np.uint8)), {})
 
     def test_different_classes_are_kept_separate(self) -> None:
         mask = np.zeros((100, 100), dtype=np.uint8)
-        mask[10:30, 10:30] = 1  # SystemText
-        mask[60:80, 60:80] = 2  # Fingering
+        mask[10:30, 10:30] = 1  # Fingering
+        mask[60:80, 60:80] = 2  # Expression
 
         by_class = box_centres_by_class(mask)
 
-        self.assertEqual(set(by_class), {"SystemText", "Fingering"})
-        self.assertEqual(len(by_class["SystemText"]), 1)
+        self.assertEqual(set(by_class), {"Fingering", "Expression"})
         self.assertEqual(len(by_class["Fingering"]), 1)
+        self.assertEqual(len(by_class["Expression"]), 1)
 
 
 class TestPatchOrigin(unittest.TestCase):

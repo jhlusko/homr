@@ -2814,6 +2814,29 @@ concentrating iterations on the same 79. Left as an open question for the next s
 rather than another multi-hour retrain attempted immediately, given the session's length.
 27.89's weights (not this run's) remain the better detector to use in the meantime.
 
+**27.93 SystemText folded into StaffText; user decision, not further-measured.** Given
+27.92's result (0% precision/recall even with correct injected training data), the user
+decided to give up on SystemText as its own class rather than keep spending detector
+capacity on it - acceptable to read a system-level annotation as StaffText, since the
+resolve stage does not currently depend on the distinction. `detector_masks.py` now has 6
+classes, not 7 (`CLASS_ALIASES = {"SystemText": "StaffText"}`, applied in `rasterize()`);
+`detector_box_eval.py`'s ground-truth collection applies the same aliasing so a
+SystemText box scores as a StaffText box, matching what the model was trained on.
+`rare_class_synthesis.py`'s SystemText injection (`inject_system_text`, `_measures`,
+`SYSTEM_TEXT_WORDS`) is removed rather than left dormant - it worked exactly as intended
+(real, correctly-classified SystemText training boxes) and still did not move the metric,
+so keeping the code around only invites reaching for the same failed premise again.
+Fingering's injection is unaffected and kept.
+
+Also fixed while touching these tests: `test_train_detector.py`'s `_args()` helper never
+gained a `valid_index` key when `--valid-index` was added to `train_detector.py` earlier
+this session (27.86), so `TestTrainEntryPoint`'s two tests had been silently failing since
+- caught only now by actually running the suite rather than assuming it still passed.
+Added a `valid_index=None` default and a new test exercising the valid-loader path
+(`test_a_valid_index_adds_a_valid_report_per_epoch`), which had no coverage at all before
+this. All 44 tests across `test_detector_masks.py`, `test_detector_patches.py` and
+`test_train_detector.py` pass.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design

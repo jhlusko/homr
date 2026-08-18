@@ -27,7 +27,7 @@ import torch
 
 from training.ocr.detector_data import Box, collect
 from training.ocr.detector_inference import load_model, predict_boxes
-from training.ocr.detector_masks import CLASS_INDEX
+from training.ocr.detector_masks import CLASS_INDEX, canonical_label
 
 
 @dataclass
@@ -98,10 +98,17 @@ def evaluate(
 ) -> dict[str, Counts]:
     model = load_model(weights, device)
     # `collect` reads detector_data.DETECTION_CLASSES (11 classes); the model was only
-    # ever trained on detector_masks.CLASS_ORDER (7) - Text, InstrumentName,
+    # ever trained on detector_masks.CLASS_ORDER (6) - Text, InstrumentName,
     # RehearsalMark and Harmony were never rasterized into a training mask, so scoring
     # them here would count boxes the detector was never asked to find as missed recall.
-    ground_truth_boxes = [box for box in collect(boxes_dir) if box.label in CLASS_INDEX]
+    # `canonical_label` folds SystemText into StaffText (27.92) before that filter, so a
+    # ground-truth SystemText box is scored as a StaffText box, matching what the masks
+    # (and therefore the model's own labels) were built from.
+    ground_truth_boxes = [
+        Box(box.image, canonical_label(box.label), box.left, box.top, box.right, box.bottom)
+        for box in collect(boxes_dir)
+        if canonical_label(box.label) in CLASS_INDEX
+    ]
     by_image: dict[str, list[Box]] = collections.defaultdict(list)
     for box in ground_truth_boxes:
         by_image[box.image].append(box)

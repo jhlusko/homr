@@ -93,7 +93,7 @@ def _write_sample(directory: Path, name: str) -> Sample:
     mask_path = directory / f"{name}.mask.png"
     cv2.imwrite(str(image_path), np.full((64, 64, 3), 255, dtype=np.uint8))
     mask = np.zeros((64, 64), dtype=np.uint8)
-    mask[10:20, 10:30] = 1  # class index 1 = SystemText, first in CLASS_ORDER
+    mask[10:20, 10:30] = 1  # class index 1 = Fingering, first in CLASS_ORDER
     cv2.imwrite(str(mask_path), mask)
     return Sample(str(image_path), str(mask_path))
 
@@ -110,6 +110,7 @@ class TestTrainEntryPoint(unittest.TestCase):
         )
         defaults = {
             "index": index,
+            "valid_index": None,
             "weights": directory / "w.pth",
             "out": directory / "history.json",
             "patches_per_image": 2,
@@ -137,6 +138,20 @@ class TestTrainEntryPoint(unittest.TestCase):
             train(self._args(directory))
 
             self.assertTrue((directory / "w.pth").exists())
+
+    def test_a_valid_index_adds_a_valid_report_per_epoch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            valid_index = directory / "valid_index.txt"
+            samples = [_write_sample(directory, f"v{i}") for i in range(2)]
+            valid_index.write_text(
+                "\n".join(f"{s.image},{s.mask}" for s in samples) + "\n", encoding="utf-8"
+            )
+
+            report = train(self._args(directory, valid_index=valid_index))
+
+        self.assertIn("valid", report["history"][0])
+        self.assertIn("background", report["history"][0]["valid"])
 
 
 if __name__ == "__main__":

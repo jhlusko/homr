@@ -44,26 +44,41 @@ from training.ocr.detector_data import Box, collect
 #: how large and unambiguous a class's boxes are, so a specific small label drawn over a
 #: sprawling class name is a more defensible default than the reverse.
 CLASS_ORDER = (
-    "SystemText", "Fingering", "Expression", "Tempo",
+    "Fingering", "Expression", "Tempo",
     "MeasureNumber", "StaffText", "Lyrics",
 )
 
+#: 27.92: SystemText stayed at exactly 0% whole-page precision/recall even after 27.90
+#: manufactured 156 real, correctly-labelled SystemText boxes for it - unlike Fingering,
+#: which the same technique moved off zero. Confirmed the injected masks genuinely carried
+#: SystemText pixels, so this is not a data or pipeline bug; the working hypothesis is that
+#: SystemText is visually too close to StaffText (both small text near the top of a
+#: system) for this detector to separate given the source corpus's SystemText scarcity (3
+#: real boxes total, 27.68). Folding it into StaffText rather than continuing to spend
+#: training attention on a class this detector cannot resolve.
+CLASS_ALIASES = {"SystemText": "StaffText"}
+
 BACKGROUND = 0
 CLASS_INDEX = {name: index + 1 for index, name in enumerate(CLASS_ORDER)}
+
+
+def canonical_label(label: str) -> str:
+    return CLASS_ALIASES.get(label, label)
 
 
 def rasterize(width: int, height: int, boxes: list[Box]) -> np.ndarray:
     """A single-channel mask, one pixel per source pixel, background 0 elsewhere."""
     mask = np.full((height, width), BACKGROUND, dtype=np.uint8)
     for box in boxes:
-        if box.label not in CLASS_INDEX:
+        label = canonical_label(box.label)
+        if label not in CLASS_INDEX:
             continue
         left = max(0, min(width, box.left))
         right = max(0, min(width, box.right))
         top = max(0, min(height, box.top))
         bottom = max(0, min(height, box.bottom))
         if right > left and bottom > top:
-            mask[top:bottom, left:right] = CLASS_INDEX[box.label]
+            mask[top:bottom, left:right] = CLASS_INDEX[label]
     return mask
 
 
