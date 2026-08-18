@@ -2202,6 +2202,44 @@ concentrated few, and a per-score fix was never going to be the whole answer for
 project should take.** A scalar `--focal-gamma` remains for backward compatibility and
 nothing else; every future run reaching for focal loss should name the head it is meant for.
 
+### 27.78 Correction: PDMX was already in run 426's own training - "we added PDMX" was imprecise
+
+Asked directly why "we added PDMX" was said without checking what homr's own pretraining
+already included, and it should have been checked. `Training.md`, run 426 - commit
+`b6fd20809a8dcaf10dfd39a4ca4f64c6f056e644`, the exact checkpoint every phase script in this
+design has fine-tuned - states plainly: *"Training with lieder+grandstaff+primus+pdmx+
+musetrainer datasets."* The frozen core this whole design builds on top of had already seen
+PDMX, along with Lieder, GrandStaff, PrIMuS and MuseTrainer, before this design session
+existed.
+
+**What this project actually did with PDMX was narrower than "added it".** The structured
+heads - beam, stem, tie, and the slotted slur representation - are output-only additions
+bolted onto that frozen core, and they had no training data at all, on any corpus, before
+this project built them; run 426's own training predates their existence entirely. What
+27.31/27.35/27.36 built was a newly re-converted, quality-filtered PDMX (from the Zenodo
+source, excluding empty-final-measure and low-note-count scores) fed specifically to *those*
+heads. "We added PDMX" was true of the heads and false of homr as a whole, and every mention
+of PDMX generalization in this design through 27.36 should be read as being about the new
+heads' generalization, not the base decoder's.
+
+**This reframes 27.36's finding rather than voiding it.** "The quartet-only model does not
+generalise to PDMX" measured the structured heads specifically, trained at that point only
+on OSSQ synthetic quartets - the base decoder's own rhythm/pitch/lift/articulation/slur/
+position predictions were never at risk of that collapse, because they had PDMX (and four
+other corpora) in their training from before this design began.
+
+**An unmeasured question this opens, worth stating rather than leaving implicit.** Every
+"exact beam vector" and Gate C figure in this design measures the structured heads'
+accuracy - never the frozen core's own note-reading on the same scanned images. Run 426's
+pretraining mix is more diverse than anything the structured heads have seen, so it is not
+known whether the scanned regression documented in 27.58 onward is specific to the heads
+(which had comparatively little scanned-specific training before phase12/13's reweighting)
+or whether the frozen core's own predictions - the fields the heads are layered on top of -
+also degrade on the same scans. If the core holds up and only the bolted-on heads collapse,
+that argues for more scanned data for the heads specifically. If the core degrades too, the
+heads were never going to fix it alone, and the domain gap says as much about run 426's own
+training mix as about anything this design built afterward. Nothing here has checked which.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
