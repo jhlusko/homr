@@ -28,9 +28,13 @@ def _db(path: Path, rows: list[tuple]) -> Path:
 
 
 class TestReadScores(unittest.TestCase):
-    def test_ned_is_normalised_from_percent_to_a_0_1_scale(self) -> None:
+    def test_values_are_read_as_stored_not_rescaled(self) -> None:
+        # The database already holds 0-1 fractions - 0.055 is what the tool's own log
+        # prints as "NED= 5.5%". A first version divided by 100 on top of that, on the
+        # wrong assumption that the column held percentages, and produced a mean of 0.1%
+        # on real data whose printed range was 2% to 14%.
         with tempfile.TemporaryDirectory() as tmp:
-            path = _db(Path(tmp) / "a.db", [("s1_0001", 5.5, None)])
+            path = _db(Path(tmp) / "a.db", [("s1_0001", 0.055, None)])
 
             self.assertAlmostEqual(read_scores(path)["s1_0001"]["ned"], 0.055)
 

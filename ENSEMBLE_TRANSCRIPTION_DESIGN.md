@@ -2431,6 +2431,78 @@ narrower than either "yes" or "no": the case for keeping the heads is weaker on 
 than anywhere else they have been measured, and the question of whether they are a net
 loss specifically, rather than merely no longer a clear win, is still open.
 
+**27.84 correcting 27.83's diagnosis of the ordering mismatch.** 27.83 blamed the wrong
+mechanism. It described the mismatch as `convert_olimpic.py` flattening "voice-major" -
+implying MusicXML's internal `<voice>` sub-element, or a multi-`<part>` interleave problem.
+Reading `_music_xml_element_to_symbols` shows "voices" at that level means `<part>`
+elements: for OLiMPiC's grand-staff piano samples there is exactly one `<part>` (confirmed
+against a real sample - `<part-list><score-part id="P2">...`), so that outer flatten is a
+no-op and was never where the risk lived.
+
+The real reordering is one level down, inside `TokensMeasure.complete_measure()`
+(`training/omr_datasets/music_xml_parser.py`) and `merge_upper_and_lower_staff`
+(`training/omr_datasets/staff_merging.py`), and it affects a single-part score just as much
+as a multi-part one. `_music_part_to_tokens` does walk each measure's children in raw
+document order, dispatching `<note>`/`<backup>`/`<forward>`/etc. to handlers that push
+symbols tagged with a rhythmic position - so far, order-preserving. But `complete_measure`
+then **re-sorts every symbol in the measure by that rhythmic position** (`sort_order()`,
+grouped via a dict keyed on position), and within each position bucket, splits symbols by
+staff (`_get_staff_no`: upper first, then lower) before `merge_upper_and_lower_staff` walks
+positions in sorted order and, within each, emits upper-staff content before lower-staff
+content, with `create_chord_over_two_staffs` further regrouping into
+barline/clef/key/time/notes order. So the token pipeline's final note order is: sorted by
+musical time, then by staff, then by symbol category - not document order.
+
+This still means `rule_vectors`' raw `part.findall("measure")` -> `measure.findall("note")`
+walk (document order) will disagree with the token pipeline's order whenever a score's XML
+doesn't already happen to interleave staff-1-then-staff-2 via backup/forward in a way that
+collapses to the same sorted result - which is common for plain grand-staff writing but not
+guaranteed (voice-crossing, multiple voices per staff, or unusual backup/forward patterns
+break it). So 27.83's caution about not trusting a note-position-indexed crosstab without
+re-deriving the walk was directionally right, but for a different, deeper reason than
+stated: the risk isn't confined to multi-part scores, it applies to every score, and the
+fix isn't "walk voice-major" but "re-sort by `sort_order()` and staff exactly as
+`complete_measure` does" (or, more simply, drive the crosstab off the same `Measure` objects
+`music_xml_file_to_tokens` already produces, rather than off raw XML at all). Still left for
+the next session that wants the real OLiMPiC recovers/loses crosstab.
+
+**27.85 the real OLiMPiC crosstab: a wash, not a loss.** Built
+`training/transformer/olimpic_rule_vs_head.py` per 27.84's diagnosis: `ordered_rule_vectors`
+computes the rule the same way `rule_vs_head.rule_vectors` does (per-voice onset, since
+beaming is voice-scoped) but re-sorts its output by (onset, staff, document order) to match
+`complete_measure`'s actual label order, rather than trusting raw document order the way
+OSSQ's single-staff segments safely could. Locating each sample's own MusicXML needed no
+segment-decomposition guessing (27.37's "one image and one MusicXML per system, already
+paired by filename" held) - only a fix to the token-stem regex, which needed a literal
+`samples_` prefix (`sample.replace("/", "_")` applied to `"samples/<score>/p<page>-s<system>"`,
+the same leading-path-component gotcha 27.83's `olimpic_beam_baseline.py` hit and fixed for
+`score_id_of`).
+
+Run against phase13's OLiMPiC scanned predictions (1,300 of 1,350 staves joined, 12 skipped
+on their own terms - a musicxml missing or not the expected one-part grand-staff shape):
+
+```
+                  head right   head wrong
+  rule right        18,911        5,075
+  rule wrong         5,058        2,775
+
+rule accuracy: 75.4%   head accuracy: 75.3%
+exceptions the head recovers: 64.6%  (5,058 notes)
+agreements the head loses:    21.2%  (5,075 notes)
+```
+
+Recovered and lost are within 17 notes of each other out of 31,819 - a wash, not the
+regression 27.83 left open as a possibility. The head still recovers a real 64.6% of what
+duration and metre alone cannot predict, which is evidence it is reading the image rather
+than memorising the rule; that recovery is just offset almost exactly by an equal-sized
+loss of agreements the rule already had. This settles the question raised at the top of
+this thread ("in short if we should give up on them"): no - on OLiMPiC the heads are
+neutral, not harmful, which is a different and more precise answer than the totals-only
+comparison (84.0% vs 81.5%) could give, and a different conclusion than OSSQ's own Gate C
+crosstab, where the heads showed a clear net gain. The honest summary across both corpora
+now measured: the heads earn their keep clearly on the genre they were tuned on, and cost
+nothing on a genre they were not.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design

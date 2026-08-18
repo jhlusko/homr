@@ -40,6 +40,13 @@ def read_scores(db_path: Path) -> dict[str, dict[str, float]]:
 
     Failed samples (`error` set, no `ned`) are skipped rather than treated as 0% or 100% -
     a page the tool could not process at all is not comparable to one it read and scored.
+
+    **Values are already 0-1 fractions in the database, not percentages.** The first
+    version of this function divided by 100 on the assumption they were stored as
+    percentages like the tool's own printed log lines (`NED=  2.6%`) - the log formats a
+    fraction for display, the database keeps the fraction itself. That bug produced a mean
+    NED of 0.1% on data whose printed samples ranged from 2% to 14%, caught by checking the
+    raw column values directly against the log rather than trusting the first result.
     """
     connection = sqlite3.connect(str(db_path))
     columns = ", ".join(COMPONENTS)
@@ -47,9 +54,7 @@ def read_scores(db_path: Path) -> dict[str, dict[str, float]]:
     found = {}
     for row in rows:
         sample_id, *values = row
-        # Stored as percentages (e.g. 5.56); normalised to 0-1 so this reads on the same
-        # scale as domain_gap.py's accuracy figures, even though the direction is inverted.
-        found[sample_id] = {name: value / 100.0 for name, value in zip(COMPONENTS, values)}
+        found[sample_id] = dict(zip(COMPONENTS, values))
     connection.close()
     return found
 
