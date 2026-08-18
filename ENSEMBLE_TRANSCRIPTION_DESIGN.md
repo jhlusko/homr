@@ -2763,6 +2763,57 @@ long detector run should save every epoch (or the best-so-far by valid loss) the
 `train_recognizer.py` already doesn't either, so this class of "the good checkpoint several
 epochs ago is gone" problem (already hit once for the recognizer, 27.88) stops recurring.
 
+**27.92 the synthetic data helped Fingering, did not move SystemText, and cost every
+other class - a mixed result, not a win.** Detector v3 (27.90's synthetic Fingering/
+SystemText boxes merged into training, 27.89's class-balanced sampling still active)
+scored against the identical unchanged 305-page validation set:
+
+```
+class            v2 F1   v3 F1     v2 precision   v3 precision
+Expression       13.3%    3.2%           7.3%           1.7%
+Fingering         0.0%   18.8%           0.0%          10.7%
+Lyrics           83.8%   79.1%          74.5%          67.5%
+MeasureNumber    95.7%   78.7%          91.8%          68.6%
+StaffText        15.0%   12.7%           8.3%           7.0%
+SystemText        0.0%    0.0%           0.0%           0.0%
+Tempo            18.4%    9.8%          10.5%           5.2%
+overall          70.5%   57.9%          56.2%          42.0%
+```
+
+Fingering moved off zero for the first time (18.8% F1) - the synthesis approach works, at
+least partially, for the class it added the most examples of (316 boxes). But SystemText,
+which got a comparable injection (156 boxes across the same 79 pages), stayed at exactly
+0%. Checked the synthetic masks directly rather than assume a pipeline bug: SystemText
+pixels are genuinely present (20k-53k per page, comparable to or larger than Fingering's
+2k-5k), so this is a real modelling outcome, not a masking or rasterisation error -
+SystemText may simply be harder to separate from the visually similar StaffText class than
+Fingering is from anything else, though this is not yet confirmed against a confusion
+matrix.
+
+More concerning than either of those: every other class got worse, broadly, not within
+noise - overall F1 dropped 70.5%→57.9%, MeasureNumber (previously the second-best class)
+fell from 95.7% to 78.7%. The likely mechanism: 27.89's class-balanced sampler draws a
+positive centre by picking a class uniformly among those present *on a page*, then a
+centre of that class. For Fingering and SystemText, the only pages where that class is
+"present" are the 79 synthetic ones - so across 20 epochs, those same 79 pages got selected
+as the positive-sampling source for two of seven classes far more often than 79/2,621 of
+the corpus would suggest, and the model likely overfit to whatever is idiosyncratic about
+them (the specific injected words, their placement, or some other synthetic-content tell)
+at the expense of the other six classes' shared background/discrimination capacity - the
+same shape of mistake 27.72 found with global focal loss: a correction aimed at starved
+classes bled into classes it was never meant to touch.
+
+**This is not being recommended for use as-is.** The honest state: manufacturing rendered
+training data for a rare class is a real, working technique (Fingering proves it), but 79
+pages is evidently too narrow a base to draw on this heavily without collateral damage to
+the rest of the detector. The fix implied but not yet tried: either weight the sampler so a
+class's positive-draw frequency is capped by how many *distinct* pages contain it (so 79
+synthetic pages cannot out-compete 2,542 real ones for attention), or generate on
+substantially more distinct source scores at lower density per page rather than
+concentrating iterations on the same 79. Left as an open question for the next session
+rather than another multi-hour retrain attempted immediately, given the session's length.
+27.89's weights (not this run's) remain the better detector to use in the meantime.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
