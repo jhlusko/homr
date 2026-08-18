@@ -2032,6 +2032,36 @@ of bad documents fits beam's shape better than slur's.** Slurs need something cl
 uniform correction, or a different mechanism than per-score reweighting was ever going to
 reach.
 
+### 27.74 The detector's patch sampler, and why homr's own sampler was the wrong template
+
+27.69 left the patch sampler and detector model open, with training resolution set by
+homr's own segmentation pattern - a U-Net over 320x320 tiles. Checked before reusing homr's
+own dataset code wholesale: `training/segmentation/dense_dataset_definitions.py`'s
+`SegmentationBaseDataset` tiles a plain non-overlapping grid across the whole page with no
+bias toward content at all, right for its own targets - noteheads and staff lines occur
+densely enough that most tiles contain some. 27.69 measured text coverage at 0.38% of a
+page, and 27.68 measured about 13 boxes per image; a 4500x3200 page tiles into on the order
+of 140 non-overlapping windows at this size, so an unbiased grid would put text in a
+handful of tiles and nothing in the rest. Copying homr's sampler here would have trained a
+detector almost entirely on the answer "nothing here" - the data-side version of 27.72's
+mistake, where a correction validated for one narrow case got applied somewhere it was
+never measured to be needed. Checking first is what avoided training that mistake into a
+model rather than discovering it afterward.
+
+`detector_patches.py` samples instead of tiling: each patch is centred on a randomly chosen
+box (jittered, so a box does not always sit dead-centre) at a fixed ratio, or on a
+uniformly random page location otherwise - positive examples to learn from, negative ones so
+the model does not predict text everywhere out of habit. Box centres come from
+`cv2.connectedComponentsWithStats` on the rasterised mask rather than from the original box
+list, so the sampler needs nothing but the mask 27.69 already produces. Edge padding follows
+the convention already set in this corpus: white for the image, background for the mask -
+27.51 found zero-padding on a crop teaches a model that every crop ends in a black bar, and
+that lesson applies here without change.
+
+19 tests pass, including a statistical check that `positive_ratio=0.0` on a large page with a
+tiny box rarely lands on it by chance - confirming the sparsity problem the sampler exists to
+correct is real, not assumed. Verification against the real mask corpus is running now.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
