@@ -3118,6 +3118,46 @@ candidate levers, neither tried:
     ever report, not just how it is trained - left for the next explicit decision rather
     than picked here.
 
+**Decided and measured: phase17, the collapsed-vocabulary lever, chosen over
+`--class-weights`.** Picked the fold over `--class-weights` specifically because it needed
+no new code and carries none of the unscoped-correction risk phase12 already charged
+against beam/slur - it only changes what the head is asked to discriminate, not how the
+shared loss is weighted. The threshold was **not** picked from phase15/16's own zero-F1
+list (evaluation-driven class selection on one small valid split risks tuning to that
+split's noise); it reuses 27.96's classifier-side precedent instead - `p, f, mf, pp, sf,
+ff, mp, ppp`, the 8 marks an entirely separate measurement (the crop classifier, on its
+own held-out split) already found cover ~97% of corpus occurrences. `TRAINED_DYNAMIC_MARKS`
+(`homr/transformer/structured_notation.py`) and `trained_dynamic_mark()` implement the
+split the same way `TRAINED_BEAM_LEVELS`/`TRAINED_SLUR_SLOTS` already do: the
+representation (`DynamicMark`, `NoteNotation.dynamic`, the sidecar) stays the full ~33-tag
+set, and only `structured_targets.py`'s target-building collapses anything outside the
+trained set to `OTHER` - so phase15's already-correct converted data needed no
+reconversion, only a retrain.
+
+**Result: macro F1 0.068 -> 0.120, roughly double, but mostly from removing zero-support
+classes out of the average rather than a clean win on every kept mark.** `f` (0.023 ->
+0.032) and `pp` (0.032 -> 0.046) improved; `p` (0.076 -> 0.067) and `ff` (0.067 -> 0.052)
+went the other way. More telling: **`mf`, `mp` and `ppp` - three of the eight marks
+deliberately kept trained on 27.96's precedent - still score exactly 0.000**, despite `mf`
+alone carrying 3,554 training-set occurrences (phase15's sanity count), more than `sf`
+(6,974 has some signal) but on the same order. Support size alone is not predicting which
+marks the head can learn; something else - visual confusability with a neighbouring
+dynamic, position within the crop, an artefact of how OSSQ's synthetic renders these three
+specifically - is still unmeasured. `other-dynamics` (now absorbing the folded tail, support
+1,345 up from 404) scores 0.001, confirming the fold concentrates volume without making the
+catch-all class itself learnable - expected, since OTHER by construction spans marks with
+nothing visually in common.
+
+**Where this leaves the dynamics head:** a real, trained, non-degenerate structured head -
+NONE is 0.999, and the corpus's four most common marks (`p, f, pp, ff`) all score above
+zero and would show up in a prediction stream rather than being silently absent - but not
+a head this design should claim reads dynamics reliably. Three sessions' worth of measured
+levers (plain cross-entropy, focal gamma, vocabulary collapse) have moved macro F1 from
+0.068 to 0.120 without finding what actually limits `mf`/`mp`/`ppp` specifically, which
+suggests the next productive step is diagnostic (read a sample of the model's `mf`
+confusions, the way `stem_arbiter.py`/`rule_vs_head.py` already do for other heads) rather
+than another blind lever. Not yet built.
+
 ### 25.1 Settled by this design
 
 - “Beaming” means explicit musical beam/flag recognition, not beam-search sequence
