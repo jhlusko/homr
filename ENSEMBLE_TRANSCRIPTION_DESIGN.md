@@ -3008,7 +3008,78 @@ comparable in scope to how the beam/stem/slur/tie heads themselves were built - 
 multi-session undertaking, not a single turn's addition - and is left as the next distinct
 piece of work rather than started without a clear stopping point.
 
-## 25. Settled decisions and open measurements
+**27.98 the structured dynamics head is built; its first two training runs found a real
+data bug, then a real class-imbalance problem.** 27.97 left the head itself unbuilt. This
+session built it: `DynamicMark` (the full ~33-tag MuseScore/MusicXML vocabulary, not just
+OSSQ's observed subset - the Lieder corpus this design targets next is expected to use
+marks OSSQ's quartets do not, and an unused logit costs nearly nothing against having to
+add a class later and invalidate every checkpoint trained against it), a `dynamic` field on
+`NoteNotation`, staff-scoped attachment in `NotationExtractor`/`music_xml_parser.py` (a
+direction on staff 1 of a multi-staff part must not be claimed by staff 2's next note -
+dormant in OSSQ's single-staff quartet parts, live for Lieder's piano staves), a
+`dynamic.mark` head in `StructuredNotationHeads`, and the matching target/decode/metric/
+manifest/sidecar wiring (`structured_targets.py`, `structured_decoding.py`,
+`structured_metrics.py`, `capability_manifest.py`, `notation_sidecar.py` bumped to v3).
+Unit tests (`test_structured_notation_parser.py::TestDynamics`, staff-scoping and
+cross-part isolation included) and the full existing structured-heads suite pass
+unchanged (137 tests, 11 subtests).
+
+**Phase14 (first training run, plain cross-entropy): the dynamics head learned nothing -
+loss 0.0107 -> 0.0000 by epoch 2, flat through epoch 12, while every other head kept
+declining.** The eval report showed why: **zero non-`none` dynamics anywhere in the
+converted corpus, train or valid** (1,136,351 and 131,842 notes respectively, all
+labelled `none`). This is not the class-imbalance failure 27.94's reasoning was built to
+survive - it is an absence of data, and tracing it found a bug one level below anything
+this design had touched. `convert_ossq.py` tokenises the "unaligned" systemwise segment
+MusicXML under `musicxml/unaligned/`, not the whole-score file `dynamics_attachment.py`
+was measured against (27.97) - and that segment file carries **zero `<direction>`
+elements anywhere in the corpus**, confirmed by grep against a sample segment and its
+whole-score counterpart (3,375 directions, 474 dynamics) and against the `_cleaned`
+copy (also zero). The MuseScore round-trip that produces "unaligned" segments drops
+`<direction>` entirely - the same family of loss `slur_placement.py`'s docstring already
+documented for slur placement (numbering flattened, placement dropped), just total here
+instead of partial. 27.97's 3.35% corpus-wide measurement was real and correct; it was
+simply run against a file convert_ossq.py never reads.
+
+**The fix is 27.20's fix, applied to a second kind of information lost the same way.**
+Built `dynamics_placement.py`, structurally identical to `slur_placement.py`:
+`part_dynamics()` walks a whole-score part with the same `NotationExtractor` the segment
+pipeline uses, filtered to *visible* notes to match `part_signature`'s alignment unit;
+`DynamicsPlacementIndex` reuses `slur_placement.py`'s validated positional join
+(`is_visible`, `part_signature`, `concatenated`, `segments_of`) rather than re-deriving
+it - the join is the fragile, previously-broken part (27.20's docstring: broken five
+times before), and nothing here should risk breaking it a sixth for the sake of not
+importing; `apply_dynamics()` writes recovered marks back as ordinary `<direction>`
+elements immediately before the note they belong to, so the ordinary extractor reads them
+the way it always would and nothing downstream needs to know this was reconstructed.
+Wired into `convert_ossq.py._write_example`/`build()` alongside the existing
+`PlacementIndex`, same pattern, same per-score caching. 11 new unit tests cover the
+visible-note filtering, the index slicing, and - end to end - that a mark written by
+`apply_dynamics` and read back by `parse_part` returns exactly what went in. Checked
+against the real corpus before trusting it further: one score, 4/4 parts aligned, 473 of
+474 source dynamics recovered.
+
+**Phase15 (reconverted with the fix, same plain-cross-entropy recipe): real signal, poor
+head.** The sidecars now carry a musically ordinary distribution - 60,559 of 1,136,351
+train notes (5.33%) marked, dominated by `p, f, sf, pp, ff, mf, other-dynamics, fz, fp,
+mp, ppp, sfp, rf, sfz` - and `dynamic.mark`'s training loss starts at 0.2645 and declines
+to a 0.239 plateau by epoch 12, nothing like phase14's instant collapse. But the eval
+number is still bad: **macro F1 0.068**, next to ties' 0.831 in the same run. The
+comparison that matters is support, not the headline number: dynamics' non-`none` support
+(7,219) and ties' (7,064) are nearly identical - this is not the sparse-supervision
+problem 27.94's reasoning addressed. The difference is class count: ties spreads its
+positive mass over 3 non-`none` classes, dynamics over 17 observed ones, so a
+comparably-sized signal is divided far thinner per class. `p:F1=0.076, f:F1=0.023,
+ff:F1=0.067` are the least-bad marks (the most frequent ones); nine of the seventeen
+score exactly 0.000.
+
+**Decided: phase16, `--focal-gamma-head dynamic.mark=2.0`** - the same lever and the same
+first value that fixed the tie head in phase13, tried before anything more elaborate
+(per-class weighting, a higher gamma, merging rare marks) because it is the cheapest
+correction this project has already validated for exactly this shape of problem, and
+trying it first is what makes a later, more invasive fix defensible if this one is not
+enough. Launched against phase15's already-correct converted data (no reconversion
+needed) - not yet measured.
 
 ### 25.1 Settled by this design
 
