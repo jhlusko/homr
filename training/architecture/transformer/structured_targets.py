@@ -34,6 +34,7 @@ from homr.transformer.structured_notation import (
     NoteNotation,
     SlurSide,
     StemDirection,
+    trained_dynamic_mark,
 )
 from homr.transformer.vocabulary import EncodedSymbol
 from training.architecture.transformer.structured_heads import (
@@ -115,7 +116,10 @@ def _fill_note(
 
     # Always supervised too: NONE (no dynamic attached) is 96.65% of notes (27.97) but is
     # a real prediction, the same shape of imbalance the tie head already handles.
-    targets[DYNAMIC_HEAD][row, column] = _DYNAMIC_INDEX[notation.dynamic]
+    # Collapsed through trained_dynamic_mark, not indexed on notation.dynamic directly -
+    # the head's own vocabulary is the phase16-measured trained subset (28.1), smaller
+    # than the full representation NoteNotation carries.
+    targets[DYNAMIC_HEAD][row, column] = _DYNAMIC_INDEX[trained_dynamic_mark(notation.dynamic)]
 
     for slot in range(1, slur_slots + 1):
         event, side = notation.slurs[slot - 1]

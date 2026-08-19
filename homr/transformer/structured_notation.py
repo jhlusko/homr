@@ -98,6 +98,11 @@ class DynamicMark(StrEnum):
     almost nothing, where a class missing from the head's vocabulary cannot be added later
     without invalidating every checkpoint trained against it - and the Lieder corpus this
     design targets next is expected to use marks OSSQ's string quartets do not.
+
+    This is the representation's vocabulary, not necessarily a trained head's: see
+    `TRAINED_DYNAMIC_MARKS` for the smaller set phase16 (28.1) found any one training run
+    can actually make use of. `NoteNotation.dynamic` and the sidecar always carry the full
+    mark; only `structured_targets.py`'s target-building collapses it.
     """
 
     #: No dynamic attaches to this note - the common case, and a real prediction like
@@ -206,11 +211,6 @@ STEM_CLASSES: tuple[StemDirection, ...] = tuple(
 #: schema and any future head cannot disagree about the vocabulary.
 TIE_CLASSES: tuple[TieState, ...] = tuple(TieState)
 
-#: Classes the dynamics head predicts. Every state is reachable, including NONE - see
-#: DynamicMark's docstring for why the vocabulary is the full MusicXML/MuseScore set
-#: rather than only OSSQ's observed labels.
-DYNAMIC_CLASSES: tuple[DynamicMark, ...] = tuple(DynamicMark)
-
 #: MusicXML <dynamics> child tag -> DynamicMark, for every tag the enum recognises.
 _DYNAMIC_TAG_VALUES = {mark.value for mark in DynamicMark if mark != DynamicMark.NONE}
 
@@ -223,10 +223,52 @@ def dynamic_mark_from_tag(tag: str | None) -> DynamicMark:
     children in one element (27.97's `pother-dynamics`) - maps to OTHER rather than
     raising, since a label pipeline that refuses on an unfamiliar mark would lose real,
     attachable data to a corpus quirk in the source's own text concatenation.
+
+    This is the full-fidelity mapping `NoteNotation.dynamic` and the sidecar carry - see
+    `TRAINED_DYNAMIC_MARKS` for the separate, smaller vocabulary a trained head predicts.
     """
     if tag is None:
         return DynamicMark.NONE
     return DynamicMark(tag) if tag in _DYNAMIC_TAG_VALUES else DynamicMark.OTHER
+
+
+#: Marks given a trained head, mirroring TRAINED_BEAM_LEVELS/TRAINED_SLUR_SLOTS: the
+#: representation (DynamicMark, and what NoteNotation.dynamic/the sidecar carry) stays the
+#: full ~33-tag set, independent of what any one training run asks the head to
+#: discriminate. 27.96/27.97's corpus audit found p/f/mf/pp/sf/ff/mp/ppp cover ~97% of
+#: examples; phase16 (28.1) measured that the rest have too few examples for loss
+#: reweighting to help regardless - nine of the seventeen marks observed in one eval had
+#: single- or low-double-digit support, and scoped focal loss (which fixed the tie head)
+#: left dynamics' macro F1 flat. Folding everything else to OTHER concentrates what little
+#: signal exists onto marks the head has already shown it can partly learn, without
+#: shrinking what a sidecar can represent - Lieder may yet make a folded mark common
+#: enough to add back, which is why this is a target-time collapse, not a schema change.
+TRAINED_DYNAMIC_MARKS: frozenset[DynamicMark] = frozenset(
+    {
+        DynamicMark.NONE,
+        DynamicMark.OTHER,
+        DynamicMark.P,
+        DynamicMark.F,
+        DynamicMark.MF,
+        DynamicMark.PP,
+        DynamicMark.SF,
+        DynamicMark.FF,
+        DynamicMark.MP,
+        DynamicMark.PPP,
+    }
+)
+
+
+def trained_dynamic_mark(mark: DynamicMark) -> DynamicMark:
+    """Collapse a mark to the head's trained vocabulary, folding everything else to OTHER."""
+    return mark if mark in TRAINED_DYNAMIC_MARKS else DynamicMark.OTHER
+
+
+#: Classes the dynamics head predicts - the trained subset, not the full representation.
+#: Order follows DynamicMark's own declaration order so index assignment is stable.
+DYNAMIC_CLASSES: tuple[DynamicMark, ...] = tuple(
+    mark for mark in DynamicMark if mark in TRAINED_DYNAMIC_MARKS
+)
 
 SLUR_EVENT_CLASSES: tuple[SlurEvent, ...] = tuple(SlurEvent)
 SLUR_SIDE_CLASSES: tuple[SlurSide, ...] = tuple(SlurSide)
