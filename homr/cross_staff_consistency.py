@@ -24,6 +24,12 @@ position, not just count), a voice's measure duration disagreeing with the time
 signature (needs duration arithmetic across the whole measure), part order changing
 between systems and missing/extra staff output (both need state carried across systems,
 not just within one) - left as further Stage A work, not silently assumed solved.
+
+`analyze_system`'s input shape (one list of symbols per staff *of one system*) is not
+`staff_parsing.parse_staffs`' output shape (one list per *voice*, concatenated across
+every system that voice appears in). `split_by_system`/`findings_by_page` bridge the
+two - see `findings_by_page`'s docstring for why that is a real reshaping problem, not
+just a transpose, whenever a voice is missing from a system.
 """
 
 from dataclasses import dataclass
@@ -209,3 +215,58 @@ def analyze_system(
         findings.extend(check_clefs_against_profile(staves, staff_to_part))
     findings.extend(check_dangling_slurs(staves))
     return findings
+
+
+def split_by_system(symbols: list[EncodedSymbol]) -> list[list[EncodedSymbol]]:
+    """One voice's concatenated-across-systems symbol stream, split back into one chunk
+    per system, at the literal `"newline"` marker `staff_parsing.parse_staffs` inserts
+    after every staff it decodes - including the last one for a voice, which is why a
+    single trailing empty chunk (not an internal one) is dropped rather than kept: it is
+    the artefact of that unconditional trailing marker, not a real empty system.
+    """
+    chunks: list[list[EncodedSymbol]] = [[]]
+    for symbol in symbols:
+        if symbol.rhythm == "newline":
+            chunks.append([])
+        else:
+            chunks[-1].append(symbol)
+    if chunks and not chunks[-1]:
+        chunks.pop()
+    return chunks
+
+
+def findings_by_page(
+    voices: list[list[EncodedSymbol]],
+    voice_present_by_system: list[list[bool]],
+    staff_to_part_by_system: list[dict[int, ScorePart]] | None = None,
+) -> list[list[Finding]]:
+    """Stage A findings for every system on a page, from `parse_staffs`' own output
+    shape: one list per voice, that voice's symbols concatenated across every system it
+    appears in.
+
+    The reshaping this exists for is not just a transpose. A voice missing from one
+    system - `system_grouping`'s whole reason for existing is that this is common -
+    contributes *no* chunk for that system at all, not an empty one, so
+    `split_by_system`'s chunks cannot be lined up against systems by position alone.
+    `voice_present_by_system[s][v]` (the same information `SystemPlan.staff_for_voice`
+    already holds, passed as plain booleans rather than importing `staff_parsing.py`'s
+    `SystemPlan` - that module pulls in cv2 and the transformer stack, which this
+    package deliberately stays free of so it can be tested without either) says whether
+    voice `v` contributed a chunk to system `s`, in the same order `voices` was built:
+    consuming chunks with a per-voice cursor that only advances on `True` reproduces the
+    correspondence exactly.
+    """
+    split_voices = [split_by_system(voice) for voice in voices]
+    cursors = [0] * len(voices)
+    results: list[list[Finding]] = []
+    for system_index, presence in enumerate(voice_present_by_system):
+        staves = []
+        for voice_number, present in enumerate(presence):
+            if present:
+                staves.append(split_voices[voice_number][cursors[voice_number]])
+                cursors[voice_number] += 1
+        staff_to_part = (
+            staff_to_part_by_system[system_index] if staff_to_part_by_system else None
+        )
+        results.append(analyze_system(staves, staff_to_part))
+    return results

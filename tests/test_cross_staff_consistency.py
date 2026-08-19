@@ -1,18 +1,18 @@
 import unittest
 
 from homr.cross_staff_consistency import (
-    Finding,
     analyze_system,
     check_clefs_against_profile,
     check_dangling_slurs,
     check_key_signatures,
     check_measure_counts,
     check_time_signatures,
+    findings_by_page,
     measure_count,
+    split_by_system,
 )
 from homr.score_profile import ScorePart
 from homr.transformer.structured_notation import (
-    BeamLevelState,
     NoteNotation,
     SlurEvent,
     SlurSide,
@@ -193,6 +193,82 @@ class TestAnalyzeSystem(unittest.TestCase):
         findings = analyze_system([staff])
 
         self.assertNotIn("clef_profile_mismatch", {f.kind for f in findings})
+
+
+class TestSplitBySystem(unittest.TestCase):
+    def test_one_system_with_no_newline_is_one_chunk(self) -> None:
+        symbols = [_sym("note_4"), _sym("barline")]
+
+        self.assertEqual(split_by_system(symbols), [symbols])
+
+    def test_a_trailing_newline_does_not_produce_an_empty_final_chunk(self) -> None:
+        # parse_staffs appends "newline" after every staff, including a voice's last one.
+        symbols = [_sym("note_4"), _sym("newline")]
+
+        self.assertEqual(split_by_system(symbols), [[_sym("note_4")]])
+
+    def test_multiple_systems_split_at_each_newline(self) -> None:
+        symbols = [_sym("note_4"), _sym("newline"), _sym("note_8"), _sym("newline")]
+
+        chunks = split_by_system(symbols)
+
+        self.assertEqual(chunks, [[_sym("note_4")], [_sym("note_8")]])
+
+    def test_an_empty_stream_produces_no_chunks(self) -> None:
+        self.assertEqual(split_by_system([]), [])
+
+
+class TestFindingsByPage(unittest.TestCase):
+    def test_a_page_where_every_voice_appears_in_every_system(self) -> None:
+        # Two voices, two systems, no gaps - the simple case findings_by_page must not
+        # break on its way to handling the harder one below.
+        voice_a = [
+            _sym("keySignature_0"), _sym("newline"), _sym("keySignature_0"), _sym("newline")
+        ]  # fmt: skip
+        voice_b = [
+            _sym("keySignature_0"), _sym("newline"), _sym("keySignature_-1"), _sym("newline")
+        ]  # fmt: skip
+
+        results = findings_by_page([voice_a, voice_b], [[True, True], [True, True]])
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0], [])  # system 1: both voices agree
+        self.assertEqual(len(results[1]), 1)  # system 2: keys disagree
+        self.assertEqual(results[1][0].kind, "key_signature_mismatch")
+
+    def test_a_voice_missing_from_one_system_does_not_shift_the_other_systems_chunks(
+        self,
+    ) -> None:
+        # Voice B is absent from system 2 (e.g. an incomplete system spacing recovered).
+        # Voice A has three chunks (systems 1, 2, 3); voice B has only two (systems 1
+        # and 3) - naive positional zipping would compare A's system-3 chunk against
+        # B's system-2 chunk and misattribute every finding from system 3 onward.
+        voice_a = (
+            [_sym("keySignature_0"), _sym("newline")]
+            + [_sym("keySignature_0"), _sym("newline")]
+            + [_sym("keySignature_-3"), _sym("newline")]
+        )
+        voice_b = (
+            [_sym("keySignature_0"), _sym("newline")] + [_sym("keySignature_-3"), _sym("newline")]
+        )
+        presence = [[True, True], [True, False], [True, True]]
+
+        results = findings_by_page([voice_a, voice_b], presence)
+
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0], [])  # system 1: both present, both key 0
+        self.assertEqual(len(results[1]), 0)  # system 2: only voice A - nothing to compare
+        # system 3: both present, both key -3 - correctly matched despite the gap.
+        self.assertEqual(results[2], [])
+
+    def test_a_staff_to_part_mapping_is_forwarded_per_system(self) -> None:
+        violin = ScorePart("violin-1", likely_clefs=("G2",))
+        voice_a = [_sym("clef_F4"), _sym("newline")]
+
+        results = findings_by_page([voice_a], [[True]], staff_to_part_by_system=[{0: violin}])
+
+        self.assertEqual(len(results[0]), 1)
+        self.assertEqual(results[0][0].kind, "clef_profile_mismatch")
 
 
 if __name__ == "__main__":
