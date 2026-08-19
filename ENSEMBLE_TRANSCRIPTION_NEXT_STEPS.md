@@ -18,9 +18,9 @@ Of the five parts in the original design's executive summary:
 | Part | Status |
 |---|---|
 | 1. Structured output heads (beam/stem/slur/tie/dynamics) | Done |
-| 2. Optional score-profile conditioning | **Not started** — §2 below |
+| 2. Optional score-profile conditioning | **In progress** — §3 below |
 | 3. System grouping after segmentation | Done (`homr/system_grouping.py`) |
-| 4. Cross-staff consistency checks and repair | **Not started** — §3 below |
+| 4. Cross-staff consistency checks and repair | **Not started** — §4 below |
 | 5. Page-local inference with review-system evidence | Partially — the per-head structured evidence exists; no page-assembly/review surface has been built |
 
 The four threads below are the ones with enough existing work (or existing spec) to
@@ -141,10 +141,48 @@ the corpus does not contain.
 
 ---
 
-## 3. Score-profile conditioning — not started
+## 3. Score-profile conditioning — schema and layout use built; conditioning not started
 
 Full contract already specified in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §7; reproduced
 here so this file is self-contained.
+
+### Built so far
+
+- `homr/score_profile.py`: `ScorePart`/`ScoreProfile` dataclasses implementing §7.1's
+  contract exactly (schema `homr.score-profile.v1`, `to_dict`/`from_dict`, a missing or
+  mismatched `schemaVersion` refuses rather than defaulting — the same discipline
+  `homr.transformer.capability_manifest` already uses). `expected_staff_pattern` expands
+  each part to one `stableId` per physical staff it occupies (a `expectedStaffCount=2`
+  piano part contributes its id twice, adjacently), which is what makes a profile
+  directly comparable to a detected staff sequence regardless of how many staves each
+  part spans. A `STRING_QUARTET` example profile is included as the running example this
+  design and the OSSQ corpus both use.
+- `homr/score_profile_layout.py`: `propose_part_assignment`, the §7.2 layout use. Built
+  directly on `homr.system_grouping.assign_voice_slots` rather than re-solving staff
+  identity — that function already resolves which voice slot (0..N-1) a detected staff
+  belongs to, including the missing-staff case a real page's bracket detector gets
+  wrong, using pure geometry. This module only lays a profile's expected pattern against
+  that resolved slot sequence. Per system: an exact staff-count match produces a full
+  `staff_to_part` mapping at `evidence_score=1.0`; any mismatch (wrong staff count, or
+  voice slots `system_grouping` itself could not resolve) produces an empty mapping with
+  a stated deviation reason rather than a guess — per §7.1's "never a hard constraint"
+  and the concrete risk that a wrong mapping would attach the wrong instrument context to
+  real music, which is worse than no mapping at all.
+- 23 tests (`tests/test_score_profile.py`, `tests/test_score_profile_layout.py`), all
+  passing; `tests/test_system_grouping.py`'s existing 30 unaffected.
+- **Not wired into `homr/main.py` or any live pipeline yet.** Both modules are pure
+  functions over plain data (a `ScoreProfile`, a `SystemPartition`, a voice-slot list) —
+  deliberately decoupled from image/`Staff`-object handling so they could be built and
+  tested without touching the live pipeline, the same way `system_grouping.py` itself
+  stays decoupled from pixels. Wiring a profile *in* (accepting one as a job input) and
+  wiring the assignment *out* (into whatever consumes per-staff decoding today, and into
+  a review surface per §7.2's "exact source-image regions" requirement) is the next step
+  before this thread is usable end to end.
+- `evidence_score` is binary (1.0 exact match, 0.0 anything else) — §7.2 asks for "an
+  evidence score with competing hypotheses," which this does not yet provide. A partial
+  match (right total count, ambiguous per-part split) currently reports the same 0.0 as a
+  completely wrong count; distinguishing those is unimplemented, not yet needed by
+  anything downstream.
 
 ### Contract
 
@@ -208,14 +246,21 @@ because §1 has existing infrastructure and a clear next experiment already name
 this thread needs a new module (`homr/score_profile.py` or similar does not exist yet)
 built from a written spec with no empirical validation yet.
 
-### First implementation step (not yet started)
+### Next implementation step
 
-None of §7's contract has an implementation. The smallest defensible first slice, per
-§24's own "recommended first implementation slice" ordering: the schema and a
-deterministic layout-scoring use (§7.2) — reading a supplied profile and reporting the
-evidence/deviation fields — before touching the decoder conditioning (§7.3), which needs
-the zero-gate discipline and a training-time dropout schedule (§7.4) to be safe to turn
-on.
+The schema and the deterministic layout use (§7.2) are built (above). Two directions
+from here, independent of each other:
+
+1. **Wire the layout use into the real pipeline** — accept a profile as a job input,
+   call `propose_part_assignment` where staff-to-system grouping already runs, surface
+   the mapping (and deviations) to whatever renders a review surface. No new design
+   needed, this is integration work against existing modules.
+2. **§7.3 decoder conditioning** — genuinely new work: instrument-family/part-ordinal/
+   staff-within-part/expected-staff-count/likely-clef/transposition embeddings injected
+   as prefix tokens or a zero-initialized gated additive vector, plus §7.4's training-time
+   context dropout. Needs a training run to validate, unlike #1. Do this after #1 — a
+   profile with no way to reach a human reviewer or the decoder is not yet worth
+   conditioning training on.
 
 ---
 
