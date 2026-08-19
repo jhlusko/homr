@@ -3196,6 +3196,45 @@ before trusting a number) rather than another training-recipe change. Not yet do
 as the next distinct piece of work, the same way 27.97 left the head itself at the end of
 the session that measured the attachment rule.
 
+**Looked at the actual crops. Found the diagnosis's missing piece: at least some `mf`
+ground truth is not printed on the page at all.** Pulled six real training-set crops for
+notes labelled `mf` where the head predicted `none`, from two different scores. One
+(`sq8806134`, measure ~20) shows `mf` exactly where labelled, rendered plainly under the
+note - a working positive control, ruling out "the head can never read this glyph."
+The other (`sq10406164`, page 17 system 1, part 2) does not: traced the label to
+measure 50's `<direction><dynamics><mf/></dynamics></direction>` in the whole-score
+XML (no `print-object="no"`, so nothing in the source marks it non-printing), verified
+`dynamics_placement.py`'s positional join lands it on the correct note (global visible-
+note index 2800 of 4256, sliced to local index 6 of this segment's 23 - arithmetic checked
+directly, not just trusted), reconstructed the exact `<direction>`-annotated XML
+`apply_dynamics` would tokenise, and confirmed by hand which rendered note that XML
+position corresponds to. At 4x zoom, that note - a tied, dotted-quarter chord starting a
+diminuendo phrase - carries `dim.` underneath it in the rendered crop. No `mf` appears
+anywhere on the system. The whole-score XML's own dynamics are otherwise unremarkable nearby
+(`sf`/`f`/`p`/`ff`/`pp` all present and printed at their measures), so this reads as one
+specific direction that survived into the XML export without ever being (or no longer
+being) engraved on the page - plausibly an editing leftover (MuseScore keeps an invisible
+direction's dynamics data even after a visible mark is deleted or replaced, and this
+corpus is machine-derived OMR ground truth to begin with, not hand-verified per mark).
+
+**This means part of `mf`/`mp`/`ppp`'s measured 87-92% "predicts none" rate may not be
+head failure at all - the model may be correctly reporting nothing where there is visually
+nothing to report, and being scored wrong for it.** Not a `dynamics_placement.py` bug: the
+extraction, alignment and reinjection are all confirmed correct against this XML: the
+finding is that the XML itself is not always faithful to the page for every mark, a
+distinct problem this design has not measured for any other structured-notation channel
+because none of them previously depended on `<direction>` elements at all. Unmeasured:
+how much of the shortfall this actually explains - one confirmed unprinted `mf` and one
+confirmed printed one is an existence proof, not a rate. The next step is to measure that
+rate before touching training again: sample a meaningful number of `mf`/`mp`/`ppp`
+(and, as a sanity check, some `p`/`f` too, to see whether the rate is dynamics-specific or
+a general property of this corpus) ground-truth positions against their actual rendered
+crops, the same way this session's own real-corpus sanity checks for `dynamics_placement.py`
+and `slur_placement.py`'s alignment measurement both did - and only then decide whether the
+fix belongs in extraction (e.g. requiring a `<sound>`-only heuristic, or cross-checking
+placement/offset plausibility) or is a corpus-quality ceiling this design has to report and
+accept. Not yet done.
+
 ### 25.1 Settled by this design
 
 - “Beaming” means explicit musical beam/flag recognition, not beam-search sequence
