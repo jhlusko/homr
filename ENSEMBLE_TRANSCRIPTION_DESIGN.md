@@ -3260,6 +3260,9 @@ understood: a real but minority-share ground-truth noise floor, and an unexplain
 remainder this session did not chase further. Left here as the honest stopping point:
 not a working three-mark reader, not a mystery either, and not worth a fifth training run
 without a new idea rather than another rerun of the same one.
+
+## 25. Settled decisions and open measurements
+
 ### 25.1 Settled by this design
 
 - “Beaming” means explicit musical beam/flag recognition, not beam-search sequence
