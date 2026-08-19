@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from homr import constants
+from homr.cross_staff_consistency import findings_by_page
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
@@ -483,4 +484,35 @@ def parse_staffs(
             i += 1
 
         voices.append(remove_duplicated_symbols(result_for_voice))
+    if selected_staff < 0:
+        # Only meaningful for a normal run: selected_staff restricts processing to one
+        # staff, so most voices are deliberately absent from most systems rather than
+        # genuinely missing, and the presence map below would not describe what
+        # findings_by_page actually received.
+        _report_cross_staff_findings(plan, voices)
     return voices
+
+
+def _report_cross_staff_findings(plan: SystemPlan, voices: list[list[EncodedSymbol]]) -> None:
+    """Stage A (design §12.1): log deterministic cross-staff disagreements, without
+    altering anything voices carries forward. No score profile is threaded through here
+    yet, so the clef-vs-profile check never fires from this call site - see
+    ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4 for the remaining wiring.
+
+    Guarded end to end: this call site has not been exercised against a real page (no
+    GPU/image pipeline was available to test it against), unlike the reshaping logic
+    itself, which is unit-tested. A diagnostic that can find nothing new about a page's
+    music must never be the reason a page fails to transcribe, so a bug here is logged
+    and swallowed rather than allowed to propagate past what is otherwise a log-only
+    addition.
+    """
+    try:
+        presence = [
+            [plan.staff_for_voice(system, voice) is not None for voice in range(len(voices))]
+            for system in range(len(plan.systems))
+        ]
+        for system_index, findings in enumerate(findings_by_page(voices, presence)):
+            for finding in findings:
+                eprint(f"System {system_index}: {finding.message}")
+    except Exception as error:  # noqa: BLE001
+        eprint(f"Cross-staff consistency check failed, skipping: {error}")
