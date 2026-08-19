@@ -43,8 +43,13 @@ from training.ocr.detector_data import Box, collect
 #: that is the priority used when boxes overlap - later in the list wins, chosen roughly by
 #: how large and unambiguous a class's boxes are, so a specific small label drawn over a
 #: sprawling class name is a more defensible default than the reverse.
+#:
+#: Dynamic added 27.94: excluded from the OCR *recognizer* (music glyph, not text - 27.45),
+#: but that is not an argument against detecting its box, and at 5,013 boxes it is the most
+#: common non-Lyrics class in the corpus - placed early, like Fingering, since it is small
+#: and specific rather than a sprawling text class.
 CLASS_ORDER = (
-    "Fingering", "Expression", "Tempo",
+    "Dynamic", "Fingering", "Expression", "Tempo",
     "MeasureNumber", "StaffText", "Lyrics",
 )
 

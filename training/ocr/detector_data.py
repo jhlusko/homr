@@ -10,8 +10,13 @@ it stands cannot be pointed at one.
 This is that gap's data half: one row per box, image path, class name, and the box itself,
 built from the `.boxes.json` corpus `musescore_boxes.py` already produces. It needs no
 string - detection only has to find and classify a region, which is why lyric boxes and the
-unpaired classes of 27.44 (Dynamic excluded, per 27.45: it is a music glyph, not text) can
-train the same detector even though only lyrics carry a label to recognise afterwards.
+unpaired classes of 27.44 can train the same detector even though only lyrics carry a label
+to recognise afterwards. Dynamic is included as of 27.94: 27.45 was right that it is a
+music glyph, not text, and does not belong in the CTC recognizer - but that is a
+recognition-stage argument, not a detection-stage one, and 27.94 found it is in fact the
+most common non-Lyrics class in the corpus (5,013 boxes) once actually counted. What reads
+a detected Dynamic box is a small closed-set classifier, not the syllable recogniser -
+still to be built.
 
 **Class balance is reported, not fixed here.** 27.62 measured what an imbalanced classifier
 does without correction - it stops predicting the rare class - and a detector with `Lyrics`
@@ -29,13 +34,15 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-#: Classes the detector should learn to find. Dynamic is deliberately absent - 27.45 found
-#: it renders square where every text class is wide, because MusicXML stores it as an
-#: element name rather than a string; it belongs to homr's symbol vocabulary, not to an OCR
-#: detector, and mixing it in here would train the wrong task under the right-looking data.
+#: Classes the detector should learn to find. Dynamic is included as of 27.94 - it renders
+#: square where every text class is wide, because MusicXML stores it as an element name
+#: rather than a string, but that only means it must not be read by the CTC recognizer
+#: (still true, per 27.45); finding its box is a detection-stage question, separate from
+#: how it gets read afterwards, and at 5,013 boxes it is the most common non-Lyrics class
+#: in the corpus.
 DETECTION_CLASSES = frozenset(
     {"Lyrics", "Tempo", "StaffText", "SystemText", "Expression", "Text",
-     "InstrumentName", "MeasureNumber", "RehearsalMark", "Fingering", "Harmony"}
+     "InstrumentName", "MeasureNumber", "RehearsalMark", "Fingering", "Harmony", "Dynamic"}
 )
 
 

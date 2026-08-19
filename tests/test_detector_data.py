@@ -18,17 +18,24 @@ def _record(lyrics=None, text_boxes=None) -> dict:
             "lyrics": lyrics or [], "text_boxes": text_boxes or {}}
 
 
-class TestDynamicExcluded(unittest.TestCase):
-    """27.45: Dynamic renders square where every text class is wide, because MusicXML
-    stores it as an element name rather than a string - it is not text."""
+class TestDynamicIncluded(unittest.TestCase):
+    """27.45 kept Dynamic out of the CTC recognizer - it renders square where every text
+    class is wide, because MusicXML stores it as an element name rather than a string, so
+    it is not text to be read. 27.94 found that is a recognition-stage argument, not a
+    detection-stage one: at 5,013 boxes it is the most common non-Lyrics class in the
+    corpus, so its box is still worth finding even though nothing yet reads what it says.
+    """
 
-    def test_dynamic_is_not_a_detection_class(self) -> None:
-        self.assertNotIn("Dynamic", DETECTION_CLASSES)
+    def test_dynamic_is_a_detection_class(self) -> None:
+        self.assertIn("Dynamic", DETECTION_CLASSES)
 
-    def test_a_dynamic_box_is_dropped_even_when_present(self) -> None:
+    def test_a_dynamic_box_is_kept(self) -> None:
         record = _record(text_boxes={"Dynamic": [{"left": 1, "top": 1, "right": 5, "bottom": 5}]})
 
-        self.assertEqual(boxes_of(record, "img.png"), [])
+        boxes = boxes_of(record, "img.png")
+
+        self.assertEqual(len(boxes), 1)
+        self.assertEqual(boxes[0].label, "Dynamic")
 
 
 class TestBoxesOf(unittest.TestCase):
