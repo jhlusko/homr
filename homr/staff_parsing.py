@@ -499,12 +499,15 @@ def _report_cross_staff_findings(plan: SystemPlan, voices: list[list[EncodedSymb
     yet, so the clef-vs-profile check never fires from this call site - see
     ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4 for the remaining wiring.
 
-    Guarded end to end: this call site has not been exercised against a real page (no
-    GPU/image pipeline was available to test it against), unlike the reshaping logic
-    itself, which is unit-tested. A diagnostic that can find nothing new about a page's
-    music must never be the reason a page fails to transcribe, so a bug here is logged
-    and swallowed rather than allowed to propagate past what is otherwise a log-only
-    addition.
+    Run end to end against two real OSSQ pages (`sq7313978:0001`, `sq8823783:0061`) on a
+    GPU instance: no exception, `homr.main` wrote MusicXML normally in both cases, and it
+    surfaced real findings (a key-signature restatement that only one of four parts
+    carried into its second system; a time-signature and two key-signature mismatches on
+    the second page) - genuine per-voice decode disagreements, not this module
+    misreading its own input. Still guarded regardless: a diagnostic that can find
+    nothing new about a page's music must never be the reason a page fails to
+    transcribe, so a bug here is logged and swallowed rather than allowed to propagate
+    past what is otherwise a log-only addition.
     """
     try:
         presence = [
