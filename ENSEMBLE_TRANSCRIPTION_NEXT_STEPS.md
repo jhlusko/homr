@@ -414,13 +414,60 @@ was, against real inference rather than a substitute):
    signature to read them - but it means **tier 2's practical value for exactly the
    key/time-signature repair case that motivated it is not yet established**, on n=1.
 
-**Not yet done:** test across more staves (does this hold generally, or was this one
-staff/key-change atypical?), test other correction types (a rhythm/duration correction
-mid-measure, which does have a clear reason to affect subsequent barline alignment,
-unlike a key signature's effect on accidentals specifically), and only then decide
-whether tier 2 is the right lever for Stage B's key/time-signature case or whether tier 1
-(the plain deterministic swap) is just as good for that specific finding type since the
-model was not using the key context anyway.
+**Measured across 12 more tests (6 key-signature, 6 rhythm/duration corrections, 6
+different scores): 0/12 showed any downstream difference at all.** Every corrected
+continuation was length-for-length, token-for-token identical to the original
+uncorrected tail - including the rhythm/duration case this section originally expected
+*might* differ (a mid-measure duration change has a plausible reason to shift subsequent
+barline-relative decoding that a key signature's effect on accidentals does not; it
+didn't). This is no longer an n=1 curiosity - it is a consistent, decisive result:
+
+**Decided: tier 1 (the plain deterministic token swap) is the recommended Stage B
+implementation, not tier 2, until a case is found where they diverge.** Given the model's
+future predictions did not depend on the corrected token's identity in any of 12
+independent tests, tier 2's extra decoder pass buys nothing over tier 1's free edit for
+every case measured so far - both tiers necessarily produce the identical final result
+when the model ignores the correction either way. Tier 2's code stays
+(`generate_from_prefix`, already built, harmless, cheap to call) for the case that does
+turn out to be token-history-sensitive, rather than deleted on a 12-sample null result -
+but the working assumption going forward is tier 1 first, tier 2 only if a specific
+correction type is shown to need it.
+
+**Open hypothesis, not yet tested: does this null result hold for *slur* state
+specifically, the way it held for pitch/lift/rhythm?** Slur start/stop pairing is
+sequential logic (which slot is open, which note closes it) that is harder to read
+directly off one glyph in isolation than a pitch or an accidental is - plausible that
+*this* one field is more token-history-dependent than the others tested, unlike
+key/rhythm which the image alone likely determines. Worth one targeted test before
+generalizing "the model ignores decode history" to every field.
+
+### A second motivating case for cross-staff repair, from a design discussion: shared
+motifs, not just shared attributes
+
+Not yet built, and a different kind of check from anything in §12.1's original list.
+Key/time signature/clef are page-wide *attributes* that should trivially agree across
+parts - Stage A's existing checks are all this shape: compare one value per staff,
+flag disagreement. A shared *motif* is richer: multiple voices playing the same
+rhythmic/melodic idea (a fugal subject, an imitative entry, doubled parts) is content-level
+agreement, not attribute-level, and one voice mistaking an accent for a marcato (or any
+single-note articulation/ornament misread) would not show up in any check built so far -
+nothing currently compares *note-level* content across staves at all, only page-wide
+attributes and each staff's own internal slur consistency.
+
+What this would need, not yet designed in detail: a similarity/alignment pass between
+two decoded voices' rhythm+articulation (and plausibly pitch-interval-normalized, so a
+transposed imitative entry still matches) token sequences - a windowed alignment or
+edit-distance search, not exact equality, since the "same" motif can appear at different
+metric positions or transposed. Once a matching span is found with one voice disagreeing
+on a single field (articulation being the concrete example), the repair question is the
+same Stage B question already answered above: apply the majority reading, and per the
+tier-1/tier-2 finding just measured, a deterministic swap is the reasonable first attempt
+rather than assuming forced-prefix conditioning is needed.
+
+This is a real, valuable addition to what Stage A checks for, but it is new detection
+work (motif alignment across staves), not a repair-tier question - left here as a named
+idea rather than folded into the existing 4 built checks, since it needs its own design
+pass on the alignment method before implementation.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
