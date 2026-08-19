@@ -2922,6 +2922,50 @@ attaches it to the score (27.94's decision), and the closed-set classifier that 
 crop into one of ~12 dynamics markings rather than open-vocabulary text. The detector
 output from this section is the input those stages will need.
 
+**27.96 the Dynamic classifier: 88.6%, evenly across the common labels.** 27.95 built the
+detector half; this is the reading half - 27.94's decision that dynamics need a small
+closed-set classifier, not the CTC recogniser.
+
+Built `dynamics_crops.py`: joins each Dynamic box (`text_boxes["Dynamic"]`, in
+`musescore_boxes.boxes_of_class`'s *reading* order) against `source_dynamics`'s marks (raw
+XML *document* order) by position, and refuses the whole system on a count mismatch rather
+than trust the join - `musescore_boxes.pair`'s own discipline for lyrics, applied here
+because nothing proves reading order and document order coincide for dynamics the way they
+happen to for a single-verse note stream. That caution was not idle: 184 of 2,926 systems
+(6.3%) refused on exactly that mismatch. The 4,295 crops that did join cleanly span 18 raw
+labels, 8 of which (`p, f, mf, pp, ff, sf, mp, ppp`) cover ~97% of examples; the rest are a
+long tail down to single-digit counts (`other-dynamics`'s 33 losing the actual engraved
+text, since `source_dynamics` only concatenates MusicXML element tag names).
+
+Built `dynamics_classifier.py` (`DynamicsCNN`: 3 conv blocks, adaptive average pool, one
+linear layer - a single softmax over the label set, deliberately not `CRNN`, since there is
+no sequence to read) and `train_dynamics_classifier.py` (cross-entropy, per-label accuracy
+reported rather than only the overall number, for the same reason 27.49's tie head and
+27.62's OCR sweep both needed the majority class excluded before the real number showed).
+25 epochs, 3,653 train / 642 valid crops, split by score:
+
+```
+overall: 569/642 (88.6%)
+p                189/212  (89.2%)
+f                138/149  (92.6%)
+pp                73/83   (88.0%)
+mf                62/74   (83.8%)
+sf                31/34   (91.2%)
+mp                26/31   (83.9%)
+ppp               23/27   (85.2%)
+ff                21/25   (84.0%)
+```
+
+Every common label lands in the 83-93% band - not one majority class carrying the average
+while the rest collapse, the failure mode this project has hit before. The tail labels
+(`fp`, `other-dynamics`, `rf`, ...) have too few validation examples (1-4 each) to read
+anything from individually.
+
+**Both data-producing halves of the dynamics strategy are now built and measured**: the
+detector finds a Dynamic box on a page (27.95, 84.0% whole-page F1), this classifier reads
+which mark it is (88.6%) once handed a crop. What remains, per 27.94's decision, is the
+structured-notation head that attaches a classified dynamic to the score - not yet started.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
