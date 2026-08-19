@@ -3233,8 +3233,33 @@ crops, the same way this session's own real-corpus sanity checks for `dynamics_p
 and `slur_placement.py`'s alignment measurement both did - and only then decide whether the
 fix belongs in extraction (e.g. requiring a `<sound>`-only heuristic, or cross-checking
 placement/offset plausibility) or is a corpus-quality ceiling this design has to report and
-accept. Not yet done.
+accept.
 
+**Measured: 11 more positions, randomly sampled across scores never seen in this
+investigation before** (3 `mf`, 2 `mp`, 2 `ppp`, plus 2 `p` and 2 `f` as the control the
+previous paragraph called for) - drawn from the actual converted train/valid sidecars, so
+every sample has a real crop, and inspected the same way as the two originals: fetch the
+crop, look for the mark. **10 of 11 are printed exactly as labelled.** The one miss is
+another `mp` (`sq7354505_0023_0004_4`, position 0) - the crop shows `Solo`, `en dehors, et
+très expressif`, a hairpin, `dim.` and `p`, no `mp` anywhere. Combined with the two
+originals: **7 of 9 `mf`/`mp`/`ppp` positions checked across this whole investigation are
+printed; 4 of 4 `p`/`f` control positions are.** The rate is not zero and it is not evenly
+spread (both misses are `mf` or `mp`, none in the well-scoring marks), which keeps the
+ground-truth-quality hypothesis alive as a real, non-zero contributor - but at roughly
+2-in-9 on a sample this small, it is nowhere near large enough to explain an 87-92%
+"predicts none" rate by itself. **Most of `mf`/`mp`/`ppp`'s recall collapse is still
+unaccounted for and most plausibly a genuine model limitation**, not a corpus artefact -
+the corpus-quality explanation is real but partial, and this design should not lean on it
+further without a larger sample than twelve manually-inspected positions can support.
+
+**Where this leaves the dynamics head, for real this time:** four training runs, one
+prediction-level diagnostic, and thirteen hand-checked crops later, the head reads
+`p`/`f`/`pp`/`ff` with modest but genuine signal (macro F1 0.120 overall) and does not
+reliably read `mf`/`mp`/`ppp`, for reasons that are now partially - not fully -
+understood: a real but minority-share ground-truth noise floor, and an unexplained
+remainder this session did not chase further. Left here as the honest stopping point:
+not a working three-mark reader, not a mystery either, and not worth a fifth training run
+without a new idea rather than another rerun of the same one.
 ### 25.1 Settled by this design
 
 - “Beaming” means explicit musical beam/flag recognition, not beam-search sequence
