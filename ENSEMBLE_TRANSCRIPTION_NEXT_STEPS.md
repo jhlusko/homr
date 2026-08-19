@@ -113,10 +113,11 @@ suspect and has not been changed.**
    is the fix that would move Tempo/StaffText/Expression, which the class-balancing and
    synthesis work never targeted (Tempo already existed in every page category; its
    problem is background-vs-foreground ratio, not within-page class competition).
-4. **A confusion matrix for SystemText specifically** — 27.92 left "SystemText may be
-   harder to separate from the visually similar StaffText class than Fingering is from
-   anything else" as an unconfirmed hypothesis. Worth checking before deciding whether the
-   fold-into-StaffText decision (27.93) should ever be revisited.
+4. ~~A confusion matrix for SystemText specifically~~ — **closed, not to be revisited.**
+   User decision: the staff/system distinction does not matter for this project's
+   purposes, so SystemText-vs-StaffText is not worth further detector capacity or
+   analysis regardless of what a confusion matrix would show. The fold (27.93) is final,
+   not conditional on a future measurement.
 5. **`train_detector.py` has no per-epoch checkpointing** (27.91) — a real gap independent
    of the above: a long run that plateaus early cannot be stopped without losing all
    progress. Worth fixing before the next multi-hour detector run, the same problem 27.88
@@ -124,16 +125,16 @@ suspect and has not been changed.**
 
 ---
 
-## 2. Fingering/SystemText's corpus-level rarity (sharpest edge of §1)
+## 2. Fingering's corpus-level rarity (sharpest edge of §1; SystemText is closed, see below)
 
 Kept separate from §1 because the fix shape is different: this is not a training-recipe
 problem on the existing corpus, it is that the *source* corpus contains 12 (Fingering)
-and 3 (SystemText, pre-fold) ground-truth boxes total across the entire 2,542-page
-training set (27.68) — no amount of resampling within that data can manufacture signal
-the corpus does not contain.
+ground-truth boxes total across the entire 2,542-page training set (27.68) — no amount
+of resampling within that data can manufacture signal the corpus does not contain.
 
-- SystemText: folded into StaffText (§1.3 above) — settled, not reopened without new
-  evidence from the confusion-matrix check in §1's item 4.
+- SystemText: folded into StaffText (§1.3 above) — final, per user decision. Not a
+  measurement question; the staff/system distinction does not matter for this project's
+  purposes, so there is nothing left to check here.
 - Fingering: synthesis (§1) is the only lever that has moved it off zero, and items 1–2
   in §1's "not yet tried" list are exactly what would make that lever usable without
   collateral damage. There is no separate Fingering-only next step beyond what §1 already
