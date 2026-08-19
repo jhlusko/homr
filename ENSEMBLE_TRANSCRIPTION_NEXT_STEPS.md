@@ -20,7 +20,7 @@ Of the five parts in the original design's executive summary:
 | 1. Structured output heads (beam/stem/slur/tie/dynamics) | Done |
 | 2. Optional score-profile conditioning | **In progress** — §3 below |
 | 3. System grouping after segmentation | Done (`homr/system_grouping.py`) |
-| 4. Cross-staff consistency checks and repair | **Not started** — §4 below |
+| 4. Cross-staff consistency checks and repair | **In progress** — §4 below |
 | 5. Page-local inference with review-system evidence | Partially — the per-head structured evidence exists; no page-assembly/review surface has been built |
 
 The four threads below are the ones with enough existing work (or existing spec) to
@@ -264,25 +264,56 @@ from here, independent of each other:
 
 ---
 
-## 4. Cross-staff consistency checks and repair — not started
+## 4. Cross-staff consistency checks and repair — Stage A partially built
 
 Full spec in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §12; reproduced here. Staged deliberately
 from least to most invasive — **do not start Stage C before Stages A and B are built and
-benchmarked**, per §12.3's own explicit precondition, which has not yet been met.
+benchmarked**, per §12.3's own explicit precondition, which still has not been met (only
+part of Stage A exists).
 
-### Stage A: deterministic consistency analysis (not started)
+### Stage A: deterministic consistency analysis — 4 of 8 checks built
 
-After independent per-staff decoding, align measures within a proposed system and emit
-structured findings — no MusicXML is altered:
+`homr/cross_staff_consistency.py`: `analyze_system(staves, staff_to_part=None)` takes one
+`list[EncodedSymbol]` per staff of an already-decoded system (plus, optionally,
+`score_profile_layout.py`'s `staff_to_part` mapping) and returns structured `Finding`s -
+no MusicXML is altered. Decoupled from images/`Staff` geometry, same as
+`system_grouping.py`/`score_profile_layout.py`, so it is tested against hand-built token
+sequences (21 tests, `tests/test_cross_staff_consistency.py`).
 
-- different decoded measure counts across parts;
-- conflicting barline locations;
-- conflicting key/time signatures;
-- one voice's measure duration disagreeing with the meter and the other voices;
-- a clef inconsistent with both the image and a supplied score profile;
-- part order changing between systems;
-- missing/extra staff output;
-- a beam or slur endpoint made dangling by a structural edit.
+Built:
+
+- different decoded measure counts across parts (`check_measure_counts`);
+- conflicting key/time signatures (`check_key_signatures`/`check_time_signatures`) - the
+  **full sequence** of key/time-signature tokens is compared, not just the opening value,
+  so two staves that agree at the start but diverge on a later change still get flagged;
+- a clef inconsistent with a supplied score profile (`check_clefs_against_profile`) - ties
+  directly into `homr/score_profile.py`'s `ScorePart.likely_clefs`; silent when no part
+  was proposed for a staff or the part states no expected clefs, per §7.1's "unknown is
+  valid, not an error";
+- a beam or slur endpoint made dangling (`check_dangling_slurs`) - within one staff's own
+  decode: a slur slot still open at the end, or a STOP/START_AND_STOP with nothing open
+  in that slot.
+
+Not built, named honestly in the module docstring rather than left silently uncovered:
+
+- conflicting barline **locations** (needs relative position within the measure, not just
+  a count - two staves can agree on measure count and still have barlines drift);
+- one voice's measure duration disagreeing with the time signature (needs duration
+  arithmetic across a whole measure, not just token-sequence comparison);
+- part order changing between systems, and missing/extra staff output - both need state
+  carried **across** systems on a page, which nothing built so far tracks (everything
+  above operates on one system's staves in isolation).
+
+### Not yet done: wiring into the live pipeline
+
+Same situation as §3's layout use - `analyze_system` is a pure function nothing calls
+yet. It would sit naturally in `homr/staff_parsing.py`, after per-staff decoding and
+`system_grouping`'s system partition are both available, alongside wiring §3's
+`propose_part_assignment` in (the two share the same "run after grouping, before final
+MusicXML assembly" position, and `analyze_system`'s clef check needs §3's
+`staff_to_part` output to do anything). Findings need somewhere to go once produced -
+logged, surfaced to a review UI, or just asserted in a benchmark - none of which exists
+yet either.
 
 ### Stage B: targeted repair proposals from existing alternatives (not started, depends on A)
 
