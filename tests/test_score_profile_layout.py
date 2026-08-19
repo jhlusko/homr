@@ -5,6 +5,7 @@ from homr.score_profile_layout import (
     SystemPartAssignment,
     part_for_staff,
     propose_part_assignment,
+    staff_to_part_by_system,
 )
 from homr.system_grouping import SystemPartition
 
@@ -112,6 +113,72 @@ class TestPartForStaff(unittest.TestCase):
         assignments = [SystemPartAssignment({3: "cello"}, (), 1.0)]
 
         self.assertIsNone(part_for_staff(assignments, 5, 3))
+
+
+class TestStaffToPartBySystem(unittest.TestCase):
+    def test_a_full_page_maps_voice_number_to_part_by_ordinal_position(self) -> None:
+        presence = [[True, True, True, True], [True, True, True, True]]
+
+        results = staff_to_part_by_system(QUARTET, presence)
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0][0].stable_id, "violin-1")
+        self.assertEqual(results[0][3].stable_id, "cello")
+        self.assertEqual(results[1][2].stable_id, "viola")
+
+    def test_a_voice_missing_from_a_system_does_not_shift_its_neighbours_identity(self) -> None:
+        # Voice 1 (violin-2) is absent from this system - its part identity must not
+        # bleed onto voice 2 (viola), which is now this system's second staff.
+        presence = [[True, False, True, True]]
+
+        (mapping,) = staff_to_part_by_system(QUARTET, presence)
+
+        self.assertEqual(
+            mapping,
+            {
+                0: QUARTET.part_by_id("violin-1"),
+                1: QUARTET.part_by_id("viola"),
+                2: QUARTET.part_by_id("cello"),
+            },
+        )
+
+    def test_a_page_wide_staff_count_mismatch_maps_nothing_for_any_system(self) -> None:
+        # The profile expects 4 physical staves; this page only ever detected 3 voices -
+        # a structural disagreement, not a per-system one, so nothing is proposed at all.
+        presence = [[True, True, True], [True, True, True]]
+
+        results = staff_to_part_by_system(QUARTET, presence)
+
+        self.assertEqual(results, [{}, {}])
+
+    def test_an_empty_page_maps_nothing(self) -> None:
+        self.assertEqual(staff_to_part_by_system(QUARTET, []), [])
+
+    def test_matches_findings_by_pages_own_position_numbering(self) -> None:
+        # The whole point: cross_staff_consistency.findings_by_page numbers a system's
+        # staves by which present voices it received, in order - this function must
+        # agree with that numbering exactly, or the clef check would compare a decoded
+        # staff against the wrong part.
+        from homr.cross_staff_consistency import findings_by_page  # noqa: PLC0415
+        from homr.transformer.vocabulary import EncodedSymbol  # noqa: PLC0415
+
+        presence = [[True, False, True, True]]
+        clef_by_voice = {0: "G2", 2: "C3", 3: "F4"}  # matches QUARTET's likely_clefs
+        # One entry per voice number (0..3), not per present voice - voice 1 (absent
+        # from this page's only system) contributes no chunks at all, which is exactly
+        # what an empty symbol list means to split_by_system.
+        voices = [
+            [EncodedSymbol(f"clef_{clef_by_voice[voice]}"), EncodedSymbol("newline")]
+            if voice in clef_by_voice
+            else []
+            for voice in range(4)
+        ]
+
+        results = findings_by_page(
+            voices, presence, staff_to_part_by_system(QUARTET, presence)
+        )
+
+        self.assertEqual(results, [[]])
 
 
 if __name__ == "__main__":

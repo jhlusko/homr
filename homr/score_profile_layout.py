@@ -20,7 +20,7 @@ would attach the wrong part's context to a staff's decoding.
 
 from dataclasses import dataclass
 
-from homr.score_profile import ScoreProfile
+from homr.score_profile import ScorePart, ScoreProfile
 from homr.system_grouping import SystemPartition
 
 
@@ -99,3 +99,48 @@ def part_for_staff(
     if not 0 <= system_index < len(assignments):
         return None
     return assignments[system_index].staff_to_part.get(staff_index)
+
+
+def staff_to_part_by_system(
+    profile: ScoreProfile, voice_present_by_system: list[list[bool]]
+) -> list[dict[int, ScorePart]]:
+    """The `staff_to_part` argument `cross_staff_consistency.findings_by_page`'s clef
+    check needs, built the same way `staff_parsing.parse_staffs` itself is organised -
+    by voice number, not by `SystemPartition` staff index.
+
+    Voice number `v` is expected to be physical staff `v` of the profile's
+    `expected_staff_pattern`, regardless of whether an earlier voice is absent from this
+    particular system - a part's identity does not move just because a neighbour's
+    staff went undetected there. What does move is *position*:
+    `cross_staff_consistency.analyze_system` numbers a system's staves by which present
+    voices it actually received, in order, not by voice number - so a system missing
+    voice 0 must map its first staff (voice 1) to position 0, not to a `1` that has no
+    meaning inside that system's own staff list. This mirrors
+    `findings_by_page`'s own per-voice cursor exactly, so the two stay consistent by
+    construction rather than by coincidence.
+
+    A page whose profile does not even claim the same number of physical staves as were
+    detected (`profile.total_staff_count != len(voice_present_by_system[0])`) gets an
+    empty mapping for every system - the same "report nothing rather than guess"
+    discipline `propose_part_assignment` already uses, for the same reason: a caller
+    checking a decoded clef against the wrong instrument entirely is worse than a
+    caller checking nothing.
+    """
+    pattern = profile.expected_staff_pattern
+    voices = len(voice_present_by_system[0]) if voice_present_by_system else 0
+    if len(pattern) != voices:
+        return [{} for _ in voice_present_by_system]
+
+    results = []
+    for presence in voice_present_by_system:
+        mapping: dict[int, ScorePart] = {}
+        position = 0
+        for voice_number, present in enumerate(presence):
+            if not present:
+                continue
+            part = profile.part_by_id(pattern[voice_number])
+            if part is not None:
+                mapping[position] = part
+            position += 1
+        results.append(mapping)
+    return results
