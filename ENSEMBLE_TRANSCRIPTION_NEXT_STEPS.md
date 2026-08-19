@@ -434,13 +434,20 @@ turn out to be token-history-sensitive, rather than deleted on a 12-sample null 
 but the working assumption going forward is tier 1 first, tier 2 only if a specific
 correction type is shown to need it.
 
-**Open hypothesis, not yet tested: does this null result hold for *slur* state
-specifically, the way it held for pitch/lift/rhythm?** Slur start/stop pairing is
-sequential logic (which slot is open, which note closes it) that is harder to read
-directly off one glyph in isolation than a pitch or an accidental is - plausible that
-*this* one field is more token-history-dependent than the others tested, unlike
-key/rhythm which the image alone likely determines. Worth one targeted test before
-generalizing "the model ignores decode history" to every field.
+**Slur hypothesis tested and closed too: 0/8, even for a stronger test than planned.**
+Forced a `slurStop` onto a position whose real value was "no slur" (these 8 staves
+happened to start on a real note, not a restated clef, so the forced correction was
+introducing a *phantom slur stop with no matching start anywhere in the decode* - a
+musically invalid, maximally provocative case for testing whether the model's own
+sense of open/closed slur spans depends on token history). Zero effect downstream on
+all 8. Combined total: **0/20 across pitch, rhythm/duration, key signature, and slur,
+on 20 independent corrections across the corpus.** No longer leaving this as an open
+hypothesis - the model's future predictions do not appear to depend on any field's
+token-history identity, only on cache position and the visual context. Tier 1 (§4's
+plain deterministic swap) is the settled recommendation for Stage B; tier 2's code
+stays available rather than deleted, in case some as-yet-untested correction type
+(a different field, a much longer prefix, a correction much later in a staff) turns out
+to behave differently.
 
 ### A second motivating case for cross-staff repair, from a design discussion: shared
 motifs, not just shared attributes
