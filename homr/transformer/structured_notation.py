@@ -87,6 +87,60 @@ class TieState(StrEnum):
     START_AND_STOP = "start_and_stop"
 
 
+class DynamicMark(StrEnum):
+    """A dynamics marking attached to a note.
+
+    Values are the MusicXML <dynamics> child element tag names (`p`, `sfz`,
+    `other-dynamics`, ...), which is also MuseScore's own DynamicType vocabulary
+    (engraving/types/types.h) - the two agree because MuseScore reads/writes MusicXML the
+    same way. Using the full ~33-mark set rather than only the handful the OSSQ corpus
+    happens to contain follows STEM_CLASSES' DOUBLE precedent: an unused logit costs
+    almost nothing, where a class missing from the head's vocabulary cannot be added later
+    without invalidating every checkpoint trained against it - and the Lieder corpus this
+    design targets next is expected to use marks OSSQ's string quartets do not.
+    """
+
+    #: No dynamic attaches to this note - the common case, and a real prediction like
+    #: TieState.NONE, not an absence of one.
+    NONE = "none"
+    #: MusicXML's own catch-all, and also where an unrecognised or hybrid label (two
+    #: dynamics children concatenated into one tag, e.g. `pother-dynamics`) collapses to,
+    #: per 27.97's finding that these are a data artefact rather than a distinct mark.
+    OTHER = "other-dynamics"
+    PPPPPP = "pppppp"
+    PPPPP = "ppppp"
+    PPPP = "pppp"
+    PPP = "ppp"
+    PP = "pp"
+    P = "p"
+    MP = "mp"
+    MF = "mf"
+    F = "f"
+    FF = "ff"
+    FFF = "fff"
+    FFFF = "ffff"
+    FFFFF = "fffff"
+    FFFFFF = "ffffff"
+    FP = "fp"
+    PF = "pf"
+    SF = "sf"
+    SFZ = "sfz"
+    SFF = "sff"
+    SFFZ = "sffz"
+    SFFF = "sfff"
+    SFFFZ = "sfffz"
+    SFP = "sfp"
+    SFPP = "sfpp"
+    RFZ = "rfz"
+    RF = "rf"
+    FZ = "fz"
+    M = "m"
+    R = "r"
+    S = "s"
+    Z = "z"
+    N = "n"
+
+
 class SlurSide(StrEnum):
     #: The majority of slurs in the corpus carry no placement at all, so this is the
     #: common case rather than an edge case, and direction loss only applies where the
@@ -152,6 +206,28 @@ STEM_CLASSES: tuple[StemDirection, ...] = tuple(
 #: schema and any future head cannot disagree about the vocabulary.
 TIE_CLASSES: tuple[TieState, ...] = tuple(TieState)
 
+#: Classes the dynamics head predicts. Every state is reachable, including NONE - see
+#: DynamicMark's docstring for why the vocabulary is the full MusicXML/MuseScore set
+#: rather than only OSSQ's observed labels.
+DYNAMIC_CLASSES: tuple[DynamicMark, ...] = tuple(DynamicMark)
+
+#: MusicXML <dynamics> child tag -> DynamicMark, for every tag the enum recognises.
+_DYNAMIC_TAG_VALUES = {mark.value for mark in DynamicMark if mark != DynamicMark.NONE}
+
+
+def dynamic_mark_from_tag(tag: str | None) -> DynamicMark:
+    """The mark a raw MusicXML <dynamics> tag name maps to.
+
+    None (no direction seen) maps to NONE, the "nothing attached" state. Any tag not in
+    the recognised set - an unknown mark, or a hybrid concatenation of two dynamics
+    children in one element (27.97's `pother-dynamics`) - maps to OTHER rather than
+    raising, since a label pipeline that refuses on an unfamiliar mark would lose real,
+    attachable data to a corpus quirk in the source's own text concatenation.
+    """
+    if tag is None:
+        return DynamicMark.NONE
+    return DynamicMark(tag) if tag in _DYNAMIC_TAG_VALUES else DynamicMark.OTHER
+
 SLUR_EVENT_CLASSES: tuple[SlurEvent, ...] = tuple(SlurEvent)
 SLUR_SIDE_CLASSES: tuple[SlurSide, ...] = tuple(SlurSide)
 
@@ -182,6 +258,9 @@ class NoteNotation:
     #: Defaulted so every existing construction stays valid, and so a sidecar written
     #: before ties were extracted decodes as "no tie recorded" rather than failing.
     tie: TieState = TieState.NONE
+    #: Defaulted for the same reason as `tie` - a sidecar written before dynamics were
+    #: extracted decodes as "no dynamic recorded" rather than failing.
+    dynamic: DynamicMark = DynamicMark.NONE
 
     def active_beam_levels(self) -> int:
         return sum(1 for state in self.beam_levels if state != BeamLevelState.NOT_APPLICABLE)

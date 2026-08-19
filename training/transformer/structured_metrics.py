@@ -190,6 +190,22 @@ def tie_report(
     return report
 
 
+def dynamic_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
+) -> PerClassReport:
+    """Dynamic mark over every note, including the ones with none attached.
+
+    NONE is scored here, the same reasoning as tie_report: it is a real prediction (a
+    note plainly carries no dynamic) rather than a silent source, so the classes are
+    extremely unbalanced by construction (27.97: 3.35% of notes carry one) - exactly what
+    the macro average is for.
+    """
+    report = PerClassReport()
+    for left, right in zip(predicted, actual, strict=True):
+        report.observe(str(left.dynamic), str(right.dynamic))
+    return report
+
+
 def slur_side_report(
     predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation], slots: int
 ) -> PerClassReport:
@@ -272,6 +288,7 @@ class Evaluation:
     slur_spans: ClassMetrics = field(default_factory=ClassMetrics)
     slur_sides: PerClassReport = field(default_factory=PerClassReport)
     ties: PerClassReport = field(default_factory=PerClassReport)
+    dynamics: PerClassReport = field(default_factory=PerClassReport)
     vectors_matching: int = 0
     vectors_total: int = 0
     sequences: int = 0
@@ -293,6 +310,8 @@ class Evaluation:
             _merge(self.slur_sides.classes.setdefault(name, ClassMetrics()), metrics)
         for name, metrics in tie_report(predicted, actual).classes.items():
             _merge(self.ties.classes.setdefault(name, ClassMetrics()), metrics)
+        for name, metrics in dynamic_report(predicted, actual).classes.items():
+            _merge(self.dynamics.classes.setdefault(name, ClassMetrics()), metrics)
         for name, metrics in stem_report(predicted, actual).classes.items():
             _merge(self.stems.classes.setdefault(name, ClassMetrics()), metrics)
 
@@ -353,6 +372,11 @@ class Evaluation:
         # only when something actually predicted a tie.
         if any(name != "none" and metrics.support for name, metrics in self.ties.classes.items()):
             lines.append(f"ties: {self.ties.describe()}")
+        # Same reasoning as ties: an untrained dynamics head predicts NONE everywhere.
+        if any(
+            name != "none" and metrics.support for name, metrics in self.dynamics.classes.items()
+        ):
+            lines.append(f"dynamics: {self.dynamics.describe()}")
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, object]:
@@ -387,5 +411,11 @@ class Evaluation:
             "slur_sides": {
                 "macro_f1": self.slur_sides.macro_f1,
                 "support": sum(m.support for m in self.slur_sides.classes.values()),
+            },
+            "dynamics": {
+                "macro_f1": self.dynamics.macro_f1,
+                "support": sum(
+                    m.support for name, m in self.dynamics.classes.items() if name != "none"
+                ),
             },
         }

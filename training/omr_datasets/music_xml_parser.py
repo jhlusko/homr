@@ -681,6 +681,9 @@ def _process_direction(part: TokensPart, xmldirection: ET.Element) -> None:
         has_octave_shift = _child(direction_type, "octave-shift") is not None
         if has_octave_shift:
             raise ValueError("Octave shift isn't supported")
+    # Feeds the pending-dynamic state a following real note claims (27.94/27.97); see
+    # NotationExtractor.handle_direction for the staff-scoping this needs.
+    part.notation.handle_direction(xmldirection)
 
 
 def _process_multi_rests(part: TokensPart, measure_style: ET.Element) -> None:

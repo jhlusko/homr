@@ -27,6 +27,7 @@ from torch import nn
 
 from homr.transformer.structured_notation import (
     BEAM_LEVEL_CLASSES,
+    DYNAMIC_CLASSES,
     SLUR_EVENT_CLASSES,
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
@@ -38,6 +39,7 @@ from homr.transformer.structured_notation import (
 BEAM_HEAD = "beam.level.{level}"
 STEM_HEAD = "stem.direction"
 TIE_HEAD = "tie.state"
+DYNAMIC_HEAD = "dynamic.mark"
 SLUR_EVENT_HEAD = "slur.slot.{slot}.event"
 SLUR_SIDE_HEAD = "slur.slot.{slot}.side"
 
@@ -54,6 +56,7 @@ def head_names(
     names = [BEAM_HEAD.format(level=level) for level in range(1, beam_levels + 1)]
     names.append(STEM_HEAD)
     names.append(TIE_HEAD)
+    names.append(DYNAMIC_HEAD)
     for slot in range(1, slur_slots + 1):
         names.append(SLUR_EVENT_HEAD.format(slot=slot))
         names.append(SLUR_SIDE_HEAD.format(slot=slot))
@@ -81,6 +84,9 @@ class StructuredNotationHeads(nn.Module):
         # A tie needs no slot, unlike a slur: it joins one pitch to the same pitch, so two
         # cannot be open on one note of a voice without being the same tie.
         self.tie = nn.Linear(dim, len(TIE_CLASSES))
+        # Also no slot: a note carries at most one dynamic mark by construction (the
+        # attachment rule claims the single pending mark per staff, 27.97/27.94).
+        self.dynamic = nn.Linear(dim, len(DYNAMIC_CLASSES))
         self.slur_event = nn.ModuleList(
             [nn.Linear(dim, len(SLUR_EVENT_CLASSES)) for _ in range(slur_slots)]
         )
@@ -102,6 +108,7 @@ class StructuredNotationHeads(nn.Module):
             logits[BEAM_HEAD.format(level=index + 1)] = projection(hidden)
         logits[STEM_HEAD] = self.stem(hidden)
         logits[TIE_HEAD] = self.tie(hidden)
+        logits[DYNAMIC_HEAD] = self.dynamic(hidden)
         for index in range(self.slur_slots):
             logits[SLUR_EVENT_HEAD.format(slot=index + 1)] = self.slur_event[index](hidden)
             logits[SLUR_SIDE_HEAD.format(slot=index + 1)] = self.slur_side[index](hidden)

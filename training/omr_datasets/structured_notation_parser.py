@@ -18,12 +18,14 @@ from homr.transformer.structured_notation import (
     MAX_BEAM_LEVELS,
     MAX_SLUR_SLOTS,
     BeamLevelState,
+    DynamicMark,
     NoteNotation,
     SlurEvent,
     SlurSide,
     StemDirection,
     TieState,
     applicable_beam_levels,
+    dynamic_mark_from_tag,
     empty_beam_levels,
     empty_slur_slots,
 )
@@ -126,6 +128,34 @@ def _beam_levels(note: ET.Element, findings: Findings) -> tuple[BeamLevelState, 
     if applicable and written == 0 and note.find("rest") is None:
         findings.ambiguous_beaming += 1
     return tuple(states)
+
+
+def _staff_of(element: ET.Element) -> str:
+    """The staff a <direction> or <note> belongs to, MusicXML's own default of 1 when the
+    element carries no <staff> child (true of every single-staff part, e.g. OSSQ's
+    quartets) - matching music_xml_parser.py's `_process_note` convention."""
+    return (element.findtext("staff") or "1").strip()
+
+
+def _direction_dynamic(direction: ET.Element) -> DynamicMark | None:
+    """This direction's dynamic mark, or None if it carries no <dynamics> element."""
+    for direction_type in direction.findall("direction-type"):
+        dynamics = direction_type.find("dynamics")
+        if dynamics is not None:
+            names = [child.tag for child in dynamics]
+            if names:
+                return dynamic_mark_from_tag("".join(names))
+    return None
+
+
+def _is_real_note(note: ET.Element) -> bool:
+    """A note eligible to carry an attached dynamic: not a rest, not a chord member (a
+    dynamic marks the chord, not each of its notes), and pitched."""
+    return (
+        note.find("rest") is None
+        and note.find("chord") is None
+        and note.find("pitch") is not None
+    )
 
 
 def _tie(note: ET.Element) -> TieState:
@@ -256,7 +286,19 @@ class NotationExtractor:
 
     def __init__(self) -> None:
         self._voices: dict[str, _SlurSlots] = {}
+        #: staff id -> mark most recently seen on a <direction> in that staff, not yet
+        #: claimed by a note. Keyed by staff (not shared across a whole part) because a
+        #: multi-staff part - a piano grand staff, the corpus this design's Lieder phase
+        #: targets next - can carry independent dynamics per hand, and the next note in
+        #: document order is not necessarily in the same staff as the direction that
+        #: preceded it.
+        self._pending_dynamics: dict[str, DynamicMark] = {}
         self.findings = Findings()
+
+    def handle_direction(self, direction: ET.Element) -> None:
+        mark = _direction_dynamic(direction)
+        if mark is not None:
+            self._pending_dynamics[_staff_of(direction)] = mark
 
     def extract(self, note: ET.Element) -> NoteNotation:
         self.findings.notes += 1
@@ -265,11 +307,15 @@ class NotationExtractor:
         slurs = [
             slur for notations in note.findall("notations") for slur in notations.findall("slur")
         ]
+        dynamic = DynamicMark.NONE
+        if _is_real_note(note):
+            dynamic = self._pending_dynamics.pop(_staff_of(note), DynamicMark.NONE)
         return NoteNotation(
             beam_levels=_beam_levels(note, self.findings),
             stem=_stem(note),
             slurs=slots.apply(slurs, self.findings),
             tie=_tie(note),
+            dynamic=dynamic,
         )
 
     def close(self) -> Findings:
@@ -280,9 +326,22 @@ class NotationExtractor:
 
 
 def parse_part(part: ET.Element) -> tuple[list[NoteNotation], Findings]:
-    """Structured notation for every note of one <part>, in document order."""
+    """Structured notation for every note of one <part>, in document order.
+
+    Walks measure children directly, rather than `part.iter("note")` as before dynamics
+    existed, because a dynamic is carried on a <direction> sibling of the notes it
+    precedes - notation that `.iter("note")` alone cannot see. The set and order of
+    <note> elements visited is unchanged: they are always direct children of <measure>,
+    so this is the same traversal with <direction> now also handled.
+    """
     extractor = NotationExtractor()
-    result = [extractor.extract(note) for note in part.iter("note")]
+    result = []
+    for measure in part.findall("measure"):
+        for child in measure:
+            if child.tag == "direction":
+                extractor.handle_direction(child)
+            elif child.tag == "note":
+                result.append(extractor.extract(child))
     return result, extractor.close()
 
 

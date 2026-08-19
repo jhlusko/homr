@@ -24,6 +24,7 @@ from pathlib import Path
 
 from homr.transformer.structured_notation import (
     BeamLevelState,
+    DynamicMark,
     NoteNotation,
     SlurEvent,
     SlurSide,
@@ -32,12 +33,13 @@ from homr.transformer.structured_notation import (
 )
 from homr.transformer.vocabulary import EncodedSymbol
 
-SCHEMA_VERSION = "homr.notation-sidecar.v2"
+SCHEMA_VERSION = "homr.notation-sidecar.v3"
 
-#: Schemas this reader still understands. v1 predates tie extraction, so its records
-#: decode with no tie - which is correct for them: the field was not merely absent from
-#: the file, it was absent from the pipeline that wrote it.
-READABLE_SCHEMAS = (SCHEMA_VERSION, "homr.notation-sidecar.v1")
+#: Schemas this reader still understands. v1 predates tie extraction and v2 predates
+#: dynamics extraction, so their records decode with no tie / no dynamic respectively -
+#: which is correct for them: the field was not merely absent from the file, it was
+#: absent from the pipeline that wrote it.
+READABLE_SCHEMAS = (SCHEMA_VERSION, "homr.notation-sidecar.v2", "homr.notation-sidecar.v1")
 
 SIDECAR_SUFFIX = ".notation.json"
 
@@ -56,6 +58,7 @@ def _encode(notation: NoteNotation) -> dict:
         "stem": str(notation.stem),
         "slurs": [[str(event), str(side)] for event, side in notation.slurs],
         "tie": str(notation.tie),
+        "dynamic": str(notation.dynamic),
     }
 
 
@@ -65,6 +68,7 @@ def _decode(record: dict) -> NoteNotation:
         stem=StemDirection(record["stem"]),
         slurs=tuple((SlurEvent(event), SlurSide(side)) for event, side in record["slurs"]),
         tie=TieState(record.get("tie", TieState.NONE)),
+        dynamic=DynamicMark(record.get("dynamic", DynamicMark.NONE)),
     )
 
 

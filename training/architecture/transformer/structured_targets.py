@@ -25,6 +25,7 @@ import torch
 
 from homr.transformer.structured_notation import (
     BEAM_LEVEL_CLASSES,
+    DYNAMIC_CLASSES,
     SLUR_EVENT_CLASSES,
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
@@ -37,6 +38,7 @@ from homr.transformer.structured_notation import (
 from homr.transformer.vocabulary import EncodedSymbol
 from training.architecture.transformer.structured_heads import (
     BEAM_HEAD,
+    DYNAMIC_HEAD,
     SLUR_EVENT_HEAD,
     SLUR_SIDE_HEAD,
     STEM_HEAD,
@@ -49,6 +51,7 @@ _STEM_INDEX = {state: index for index, state in enumerate(STEM_CLASSES)}
 _EVENT_INDEX = {state: index for index, state in enumerate(SLUR_EVENT_CLASSES)}
 _SIDE_INDEX = {state: index for index, state in enumerate(SLUR_SIDE_CLASSES)}
 _TIE_INDEX = {state: index for index, state in enumerate(TIE_CLASSES)}
+_DYNAMIC_INDEX = {state: index for index, state in enumerate(DYNAMIC_CLASSES)}
 
 
 def build_targets(
@@ -80,6 +83,7 @@ def _target_names(beam_levels: int, slur_slots: int) -> list[str]:
     names = [BEAM_HEAD.format(level=level) for level in range(1, beam_levels + 1)]
     names.append(STEM_HEAD)
     names.append(TIE_HEAD)
+    names.append(DYNAMIC_HEAD)
     for slot in range(1, slur_slots + 1):
         names.append(SLUR_EVENT_HEAD.format(slot=slot))
         names.append(SLUR_SIDE_HEAD.format(slot=slot))
@@ -108,6 +112,10 @@ def _fill_note(
     # Always supervised, like a slur event: most notes are not tied, and "no tie" is a
     # real prediction rather than an absence of one.
     targets[TIE_HEAD][row, column] = _TIE_INDEX[notation.tie]
+
+    # Always supervised too: NONE (no dynamic attached) is 96.65% of notes (27.97) but is
+    # a real prediction, the same shape of imbalance the tie head already handles.
+    targets[DYNAMIC_HEAD][row, column] = _DYNAMIC_INDEX[notation.dynamic]
 
     for slot in range(1, slur_slots + 1):
         event, side = notation.slurs[slot - 1]

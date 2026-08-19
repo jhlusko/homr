@@ -27,7 +27,9 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
+from homr.transformer.structured_notation import DynamicMark
 from training.omr_datasets.convert_lieder import _count_staffs, is_grandstaff
+from training.omr_datasets.dynamics_placement import DynamicsPlacementIndex, apply_dynamics
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.ossq_splits import load_split_manifest
@@ -99,6 +101,7 @@ def _write_example(
     out_dir: Path,
     stem: str,
     placements: list[dict[str, str]] | None = None,
+    dynamics: list[DynamicMark] | None = None,
 ) -> tuple[Path | None, int]:
     """Tokenise one part of one system.
 
@@ -112,6 +115,11 @@ def _write_example(
         # is put back from the original score before tokenising. Writing it into the XML
         # means the ordinary extractor reads direction the way it always would.
         apply_placements(single.find("part"), placements)
+    if dynamics:
+        # 28.1: the same round-trip drops <direction> entirely, so dynamics get the same
+        # treatment as slur placement - put back from the original score, as ordinary
+        # <direction> elements, before tokenising.
+        apply_dynamics(single.find("part"), dynamics)
 
     scratch = out_dir / f"{stem}.musicxml"
     scratch.write_text(
@@ -221,6 +229,7 @@ def build(
     mismatched = 0
     collapsed_slurs = 0
     placement_index: dict[str, PlacementIndex] = {}
+    dynamics_index: dict[str, DynamicsPlacementIndex] = {}
     unconvertible: collections.Counter[str] = collections.Counter()
     for work in sorted((dataset_root / "scores").glob("*/*")):
         segments = sorted((work / "musicxml" / "unaligned").glob("*.musicxml"))
@@ -243,7 +252,11 @@ def build(
                 placement_index[score_id] = (
                     PlacementIndex(work, score_id, whole) if whole.is_file() else None
                 )
+                dynamics_index[score_id] = (
+                    DynamicsPlacementIndex(work, score_id, whole) if whole.is_file() else None
+                )
             index = placement_index[score_id]
+            dyn_index = dynamics_index[score_id]
 
             for part_index in range(len(parts)):
                 image = crops / CROP_NAME.format(
@@ -253,9 +266,14 @@ def build(
                 placements = (
                     index.for_segment(int(page), int(system), part_index) if index else None
                 )
+                dynamics = (
+                    dyn_index.for_segment(int(page), int(system), part_index)
+                    if dyn_index
+                    else None
+                )
                 try:
                     tokens, collapsed = _write_example(
-                        segment_path, part_index, out_dir, stem, placements
+                        segment_path, part_index, out_dir, stem, placements, dynamics
                     )
                 except UnconvertibleStaff as refused:
                     unconvertible[refused.reason] += 1

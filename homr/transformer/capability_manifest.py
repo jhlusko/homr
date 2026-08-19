@@ -27,6 +27,7 @@ from typing import Any
 
 from homr.transformer.structured_notation import (
     BEAM_LEVEL_CLASSES,
+    DYNAMIC_CLASSES,
     MAX_BEAM_LEVELS,
     MAX_SLUR_SLOTS,
     SLUR_EVENT_CLASSES,
@@ -50,6 +51,8 @@ def _classes_for(head: str) -> tuple[str, ...]:
         return tuple(str(state) for state in STEM_CLASSES)
     if head == "tie.state":
         return tuple(str(state) for state in TIE_CLASSES)
+    if head == "dynamic.mark":
+        return tuple(str(state) for state in DYNAMIC_CLASSES)
     if head.endswith(".event"):
         return tuple(str(state) for state in SLUR_EVENT_CLASSES)
     if head.endswith(".side"):

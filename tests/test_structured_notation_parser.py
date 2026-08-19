@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from homr.transformer.structured_notation import (
     MAX_BEAM_LEVELS,
     BeamLevelState,
+    DynamicMark,
     SlurEvent,
     SlurSide,
     StemDirection,
@@ -11,6 +12,34 @@ from homr.transformer.structured_notation import (
     applicable_beam_levels,
 )
 from training.omr_datasets.structured_notation_parser import parse_part, parse_score
+
+
+def _direction(mark: str, staff: str | None = None) -> str:
+    staff_xml = f"<staff>{staff}</staff>" if staff is not None else ""
+    return (
+        "<direction>"
+        f"<direction-type><dynamics><{mark}/></dynamics></direction-type>{staff_xml}"
+        "</direction>"
+    )
+
+
+def _rest(note_type: str = "eighth") -> str:
+    return f"<note><rest/><duration>1</duration><type>{note_type}</type></note>"
+
+
+def _chord_note(note_type: str = "eighth", staff: str | None = None) -> str:
+    staff_xml = f"<staff>{staff}</staff>" if staff is not None else ""
+    return (
+        "<note><chord/><pitch><step>E</step><octave>5</octave></pitch>"
+        f"<duration>1</duration><type>{note_type}</type>{staff_xml}</note>"
+    )
+
+
+def _staffed_note(note_type: str = "eighth", staff: str = "1") -> str:
+    return (
+        "<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration>"
+        f"<type>{note_type}</type><staff>{staff}</staff></note>"
+    )
 
 
 def _part(notes: str) -> ET.Element:
@@ -307,3 +336,88 @@ class TestTiesAreDistinguishedFromSlurs(unittest.TestCase):
         notes, _ = parse_part(_part(_note(notations="")))
 
         self.assertEqual(notes[0].tie, TieState.NONE)
+
+
+class TestDynamics(unittest.TestCase):
+    """27.94/27.97: a dynamic is a <direction>, a sibling of notes rather than a child of
+    one, and attaches to the next real note encountered after it in document order."""
+
+    def test_no_direction_is_none(self) -> None:
+        notes, _ = parse_part(_part(_note()))
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.NONE)
+
+    def test_a_dynamic_attaches_to_the_next_note(self) -> None:
+        notes, _ = parse_part(_part(_direction("f") + _note()))
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.F)
+
+    def test_a_dynamic_is_claimed_only_once(self) -> None:
+        notes, _ = parse_part(_part(_direction("f") + _note() + _note()))
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.F)
+        self.assertEqual(notes[1].dynamic, DynamicMark.NONE)
+
+    def test_a_dynamic_skips_a_rest_and_lands_on_the_next_real_note(self) -> None:
+        notes, _ = parse_part(_part(_direction("pp") + _rest() + _note()))
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.NONE)
+        self.assertEqual(notes[1].dynamic, DynamicMark.PP)
+
+    def test_a_dynamic_skips_chord_members_and_lands_on_the_chord_root(self) -> None:
+        # attach_dynamics never labels a chord member - only the chord's first (root)
+        # note is a "real" note eligible to claim a pending dynamic.
+        notes, _ = parse_part(_part(_direction("mf") + _note() + _chord_note()))
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.MF)
+        self.assertEqual(notes[1].dynamic, DynamicMark.NONE)
+
+    def test_a_dynamic_never_followed_by_a_note_is_dropped(self) -> None:
+        # Nothing to assert on notation directly - this just must not raise, matching
+        # dynamics_attachment.py's rule for the last direction in a piece.
+        notes, _ = parse_part(_part(_direction("f")))
+
+        self.assertEqual(notes, [])
+
+    def test_a_hybrid_dynamics_element_collapses_to_other(self) -> None:
+        part = _part(
+            "<direction><direction-type><dynamics><p/><other-dynamics>più</other-dynamics>"
+            "</dynamics></direction-type></direction>" + _note()
+        )
+        notes, _ = parse_part(part)
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.OTHER)
+
+    def test_an_unrecognised_dynamics_tag_maps_to_other(self) -> None:
+        part = _part(
+            "<direction><direction-type><dynamics><madeup/></dynamics></direction-type>"
+            "</direction>" + _note()
+        )
+        notes, _ = parse_part(part)
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.OTHER)
+
+    def test_pending_dynamics_are_scoped_per_staff(self) -> None:
+        # A multi-staff part (a piano grand staff, Lieder's case) can carry independent
+        # dynamics per hand; a direction on staff 1 must not be claimed by staff 2's next
+        # note, only by staff 1's.
+        part = _part(
+            _direction("f", staff="1")
+            + _staffed_note(staff="2")
+            + _staffed_note(staff="1")
+        )
+        notes, _ = parse_part(part)
+
+        self.assertEqual(notes[0].dynamic, DynamicMark.NONE)
+        self.assertEqual(notes[1].dynamic, DynamicMark.F)
+
+    def test_dynamics_do_not_cross_parts(self) -> None:
+        root = ET.fromstring(  # noqa: S314
+            "<score-partwise>"
+            f"<part id='P1'><measure number='1'>{_direction('f')}</measure></part>"
+            f"<part id='P2'><measure number='1'>{_note()}</measure></part>"
+            "</score-partwise>"
+        )
+        parts, _ = parse_score(root)
+
+        self.assertEqual(parts["P2"][0].dynamic, DynamicMark.NONE)
