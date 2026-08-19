@@ -459,13 +459,22 @@ result) on a genuine tie or when fewer than two staves state a value at all - th
 `apply_proposal` returns a new symbol list (never mutates in place) and refuses a stale
 proposal whose target position no longer matches what it was built against. Deliberately
 scoped to the opening value only, matching §12.2's own worked example - not the full
-sequence-alignment problem a later key/time change would need. 12 tests, all passing;
-**not yet wired to Stage A's output or the live pipeline** - `analyze_system`'s
-`Finding`s and `propose_majority_correction`'s proposals are built from the same staves
-but nothing currently connects a `key_signature_mismatch`/`time_signature_mismatch`
-`Finding` to calling this function automatically. Not yet validated against a real page
-either (unlike Stage A itself and tier 2, both validated on the GPU instance) - next
-step before calling Stage B done for this pair of checks.
+sequence-alignment problem a later key/time change would need. `propose_repairs` pools
+both checks (key + time signature) into one call. 14 tests, all passing.
+
+**Wired into the live pipeline, log-only, alongside Stage A.**
+`staff_parsing._report_cross_staff_findings` now logs both Stage A findings and tier-1
+proposals for the same system's staves in one pass - `staves_by_system` (the
+voice-to-system reshaping, extracted out of `findings_by_page` rather than duplicated a
+second time, since the presence-cursor logic is exactly the kind of subtle
+correctness-critical thing that should not be reimplemented independently) is computed
+once and both `analyze_system` and `propose_repairs` read from it. Proposals are logged,
+never applied - same discipline as Stage A. Same broad try/except guard as before: a
+diagnostic must never be the reason a page fails to transcribe.
+
+**Not yet validated against a real page** - unlike Stage A itself and tier 2, both
+already run end to end on the GPU instance. The GPU was occupied with the §1 detector
+retrain when this was built; next step once it frees up.
 
 ### A second motivating case for cross-staff repair, from a design discussion: shared
 motifs, not just shared attributes
