@@ -10,6 +10,7 @@ from homr.cross_staff_consistency import (
     findings_by_page,
     measure_count,
     split_by_system,
+    staves_by_system,
 )
 from homr.score_profile import ScorePart
 from homr.transformer.structured_notation import (
@@ -269,6 +270,32 @@ class TestFindingsByPage(unittest.TestCase):
 
         self.assertEqual(len(results[0]), 1)
         self.assertEqual(results[0][0].kind, "clef_profile_mismatch")
+
+
+class TestStavesBySystem(unittest.TestCase):
+    def test_reshapes_voice_major_into_system_major(self) -> None:
+        voice_a = [_sym("note_4"), _sym("newline"), _sym("note_8"), _sym("newline")]
+        voice_b = [_sym("rest_4"), _sym("newline"), _sym("rest_8"), _sym("newline")]
+
+        result = staves_by_system([voice_a, voice_b], [[True, True], [True, True]])
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual([s.rhythm for s in result[0][0]], ["note_4"])
+        self.assertEqual([s.rhythm for s in result[0][1]], ["rest_4"])
+        self.assertEqual([s.rhythm for s in result[1][0]], ["note_8"])
+
+    def test_matches_findings_by_pages_own_reshaping(self) -> None:
+        # findings_by_page is now built directly on this function - this is a
+        # regression guard against the two ever drifting apart again.
+        voice_a = [
+            _sym("keySignature_0"), _sym("newline"), _sym("keySignature_-1"), _sym("newline")
+        ]  # fmt: skip
+        presence = [[True], [True]]
+
+        staves = staves_by_system([voice_a], presence)
+        findings = findings_by_page([voice_a], presence)
+
+        self.assertEqual(len(staves), len(findings))
 
 
 if __name__ == "__main__":

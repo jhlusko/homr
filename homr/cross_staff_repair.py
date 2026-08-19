@@ -93,6 +93,22 @@ def propose_majority_correction(
     ]
 
 
+def propose_repairs(staves: list[list[EncodedSymbol]]) -> list[RepairProposal]:
+    """Every tier-1 proposal this module currently knows how to make for one system's
+    staves - both the checks `cross_staff_consistency.analyze_system` can flag
+    (`key_signature_mismatch`, `time_signature_mismatch`) that this module has a
+    corresponding repair for. Does not consult `Finding`s directly: each
+    `propose_majority_correction` call already returns nothing when there is no
+    disagreement to propose against, the same as `analyze_system`'s own checks report
+    nothing when staves agree - so recomputing here rather than gating on a `Finding`
+    kind string keeps the two independent computations from silently drifting apart
+    about what "a mismatch" means.
+    """
+    return propose_majority_correction(staves, "keySignature") + propose_majority_correction(
+        staves, "timeSignature"
+    )
+
+
 def apply_proposal(staff: list[EncodedSymbol], proposal: RepairProposal) -> list[EncodedSymbol]:
     """A new symbol list with `proposal` applied - `staff` is never mutated in place, so
     a caller can compare before/after, or simply discard the proposal, without

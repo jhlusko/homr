@@ -5,7 +5,8 @@ import cv2
 import numpy as np
 
 from homr import constants
-from homr.cross_staff_consistency import findings_by_page
+from homr.cross_staff_consistency import analyze_system, staves_by_system
+from homr.cross_staff_repair import propose_repairs
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
@@ -503,19 +504,24 @@ def parse_staffs(
 def _report_cross_staff_findings(
     plan: SystemPlan, voices: list[list[EncodedSymbol]], score_profile: ScoreProfile | None
 ) -> None:
-    """Stage A (design §12.1): log deterministic cross-staff disagreements, without
-    altering anything voices carries forward. The clef-vs-profile check only fires when
-    the caller supplied a score profile; every other check runs regardless.
+    """Stage A (design §12.1) and Stage B tier 1 (design §12.2): log deterministic
+    cross-staff disagreements and, where one exists, the majority-correction proposal
+    for it - without altering anything `voices` carries forward. The clef-vs-profile
+    check only fires when the caller supplied a score profile; every other check runs
+    regardless. Proposals are logged only, never applied - the same "review question,
+    not an automatic correction" §12.2 states for Stage B generally; nothing here
+    changes `voices` or what `parse_staffs` returns.
 
-    Run end to end against two real OSSQ pages (`sq7313978:0001`, `sq8823783:0061`) on a
-    GPU instance: no exception, `homr.main` wrote MusicXML normally in both cases, and it
-    surfaced real findings (a key-signature restatement that only one of four parts
-    carried into its second system; a time-signature and two key-signature mismatches on
-    the second page) - genuine per-voice decode disagreements, not this module
-    misreading its own input. Still guarded regardless: a diagnostic that can find
-    nothing new about a page's music must never be the reason a page fails to
-    transcribe, so a bug here is logged and swallowed rather than allowed to propagate
-    past what is otherwise a log-only addition.
+    Stage A run end to end against two real OSSQ pages (`sq7313978:0001`,
+    `sq8823783:0061`) on a GPU instance: no exception, `homr.main` wrote MusicXML
+    normally in both cases, and it surfaced real findings (a key-signature restatement
+    that only one of four parts carried into its second system; a time-signature and
+    two key-signature mismatches on the second page) - genuine per-voice decode
+    disagreements, not this module misreading its own input. The tier-1 proposal logic
+    added alongside it has not yet had the same real-page validation. Still guarded
+    regardless: a diagnostic that can find nothing new about a page's music must never
+    be the reason a page fails to transcribe, so a bug here is logged and swallowed
+    rather than allowed to propagate past what is otherwise a log-only addition.
     """
     try:
         presence = [
@@ -525,10 +531,15 @@ def _report_cross_staff_findings(
         staff_to_part = (
             staff_to_part_by_system(score_profile, presence) if score_profile is not None else None
         )
-        for system_index, findings in enumerate(
-            findings_by_page(voices, presence, staff_to_part)
-        ):
-            for finding in findings:
+        for system_index, staves in enumerate(staves_by_system(voices, presence)):
+            part_map = staff_to_part[system_index] if staff_to_part else None
+            for finding in analyze_system(staves, part_map):
                 eprint(f"System {system_index}: {finding.message}")
+            for proposal in propose_repairs(staves):
+                eprint(
+                    f"System {system_index}: repair proposal - {proposal.reason} "
+                    f"(staff {proposal.staff_index}, position {proposal.position}: "
+                    f"{proposal.current_rhythm!r} -> {proposal.proposed_rhythm!r})"
+                )
     except Exception as error:  # noqa: BLE001
         eprint(f"Cross-staff consistency check failed, skipping: {error}")

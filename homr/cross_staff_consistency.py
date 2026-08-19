@@ -235,38 +235,48 @@ def split_by_system(symbols: list[EncodedSymbol]) -> list[list[EncodedSymbol]]:
     return chunks
 
 
-def findings_by_page(
-    voices: list[list[EncodedSymbol]],
-    voice_present_by_system: list[list[bool]],
-    staff_to_part_by_system: list[dict[int, ScorePart]] | None = None,
-) -> list[list[Finding]]:
-    """Stage A findings for every system on a page, from `parse_staffs`' own output
-    shape: one list per voice, that voice's symbols concatenated across every system it
-    appears in.
+def staves_by_system(
+    voices: list[list[EncodedSymbol]], voice_present_by_system: list[list[bool]]
+) -> list[list[list[EncodedSymbol]]]:
+    """Reshape `parse_staffs`' own output (one list per voice, that voice's symbols
+    concatenated across every system it appears in) into one staves-list per system -
+    the input shape `analyze_system` (and any repair proposal built from the same
+    staves, e.g. `cross_staff_repair.propose_repairs`) expects.
 
-    The reshaping this exists for is not just a transpose. A voice missing from one
-    system - `system_grouping`'s whole reason for existing is that this is common -
-    contributes *no* chunk for that system at all, not an empty one, so
-    `split_by_system`'s chunks cannot be lined up against systems by position alone.
-    `voice_present_by_system[s][v]` (the same information `SystemPlan.staff_for_voice`
-    already holds, passed as plain booleans rather than importing `staff_parsing.py`'s
-    `SystemPlan` - that module pulls in cv2 and the transformer stack, which this
-    package deliberately stays free of so it can be tested without either) says whether
-    voice `v` contributed a chunk to system `s`, in the same order `voices` was built:
-    consuming chunks with a per-voice cursor that only advances on `True` reproduces the
-    correspondence exactly.
+    Not just a transpose. A voice missing from one system - `system_grouping`'s whole
+    reason for existing is that this is common - contributes *no* chunk for that system
+    at all, not an empty one, so `split_by_system`'s chunks cannot be lined up against
+    systems by position alone. `voice_present_by_system[s][v]` (the same information
+    `SystemPlan.staff_for_voice` already holds, passed as plain booleans rather than
+    importing `staff_parsing.py`'s `SystemPlan` - that module pulls in cv2 and the
+    transformer stack, which this package deliberately stays free of so it can be
+    tested without either) says whether voice `v` contributed a chunk to system `s`, in
+    the same order `voices` was built: consuming chunks with a per-voice cursor that
+    only advances on `True` reproduces the correspondence exactly.
     """
     split_voices = [split_by_system(voice) for voice in voices]
     cursors = [0] * len(voices)
-    results: list[list[Finding]] = []
-    for system_index, presence in enumerate(voice_present_by_system):
+    result: list[list[list[EncodedSymbol]]] = []
+    for presence in voice_present_by_system:
         staves = []
         for voice_number, present in enumerate(presence):
             if present:
                 staves.append(split_voices[voice_number][cursors[voice_number]])
                 cursors[voice_number] += 1
-        staff_to_part = (
-            staff_to_part_by_system[system_index] if staff_to_part_by_system else None
+        result.append(staves)
+    return result
+
+
+def findings_by_page(
+    voices: list[list[EncodedSymbol]],
+    voice_present_by_system: list[list[bool]],
+    staff_to_part_by_system: list[dict[int, ScorePart]] | None = None,
+) -> list[list[Finding]]:
+    """Stage A findings for every system on a page - see `staves_by_system` for the
+    reshaping this relies on."""
+    return [
+        analyze_system(
+            staves, staff_to_part_by_system[system_index] if staff_to_part_by_system else None
         )
-        results.append(analyze_system(staves, staff_to_part))
-    return results
+        for system_index, staves in enumerate(staves_by_system(voices, voice_present_by_system))
+    ]

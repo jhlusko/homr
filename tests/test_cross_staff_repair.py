@@ -1,6 +1,11 @@
 import unittest
 
-from homr.cross_staff_repair import RepairProposal, apply_proposal, propose_majority_correction
+from homr.cross_staff_repair import (
+    RepairProposal,
+    apply_proposal,
+    propose_majority_correction,
+    propose_repairs,
+)
 from homr.transformer.vocabulary import EncodedSymbol
 
 
@@ -130,6 +135,25 @@ class TestApplyProposal(unittest.TestCase):
         self.assertEqual(corrected[0].lift, "#")
         self.assertEqual(corrected[0].articulation, "staccato")
         self.assertEqual(corrected[0].slur, "slurStart")
+
+
+class TestProposeRepairs(unittest.TestCase):
+    def test_pools_both_key_and_time_signature_proposals(self) -> None:
+        majority = [_sym("keySignature_0"), _sym("timeSignature/4")]
+        minority = [_sym("keySignature_-1"), _sym("timeSignature/8")]
+
+        proposals = propose_repairs([list(majority), list(majority), list(minority)])
+
+        current = {p.current_rhythm for p in proposals}
+        self.assertEqual(len(proposals), 2)
+        self.assertEqual(current, {"keySignature_-1", "timeSignature/8"})
+
+    def test_agreeing_staves_propose_nothing(self) -> None:
+        staff = [_sym("keySignature_0"), _sym("timeSignature/4")]
+
+        proposals = propose_repairs([list(staff), list(staff), list(staff)])
+
+        self.assertEqual(proposals, [])
 
 
 if __name__ == "__main__":
