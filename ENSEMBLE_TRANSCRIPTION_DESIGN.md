@@ -2966,6 +2966,48 @@ detector finds a Dynamic box on a page (27.95, 84.0% whole-page F1), this classi
 which mark it is (88.6%) once handed a crop. What remains, per 27.94's decision, is the
 structured-notation head that attaches a classified dynamic to the score - not yet started.
 
+**27.97 attaching a dynamic to a note - measured, not yet built.** 27.94 decided dynamics
+get a structured-notation head; every existing head (beam, stem, slur, tie) labels a
+`<note>` from data that already lives on it or is directly derivable from a child element.
+A dynamic is different - it is a `<direction>`, a sibling of notes in the measure, not a
+child of one - so which note it labels is a real design decision nothing in this pipeline
+had made before.
+
+Built `dynamics_attachment.py` with the simplest defensible rule: a dynamic attaches to
+the *next* note encountered after it in document order, within the same part - the same
+convention MuseScore's own engraving follows (a `<direction><dynamics>` sits in the XML
+immediately before the note it prints under). Deliberately not position-based (matching a
+direction's measure-offset against a note's onset via backup/forward, the way
+`music_xml_parser.py` computes render order) - heavier machinery not worth building before
+knowing whether the simple rule is even good enough to bother with.
+
+Measured against the whole real corpus (142,243 notes): **3.35% carry an attached dynamic**,
+dominated by 8 marks (`p, f, mf, pp, sf, ff, mp, ppp`) that together account for the large
+majority of the 4,772 labelled notes; per-part marked rate has a median of 1.39% but ranges
+0-100%, so the imbalance is real but concentrated rather than uniform. This is the number
+that matters against 27.49's documented failure: inline decoder tokens collapsed at ~0.05%
+of *tokens* (a different, coarser denominator, but the same shape of problem) with no
+correction ever tried. 3.35% of notes is a real imbalance - comparable to what this
+project's own tie head already handles successfully with `--focal-gamma-head` - not the
+~65x-more-extreme starvation that sank run 318. This is empirical support for 27.94's
+reasoning, not just the theoretical argument it was made on.
+
+One artefact worth fixing before this becomes training data: `dynamics_of`'s label
+sometimes concatenates two dynamics children present in one `<dynamics>` element
+(`pother-dynamics`, `fother-dynamics`, ...) - a symptom of the same information loss
+27.96 already flagged (`source_dynamics`/`dynamics_of` only concatenate MusicXML element
+tag names, never `<other-dynamics>`'s actual text content). These hybrid labels should
+collapse into a single "other" bucket rather than be treated as their own classes.
+
+**Not yet built:** adding a `dynamic` field to `NoteNotation` (`homr/transformer/
+structured_notation.py`, following the precedent `tie` already set - defaulted so existing
+sidecars keep decoding), wiring `attach_dynamics` into the structured-notation extraction
+pass (`structured_notation_parser.py`) and `to_decoder_branches`, a new output head in the
+structured-heads model, and a full training-data regeneration + training run. This is
+comparable in scope to how the beam/stem/slur/tie heads themselves were built - a
+multi-session undertaking, not a single turn's addition - and is left as the next distinct
+piece of work rather than started without a clear stopping point.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
