@@ -3079,7 +3079,44 @@ first value that fixed the tie head in phase13, tried before anything more elabo
 correction this project has already validated for exactly this shape of problem, and
 trying it first is what makes a later, more invasive fix defensible if this one is not
 enough. Launched against phase15's already-correct converted data (no reconversion
-needed) - not yet measured.
+needed).
+
+**Phase16 measured: focal gamma does not fix it - macro F1 0.063, statistically flat
+against phase15's 0.068, and every one of the five marks phase15 had a nonzero read on
+(`p, f, sf, pp, ff`) scored lower, not higher** (e.g. `p` 0.076 -> 0.040, `ff` 0.067 ->
+0.053). This is the confirming half of 27.98's own class-count diagnosis, not a new
+finding: focal loss reweights *hard-vs-easy* examples within a fixed class set, which is
+the right tool for a class with thousands of examples that the model finds hard to
+separate from the majority (tie's `start`/`stop`, 3,230 each) - it does nothing for a
+class that has almost no examples to learn a decision boundary from regardless of how
+they are weighted. Nine of dynamics' seventeen observed marks have single- or
+low-double-digit support in this valid split (`fff` n=2, `mp` n=9, `sfp` n=10, `ppp`
+n=12, `rf` n=46, ...) - focal gamma cannot manufacture data those counts do not contain.
+A same-run side effect worth recording rather than reading into: ties' macro F1 also
+drifted (0.831 -> 0.813) despite `--focal-gamma-head` scoping gamma to `dynamic.mark`
+alone (0.0 elsewhere, per its own documented contract) - plausibly ordinary run-to-run
+variance from a single shared optimiser step over every head's summed loss rather than a
+repeat of phase12's cross-head damage, but not confirmed either way on one run each side.
+
+**Not yet decided or built: how to reduce dynamics' effective class count.** Two
+candidate levers, neither tried:
+
+  - `--class-weights` (`training_transformer/train_structured_heads.py`, inverse-frequency
+    reweighting, already implemented per 27.49) - but unlike `--focal-gamma-head` it has
+    no per-head scope in its current CLI, and this project has already measured what an
+    *unscoped* imbalance correction costs (phase12: a global focal gamma bought ties
+    0.6-2.7 points at beam's cost of 1-8 and slur's of 5-8). Applying it as-is risks the
+    same trade for a head that, per phase16, may not even take the deal. Needs a
+    `--class-weights-head` equivalent to `--focal-gamma-head` before it is safe to try,
+    not a blind run.
+  - Folding the long tail (marks scoring 0.000 across both phase15 and phase16 -
+    `sfz, fz, mf, fp, rfz, sffz, rf, ppp, sfp, mp, fff`) into `DynamicMark.OTHER` at the
+    label-extraction stage, concentrating what little signal exists onto the handful of
+    marks (`p, f, sf, pp, ff`) that already show non-zero learning. This is a corpus
+    policy decision (where to draw the line, and whether it should be a fixed threshold
+    or something the training-data audit measures per run) that changes what the head can
+    ever report, not just how it is trained - left for the next explicit decision rather
+    than picked here.
 
 ### 25.1 Settled by this design
 
