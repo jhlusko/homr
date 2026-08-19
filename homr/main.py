@@ -1,5 +1,6 @@
 import argparse
 import glob
+import json
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -35,6 +36,7 @@ from homr.note_detection import add_notes_to_staffs, combine_noteheads_with_stem
 from homr.onnx_providers import coreml_available, cuda_available
 from homr.pdf_utils import render_pdf_to_image
 from homr.resize import resize_image
+from homr.score_profile import ScoreProfile, ScoreProfileSchemaError
 from homr.segmentation.config import segnet_path_onnx, segnet_path_onnx_fp16
 from homr.segmentation.inference_segnet import extract
 from homr.simple_logging import eprint
@@ -105,6 +107,28 @@ def replace_extension(path: str, new_extension: str) -> str:
     return os.path.splitext(path)[0] + new_extension
 
 
+def load_score_profile(path: str) -> ScoreProfile:
+    """Read a `--score-profile` JSON file, or raise the exception `main()` already knows
+    how to turn into a clean user-facing error - a missing file, invalid JSON, or a
+    schema mismatch are all things a user can fix, not a bug to surface as a traceback.
+    """
+    if not os.path.isfile(path):
+        raise InvalidProgramArgumentException("Score profile file not found: " + path)
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except json.JSONDecodeError as error:
+        raise InvalidProgramArgumentException(
+            f"Score profile at {path} is not valid JSON: {error}"
+        ) from error
+    try:
+        return ScoreProfile.from_dict(data)
+    except ScoreProfileSchemaError as error:
+        raise InvalidProgramArgumentException(
+            f"Score profile at {path} is not valid: {error}"
+        ) from error
+
+
 def load_and_preprocess_predictions(
     image_path: str, enable_debug: bool, enable_cache: bool, segnet_use_gpu: bool
 ) -> tuple[InputPredictions, Debug]:
@@ -169,6 +193,11 @@ class ProcessingConfig:
     # Only helps across many images (slow one-time MLProgram compile).
     coreml_encoder: bool
     title_detection: bool
+    # Optional (--score-profile): drives §7's layout use and, once supplied, the Stage A
+    # clef-vs-profile cross-staff check (design §12.1) - see
+    # ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §3/§4. None is the ordinary, fully-supported
+    # case: every check that does not need a profile still runs.
+    score_profile: ScoreProfile | None = None
 
 
 def process_image(
@@ -213,6 +242,7 @@ def process_image(
             image,
             selected_staff=config.selected_staff,
             config=transformer_config,
+            score_profile=config.score_profile,
         )
 
         if not config.read_staff_positions:
@@ -422,6 +452,13 @@ def main() -> None:
     parser.add_argument(
         "--no-title", action="store_true", help="Don't detect title for faster inference"
     )
+    parser.add_argument(
+        "--score-profile",
+        type=str,
+        help="Path to a homr.score-profile.v1 JSON file describing the expected parts "
+        + "(design §7). Optional: layout and cross-staff checks that do not need it "
+        + "still run without one.",
+    )
 
     args = parser.parse_args()
 
@@ -443,6 +480,12 @@ def main() -> None:
         eprint("Init finished")
         return
 
+    try:
+        score_profile = load_score_profile(args.score_profile) if args.score_profile else None
+    except InvalidProgramArgumentException as e:
+        eprint(str(e))
+        sys.exit(2)
+
     config = ProcessingConfig(
         args.debug,
         args.cache,
@@ -453,6 +496,7 @@ def main() -> None:
         segnet_use_gpu,
         coreml_encoder,
         not args.no_title,
+        score_profile,
     )
 
     xml_generator_args = XmlGeneratorArguments(

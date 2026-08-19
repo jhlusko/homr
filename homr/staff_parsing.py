@@ -9,6 +9,8 @@ from homr.cross_staff_consistency import findings_by_page
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
+from homr.score_profile import ScoreProfile
+from homr.score_profile_layout import staff_to_part_by_system
 from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
 from homr.staff_parsing_tromr import parse_staff_tromr
@@ -446,7 +448,12 @@ def parse_staff_image(
 
 
 def parse_staffs(
-    debug: Debug, staffs: list[MultiStaff], image: NDArray, config: Config, selected_staff: int = -1
+    debug: Debug,
+    staffs: list[MultiStaff],
+    image: NDArray,
+    config: Config,
+    selected_staff: int = -1,
+    score_profile: ScoreProfile | None = None,
 ) -> list[list[EncodedSymbol]]:
     """
     Dewarps each staff and then runs it through an algorithm which extracts
@@ -489,15 +496,16 @@ def parse_staffs(
         # staff, so most voices are deliberately absent from most systems rather than
         # genuinely missing, and the presence map below would not describe what
         # findings_by_page actually received.
-        _report_cross_staff_findings(plan, voices)
+        _report_cross_staff_findings(plan, voices, score_profile)
     return voices
 
 
-def _report_cross_staff_findings(plan: SystemPlan, voices: list[list[EncodedSymbol]]) -> None:
+def _report_cross_staff_findings(
+    plan: SystemPlan, voices: list[list[EncodedSymbol]], score_profile: ScoreProfile | None
+) -> None:
     """Stage A (design §12.1): log deterministic cross-staff disagreements, without
-    altering anything voices carries forward. No score profile is threaded through here
-    yet, so the clef-vs-profile check never fires from this call site - see
-    ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4 for the remaining wiring.
+    altering anything voices carries forward. The clef-vs-profile check only fires when
+    the caller supplied a score profile; every other check runs regardless.
 
     Run end to end against two real OSSQ pages (`sq7313978:0001`, `sq8823783:0061`) on a
     GPU instance: no exception, `homr.main` wrote MusicXML normally in both cases, and it
@@ -514,7 +522,12 @@ def _report_cross_staff_findings(plan: SystemPlan, voices: list[list[EncodedSymb
             [plan.staff_for_voice(system, voice) is not None for voice in range(len(voices))]
             for system in range(len(plan.systems))
         ]
-        for system_index, findings in enumerate(findings_by_page(voices, presence)):
+        staff_to_part = (
+            staff_to_part_by_system(score_profile, presence) if score_profile is not None else None
+        )
+        for system_index, findings in enumerate(
+            findings_by_page(voices, presence, staff_to_part)
+        ):
             for finding in findings:
                 eprint(f"System {system_index}: {finding.message}")
     except Exception as error:  # noqa: BLE001
