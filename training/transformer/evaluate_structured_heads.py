@@ -171,6 +171,14 @@ def dump_predictions(
                 [str(field) for pair in predicted[index].slurs[:slur_slots] for field in pair]
                 for index, _ in slurred
             ],
+            # Dynamic is supervised on every note, like slur event - no filtering
+            # condition to mirror. 28.1's phase16/17 found mf/mp/ppp stuck at F1=0.000
+            # with no way to see what the head predicts *instead* on those positions;
+            # writing the raw vectors here is what makes that question answerable without
+            # touching the model again, the same reason 27.60's beam vectors and this
+            # function's own slur vectors exist.
+            "dynamics_reference": [str(note.dynamic) for _, note in slurred],
+            "dynamics_predicted": [str(predicted[index].dynamic) for index, _ in slurred],
         }
         handle.write(json.dumps(record) + "\n")
         position += 1
