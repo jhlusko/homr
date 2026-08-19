@@ -353,6 +353,45 @@ already documented elsewhere in the design. Explicitly **not** beam-search seque
 decoding: targeted use of alternatives already computed, after a deterministic check has
 narrowed the search neighborhood to almost nothing.
 
+**Refinement (from a design discussion, not yet acted on): Stage B as specified above
+has a real limitation for exactly the case that motivates it.** Swapping one token from
+its own top-k alternative changes *only* that token — everything decoded after it in
+that staff was chosen under the *original* (wrong) context and is not regenerated. That
+is fine for an isolated rhythm token (the 7/8-vs-4/4 example), but wrong for something
+like a key signature: a wrong key can plausibly have shaped every accidental spelling
+decoded after it in that staff, and a bare token swap does not fix those. Three tiers,
+increasing in power and cost, only the first of which is what Stage B's text above
+actually describes:
+
+1. **Deterministic repair, no model call.** Edit the outlier's token stream directly —
+   e.g. replace a key/time-signature token with the system's majority value. Cheapest,
+   and reasonable specifically near the start of a staff (a key/time signature) where
+   little has been decoded yet under the wrong assumption.
+2. **Forced-prefix re-decode using the existing frozen decoder — real conditioning, no
+   training.** `homr/transformer/decoder_inference.py`'s `ScoreDecoder.generate()` is a
+   causal transformer decoder with a KV cache keyed by absolute step (`cache_len` is a
+   literal input to the ONNX graph) - architecturally capable of taking a corrected
+   prefix and regenerating everything after it consistently. **Not built**: `generate()`
+   as written assumes a length-1 `BOS` seed - each step feeds only `start_tokens[:, -1:]`
+   into the loop, so handing it a genuine multi-token forced prefix today would silently
+   drop everything in it but the last token, never populating the cache for the earlier
+   ones. Supporting this needs a "prefill" phase (run the corrected prefix through the
+   model first, one step per token, to build the cache properly - all of
+   rhythm/pitch/lift/articulation/slur/position, not just rhythm, since the model takes
+   them as parallel inputs) before the existing greedy loop takes over. Real, scoped,
+   buildable as new, additive capability (a new method, not a change to the existing
+   `generate()` call path) - not attempted yet because it touches actual inference
+   correctness, unlike everything built for #3/#4 so far, which was either pure logic or
+   log-only and additive to the live pipeline.
+3. **Learned cross-staff conditioning (§12.3 Stage C, or extending §7.3's own
+   profile-injection mechanism to also carry Stage A's computed majority signature as a
+   signal, not just a user-supplied profile).** The "real" answer, needs training, and
+   §12.3 already gates it behind measuring the simpler stages first.
+
+Tier 2 is the natural next Stage B implementation once attempted: genuine model-in-the-
+loop conditioning without a training run. Left unstarted, named precisely rather than
+left as a vague "Stage B, not started" the way it was before this refinement.
+
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
 ```text
