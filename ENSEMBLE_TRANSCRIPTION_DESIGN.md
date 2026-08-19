@@ -3156,7 +3156,45 @@ levers (plain cross-entropy, focal gamma, vocabulary collapse) have moved macro 
 0.068 to 0.120 without finding what actually limits `mf`/`mp`/`ppp` specifically, which
 suggests the next productive step is diagnostic (read a sample of the model's `mf`
 confusions, the way `stem_arbiter.py`/`rule_vs_head.py` already do for other heads) rather
-than another blind lever. Not yet built.
+than another blind lever.
+
+**Built and run: the diagnostic.** `evaluate_structured_heads.py`'s `dump_predictions`
+wrote `stem_reference`/`predicted` and `slur_reference`/`predicted` per note but nothing
+for dynamics - the dynamics head postdates that function and nobody had extended it, so
+the confusions this design needed to read were not written anywhere. Added
+`dynamics_reference`/`dynamics_predicted` the same way `slur_reference`/`predicted`
+already work: every note qualifies (dynamic is supervised everywhere, like slur event),
+so no filtering condition to mirror. 11 existing `evaluate_structured_heads` tests pass
+unchanged. Re-ran phase17's already-trained checkpoint through evaluation only (no
+retraining) to regenerate predictions with the new fields, then built the confusion
+counts directly.
+
+**The answer: it is not confusion between marks, it is the head mostly failing to
+register that a mark is present at all.** For the 196 `mf` positions in this valid split,
+171 (87%) are predicted `none`, not some other dynamic - only 10 land on `p`, 7 on `f`, 6
+on `pp`. `mp` (9 positions): 7 `none`, 2 `p`, never `mp` itself. `ppp` (12 positions): 11
+`none`, 1 `pp`. The reverse view confirms it is not a precision problem masquerading as a
+recall one either: of the 13 times the head *did* predict `mf`, none of them were
+correct (4 were actually `p`, 3 `f`, 2 `other-dynamics`, 2 `none`, 1 each `pp`/`sf`) - and
+`mp` was never predicted at all. This rules out the leading hypothesis from phase17
+(visual confusability with a *specific* neighbouring mark) - a confusability story would
+show up as concentrated mass on one or two wrong marks, not 87-92% collapsing to "nothing
+here." What it does not rule out: mark size/rendering in OSSQ's synthetic crops, position
+within the crop relative to the note it labels, or simply that three marks' worth of
+signal is still too thin for this architecture's single linear head regardless of how the
+vocabulary is drawn - none of these distinguished by the counts alone, and unmeasured.
+
+**Where this leaves the dynamics head, after four training runs and one diagnostic pass:**
+real and non-degenerate on the marks it can see (`p, f, pp, ff`, macro F1 0.120 overall),
+but for `mf`/`mp`/`ppp` specifically it behaves close to an "unmarked" detector rather
+than a misclassifier - which changes what a plausible next fix looks like. A confusion
+problem would call for more separating capacity or a different loss; a registration
+problem more plausibly calls for looking at the visual evidence itself (crop the actual
+`mf` positions this run got wrong and look at them, the way 27.20's slur-placement work
+and this session's own `dynamics_placement.py` sanity check both checked real examples
+before trusting a number) rather than another training-recipe change. Not yet done - left
+as the next distinct piece of work, the same way 27.97 left the head itself at the end of
+the session that measured the attachment rule.
 
 ### 25.1 Settled by this design
 
