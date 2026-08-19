@@ -248,24 +248,25 @@ built from a written spec with no empirical validation yet.
 
 ### Next implementation step
 
-The schema, the deterministic layout use (§7.2), and `staff_to_part_by_system` (the
-mapping #4's clef check needs) are all built (above), and #4's `findings_by_page` is
-already wired into `staff_parsing.parse_staffs` — just called with no profile
-(`staff_to_part_by_system=None`), so the clef check is dormant rather than firing.
+The schema, the deterministic layout use (§7.2), `staff_to_part_by_system`, and the
+`--score-profile` CLI wiring are all built and validated end to end (above) - a supplied
+profile now reaches `parse_staffs` and activates #4's clef-vs-profile check. What
+remains is genuinely new work, not plumbing:
 
-1. **Thread an actual profile through `homr/main.py`'s CLI and `ProcessingConfig` into
-   `parse_staffs`.** Once a `ScoreProfile` reaches `_report_cross_staff_findings`, it can
-   call `staff_to_part_by_system` (built for exactly this) and pass the result to
-   `findings_by_page` — the clef check goes live with no further design work, only
-   plumbing. Not yet done: this touches more of `main.py`'s surface (argument parsing,
-   `ProcessingConfig`'s fields, `process_image`'s call chain) than the log-only additions
-   so far, so it was left as its own explicit step rather than rushed alongside them.
-2. **§7.3 decoder conditioning** — genuinely new work: instrument-family/part-ordinal/
-   staff-within-part/expected-staff-count/likely-clef/transposition embeddings injected
-   as prefix tokens or a zero-initialized gated additive vector, plus §7.4's training-time
-   context dropout. Needs a training run to validate, unlike #1. Do this after #1 — a
-   profile with no way to reach a human reviewer or the decoder is not yet worth
-   conditioning training on.
+- **§7.2's layout use (`propose_part_assignment`) is still not called from
+  `parse_staffs` or surfaced anywhere** - only its `staff_to_part_by_system` sibling
+  (built for #4's clef check specifically) is wired in. The layout mapping itself -
+  proposed systems/staff rows, evidence score, deviations, source-image regions - has no
+  consumer yet. Worth revisiting whether `propose_part_assignment` and
+  `staff_to_part_by_system` should collapse into one function now that both exist and
+  overlap in purpose, or stay separate because they answer different questions
+  (`SystemPartition`-indexed staff mapping vs. voice-number-indexed).
+- **§7.3 decoder conditioning** — genuinely new work: instrument-family/part-ordinal/
+  staff-within-part/expected-staff-count/likely-clef/transposition embeddings injected
+  as prefix tokens or a zero-initialized gated additive vector, plus §7.4's training-time
+  context dropout. Needs a training run to validate. Do this after the layout use has a
+  real consumer — a profile with no way to reach a human reviewer or the decoder is not
+  yet worth conditioning training on.
 
 ---
 
@@ -330,11 +331,11 @@ than its neighbours), not this module misreading its own input.
 
 **Not done yet:**
 
-- No score profile reaches this call site yet, so the clef-vs-profile check never fires
-  from it (`staff_to_part_by_system` is passed as `None`). The mapping function it needs
-  (`score_profile_layout.staff_to_part_by_system`) is built and tested - what remains is
-  accepting a profile as a job input at all (§3's own next step, `homr/main.py`'s CLI and
-  `ProcessingConfig`), not further design here.
+- ~~No score profile reaches this call site~~ - fixed: `--score-profile` (§3) now
+  threads a `ScoreProfile` through `main.py` into `_report_cross_staff_findings`, which
+  calls `staff_to_part_by_system` and activates the clef check. Validated on a real page
+  with a `STRING_QUARTET` profile: no crash, and correctly found no mismatch (this
+  page's actual clefs match the profile).
 - Findings only go to `eprint`. Logged, surfaced to a review UI, or asserted in a
   benchmark are all still open - nothing beyond a log line consumes them yet.
 - Only 4 of 8 §12.1 checks exist (above) - the other four would surface through the same
