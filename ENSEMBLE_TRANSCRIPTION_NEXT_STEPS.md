@@ -389,9 +389,38 @@ actually describes:
    signal, not just a user-supplied profile).** The "real" answer, needs training, and
    §12.3 already gates it behind measuring the simpler stages first.
 
-Tier 2 is the natural next Stage B implementation once attempted: genuine model-in-the-
-loop conditioning without a training run. Left unstarted, named precisely rather than
-left as a vague "Stage B, not started" the way it was before this refinement.
+**Tier 2 built and validated on the real model - and it surfaced a finding that changes
+how promising this whole tier is for the motivating use case.**
+`ScoreDecoder.generate_from_prefix()` (`homr/transformer/decoder_inference.py`)
+teacher-forces a caller-supplied prefix through the model one token at a time, then
+falls through to ordinary greedy decoding - additive, `generate()` itself untouched, no
+retraining. Two things measured against the real ONNX model on the instance (this
+module has no mocked test coverage - the IO-binding/cache contract is exactly what a
+mock risks getting subtly wrong, so this was validated the same way #4's live wiring
+was, against real inference rather than a substitute):
+
+1. **Mechanism check: replaying a staff's own first 5 decoded symbols as a forced
+   prefix and continuing reproduces the rest of that staff's decode bit-for-bit
+   identical to an unforced `generate()` call.** Confirms the cache/step/position
+   handling is correct, not merely plausible.
+2. **The motivating case itself: forcing a genuinely different key signature
+   (`keySignature_-1` -> `keySignature_4`, mid-staff) left every downstream pitch and
+   accidental (`lift`) prediction unchanged**, on the one staff tested. Not a defect in
+   the mechanism - (1) already proves that works - but a real, measured property of
+   this model: its pitch/accidental decisions appear driven by the visual encoder
+   context (attention over the image) more than by the key-signature token in the
+   autoregressive history. Plausible for an OMR model specifically - the accidentals are
+   directly visible in the image, so the decoder may not need to "remember" a key
+   signature to read them - but it means **tier 2's practical value for exactly the
+   key/time-signature repair case that motivated it is not yet established**, on n=1.
+
+**Not yet done:** test across more staves (does this hold generally, or was this one
+staff/key-change atypical?), test other correction types (a rhythm/duration correction
+mid-measure, which does have a clear reason to affect subsequent barline alignment,
+unlike a key signature's effect on accidentals specifically), and only then decide
+whether tier 2 is the right lever for Stage B's key/time-signature case or whether tier 1
+(the plain deterministic swap) is just as good for that specific finding type since the
+model was not using the key context anyway.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
