@@ -304,16 +304,35 @@ Not built, named honestly in the module docstring rather than left silently unco
   carried **across** systems on a page, which nothing built so far tracks (everything
   above operates on one system's staves in isolation).
 
-### Not yet done: wiring into the live pipeline
+### Wired into the live pipeline, log-only, validated on real pages
 
-Same situation as §3's layout use - `analyze_system` is a pure function nothing calls
-yet. It would sit naturally in `homr/staff_parsing.py`, after per-staff decoding and
-`system_grouping`'s system partition are both available, alongside wiring §3's
-`propose_part_assignment` in (the two share the same "run after grouping, before final
-MusicXML assembly" position, and `analyze_system`'s clef check needs §3's
-`staff_to_part` output to do anything). Findings need somewhere to go once produced -
-logged, surfaced to a review UI, or just asserted in a benchmark - none of which exists
-yet either.
+`homr/staff_parsing.py`'s `parse_staffs` now calls `findings_by_page` (via
+`_report_cross_staff_findings`) right after a page's voices are fully decoded, and logs
+whatever it finds with `eprint`. `parse_staffs`' return value is untouched - nothing
+downstream can be affected by what this reports - and the whole call is wrapped in a
+broad `try/except` that logs and swallows, since a diagnostic must never be the reason a
+page fails to transcribe. Skipped when `selected_staff >= 0` (a debug mode where most
+voices are deliberately absent from most systems for reasons unrelated to real music).
+
+Run end to end against two real OSSQ pages on a GPU instance (`sq7313978:0001`,
+`sq8823783:0061`): both completed normally, `homr.main` wrote MusicXML in both cases, the
+exception guard never fired, and it surfaced real findings - a key-signature restatement
+only one of four parts carried into its second system on the first page; a
+time-signature mismatch and two key-signature mismatches on the second. These read as
+genuine per-voice decode disagreements (each staff decodes independently, so nothing
+stops one voice's transformer output from restating or dropping a signature differently
+than its neighbours), not this module misreading its own input.
+
+**Not done yet:**
+
+- No score profile is threaded through this call site, so the clef-vs-profile check
+  never fires from it (`staff_to_part_by_system` is passed as `None`). Needs §3's
+  `propose_part_assignment` output wired in alongside a way to accept a profile as a job
+  input in the first place - the two threads share this exact integration point.
+- Findings only go to `eprint`. Logged, surfaced to a review UI, or asserted in a
+  benchmark are all still open - nothing beyond a log line consumes them yet.
+- Only 4 of 8 §12.1 checks exist (above) - the other four would surface through the same
+  wiring once built, no further pipeline changes needed.
 
 ### Stage B: targeted repair proposals from existing alternatives (not started, depends on A)
 
