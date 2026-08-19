@@ -248,13 +248,18 @@ built from a written spec with no empirical validation yet.
 
 ### Next implementation step
 
-The schema and the deterministic layout use (§7.2) are built (above). Two directions
-from here, independent of each other:
+The schema, the deterministic layout use (§7.2), and `staff_to_part_by_system` (the
+mapping #4's clef check needs) are all built (above), and #4's `findings_by_page` is
+already wired into `staff_parsing.parse_staffs` — just called with no profile
+(`staff_to_part_by_system=None`), so the clef check is dormant rather than firing.
 
-1. **Wire the layout use into the real pipeline** — accept a profile as a job input,
-   call `propose_part_assignment` where staff-to-system grouping already runs, surface
-   the mapping (and deviations) to whatever renders a review surface. No new design
-   needed, this is integration work against existing modules.
+1. **Thread an actual profile through `homr/main.py`'s CLI and `ProcessingConfig` into
+   `parse_staffs`.** Once a `ScoreProfile` reaches `_report_cross_staff_findings`, it can
+   call `staff_to_part_by_system` (built for exactly this) and pass the result to
+   `findings_by_page` — the clef check goes live with no further design work, only
+   plumbing. Not yet done: this touches more of `main.py`'s surface (argument parsing,
+   `ProcessingConfig`'s fields, `process_image`'s call chain) than the log-only additions
+   so far, so it was left as its own explicit step rather than rushed alongside them.
 2. **§7.3 decoder conditioning** — genuinely new work: instrument-family/part-ordinal/
    staff-within-part/expected-staff-count/likely-clef/transposition embeddings injected
    as prefix tokens or a zero-initialized gated additive vector, plus §7.4's training-time
@@ -325,10 +330,11 @@ than its neighbours), not this module misreading its own input.
 
 **Not done yet:**
 
-- No score profile is threaded through this call site, so the clef-vs-profile check
-  never fires from it (`staff_to_part_by_system` is passed as `None`). Needs §3's
-  `propose_part_assignment` output wired in alongside a way to accept a profile as a job
-  input in the first place - the two threads share this exact integration point.
+- No score profile reaches this call site yet, so the clef-vs-profile check never fires
+  from it (`staff_to_part_by_system` is passed as `None`). The mapping function it needs
+  (`score_profile_layout.staff_to_part_by_system`) is built and tested - what remains is
+  accepting a profile as a job input at all (§3's own next step, `homr/main.py`'s CLI and
+  `ProcessingConfig`), not further design here.
 - Findings only go to `eprint`. Logged, surfaced to a review UI, or asserted in a
   benchmark are all still open - nothing beyond a log line consumes them yet.
 - Only 4 of 8 §12.1 checks exist (above) - the other four would surface through the same
