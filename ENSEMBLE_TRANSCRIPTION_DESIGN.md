@@ -2883,6 +2883,45 @@ tie**, not inline tokens. Reasons, weighed directly against the failed alternati
 augmentation needed); the structured-head design and resolve-stage attachment are separate,
 later work not yet started.
 
+**27.95 Dynamic detection works on the first try - 27.94's prediction confirmed.** Added
+Dynamic to `detector_masks.CLASS_ORDER` and `detector_data.DETECTION_CLASSES` (both updated,
+with tests corrected from the old exclusion to the new inclusion), rebuilt masks for the
+whole corpus (2,889 pages), regenerated the score-level split with the same seed (identical
+178/22 train/valid scores), and retrained (detector4, 20 epochs, class-balanced sampling
+from 27.89 still active). Whole-page box eval on the 307 held-out pages, 4,277 ground-truth
+boxes:
+
+```
+class           precision  recall     f1   gt boxes
+Dynamic            75.9%   93.9%   84.0%       429
+MeasureNumber      75.5%   94.9%   84.1%        78
+Lyrics             66.7%   94.1%   78.1%     3,555
+Tempo              16.2%   67.9%   26.2%        53
+StaffText           9.9%   73.6%   17.4%       106
+Expression          4.4%   72.7%    8.3%        44
+Fingering             0%      0%      0%        12
+```
+
+Dynamic lands second only to MeasureNumber, on its first real training run - no synthetic
+data, no special handling, exactly what 27.94 predicted from its abundant real-corpus count
+(5,013 boxes overall). This detector-side half of the dynamics strategy is done: a Dynamic
+box can now be found on a page it was never given the layout of.
+
+Two things worth recording honestly rather than glossing over. Fingering is back at 0%
+here, since this run carries only the real corpus - 27.90's synthetic Fingering boost was
+never re-merged into this index (the two changes, Dynamic's addition and the SystemText
+fold, were kept separate from the Fingering synthesis question). And Lyrics/MeasureNumber
+both dipped somewhat against the last comparable run (Lyrics 83.8%→78.1%, MeasureNumber
+95.7%→84.1%), while Tempo improved (18.4%→26.2%) - several changes landed in this one run
+(Dynamic added, SystemText removed, both changing what a 7-way class-balanced sampler
+competes over), so no single cause is being claimed for either the gain or the dip; it is
+recorded as a genuine open question rather than attributed to a story that fits.
+
+**Still not started:** the structured-notation head that reads a detected Dynamic box and
+attaches it to the score (27.94's decision), and the closed-set classifier that turns a
+crop into one of ~12 dynamics markings rather than open-vocabulary text. The detector
+output from this section is the input those stages will need.
+
 ## 25. Settled decisions and open measurements
 
 ### 25.1 Settled by this design
