@@ -342,7 +342,7 @@ than its neighbours), not this module misreading its own input.
 - Only 4 of 8 §12.1 checks exist (above) - the other four would surface through the same
   wiring once built, no further pipeline changes needed.
 
-### Stage B: targeted repair proposals from existing alternatives (not started, depends on A)
+### Stage B: targeted repair proposals from existing alternatives (tier 1 built for key/time signature)
 
 Use the decoder's already-computed greedy logits and top-k alternatives to propose a
 *bounded local* repair when a specific low-confidence head explains a Stage-A
@@ -448,6 +448,24 @@ plain deterministic swap) is the settled recommendation for Stage B; tier 2's co
 stays available rather than deleted, in case some as-yet-untested correction type
 (a different field, a much longer prefix, a correction much later in a staff) turns out
 to behave differently.
+
+**Tier 1's own proposal logic built.** Deciding tier 1 over tier 2 answered *how* to
+apply a correction, not *what* to propose - Stage A only logged findings, nothing turned
+one into a concrete edit. `homr/cross_staff_repair.py`: `propose_majority_correction(staves,
+prefix)` finds each staff's *opening* `"keySignature"`/`"timeSignature"`-prefixed token
+and proposes correcting every minority staff toward the majority value, refusing (empty
+result) on a genuine tie or when fewer than two staves state a value at all - the same
+"report nothing rather than guess" discipline `score_profile_layout.py` already uses.
+`apply_proposal` returns a new symbol list (never mutates in place) and refuses a stale
+proposal whose target position no longer matches what it was built against. Deliberately
+scoped to the opening value only, matching §12.2's own worked example - not the full
+sequence-alignment problem a later key/time change would need. 12 tests, all passing;
+**not yet wired to Stage A's output or the live pipeline** - `analyze_system`'s
+`Finding`s and `propose_majority_correction`'s proposals are built from the same staves
+but nothing currently connects a `key_signature_mismatch`/`time_signature_mismatch`
+`Finding` to calling this function automatically. Not yet validated against a real page
+either (unlike Stage A itself and tier 2, both validated on the GPU instance) - next
+step before calling Stage B done for this pair of checks.
 
 ### A second motivating case for cross-staff repair, from a design discussion: shared
 motifs, not just shared attributes
