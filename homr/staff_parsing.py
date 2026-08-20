@@ -11,7 +11,7 @@ from homr.cross_staff_consistency import (
     check_part_order,
     staves_by_system,
 )
-from homr.cross_staff_repair import propose_repairs
+from homr.cross_staff_repair import propose_motif_articulation_corrections, propose_repairs
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
@@ -511,7 +511,8 @@ def _report_cross_staff_findings(
     plan: SystemPlan, voices: list[list[EncodedSymbol]], score_profile: ScoreProfile | None
 ) -> None:
     """Stage A (design §12.1, plus a later shared-motif addition and the page-wide staff-
-    count check), Stage B tier 1 (design §12.2), and §7.2's profile-layout deviations:
+    count check), Stage B tier 1 (design §12.2, key/time signature and, since this
+    session, motif-corroborated articulation), and §7.2's profile-layout deviations:
     log deterministic cross-staff disagreements and, where one exists, the majority-
     correction proposal for it - without altering anything `voices` carries forward. The
     clef-vs-profile check and the layout deviation report both only fire when the caller
@@ -581,6 +582,15 @@ def _report_cross_staff_findings(
                     f"System {system_index}: repair proposal - {proposal.reason} "
                     f"(staff {proposal.staff_index}, position {proposal.position}: "
                     f"{proposal.current_rhythm!r} -> {proposal.proposed_rhythm!r})"
+                )
+            for articulation_proposal in propose_motif_articulation_corrections(staves):
+                eprint(
+                    f"System {system_index}: repair proposal - "
+                    f"{articulation_proposal.reason} "
+                    f"(staff {articulation_proposal.staff_index}, "
+                    f"position {articulation_proposal.position}: "
+                    f"{articulation_proposal.current_articulation!r} -> "
+                    f"{articulation_proposal.proposed_articulation!r})"
                 )
     except Exception as error:  # noqa: BLE001
         eprint(f"Cross-staff consistency check failed, skipping: {error}")

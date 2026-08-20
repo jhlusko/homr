@@ -1,7 +1,9 @@
 """
 Cross-staff context and repair, Stage B tier 1 (design §12.2, refined per
 ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4): propose - never apply - a deterministic
-correction when a system's staves disagree on their opening key or time signature.
+correction when a system's staves disagree on their opening key or time signature, or
+when three or more staves corroborate the same motif and one of them disagrees on a
+note's articulation.
 
 Tier 1, not tier 2: 20 real forced-prefix conditioning tests
 (`homr.transformer.decoder_inference.ScoreDecoder.generate_from_prefix`, recorded in
@@ -25,10 +27,17 @@ returns proposals a caller logs, hands to a human reviewer, or passes to
 review question, not an automatic correction."
 """
 
+import difflib
 from collections import Counter
 from dataclasses import dataclass
 
 from homr.transformer.vocabulary import EncodedSymbol
+
+#: Matches check_shared_motifs' own default (homr/cross_staff_consistency.py) - both
+#: exist to answer the same underlying question and should agree on what counts as "a
+#: motif," even though this module never imports that one (staying decoupled the same
+#: way tier 1's key/time-signature repair stays independent of the Finding it repairs).
+_DEFAULT_MIN_MOTIF_LENGTH = 4
 
 
 @dataclass(frozen=True)
@@ -130,6 +139,154 @@ def apply_proposal(staff: list[EncodedSymbol], proposal: RepairProposal) -> list
         pitch=original.pitch,
         lift=original.lift,
         articulation=original.articulation,
+        slur=original.slur,
+        position=original.position,
+        coordinates=original.coordinates,
+        notation=original.notation,
+    )
+    return staff[: proposal.position] + [corrected] + staff[proposal.position + 1 :]
+
+
+@dataclass(frozen=True)
+class ArticulationRepairProposal:
+    """One proposed articulation replacement, on one staff, at one note - a sibling of
+    `RepairProposal` rather than a reuse of it: that dataclass's `current_rhythm`/
+    `proposed_rhythm` fields name a rhythm-token swap specifically, and
+    `apply_proposal` only ever rewrites `rhythm`. An articulation correction changes a
+    different field entirely, so it gets its own proposal type and its own
+    `apply_articulation_proposal`, rather than overloading fields whose names would
+    then lie about what they hold.
+    """
+
+    staff_index: int
+    position: int
+    current_articulation: str
+    proposed_articulation: str
+    reason: str
+
+
+def _note_indices(symbols: list[EncodedSymbol]) -> list[int]:
+    return [index for index, symbol in enumerate(symbols) if symbol.rhythm.startswith("note")]
+
+
+def _pairwise_note_alignment(
+    reference: list[EncodedSymbol], other: list[EncodedSymbol], min_motif_length: int
+) -> dict[int, int]:
+    """`reference`'s note positions covered by a matching (rhythm, pitch) run of at
+    least `min_motif_length` against `other`, mapped to `other`'s corresponding
+    position - the same matching `homr.cross_staff_consistency.check_shared_motifs`
+    does, but returning the alignment itself rather than only the mismatches found
+    within it, since finding a *majority* needs to know every staff that corroborates a
+    position, not just the two staves in one pairwise comparison.
+    """
+    reference_notes = _note_indices(reference)
+    other_notes = _note_indices(other)
+    reference_keys = [(reference[k].rhythm, reference[k].pitch) for k in reference_notes]
+    other_keys = [(other[k].rhythm, other[k].pitch) for k in other_notes]
+    matcher = difflib.SequenceMatcher(a=reference_keys, b=other_keys, autojunk=False)
+    mapping: dict[int, int] = {}
+    for block in matcher.get_matching_blocks():
+        if block.size < min_motif_length:
+            continue
+        for offset in range(block.size):
+            mapping[reference_notes[block.a + offset]] = other_notes[block.b + offset]
+    return mapping
+
+
+def propose_motif_articulation_corrections(
+    staves: list[list[EncodedSymbol]], min_motif_length: int = _DEFAULT_MIN_MOTIF_LENGTH
+) -> list[ArticulationRepairProposal]:
+    """A majority-corroborated articulation correction, for every note where three or
+    more staves independently play the same matching motif and do not all agree on its
+    articulation.
+
+    `homr.cross_staff_consistency.check_shared_motifs` only ever compares staves
+    *pairwise* - a finding names two staves with no third staff's evidence attached,
+    which is not enough to know which of the two misread (see that module's own
+    docstring, and ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4's recorded reasoning for why
+    a repair was not built directly on it). This answers the harder question that
+    unblocks one: for one staff's note (the "reference"), every *other* staff is
+    checked pairwise via `_pairwise_note_alignment`; if the note's position is covered
+    by a matching run against at least two other staves, that is three staves total
+    (the reference plus two corroborators) - a genuine majority to propose toward, the
+    same "report nothing rather than guess" bar `propose_majority_correction` already
+    holds key/time signature to.
+
+    Deliberately anchored to one fixed reference staff per corroboration, never merged
+    transitively across different reference staves: two *separate* real occurrences of
+    a common short motif (e.g. four repeated quarter notes appearing at two unrelated
+    points in a piece) must never be linked into one artificial "corroborating group"
+    just because each occurrence happens to pairwise-match a different staff -
+    transitive merging was considered and rejected specifically because it cannot rule
+    that out. Only the lowest-indexed staff in a corroborating group is used as its
+    reference, so each real group is reported exactly once rather than once per member.
+    """
+    proposals = []
+    for reference_index in range(len(staves)):
+        alignments = {
+            other_index: _pairwise_note_alignment(
+                staves[reference_index], staves[other_index], min_motif_length
+            )
+            for other_index in range(len(staves))
+            if other_index != reference_index
+        }
+        for note_index in _note_indices(staves[reference_index]):
+            group = [(reference_index, note_index)]
+            for other_index, mapping in alignments.items():
+                if note_index in mapping:
+                    group.append((other_index, mapping[note_index]))
+            if len(group) < 3:
+                continue
+            if reference_index != min(staff_index for staff_index, _ in group):
+                continue  # reported from the lowest-indexed member only
+
+            articulations = [staves[staff_index][pos].articulation for staff_index, pos in group]
+            counts = Counter(articulations)
+            majority_value, majority_count = counts.most_common(1)[0]
+            if list(counts.values()).count(majority_count) > 1:
+                continue  # a genuine tie - the same refusal propose_majority_correction uses
+
+            for staff_index, pos in group:
+                current = staves[staff_index][pos].articulation
+                if current != majority_value:
+                    proposals.append(
+                        ArticulationRepairProposal(
+                            staff_index=staff_index,
+                            position=pos,
+                            current_articulation=current,
+                            proposed_articulation=majority_value,
+                            reason=(
+                                f"staff {staff_index} plays {current!r} at a note "
+                                f"{majority_count}/{len(group)} corroborating staves "
+                                f"play {majority_value!r}"
+                            ),
+                        )
+                    )
+    return proposals
+
+
+def apply_articulation_proposal(
+    staff: list[EncodedSymbol], proposal: ArticulationRepairProposal
+) -> list[EncodedSymbol]:
+    """A new symbol list with `proposal` applied - `staff` is never mutated in place,
+    the same discipline `apply_proposal` uses for a rhythm-token swap.
+    """
+    if not 0 <= proposal.position < len(staff):
+        raise ValueError(
+            f"position {proposal.position} out of range for a {len(staff)}-symbol staff"
+        )
+    original = staff[proposal.position]
+    if original.articulation != proposal.current_articulation:
+        raise ValueError(
+            f"staff at position {proposal.position} has articulation "
+            f"{original.articulation!r}, not the {proposal.current_articulation!r} this "
+            "proposal was built against - the staff has changed since the proposal was made"
+        )
+    corrected = EncodedSymbol(
+        rhythm=original.rhythm,
+        pitch=original.pitch,
+        lift=original.lift,
+        articulation=proposal.proposed_articulation,
         slur=original.slur,
         position=original.position,
         coordinates=original.coordinates,

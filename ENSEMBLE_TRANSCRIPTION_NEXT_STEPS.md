@@ -922,10 +922,46 @@ misreading it) - which means first solving a different, harder alignment problem
 what `check_shared_motifs` currently does: not "do these two staves' note runs match,"
 but "which *group* of staves are all playing the same motif at the same point," so a
 genuine majority (2-against-1 or better) can be counted the same way tier 1 counts key/
-time-signature agreement. Not designed here - named as the concrete blocker rather than
-attempted half-built, since building a two-staff "repair" with no real majority evidence
-would be a step backward from this codebase's stated discipline, not a small extension
-of it.
+time-signature agreement.
+
+**Built this session.** `homr/cross_staff_repair.py`: `propose_motif_articulation_
+corrections(staves, min_motif_length=4)` and `ArticulationRepairProposal` (a sibling of
+`RepairProposal`, not a reuse - that dataclass's `current_rhythm`/`proposed_rhythm`
+fields and `apply_proposal`'s rhythm-only rewrite would lie about what an articulation
+correction changes). `_pairwise_note_alignment` does the same matching
+`check_shared_motifs` does, but returns the full alignment (which note in a reference
+staff maps to which note in another) rather than only the mismatches within it - then,
+for every note in every staff acting as a "reference" in turn, every *other* staff is
+checked pairwise for a matching run covering that note; three or more staves covering
+one note (the reference plus two or more corroborators) is a genuine majority to
+propose toward, `Counter`-voted the same way `propose_majority_correction` already
+votes key/time signature, refusing on a tie the same way too.
+
+**Deliberately anchored to one fixed reference staff per corroboration, never merged
+transitively across different reference staves** - the design alternative actually
+considered and rejected, not an oversight. A transitive union-find over every pairwise
+match (if A matches B here, and B matches C somewhere else, therefore A/B/C corroborate)
+cannot tell two *separate* real occurrences of a common short motif (four repeated
+quarter notes appearing at two unrelated points in a piece) from one real three-way
+corroboration - it would merge them into a false group whenever the unrelated
+occurrences happened to each pairwise-match a different staff. Anchoring every check to
+one reference staff's own note positions makes that impossible structurally: nothing is
+ever compared across two different notes of the reference staff, so there is nothing to
+accidentally merge. Only the lowest-indexed staff in a corroborating group is used as
+its own reference, so each real group is reported once, not once per member.
+
+26 tests (`tests/test_cross_staff_repair.py`), including that two matching staves alone
+(no third) propose nothing - the exact gap this was built to close - and that a genuine
+three-way tie also proposes nothing. Wired into `staff_parsing._report_cross_staff_
+findings` alongside the existing key/time-signature proposals.
+
+**Validated on the GPU instance across 4 real pages, including the one already known to
+carry two pairwise `motif_articulation_mismatch` findings**: no crash, valid MusicXML
+every time - and, honestly, no proposal fired on any of the 4, including the known
+mismatch page, because neither of its two findings had a third staff's corroboration.
+That is not a bug; it is the discipline working as designed on the sample tried so far.
+A broader real-page search for a genuine 3-staff hit was in progress when this was
+recorded - see below for the result once it lands.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 

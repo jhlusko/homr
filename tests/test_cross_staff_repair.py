@@ -1,9 +1,12 @@
 import unittest
 
 from homr.cross_staff_repair import (
+    ArticulationRepairProposal,
     RepairProposal,
+    apply_articulation_proposal,
     apply_proposal,
     propose_majority_correction,
+    propose_motif_articulation_corrections,
     propose_repairs,
 )
 from homr.transformer.vocabulary import EncodedSymbol
@@ -11,6 +14,10 @@ from homr.transformer.vocabulary import EncodedSymbol
 
 def _sym(rhythm: str) -> EncodedSymbol:
     return EncodedSymbol(rhythm)
+
+
+def _note(rhythm: str, pitch: str, articulation: str = "_") -> EncodedSymbol:
+    return EncodedSymbol(rhythm=rhythm, pitch=pitch, articulation=articulation)
 
 
 class TestProposeMajorityCorrection(unittest.TestCase):
@@ -154,6 +161,117 @@ class TestProposeRepairs(unittest.TestCase):
         proposals = propose_repairs([list(staff), list(staff), list(staff)])
 
         self.assertEqual(proposals, [])
+
+
+def _motif(articulation: str = "_") -> list:
+    return [
+        _note("note_4", "C5"),
+        _note("note_4", "D5"),
+        _note("note_4", "E5", articulation),
+        _note("note_4", "F5"),
+    ]
+
+
+class TestProposeMotifArticulationCorrections(unittest.TestCase):
+    def test_three_corroborating_staves_flag_the_minority(self) -> None:
+        staves = [_motif("staccato"), _motif("staccato"), _motif("accent")]
+
+        proposals = propose_motif_articulation_corrections(staves, min_motif_length=4)
+
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0].staff_index, 2)
+        self.assertEqual(proposals[0].current_articulation, "accent")
+        self.assertEqual(proposals[0].proposed_articulation, "staccato")
+
+    def test_only_two_matching_staves_is_not_enough_evidence(self) -> None:
+        # Two staves disagreeing on their own is a coin flip, not a majority - the
+        # exact case check_shared_motifs' pairwise finding cannot resolve on its own.
+        staves = [_motif("staccato"), _motif("accent")]
+
+        self.assertEqual(propose_motif_articulation_corrections(staves), [])
+
+    def test_all_staves_agreeing_proposes_nothing(self) -> None:
+        staves = [_motif("staccato"), _motif("staccato"), _motif("staccato")]
+
+        self.assertEqual(propose_motif_articulation_corrections(staves), [])
+
+    def test_a_genuine_three_way_tie_proposes_nothing(self) -> None:
+        staves = [_motif("staccato"), _motif("accent"), _motif("tenuto")]
+
+        self.assertEqual(propose_motif_articulation_corrections(staves), [])
+
+    def test_a_run_shorter_than_the_minimum_is_not_corroboration(self) -> None:
+        short = [_note("note_4", "C5"), _note("note_4", "D5", "accent")]
+        staves = [short, list(short), [_note("note_4", "C5"), _note("note_4", "D5")]]
+
+        self.assertEqual(propose_motif_articulation_corrections(staves, min_motif_length=4), [])
+
+    def test_a_group_is_reported_once_not_once_per_staff(self) -> None:
+        staves = [_motif("staccato"), _motif("staccato"), _motif("accent")]
+
+        proposals = propose_motif_articulation_corrections(staves, min_motif_length=4)
+
+        # Only the minority staff needed a correction, and only one report of it.
+        self.assertEqual(len(proposals), 1)
+
+    def test_an_unrelated_fourth_staff_does_not_interfere(self) -> None:
+        unrelated = [_note("note_8", "G3"), _note("note_8", "A3"), _note("note_8", "B3")]
+        staves = [_motif("staccato"), _motif("staccato"), _motif("accent"), unrelated]
+
+        proposals = propose_motif_articulation_corrections(staves, min_motif_length=4)
+
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0].staff_index, 2)
+
+
+class TestApplyArticulationProposal(unittest.TestCase):
+    def test_replaces_exactly_the_proposed_positions_articulation(self) -> None:
+        staff = [_note("note_4", "C5", "accent"), _note("note_4", "D5")]
+        proposal = ArticulationRepairProposal(
+            staff_index=0, position=0, current_articulation="accent",
+            proposed_articulation="staccato", reason="test",
+        )
+
+        corrected = apply_articulation_proposal(staff, proposal)
+
+        self.assertEqual(corrected[0].articulation, "staccato")
+        self.assertEqual(corrected[1].rhythm, "note_4")
+        self.assertEqual(len(corrected), len(staff))
+
+    def test_the_original_list_is_not_mutated(self) -> None:
+        staff = [_note("note_4", "C5", "accent")]
+        proposal = ArticulationRepairProposal(0, 0, "accent", "staccato", "test")
+
+        apply_articulation_proposal(staff, proposal)
+
+        self.assertEqual(staff[0].articulation, "accent")
+
+    def test_a_stale_proposal_is_refused(self) -> None:
+        staff = [_note("note_4", "C5", "staccato")]  # already corrected by something else
+        proposal = ArticulationRepairProposal(0, 0, "accent", "staccato", "test")
+
+        with self.assertRaises(ValueError):
+            apply_articulation_proposal(staff, proposal)
+
+    def test_an_out_of_range_position_is_refused(self) -> None:
+        staff = [_note("note_4", "C5", "accent")]
+        proposal = ArticulationRepairProposal(0, 5, "accent", "staccato", "test")
+
+        with self.assertRaises(ValueError):
+            apply_articulation_proposal(staff, proposal)
+
+    def test_non_articulation_fields_are_preserved(self) -> None:
+        original = EncodedSymbol(
+            rhythm="note_4", pitch="C5", lift="#", articulation="accent", slur="slurStart"
+        )
+        proposal = ArticulationRepairProposal(0, 0, "accent", "staccato", "test")
+
+        corrected = apply_articulation_proposal([original], proposal)
+
+        self.assertEqual(corrected[0].pitch, "C5")
+        self.assertEqual(corrected[0].lift, "#")
+        self.assertEqual(corrected[0].rhythm, "note_4")
+        self.assertEqual(corrected[0].slur, "slurStart")
 
 
 if __name__ == "__main__":
