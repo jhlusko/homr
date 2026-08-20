@@ -343,15 +343,15 @@ from least to most invasive — **do not start Stage C before Stages A and B are
 benchmarked**, per §12.3's own explicit precondition, which still has not been met (only
 part of Stage A exists).
 
-### Stage A: deterministic consistency analysis — 7 of 8 §12.1 checks built, plus an 8th
-from outside the original list
+### Stage A: deterministic consistency analysis — all 8 of 8 §12.1 checks built, plus
+a 9th from outside the original list
 
 `homr/cross_staff_consistency.py`: `analyze_system(staves, staff_to_part=None)` takes one
 `list[EncodedSymbol]` per staff of an already-decoded system (plus, optionally,
 `score_profile_layout.py`'s `staff_to_part` mapping) and returns structured `Finding`s -
 no MusicXML is altered. Decoupled from images/`Staff` geometry, same as
 `system_grouping.py`/`score_profile_layout.py`, so it is tested against hand-built token
-sequences (51 tests, `tests/test_cross_staff_consistency.py`).
+sequences (56 tests, `tests/test_cross_staff_consistency.py`).
 
 Built:
 
@@ -374,6 +374,20 @@ Built:
   crash, e.g. `"System 2: typical measure duration (whole notes) disagrees across the
   system: {0: '1', 1: '1', 2: '2', 3: '1'}"` - staff 2 decoded exactly double the other
   three staves' measure content;
+- conflicting barline **locations** (`check_barline_positions`) - the one item neither
+  count nor per-measure total duration can catch: two staves can agree on both and
+  still have a barline land in a different place. Tracks *cumulative* duration
+  (whole-note units) at each barline in decoded order, and compares only the first
+  `min(barline count across staves)` positions, since staves can legitimately have
+  different barline counts at all (already `check_measure_counts`' territory). 5 new
+  tests. **Validated on the GPU instance across 4 real pages**: fired on 2, silent on
+  the other 2 (not universally noisy), and where it did fire it agreed with
+  `check_measure_durations`' own findings on the same pages rather than contradicting
+  them - e.g. one page's staff 2 (already flagged by the duration check as decoding
+  roughly double the other three staves' measure content) showed cumulative barline
+  positions of `[2, 4, 6, 7, 8]` against the other three staves' `[1, 2, 3, 4, 5]`,
+  the same staff, the same underlying disagreement, seen from a different angle. This
+  closes the last of §12.1's originally-named eight checks;
 - conflicting key/time signatures (`check_key_signatures`/`check_time_signatures`) - the
   **full sequence** of key/time-signature tokens is compared, not just the opening value,
   so two staves that agree at the start but diverge on a later change still get flagged;
@@ -412,16 +426,15 @@ Built:
   `STRING_QUARTET` profile this session**: no crash, valid MusicXML written - this
   particular page's part order stayed consistent across systems, so no finding fired,
   but the wiring itself is confirmed not to break the pipeline;
-- (an 8th check, from a design discussion rather than §12.1's original list) a shared
+- (a 9th check, from a design discussion rather than §12.1's original list) a shared
   motif's articulation disagreeing between two staves (`check_shared_motifs`) - see the
   dedicated section below for what it covers and its known scope limits.
 
-Not built, named honestly in the module docstring rather than left silently uncovered:
-
-- conflicting barline **locations** (needs relative position within the measure, not just
-  a count - two staves can agree on measure count and total duration and still have
-  barlines drift *within* the measure) - the last remaining item from §12.1's original
-  eight.
+**All eight of §12.1's originally-named findings are now built, plus the shared-motif
+addition from outside that list - Stage A's detection scope is complete as designed.**
+What remains is not new checks but validating the ones already built against a wider
+real-page sample, and moving to Stage B (repair) for the checks tier 1 does not yet
+cover (only key/time signature has a repair proposal built - see below).
 
 ### Wired into the live pipeline, log-only, validated on real pages
 

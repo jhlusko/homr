@@ -16,24 +16,24 @@ the same deliberate decoupling `score_profile_layout.py` uses, and for the same 
 this can be built and tested against hand-built token sequences without running the
 transformer or touching a real page.
 
-Covers seven of §12.1's eight listed findings so far: differing decoded measure counts,
-a measure's total note/rest duration disagreeing with the rest of the system
-(`check_measure_durations` - see its own docstring for why this compares content
-duration rather than a decoded time-signature numerator, which does not exist: the
-decoder only ever states a denominator), conflicting key/time signatures, a clef
-inconsistent with a supplied score-profile part, a slur left open or closed with nothing
-to match within one staff's own decode, missing or extra staff output relative to the
-rest of a page (`check_page_staff_counts` - the one check here that is page-wide over
-staff *counts* rather than one-system, since a count means nothing on its own without
-the rest of the page to compare against), part order changing between systems
-specifically (`check_page_staff_counts` catches a count changing; `check_part_order` -
-also page-wide, needs a score profile - catches the parts that all stay present
-nonetheless swapping position between one system and the next), and (a later addition,
-from a design discussion rather than §12.1's original list) a shared melodic/rhythmic
-motif across two staves that disagrees on one note's articulation. Not yet covered, and
-not attempted here: conflicting barline *locations* (needs relative position, not just
-count or total duration) - the one remaining named item from §12.1's original eight -
-left as further Stage A work, not silently assumed solved.
+Covers all eight of §12.1's originally listed findings, plus one addition from outside
+that list: differing decoded measure counts, a measure's total note/rest duration
+disagreeing with the rest of the system (`check_measure_durations` - see its own
+docstring for why this compares content duration rather than a decoded time-signature
+numerator, which does not exist: the decoder only ever states a denominator), conflicting
+barline *locations* (`check_barline_positions` - cumulative duration at each barline,
+not just count or per-measure total, so a drift within an otherwise-matching measure is
+still caught), conflicting key/time signatures, a clef inconsistent with a supplied
+score-profile part, a slur left open or closed with nothing to match within one staff's
+own decode, missing or extra staff output relative to the rest of a page
+(`check_page_staff_counts` - the one check here that is page-wide over staff *counts*
+rather than one-system, since a count means nothing on its own without the rest of the
+page to compare against), part order changing between systems specifically
+(`check_page_staff_counts` catches a count changing; `check_part_order` - also
+page-wide, needs a score profile - catches the parts that all stay present nonetheless
+swapping position between one system and the next), and (a later addition, from a design
+discussion rather than §12.1's original list) a shared melodic/rhythmic motif across two
+staves that disagrees on one note's articulation.
 
 `analyze_system`'s input shape (one list of symbols per staff *of one system*) is not
 `staff_parsing.parse_staffs`' output shape (one list per *voice*, concatenated across
@@ -275,6 +275,66 @@ def check_measure_durations(staves: list[list[EncodedSymbol]]) -> list[Finding]:
     ]
 
 
+def _cumulative_barline_positions(staff: list[EncodedSymbol]) -> list[Fraction]:
+    """Cumulative note/rest duration (whole-note units) at each barline, in decoded
+    order - where `_measure_durations` collapses this to one total per measure, this
+    keeps the running sequence, so a drift in *where* a barline falls can be caught even
+    when the two staves' overall measure count and per-measure median already agree
+    (one mis-decoded note early in an otherwise-matching passage shifts every later
+    barline's cumulative position without necessarily changing how many barlines exist
+    or a median taken across many measures).
+    """
+    total = Fraction(0)
+    positions = []
+    for chord in group_into_chords(staff):
+        if chord.is_barline():
+            positions.append(total)
+        else:
+            total += chord.get_duration()
+    return positions
+
+
+def check_barline_positions(staves: list[list[EncodedSymbol]]) -> list[Finding]:
+    """Conflicting barline **locations** - the one item from §12.1's original eight
+    neither `check_measure_counts` (barline count) nor `check_measure_durations`
+    (per-measure total) can catch: two staves can agree on both and still have a
+    barline land in a different place - one staff's dropped or extra note early in an
+    otherwise-matching measure shifts every later barline's cumulative position without
+    changing the measure count, and (if it is one measure among several) without
+    necessarily moving a robust per-measure median either.
+
+    Compares only the first `min(barline count across staves)` cumulative positions -
+    staves can legitimately have different barline counts at all (already
+    `check_measure_counts`' territory), and comparing past the shortest staff's own
+    barlines is meaningless. Silent when fewer than two staves have at least one
+    barline - nothing to compare.
+    """
+    with_barlines = [
+        (index, positions)
+        for index, staff in enumerate(staves)
+        if (positions := _cumulative_barline_positions(staff))
+    ]
+    if len(with_barlines) < 2:
+        return []
+    shortest = min(len(positions) for _, positions in with_barlines)
+    if shortest == 0:
+        return []
+    truncated = {index: tuple(positions[:shortest]) for index, positions in with_barlines}
+    if len(set(truncated.values())) <= 1:
+        return []
+    return [
+        Finding(
+            kind="barline_position_mismatch",
+            message=(
+                f"cumulative barline positions (whole notes) disagree across the system, "
+                f"compared over the first {shortest} barline(s): "
+                f"{ {index: [str(p) for p in v] for index, v in truncated.items()} }"
+            ),
+            staff_indices=tuple(sorted(truncated)),
+        )
+    ]
+
+
 def _note_indices(symbols: list[EncodedSymbol]) -> list[int]:
     return [index for index, symbol in enumerate(symbols) if symbol.rhythm.startswith("note")]
 
@@ -353,6 +413,7 @@ def analyze_system(
     findings = []
     findings.extend(check_measure_counts(staves))
     findings.extend(check_measure_durations(staves))
+    findings.extend(check_barline_positions(staves))
     findings.extend(check_key_signatures(staves))
     findings.extend(check_time_signatures(staves))
     if staff_to_part:

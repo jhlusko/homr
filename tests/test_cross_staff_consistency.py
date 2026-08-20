@@ -4,6 +4,7 @@ from fractions import Fraction
 from homr.cross_staff_consistency import (
     _measure_durations,
     analyze_system,
+    check_barline_positions,
     check_clefs_against_profile,
     check_dangling_slurs,
     check_key_signatures,
@@ -164,6 +165,53 @@ class TestCheckMeasureDurations(unittest.TestCase):
         ]
 
         self.assertEqual(_measure_durations(staff), [Fraction(1)])
+
+
+class TestCheckBarlinePositions(unittest.TestCase):
+    def test_matching_barline_positions_produce_no_finding(self) -> None:
+        staff = [_sym("note_4")] * 4 + [_sym("barline")] + [_sym("note_4")] * 4 + [_sym("barline")]
+
+        self.assertEqual(check_barline_positions([staff, list(staff)]), [])
+
+    def test_a_shifted_barline_is_reported_even_with_matching_totals(self) -> None:
+        # Both staves end at the same total duration and have the same barline count -
+        # check_measure_durations' median would not catch this - but the first barline
+        # lands at a different cumulative position: staff B's first measure is short a
+        # beat, its second measure has an extra one to compensate.
+        staff_a = (
+            [_sym("note_4")] * 4 + [_sym("barline")] + [_sym("note_4")] * 4 + [_sym("barline")]
+        )  # fmt: skip
+        staff_b = (
+            [_sym("note_4")] * 3 + [_sym("barline")] + [_sym("note_4")] * 5 + [_sym("barline")]
+        )  # fmt: skip
+
+        findings = check_barline_positions([staff_a, staff_b])
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].kind, "barline_position_mismatch")
+        self.assertEqual(findings[0].staff_indices, (0, 1))
+
+    def test_only_compares_up_to_the_shortest_staffs_own_barline_count(self) -> None:
+        # Staff B stops after one barline (fewer measures - already
+        # check_measure_counts' territory) but where it does have a barline, it
+        # matches staff A exactly - no location disagreement to report.
+        staff_a = (
+            [_sym("note_4")] * 4 + [_sym("barline")] + [_sym("note_4")] * 4 + [_sym("barline")]
+        )  # fmt: skip
+        staff_b = [_sym("note_4")] * 4 + [_sym("barline")]
+
+        self.assertEqual(check_barline_positions([staff_a, staff_b]), [])
+
+    def test_a_staff_with_no_barlines_is_excluded_not_flagged(self) -> None:
+        no_barlines = [_sym("note_4")] * 4
+        real_staff = [_sym("note_4")] * 4 + [_sym("barline")]
+
+        self.assertEqual(check_barline_positions([no_barlines, real_staff]), [])
+
+    def test_a_single_staff_has_nothing_to_compare(self) -> None:
+        staff = [_sym("note_4")] * 4 + [_sym("barline")]
+
+        self.assertEqual(check_barline_positions([staff]), [])
 
 
 class TestClefsAgainstProfile(unittest.TestCase):
