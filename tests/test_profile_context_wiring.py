@@ -9,6 +9,13 @@ from training.architecture.transformer.profile_context import (
     context_to_batch_fields,
 )
 
+try:  # The encoder pulls in timm/torchvision, which a minimal environment may lack.
+    from training.architecture.transformer.tromr_arch import TrOMR
+
+    _FULL_STACK = True
+except Exception:  # noqa: BLE001
+    _FULL_STACK = False
+
 
 def _config(enable_profile_context: bool = False) -> Config:
     config = Config()
@@ -133,6 +140,24 @@ class TestProfileContextWiring(unittest.TestCase):
             result = model(**batch)
 
         self.assertIn("loss", result)
+
+
+@unittest.skipUnless(_FULL_STACK, "needs the full training stack (timm/torchvision)")
+class TestFreezeCoreForProfileContext(unittest.TestCase):
+    def test_only_profile_context_stays_trainable(self) -> None:
+        model = TrOMR(_config(enable_profile_context=True))
+
+        trainable = model.freeze_core_for_profile_context()
+
+        self.assertTrue(trainable)
+        self.assertTrue(all(name.startswith("decoder.profile_context.") for name in trainable))
+        frozen = [n for n, p in model.named_parameters() if not p.requires_grad]
+        self.assertTrue(any(n.startswith("encoder.") for n in frozen))
+        self.assertTrue(any("to_logits_rhythm" in n for n in frozen))
+
+    def test_freezing_without_the_module_is_refused(self) -> None:
+        with self.assertRaises(ValueError):
+            TrOMR(_config(enable_profile_context=False)).freeze_core_for_profile_context()
 
 
 if __name__ == "__main__":

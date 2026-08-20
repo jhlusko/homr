@@ -103,6 +103,29 @@ class TrOMR(nn.Module):
                 trainable.append(name)
         return trainable
 
+    def freeze_core_for_profile_context(self) -> list[str]:
+        """Train only §7.3's score-profile embedding; freeze everything the checkpoint
+        provided - the same experiment shape as `freeze_core_for_structured_heads`, for
+        the same reason: attributability. `ProfileContextEmbedding`'s gate starts at
+        zero, so this asks a narrow question - can *some* assignment of the embedding
+        tables and gate, backpropagated through the frozen network, move the model's
+        own existing loss (not a new one; profile context conditions the input, it does
+        not add an output) - before committing to the more expensive question of
+        whether letting the core itself adapt to the signal does better.
+
+        Returns the names of the parameters left trainable, so a run can record what it
+        actually trained rather than what it intended to.
+        """
+        if self.decoder.profile_context is None:
+            raise ValueError("no profile context to train - set config.enable_profile_context")
+        trainable = []
+        for name, param in self.named_parameters():
+            train = name.startswith("decoder.profile_context.")
+            param.requires_grad = train
+            if train:
+                trainable.append(name)
+        return trainable
+
     def unfreeze_lift_decoder(self) -> None:
         for param in self.decoder.net.lift_emb.parameters():
             param.requires_grad = True
