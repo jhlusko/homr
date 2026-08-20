@@ -16,20 +16,22 @@ the same deliberate decoupling `score_profile_layout.py` uses, and for the same 
 this can be built and tested against hand-built token sequences without running the
 transformer or touching a real page.
 
-Covers six of §12.1's eight listed findings so far: differing decoded measure counts,
-conflicting key/time signatures, a clef inconsistent with a supplied score-profile part,
-a slur left open or closed with nothing to match within one staff's own decode, missing
-or extra staff output relative to the rest of a page (`check_page_staff_counts` - the
-one check here that is genuinely page-wide rather than one-system, since a staff count
-means nothing on its own without the rest of the page to compare against), and (a later
-addition, from a design discussion rather than §12.1's original list) a shared
-melodic/rhythmic motif across two staves that disagrees on one note's articulation. Not
-yet covered, and not attempted here: conflicting barline *locations* (needs relative
-position, not just count), a voice's measure duration disagreeing with the time
-signature (needs duration arithmetic across the whole measure), and part *order*
-changing between systems specifically (`check_page_staff_counts` catches a count
-changing, not an order swap among parts that stay present) - left as further Stage A
-work, not silently assumed solved.
+Covers seven of §12.1's eight listed findings so far: differing decoded measure counts,
+a measure's total note/rest duration disagreeing with the rest of the system
+(`check_measure_durations` - see its own docstring for why this compares content
+duration rather than a decoded time-signature numerator, which does not exist: the
+decoder only ever states a denominator), conflicting key/time signatures, a clef
+inconsistent with a supplied score-profile part, a slur left open or closed with nothing
+to match within one staff's own decode, missing or extra staff output relative to the
+rest of a page (`check_page_staff_counts` - the one check here that is genuinely
+page-wide rather than one-system, since a staff count means nothing on its own without
+the rest of the page to compare against), and (a later addition, from a design
+discussion rather than §12.1's original list) a shared melodic/rhythmic motif across two
+staves that disagrees on one note's articulation. Not yet covered, and not attempted
+here: conflicting barline *locations* (needs relative position, not just count or total
+duration), and part *order* changing between systems specifically
+(`check_page_staff_counts` catches a count changing, not an order swap among parts that
+stay present) - left as further Stage A work, not silently assumed solved.
 
 `analyze_system`'s input shape (one list of symbols per staff *of one system*) is not
 `staff_parsing.parse_staffs`' output shape (one list per *voice*, concatenated across
@@ -39,8 +41,11 @@ just a transpose, whenever a voice is missing from a system.
 """
 
 import difflib
+import statistics
 from dataclasses import dataclass
+from fractions import Fraction
 
+from homr.music_xml_generator import group_into_chords
 from homr.score_profile import ScorePart
 from homr.transformer.structured_notation import SlurEvent
 from homr.transformer.vocabulary import EncodedSymbol
@@ -204,6 +209,70 @@ def check_dangling_slurs(staves: list[list[EncodedSymbol]]) -> list[Finding]:
     return findings
 
 
+def _measure_durations(staff: list[EncodedSymbol]) -> list[Fraction]:
+    """Total note/rest duration within each measure of one staff, in whole-note units -
+    the same per-measure accumulation `homr.music_xml_generator`'s
+    `find_division_and_time_signature_nominator` already does to *infer* a time
+    signature's numerator, since the decoder never states one: `build_rhythm` only ever
+    emits `timeSignature/<denominator>` (see that module's docstring) - the numerator
+    MusicXML generation writes is computed from measure content, not decoded. That makes
+    a measure's content duration the only independently available "what does this staff
+    think this measure adds up to" signal there is, which is what this compares across
+    staves in `check_measure_durations` below.
+
+    Reuses `group_into_chords` rather than reimplementing chord grouping here - getting
+    that wrong would silently double-count a chord's simultaneous notes as if they were
+    sequential, the same class of bug `staves_by_system` was built to avoid for its own
+    reshaping problem.
+    """
+    duration_in_measure = Fraction(0)
+    durations = []
+    for chord in group_into_chords(staff):
+        if chord.is_barline():
+            if duration_in_measure > Fraction(0):
+                durations.append(duration_in_measure)
+            duration_in_measure = Fraction(0)
+        else:
+            duration_in_measure += chord.get_duration()
+    if duration_in_measure > Fraction(0):
+        durations.append(duration_in_measure)
+    return durations
+
+
+def check_measure_durations(staves: list[list[EncodedSymbol]]) -> list[Finding]:
+    """One staff's typical measure duration disagreeing with the rest of the system's -
+    complements `check_measure_counts`: the same barline count can still hide a wrong
+    total duration within a measure (a dropped or extra beat that does not change how
+    many barlines were decoded).
+
+    Compares each staff's *median* measure duration, not every measure pairwise - the
+    same robustness `find_division_and_time_signature_nominator` relies on, so one
+    truncated or unusually-notated measure does not by itself flag an otherwise
+    consistent staff, and staves are free to differ measure-by-measure in real
+    polyphonic music (a passage where one voice rests through what another plays)
+    without disagreeing on the prevailing pulse. A staff with no measures at all (no
+    barlines, or nothing but zero-duration content) contributes no median and is
+    silently excluded rather than treated as a mismatch - nothing to compare it against.
+    """
+    medians: dict[int, Fraction] = {}
+    for index, staff in enumerate(staves):
+        durations = _measure_durations(staff)
+        if durations:
+            medians[index] = Fraction(statistics.median(durations))
+    if len(set(medians.values())) <= 1:
+        return []
+    return [
+        Finding(
+            kind="measure_duration_mismatch",
+            message=(
+                "typical measure duration (whole notes) disagrees across the system: "
+                f"{ {index: str(value) for index, value in medians.items()} }"
+            ),
+            staff_indices=tuple(sorted(medians)),
+        )
+    ]
+
+
 def _note_indices(symbols: list[EncodedSymbol]) -> list[int]:
     return [index for index, symbol in enumerate(symbols) if symbol.rhythm.startswith("note")]
 
@@ -281,6 +350,7 @@ def analyze_system(
     """
     findings = []
     findings.extend(check_measure_counts(staves))
+    findings.extend(check_measure_durations(staves))
     findings.extend(check_key_signatures(staves))
     findings.extend(check_time_signatures(staves))
     if staff_to_part:

@@ -343,7 +343,7 @@ from least to most invasive — **do not start Stage C before Stages A and B are
 benchmarked**, per §12.3's own explicit precondition, which still has not been met (only
 part of Stage A exists).
 
-### Stage A: deterministic consistency analysis — 5 of 8 §12.1 checks built, plus a 6th
+### Stage A: deterministic consistency analysis — 6 of 8 §12.1 checks built, plus a 7th
 from outside the original list
 
 `homr/cross_staff_consistency.py`: `analyze_system(staves, staff_to_part=None)` takes one
@@ -351,11 +351,29 @@ from outside the original list
 `score_profile_layout.py`'s `staff_to_part` mapping) and returns structured `Finding`s -
 no MusicXML is altered. Decoupled from images/`Staff` geometry, same as
 `system_grouping.py`/`score_profile_layout.py`, so it is tested against hand-built token
-sequences (41 tests, `tests/test_cross_staff_consistency.py`).
+sequences (46 tests, `tests/test_cross_staff_consistency.py`).
 
 Built:
 
 - different decoded measure counts across parts (`check_measure_counts`);
+- a measure's total note/rest duration disagreeing with the rest of the system
+  (`check_measure_durations`) - complements the count check above: the same barline
+  count can still hide a wrong total duration inside a measure. Compares each staff's
+  *median* measure duration (whole-note units, reusing `music_xml_generator`'s
+  `group_into_chords`/`SymbolChord` so a chord's simultaneous notes are not
+  double-counted as sequential ones), not every measure pairwise, so one outlier
+  measure does not flag an otherwise-consistent staff. Named honestly in its own
+  docstring why this compares *content* duration rather than a decoded time-signature
+  numerator: there is no such numerator to compare against - `build_rhythm` only ever
+  emits `timeSignature/<denominator>`, and `music_xml_generator.
+  find_division_and_time_signature_nominator` already *infers* the numerator from
+  measure content for MusicXML output, so a "duration vs. declared time signature"
+  check in the literal §12.1 sense is not buildable as stated; this is the closest
+  available substitute, and a genuinely useful one on its own. 5 new tests. Validated
+  on the GPU instance: fired on 2 of 3 real pages tried in this session's sampling, no
+  crash, e.g. `"System 2: typical measure duration (whole notes) disagrees across the
+  system: {0: '1', 1: '1', 2: '2', 3: '1'}"` - staff 2 decoded exactly double the other
+  three staves' measure content;
 - conflicting key/time signatures (`check_key_signatures`/`check_time_signatures`) - the
   **full sequence** of key/time-signature tokens is compared, not just the opening value,
   so two staves that agree at the start but diverge on a later change still get flagged;
@@ -380,16 +398,15 @@ Built:
   immediately surfaced a real finding neither of the earlier two-page validation runs had
   caught - `"system 0 has 3 staves, most of the page has 4"` - a genuinely missing staff
   on the very first page checked;
-- (a 6th check, from a design discussion rather than §12.1's original list) a shared
+- (a 7th check, from a design discussion rather than §12.1's original list) a shared
   motif's articulation disagreeing between two staves (`check_shared_motifs`) - see the
   dedicated section below for what it covers and its known scope limits.
 
 Not built, named honestly in the module docstring rather than left silently uncovered:
 
 - conflicting barline **locations** (needs relative position within the measure, not just
-  a count - two staves can agree on measure count and still have barlines drift);
-- one voice's measure duration disagreeing with the time signature (needs duration
-  arithmetic across a whole measure, not just token-sequence comparison);
+  a count - two staves can agree on measure count and total duration and still have
+  barlines drift *within* the measure);
 - part **order** changing between systems specifically - `check_page_staff_counts` (above)
   catches a staff *count* changing, not an order swap among parts that all stay present,
   which is a different comparison (would need `staff_to_part_by_system`'s part identities
@@ -602,8 +619,8 @@ agreement, not attribute-level, and one voice mistaking an accent for a marcato 
 single-note articulation/ornament misread) would not show up in any of the original four
 checks - nothing they do compares *note-level* content across staves at all.
 
-**`check_shared_motifs` (`homr/cross_staff_consistency.py`), a fifth Stage A check, now
-wired into `analyze_system` alongside the original four.** Uses `difflib.SequenceMatcher`
+**`check_shared_motifs` (`homr/cross_staff_consistency.py`), wired into `analyze_system`
+alongside the rest.** Uses `difflib.SequenceMatcher`
 over each pair of staves' note-only `(rhythm, pitch)` sequences to find matching runs of
 at least `min_motif_length` (default 4) consecutive notes; within a matching run, any
 note where the two staves' `articulation` field differs is reported as
@@ -620,10 +637,16 @@ was named as the natural fuller version in the original design discussion and st
 what shipped this session is the exact-pitch case (unison doubling, octave doubling
 detected only if pitch strings are compared at unison, same-register repeated entries),
 which is real and common but is a strict subset of "shared motif" in the harmonic sense.
-14 tests, all passing locally (`tests/test_cross_staff_consistency.py`); not yet run
-against a real page - no real string-quartet page this session's validation runs
-happened to sample surfaced a `motif_articulation_mismatch` finding, so this remains
-unvalidated against genuine model output, only against hand-built token sequences.
+14 tests, all passing locally (`tests/test_cross_staff_consistency.py`).
+
+**Validated against real model output this session, and it fired on the first page
+tried.** Run against `sq8823783:0061` (Wolf, String Quartet) on the GPU instance: no
+crash, valid MusicXML written, and two genuine `motif_articulation_mismatch` findings -
+`"System 1: staves 0 and 1 play a matching 8-note run but disagree on articulation at
+one note: 'staccato' vs '_'"` and a second, 4-note case in system 3. Not yet inspected
+against the source image to confirm which staff actually misread (that would require
+looking at the page itself, not just the token stream) - recorded as a real finding this
+check surfaced, not yet as a confirmed correction.
 
 The repair question, once a mismatch is found, is the same Stage B question already
 answered above: apply the majority reading, and per the tier-1/tier-2 finding, a

@@ -1,11 +1,14 @@
 import unittest
+from fractions import Fraction
 
 from homr.cross_staff_consistency import (
+    _measure_durations,
     analyze_system,
     check_clefs_against_profile,
     check_dangling_slurs,
     check_key_signatures,
     check_measure_counts,
+    check_measure_durations,
     check_page_staff_counts,
     check_shared_motifs,
     check_time_signatures,
@@ -107,6 +110,59 @@ class TestKeyAndTimeSignatures(unittest.TestCase):
         )
 
         self.assertEqual(findings[0].kind, "time_signature_mismatch")
+
+
+class TestCheckMeasureDurations(unittest.TestCase):
+    def test_matching_total_durations_produce_no_finding(self) -> None:
+        staff = [_sym("note_4")] * 4 + [_sym("barline")]
+
+        self.assertEqual(check_measure_durations([staff, list(staff)]), [])
+
+    def test_a_shorter_measure_is_reported_even_with_the_same_barline_count(self) -> None:
+        # Same measure count (check_measure_counts would see nothing wrong) but one
+        # staff's measure sums to 3/4, the other's to a full whole note.
+        short = [_sym("note_4")] * 3 + [_sym("barline")]
+        full = [_sym("note_4")] * 4 + [_sym("barline")]
+
+        findings = check_measure_durations([short, full])
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].kind, "measure_duration_mismatch")
+        self.assertEqual(findings[0].staff_indices, (0, 1))
+
+    def test_one_outlier_measure_does_not_flag_an_otherwise_matching_staff(self) -> None:
+        # Median, not mean or exact-every-measure - a single short measure (e.g. a
+        # pickup or an editorial anomaly) should not on its own read as a mismatch.
+        with_outlier = (
+            [_sym("note_4")] * 4 + [_sym("barline")]
+            + [_sym("note_4")] * 4 + [_sym("barline")]
+            + [_sym("note_4")] * 2 + [_sym("barline")]
+        )  # fmt: skip
+        steady = [_sym("note_4")] * 4 + [_sym("barline")]
+
+        self.assertEqual(check_measure_durations([with_outlier, list(steady)]), [])
+
+    def test_a_staff_with_no_note_or_rest_content_is_excluded_not_flagged(self) -> None:
+        empty_staff = [_sym("clef_G2")]
+        real_staff = [_sym("note_4")] * 4 + [_sym("barline")]
+
+        self.assertEqual(check_measure_durations([empty_staff, real_staff]), [])
+
+    def test_chord_notes_are_not_double_counted(self) -> None:
+        # A "chord" marker token joins the following note to the preceding one at the
+        # same rhythmic position (homr.transformer.vocabulary.sort_token_chords) - the
+        # pair should contribute one quarter note's worth of duration, not two.
+        staff = [
+            EncodedSymbol("note_4", pitch="C5"),
+            EncodedSymbol("chord"),
+            EncodedSymbol("note_4", pitch="E5"),
+            _sym("note_4"),
+            _sym("note_4"),
+            _sym("note_4"),
+            _sym("barline"),
+        ]
+
+        self.assertEqual(_measure_durations(staff), [Fraction(1)])
 
 
 class TestClefsAgainstProfile(unittest.TestCase):
