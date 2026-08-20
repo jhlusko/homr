@@ -523,9 +523,40 @@ once and both `analyze_system` and `propose_repairs` read from it. Proposals are
 never applied - same discipline as Stage A. Same broad try/except guard as before: a
 diagnostic must never be the reason a page fails to transcribe.
 
-**Not yet validated against a real page** - unlike Stage A itself and tier 2, both
-already run end to end on the GPU instance. The GPU was occupied with the §1 detector
-retrain when this was built; next step once it frees up.
+**Validated against 20 real pages on the GPU instance** (this session, once §1's detector
+retrain freed the GPU) - a random sample across 8 different string-quartet scores, both
+`scanned` and `synthetic` image sources. All 20 ran to completion (`exit=0`, valid
+MusicXML written each time) - the tier-1 addition is confirmed not to break or slow the
+pipeline. Stage A surfaced real findings on 7 of the 20 pages: 5 measure-count mismatches,
+6 key-signature mismatches, 1 time-signature mismatch.
+
+**But zero tier-1 repair proposals fired across all 20 pages - a real, decisive, and
+informative negative result, not a bug.** Every one of the 6 key-signature mismatches
+found has the same shape: `[(), (), (), ('keySignature_3',)]` - exactly one staff states
+an opening key signature and the other three state none at all. `propose_majority_correction`
+requires at least two staves to state a value before proposing anything (`§4`'s own "report
+nothing rather than guess" discipline, tested explicitly as
+`test_fewer_than_two_staves_stating_a_value_proposes_nothing`), so it correctly declines
+every one of these. This is not the failure mode tier 1 was designed around (three staves
+agreeing on a value, one lone dissenter stating a *different* value) - it is a distinct
+pattern, an omitted restatement, not a conflicting one. Three staves saying nothing about
+a key signature at a system boundary is far more likely to mean "the key did not change,
+so nothing was re-stated" than "the key is unknown," which is a genuinely different
+correction (fill in the carried-forward value) from what `propose_majority_correction`
+implements (pick the value the majority explicitly stated). The 5 measure-count mismatches
+are a different Stage A check entirely - `check_measure_counts` has no tier-1 counterpart
+at all, by design (§12.1 names duration/measure-count repair as needing arithmetic across
+a whole measure, not a token swap).
+
+**Conclusion: tier 1 as built is real, correctly conservative, and - on this sample -
+essentially never fires**, because the dominant real-world key/time-signature disagreement
+pattern (one voice restates, others carry forward silently) is not the pattern it targets
+(voices state conflicting values). Not a reason to loosen `propose_majority_correction`
+unilaterally - "fill in a carried-forward value when one voice restates it" is a different,
+new repair rule with its own correctness questions (does a later system's restatement
+apply retroactively to earlier missing ones? what if the lone stated value is itself the
+misread?), not a bug fix to the existing one. Recorded here as a named open question for
+whoever picks this thread up next, not resolved.
 
 ### A second motivating case for cross-staff repair, from a design discussion: shared
 motifs, not just shared attributes
