@@ -955,13 +955,25 @@ its own reference, so each real group is reported once, not once per member.
 three-way tie also proposes nothing. Wired into `staff_parsing._report_cross_staff_
 findings` alongside the existing key/time-signature proposals.
 
-**Validated on the GPU instance across 4 real pages, including the one already known to
-carry two pairwise `motif_articulation_mismatch` findings**: no crash, valid MusicXML
-every time - and, honestly, no proposal fired on any of the 4, including the known
-mismatch page, because neither of its two findings had a third staff's corroboration.
-That is not a bug; it is the discipline working as designed on the sample tried so far.
-A broader real-page search for a genuine 3-staff hit was in progress when this was
-recorded - see below for the result once it lands.
+**Validated on the GPU instance across 19 real pages total** (4 first, then a further
+random 15): no crash, valid MusicXML every time. Tier 1's existing key/time-signature
+repair fired twice more on the wider sample - real, genuine 3-vs-1 majority corrections
+(`"staff 1 opens with 'keySignature_0'; 3/4 staves in this system open with
+'keySignature_2'"` and a second, analogous case) - confirming tier 1 keeps finding real
+disagreements on fresh pages, not just the ones already used to validate it.
+
+**`propose_motif_articulation_corrections` has not fired on any of the 19 pages
+sampled so far, including the one already known to carry two pairwise
+`motif_articulation_mismatch` findings** - neither of those two findings had a third
+staff's corroboration, so tier 1's discipline correctly declined both. This is a real,
+honest negative result worth recording precisely rather than assumed either way: it is
+not evidence the mechanism is broken (it is exercised and tested, including against
+that exact known-mismatch page), but 19 pages is not yet enough to say whether genuine
+3-way corroborated articulation disagreements are simply rare in this corpus/model
+output, or whether a larger sample would find one. Left open rather than concluded -
+the next real step here is either a larger real-page sample, or lowering
+`min_motif_length` below 4 to see whether shorter shared runs surface a case the
+current threshold is filtering out.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
