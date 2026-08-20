@@ -256,7 +256,7 @@ of resampling within that data can manufacture signal the corpus does not contai
 
 ---
 
-## 3. Score-profile conditioning — schema and layout use built and wired; decoder conditioning not started
+## 3. Score-profile conditioning — everything built and tested; only the training run itself remains
 
 Full contract already specified in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §7; reproduced
 here so this file is self-contained.
@@ -524,10 +524,40 @@ remains is genuinely new work, not plumbing:
     tensor directly, since it never receives a training batch to derive one from.
 
     Full suite: 965/968 (3 pre-existing, unrelated failures deselected).
-  - **Still not done**: §7.4's training-time context dropout (now unblocked - the
-    index-tensor shape exists to apply it to), `DataLoader.__getitem__` itself actually
-    calling `score_profile_pairing.py` and emitting these fields, and the training run
-    to see whether any of this helps.
+  - ~~Still not done: §7.4's training-time context dropout~~, ~~`DataLoader.__getitem__`
+    itself actually calling `score_profile_pairing.py`~~ — **both built this session.**
+    `apply_context_dropout(context, rng)`: §7.4's starting hypothesis (30% no profile,
+    30% partially masked, 40% complete), a single roll choosing between three outcomes.
+    "Partially masked" is scoped to `instrument_family` specifically, named as a real
+    simplification rather than full per-field independent masking: it is the one field
+    with a pre-existing "unknown" sentinel (empty string) that does not also double as a
+    legitimate real value the way `part_ordinal == 0` or `transposition_semitones == 0`
+    both do - masking the integer fields independently would need them to gain their
+    own explicit "unknown" states first, not attempted here.
+
+    `DataLoader` takes an optional `dataset_root: str | None = None` (default preserves
+    existing behaviour exactly - no `profile_*` keys added to a sample at all). When
+    set, `__getitem__` resolves each sample's real `ProfileContext` via
+    `score_profile_pairing.py`, applies dropout for *training* samples only (validation
+    gets the real resolved context, deterministic per `idx` via the same seeded/
+    restored random-state block the existing image-distortion code already uses), and
+    emits `context_to_batch_fields` into the result dict. `load_dataset()` threads
+    `dataset_root` through to both the train and validation `DataLoader`s.
+
+    4 new tests using a real temp-directory OSSQ-shaped fixture (image + tokens +
+    whole-score MusicXML): no `dataset_root` emits no profile keys at all; a resolvable
+    sample gets `profile_present=1`; an unresolvable one gets `profile_present=0`
+    without crashing; validation resolution is deterministic across separate
+    `DataLoader` instances for the same `idx`. Full suite: 976/979 (3 pre-existing,
+    unrelated failures deselected).
+
+    **This completes §7.3/§7.4's data-and-architecture side end to end** - every piece
+    from `ScoreProfile` extraction through to a batch a model with
+    `enable_profile_context=True` can actually train on now exists and is tested.
+    **What remains is exclusively the training run itself**: turning
+    `enable_profile_context` on, passing a `dataset_root` through to `load_dataset`, and
+    seeing whether any of this actually helps - a GPU experiment, not further design or
+    plumbing work.
   - Pairing is also scoped to OSSQ only - `mbox`- and `lieder`-derived training samples
     (also mixed into decoder training via `mix_datasets.py`) have their own naming/
     provenance and would need their own pairing logic, not attempted here.
