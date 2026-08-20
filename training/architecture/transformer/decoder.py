@@ -14,6 +14,7 @@ from training.architecture.transformer.custom_x_transformer import (
     LayerIntermediates,
     TokenEmbedding,
 )
+from training.architecture.transformer.profile_context import ProfileContextEmbedding
 from training.architecture.transformer.structured_heads import StructuredNotationHeads
 
 
@@ -259,6 +260,22 @@ class ScoreTransformerWrapper(nn.Module):
         return center_of_attention
 
 
+#: context_to_batch_fields' own keys (profile_context.py) - what DataLoader.__getitem__
+#: emits per sample and the default collator stacks into a batch. Named here, not
+#: imported from profile_context.py, since ScoreDecoder needs to pop exactly these keys
+#: out of **kwargs regardless of whether ProfileContextEmbedding is even attached.
+_PROFILE_BATCH_FIELDS = (
+    "profile_present",
+    "profile_family_index",
+    "profile_part_ordinal_index",
+    "profile_staff_within_part_index",
+    "profile_staff_count_index",
+    "profile_clef_indices",
+    "profile_clef_count",
+    "profile_transposition_index",
+)
+
+
 class ScoreDecoder(nn.Module):
     def __init__(self, transformer: ScoreTransformerWrapper, config: Config):
         super().__init__()
@@ -298,8 +315,33 @@ class ScoreDecoder(nn.Module):
             else None
         )
 
+        # §7.2/§7.3 score-profile conditioning - same off-by-default reasoning as
+        # structured_heads above, and its own zero-initialized gate means enabling it
+        # is still a no-op until training moves the gate (profile_context.py).
+        self.profile_context = (
+            ProfileContextEmbedding(dim=config.decoder_dim)
+            if getattr(config, "enable_profile_context", False)
+            else None
+        )
+
         # Weight the actual lift tokens (so neither nonote nor null) higher
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def _pop_profile_context_emb(self, kwargs: dict[str, Any]) -> torch.Tensor | None:
+        """Pop this batch's `profile_*` index tensors (`context_to_batch_fields`'s own
+        keys, stacked by the default collator) out of `kwargs` and reduce them to one
+        additive vector - before `kwargs` propagates any further, since
+        `ScoreTransformerWrapper`'s own `**kwargs` passes through to `attn_layers`,
+        which has no idea what to do with raw profile index tensors. Popped
+        unconditionally, whether or not `self.profile_context` is attached - a
+        checkpoint with `enable_profile_context=False` must not choke on a batch that
+        happens to carry these keys (mixed-corpus training, or a caller upgraded the
+        dataloader before the config).
+        """
+        present = {key: kwargs.pop(key, None) for key in _PROFILE_BATCH_FIELDS}
+        if self.profile_context is None or any(value is None for value in present.values()):
+            return None
+        return self.profile_context.forward_from_batch(**present)
 
     @torch.no_grad()
     def generate(
@@ -412,6 +454,7 @@ class ScoreDecoder(nn.Module):
         sampling_prob: float = 1.0,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        profile_context_emb = self._pop_profile_context_emb(kwargs)
         liftsi = lifts[:, :-1]
         liftso = lifts[:, 1:]
         articulationsi = articulations[:, :-1]
@@ -443,6 +486,7 @@ class ScoreDecoder(nn.Module):
                     mask=mask,
                     cache=None,
                     return_center_of_attention=False,
+                    profile_context_emb=profile_context_emb,
                     **kwargs,
                 )
                 self.net.train()
@@ -492,6 +536,7 @@ class ScoreDecoder(nn.Module):
                 mask=mask,
                 cache=None,
                 return_center_of_attention=False,
+                profile_context_emb=profile_context_emb,
                 **kwargs,
             )
         )  # this calls ScoreTransformerWrapper.forward

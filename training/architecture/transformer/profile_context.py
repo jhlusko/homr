@@ -49,6 +49,12 @@ MAX_STAFF_WITHIN_PART = 4
 MAX_STAFF_COUNT = 4
 MIN_TRANSPOSITION = -24
 MAX_TRANSPOSITION = 24
+#: `likely_clefs` is a variable-length set; a fixed-shape tensor needs a cap - 3 covers
+#: essentially every real case (a cello's three plausible clefs, F4/C4/G2, is exactly
+#: the widest this design's own examples ever use). Extra clefs beyond the cap are
+#: dropped, not an error - the same "priors, not constraints" spirit the rest of this
+#: schema uses.
+MAX_CLEF_SLOTS = 3
 
 
 def _bucket_index(value: str, vocabulary: tuple[str, ...]) -> int:
@@ -90,6 +96,52 @@ class ProfileContext:
             likely_clefs=part.likely_clefs,
             transposition_semitones=part.transposition_semitones,
         )
+
+
+def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, int | list[int]]:
+    """Plain, default-collatable representation of one sample's profile context - small
+    ints and a fixed-length list, no dataclass or `None` - for `DataLoader.__getitem__`
+    to emit directly into a batch dict that HuggingFace `Trainer`'s default collator
+    (`train.py` has no custom `data_collator`) can stack without special-casing.
+
+    `profile_clef_count` alongside the padded `profile_clef_indices` is what lets
+    `ProfileContextEmbedding.forward_from_batch` mask out the padding before averaging -
+    without it, a padded slot (index 0, the same "unknown/other" bucket a real
+    unrecognised clef would also land on) would dilute the mean by a fake "unknown clef"
+    that was never actually in `likely_clefs`, which `embed_one`'s own unpadded mean
+    does not do. Both entry points must agree on one context's meaning; see
+    `test_profile_context.py`'s `TestBatchAndListAgree` for the property this exists to
+    hold.
+    """
+    if context is None:
+        return {
+            "profile_present": 0,
+            "profile_family_index": 0,
+            "profile_part_ordinal_index": 0,
+            "profile_staff_within_part_index": 0,
+            "profile_staff_count_index": 0,
+            "profile_clef_indices": [0] * MAX_CLEF_SLOTS,
+            "profile_clef_count": 0,
+            "profile_transposition_index": 0,
+        }
+    clefs = context.likely_clefs[:MAX_CLEF_SLOTS]
+    clef_indices = [_bucket_index(clef, CLEFS) for clef in clefs]
+    clef_indices += [0] * (MAX_CLEF_SLOTS - len(clef_indices))
+    return {
+        "profile_present": 1,
+        "profile_family_index": _bucket_index(context.instrument_family, INSTRUMENT_FAMILIES),
+        "profile_part_ordinal_index": min(max(context.part_ordinal, 0), MAX_PART_ORDINAL),
+        "profile_staff_within_part_index": min(
+            max(context.staff_within_part, 0), MAX_STAFF_WITHIN_PART
+        ),
+        "profile_staff_count_index": min(max(context.expected_staff_count, 0), MAX_STAFF_COUNT),
+        "profile_clef_indices": clef_indices,
+        "profile_clef_count": len(clefs),
+        "profile_transposition_index": min(
+            max(context.transposition_semitones, MIN_TRANSPOSITION), MAX_TRANSPOSITION
+        )
+        - MIN_TRANSPOSITION,
+    }
 
 
 class ProfileContextEmbedding(nn.Module):
@@ -172,3 +224,53 @@ class ProfileContextEmbedding(nn.Module):
         """
         device = self.gate.device
         return torch.stack([self.embed_one(context, device) for context in contexts], dim=0)
+
+    def forward_from_batch(
+        self,
+        profile_present: torch.Tensor,
+        profile_family_index: torch.Tensor,
+        profile_part_ordinal_index: torch.Tensor,
+        profile_staff_within_part_index: torch.Tensor,
+        profile_staff_count_index: torch.Tensor,
+        profile_clef_indices: torch.Tensor,
+        profile_clef_count: torch.Tensor,
+        profile_transposition_index: torch.Tensor,
+    ) -> torch.Tensor:
+        """The training-facing entry point: every argument is a batched tensor exactly
+        as `context_to_batch_fields` produces per-sample and the default collator
+        stacks - `(batch,)` for every field except `profile_clef_indices`, which is
+        `(batch, MAX_CLEF_SLOTS)`. Fully vectorized (no Python loop over the batch),
+        unlike `forward`/`embed_one`, which exist for a single direct caller (live
+        inference, a unit test) rather than a training batch.
+
+        Must agree with `forward`/`embed_one` for the same logical context - see
+        `test_profile_context.py`'s `TestBatchAndListAgree`. The one place that needs
+        care to keep that true: a padded clef slot holds index 0, the same "unknown/
+        other" bucket a real unrecognised clef would also land on, so it is masked out
+        of the mean using `profile_clef_count` - except when a sample states no clefs
+        at all (`profile_clef_count == 0`), where every slot is padding and the
+        unmasked mean over three identical "unknown" rows already equals what
+        `embed_one`'s own `likely_clefs == ()` fallback computes, so no special case is
+        needed there beyond leaving the mask as all-ones.
+        """
+        device = self.gate.device
+        clef_vectors = self.clef_emb(profile_clef_indices)  # (batch, slots, dim)
+        slot_positions = torch.arange(MAX_CLEF_SLOTS, device=device).unsqueeze(0)  # (1, slots)
+        real_slot_mask = (slot_positions < profile_clef_count.unsqueeze(1)).float()
+        mask = torch.where(
+            profile_clef_count.unsqueeze(1) > 0, real_slot_mask, torch.ones_like(real_slot_mask)
+        )
+        denom = mask.sum(dim=1, keepdim=True).clamp(min=1)  # (batch, 1)
+        clef_mean = (clef_vectors * mask.unsqueeze(-1)).sum(dim=1) / denom
+
+        total = (
+            self.instrument_family_emb(profile_family_index)
+            + self.part_ordinal_emb(profile_part_ordinal_index)
+            + self.staff_within_part_emb(profile_staff_within_part_index)
+            + self.staff_count_emb(profile_staff_count_index)
+            + clef_mean
+            + self.transposition_emb(profile_transposition_index)
+        )
+        present = profile_present.to(total.dtype).unsqueeze(-1)  # (batch, 1)
+        combined = present * total + (1 - present) * self.missing_emb.unsqueeze(0)
+        return self.gate * combined

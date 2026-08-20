@@ -4,8 +4,10 @@ import torch
 
 from homr.score_profile import ScorePart
 from training.architecture.transformer.profile_context import (
+    MAX_CLEF_SLOTS,
     ProfileContext,
     ProfileContextEmbedding,
+    context_to_batch_fields,
 )
 
 
@@ -126,6 +128,90 @@ class TestBucketing(unittest.TestCase):
         )
 
         self.assertFalse(torch.equal(violin, cello))
+
+
+def _stack_batch_fields(*field_dicts: dict) -> dict:
+    """Mimics what HuggingFace Trainer's default collator does: stack each key across
+    samples into a batched tensor."""
+    keys = field_dicts[0].keys()
+    return {
+        key: torch.tensor([fields[key] for fields in field_dicts], dtype=torch.long)
+        for key in keys
+    }
+
+
+class TestContextToBatchFields(unittest.TestCase):
+    def test_a_missing_context_is_present_zero(self) -> None:
+        fields = context_to_batch_fields(None)
+
+        self.assertEqual(fields["profile_present"], 0)
+        self.assertEqual(fields["profile_clef_indices"], [0] * MAX_CLEF_SLOTS)
+        self.assertEqual(fields["profile_clef_count"], 0)
+
+    def test_a_real_context_is_present_one(self) -> None:
+        fields = context_to_batch_fields(_context())
+
+        self.assertEqual(fields["profile_present"], 1)
+
+    def test_clef_indices_are_padded_to_the_fixed_slot_count(self) -> None:
+        fields = context_to_batch_fields(_context(likely_clefs=("G2",)))
+
+        self.assertEqual(len(fields["profile_clef_indices"]), MAX_CLEF_SLOTS)
+        self.assertEqual(fields["profile_clef_count"], 1)
+
+    def test_more_clefs_than_slots_are_capped_not_an_error(self) -> None:
+        fields = context_to_batch_fields(
+            _context(likely_clefs=("G2", "F4", "C3", "C4", "C5"))
+        )
+
+        self.assertEqual(len(fields["profile_clef_indices"]), MAX_CLEF_SLOTS)
+        self.assertEqual(fields["profile_clef_count"], MAX_CLEF_SLOTS)
+
+
+class TestBatchAndListAgree(unittest.TestCase):
+    """`forward_from_batch` (the training-facing, vectorized entry point) and
+    `forward`/`embed_one` (the direct-caller entry point) must compute the same vector
+    for the same logical context - the property `context_to_batch_fields`'s own
+    docstring names as the reason it exists.
+    """
+
+    def _assert_batch_matches_list(self, contexts: list) -> None:
+        module = ProfileContextEmbedding(dim=8)
+        with torch.no_grad():
+            module.gate.fill_(1.0)
+
+        from_list = module.forward(contexts)
+        batch_fields = _stack_batch_fields(*[context_to_batch_fields(c) for c in contexts])
+        from_batch = module.forward_from_batch(**batch_fields)
+
+        self.assertTrue(
+            torch.allclose(from_list, from_batch, atol=1e-6),
+            f"forward vs forward_from_batch diverged:\n{from_list}\nvs\n{from_batch}",
+        )
+
+    def test_a_full_context_matches(self) -> None:
+        self._assert_batch_matches_list([_context()])
+
+    def test_a_missing_context_matches(self) -> None:
+        self._assert_batch_matches_list([None])
+
+    def test_an_empty_clef_set_matches(self) -> None:
+        self._assert_batch_matches_list([_context(likely_clefs=())])
+
+    def test_a_single_clef_matches(self) -> None:
+        self._assert_batch_matches_list([_context(likely_clefs=("G2",))])
+
+    def test_a_full_three_clef_set_matches(self) -> None:
+        self._assert_batch_matches_list([_context(likely_clefs=("F4", "C4", "G2"))])
+
+    def test_a_mixed_batch_matches(self) -> None:
+        self._assert_batch_matches_list(
+            [
+                _context(instrument_family="strings.cello", likely_clefs=("F4", "C4", "G2")),
+                None,
+                _context(part_ordinal=3, transposition_semitones=-2, likely_clefs=()),
+            ]
+        )
 
 
 class TestFromScorePart(unittest.TestCase):

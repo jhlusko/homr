@@ -112,6 +112,12 @@ class Config:
         self.enable_structured_heads = False
         self.structured_beam_levels = TRAINED_BEAM_LEVELS
         self.structured_slur_slots = TRAINED_SLUR_SLOTS
+        # §7.2/§7.3 score-profile conditioning. Off by default, same reasoning as the
+        # structured heads: a checkpoint trained without it must keep loading and
+        # behaving exactly as before. Even when enabled, the embedding's own gate is
+        # zero-initialized (training.architecture.transformer.profile_context), so
+        # turning this on is itself still a no-op until training moves the gate.
+        self.enable_profile_context = False
         self.encoder_structure = "convnext"
         self.encoder_depth = 8
         self.backbone_layers = [3, 4, 6, 3]
