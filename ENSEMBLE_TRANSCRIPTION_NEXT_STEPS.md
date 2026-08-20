@@ -96,17 +96,68 @@ suspect and has not been changed.**
 - **SystemText folded into StaffText** (27.93, user decision): given up as its own class.
   `detector_masks.py: CLASS_ALIASES = {"SystemText": "StaffText"}`. Fingering's synthesis
   path is unaffected and kept; SystemText's injection code was removed (not left dormant).
+- **Wider-spread Fingering synthesis** (`phase18`, this session): item 2 below, tried.
+  400 distinct train-only scores (vs. the original 79), 1 injection each (vs. ~4) - same
+  order of magnitude of total signal (400 vs. 316 boxes), five times the distinct visual
+  contexts. Retrained 20 epochs on top of the existing class-balanced sampler, evaluated
+  on the identical unchanged 307-page held-out set:
+
+  ```
+  class           precision     recall         f1   gt boxes    detector4 (no synth)
+  Dynamic             67.0%      93.2%      78.0%        429    84.0%
+  Expression           3.9%      79.5%       7.5%         44     8.3%
+  Fingering           31.4%      91.7%      46.8%         12     0.0%
+  Lyrics              73.0%      96.0%      82.9%      3,555    78.1%
+  MeasureNumber       52.2%      89.7%      66.0%         78    84.1%
+  StaffText           10.8%      73.6%      18.8%        106    17.4%
+  Tempo                2.2%      81.1%       4.2%         53    26.2%
+  overall             44.8%      94.7%      60.8%      4,277    68.1%
+  ```
+
+  **Real, substantial partial win, not a clean one.** Fingering moved from 0% to 46.8% F1
+  - more than double 27.92's 18.8% from the concentrated 79-page attempt, confirming
+  spreading synthesis across more distinct scores does what it was supposed to: the
+  target class generalises further before overfitting to a handful of specific images.
+  But the collateral damage 27.92 found did **not** go away, and for two classes it is
+  *worse than 27.92's own mixed result*: Tempo 26.2%→4.2% (worse than 27.92's 9.8%),
+  MeasureNumber 84.1%→66.0% (worse than 27.92's 78.7%), Dynamic 84.0%→78.0% (not measured
+  in 27.92, added since). StaffText and Lyrics both improved slightly. Overall F1 60.8%
+  sits between detector4's 68.1% and 27.92's 57.9% - better than the old synthesis
+  approach on balance, still worse than not synthesizing at all.
+
+  **Diagnosis, refined by this result: "more distinct source pages" and "cap positive-
+  draw frequency by distinct page count" (item 1 below) are two different mechanisms,
+  and this measured that the first alone is not sufficient.** Spreading Fingering's
+  synthetic boxes over 400 pages instead of 79 means the class-balanced sampler now has
+  *more* pages competing for a "Fingering present" positive draw, not fewer - if
+  anything this plausibly explains why Tempo's collateral damage got *worse* here than
+  under the narrower 79-page version, not better. Diversifying the source images fixed
+  the overfitting-to-specific-pixels problem this session set out to test; it does not
+  by itself fix the sampler's page-level "present/absent" accounting that item 1 already
+  named as the separate, still-untried lever.
+
+  **`phase18`'s weights are not adopted as the new default** - the same call 27.92's
+  result got, for the same reason: a class-imbalance fix that costs other classes more
+  than the config it replaces is not a strict improvement. `detector4`'s weights remain
+  the better default until the sampler-level fix (item 1) is tried, ideally combined
+  with `phase18`'s already-synthesized 400-page dataset (`/workspace/b0/phase18_synth`,
+  `phase18_masks`) rather than resynthesizing from scratch.
 
 ### Not yet tried
 
 1. **Cap a class's positive-draw frequency by distinct page count, not just uniform
-   per-page draw.** 27.92's own diagnosis names this directly: weight the sampler so 79
-   synthetic pages cannot out-compete 2,542 real ones for attention, even though the
-   current two-step draw treats "present on this page" as page-level not corpus-level
-   evidence. This is a `DetectorPatches`/`box_centres_by_class` change, not a new script.
-2. **Generate synthetic data on substantially more distinct source scores at lower
-   density per page**, rather than concentrating heavy injection on the same 79 — the
-   other half of 27.92's proposed fix, untested against #1.
+   per-page draw.** 27.92's own diagnosis names this directly, and `phase18`'s result
+   above now gives it independent support: weight the sampler so the number of *distinct
+   pages* offering a class as a positive draw caps how often that class is chosen,
+   regardless of how many pages contain it or how they are distributed. This is a
+   `DetectorPatches`/`box_centres_by_class` change, not a new script - and `phase18`'s
+   already-built 400-page synthetic set can be reused directly against it without
+   resynthesizing.
+2. ~~Generate synthetic data on substantially more distinct source scores at lower
+   density per page~~ — **tried (`phase18`, above).** Helped Fingering substantially
+   (0%→46.8%, more than double the old approach), did not fix the collateral damage to
+   other classes, and one case (Tempo) got worse. Confirmed as a real, useful, but
+   insufficient-alone lever - not a candidate to retry unmodified; combine with item 1.
 3. **Raise `POSITIVE_RATIO` toward true page frequency** (or make it class-dependent) —
    27.87's leading, still-untested hypothesis for the *general* five-class precision
    collapse, independent of the Fingering/SystemText-specific rarity problem above. This
