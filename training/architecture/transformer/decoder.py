@@ -99,8 +99,20 @@ class ScoreTransformerWrapper(nn.Module):
         cache_len: torch.Tensor | None = None,
         mask: torch.Tensor | None = None,
         return_center_of_attention: bool = False,
+        profile_context_emb: torch.Tensor | None = None,
         **kwargs: torch.Tensor,
     ) -> Any:
+        # §7.2/§7.3's score-profile conditioning: an already-computed, per-sequence
+        # additive vector (training.architecture.transformer.profile_context.
+        # ProfileContextEmbedding's output, shape (batch, dim)) - this class stays
+        # decoupled from how it was built, the same way it does not know how the
+        # rhythm/pitch/... embeddings' vocabularies were chosen. Broadcasts across every
+        # position via unsqueeze(1), since profile context does not vary within one
+        # staff's decode. `None` (the default) leaves `x` exactly as it was before this
+        # parameter existed - no caller that omits it is affected in any way.
+        profile_bias = (
+            profile_context_emb.unsqueeze(1) if profile_context_emb is not None else None
+        )
         cache = kwargs.pop("cache", None)
         if cache is None:
             x = (
@@ -111,6 +123,8 @@ class ScoreTransformerWrapper(nn.Module):
                 + self.slur_emb(slurs)
                 + self.pos_emb(rhythms)
             )
+            if profile_bias is not None:
+                x = x + profile_bias
 
             x = self.post_emb_norm(x)
 
@@ -148,6 +162,8 @@ class ScoreTransformerWrapper(nn.Module):
                 + self.slur_emb(slurs)
                 + self.pos_emb(rhythms, offset=cache_len)
             )
+            if profile_bias is not None:
+                x = x + profile_bias
 
             x = self.post_emb_norm(x)
 
