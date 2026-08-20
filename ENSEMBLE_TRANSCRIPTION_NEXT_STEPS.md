@@ -437,10 +437,35 @@ remains is genuinely new work, not plumbing:
     back empty on every part (this corpus's `mbox` renders apparently strip
     `<part-name>` text) - not fatal, instrument identity is carried by
     `instrument_family` + clefs independently.
-  - **Not yet done**: pairing extracted profiles with the existing training index
-    (image/token pairs, keyed by source score), the decoder-side embedding module
-    itself, §7.4's training-time context dropout, and the training run to validate any
-    of it.
+  - ~~Not yet done: pairing extracted profiles with the existing training index~~ —
+    **built this session.** `training/omr_datasets/score_profile_pairing.py`:
+    `profile_and_part_for_sample(dataset_root, stem)` resolves a training example's
+    filename stem (`convert_ossq.py`'s own `<score_id>_<page>_<system>_<part>`
+    convention) to the real `(ScoreProfile, ScorePart)` for that sample - reading the
+    *whole-score* MusicXML `convert_ossq.py` already locates for slur/dynamics
+    placement (`work / f"{score_id}.musicxml"`), not the per-part tokenisation scratch
+    file, which strips instrument identity down to a generic "Part 1". 12 tests, using a
+    temp-directory fixture matching the real corpus layout.
+
+    **Found along the way and fixed**: OSSQ - this design's own running example corpus -
+    has **0%** `<instrument-sound>` coverage in its whole-score files, despite carrying
+    clean `<instrument-name>`/`<part-name>` text ("Violin 1", "Viola", "Violoncello").
+    Added `_family_from_name` to `score_profile_extraction.py`: a small, explicit
+    name→taxonomy fallback table, matched as a case-insensitive substring so a hit is
+    the same MusicXML sound-ID vocabulary `<instrument-sound>` would have given
+    directly, not a separate guess. An unmatched name leaves `instrument_family` empty,
+    per §7.1. 8 new tests (18/18 total in `test_score_profile_extraction.py`).
+
+    **Validated against 2000 real OSSQ training examples**: 1999/2000 resolved (99.95%),
+    and `instrument_family` coverage went from 0% to **100%** on the resolved set (all
+    violin/viola/cello, correctly identified).
+
+  - **Still not done**: the decoder-side embedding module itself (the zero-init gated
+    additive term identified above), §7.4's training-time context dropout, and the
+    training run to validate any of it. Pairing is also scoped to OSSQ only - `mbox`-
+    and `lieder`-derived training samples (also mixed into decoder training via
+    `mix_datasets.py`) have their own naming/provenance and would need their own
+    pairing logic, not attempted here.
 
 ---
 
