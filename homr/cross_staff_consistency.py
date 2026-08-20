@@ -16,16 +16,20 @@ the same deliberate decoupling `score_profile_layout.py` uses, and for the same 
 this can be built and tested against hand-built token sequences without running the
 transformer or touching a real page.
 
-Covers five of §12.1's eight listed findings so far: differing decoded measure counts,
+Covers six of §12.1's eight listed findings so far: differing decoded measure counts,
 conflicting key/time signatures, a clef inconsistent with a supplied score-profile part,
-a slur left open or closed with nothing to match within one staff's own decode, and (a
-later addition, from a design discussion rather than §12.1's original list) a shared
+a slur left open or closed with nothing to match within one staff's own decode, missing
+or extra staff output relative to the rest of a page (`check_page_staff_counts` - the
+one check here that is genuinely page-wide rather than one-system, since a staff count
+means nothing on its own without the rest of the page to compare against), and (a later
+addition, from a design discussion rather than §12.1's original list) a shared
 melodic/rhythmic motif across two staves that disagrees on one note's articulation. Not
 yet covered, and not attempted here: conflicting barline *locations* (needs relative
 position, not just count), a voice's measure duration disagreeing with the time
-signature (needs duration arithmetic across the whole measure), part order changing
-between systems and missing/extra staff output (both need state carried across systems,
-not just within one) - left as further Stage A work, not silently assumed solved.
+signature (needs duration arithmetic across the whole measure), and part *order*
+changing between systems specifically (`check_page_staff_counts` catches a count
+changing, not an order swap among parts that stay present) - left as further Stage A
+work, not silently assumed solved.
 
 `analyze_system`'s input shape (one list of symbols per staff *of one system*) is not
 `staff_parsing.parse_staffs`' output shape (one list per *voice*, concatenated across
@@ -334,6 +338,43 @@ def staves_by_system(
                 cursors[voice_number] += 1
         result.append(staves)
     return result
+
+
+def check_page_staff_counts(voice_present_by_system: list[list[bool]]) -> list[Finding]:
+    """A system whose staff count differs from the page's dominant (most common) staff
+    count - one of §12.1's originally-named checks that stayed unbuilt the longest:
+    missing or extra staff output. Genuinely page-wide, unlike every other check in this
+    module: one system's staff count means nothing in isolation, only against what the
+    rest of the page does, so this is the one check that needs every system at once
+    rather than one system in isolation.
+
+    A tie for "most common" count resolves toward the larger value - a system missing
+    one voice (a dropped staff, `system_grouping`'s own reason for existing) is a far
+    more common real failure than a system that gained a staff no other system has, so
+    "most staves" is the safer tie-break default when the page gives no other signal.
+
+    Deliberately does not reuse `Finding.staff_indices`' usual meaning (positions within
+    one system's staves) - this compares *systems* against each other, not staves within
+    one, so `staff_indices` is left empty here and which systems disagree is named in
+    `message` instead, rather than silently overloading a field whose own docstring
+    describes something different.
+    """
+    counts = [sum(1 for present in system if present) for system in voice_present_by_system]
+    if len(set(counts)) <= 1:
+        return []
+    majority = max(sorted(set(counts), reverse=True), key=counts.count)
+    return [
+        Finding(
+            kind="page_staff_count_mismatch",
+            message=(
+                f"system {system_index} has {count} staves, most of the page has "
+                f"{majority}: per-system counts are {counts}"
+            ),
+            staff_indices=(),
+        )
+        for system_index, count in enumerate(counts)
+        if count != majority
+    ]
 
 
 def findings_by_page(

@@ -343,7 +343,7 @@ from least to most invasive — **do not start Stage C before Stages A and B are
 benchmarked**, per §12.3's own explicit precondition, which still has not been met (only
 part of Stage A exists).
 
-### Stage A: deterministic consistency analysis — 4 of 8 §12.1 checks built, plus a 5th
+### Stage A: deterministic consistency analysis — 5 of 8 §12.1 checks built, plus a 6th
 from outside the original list
 
 `homr/cross_staff_consistency.py`: `analyze_system(staves, staff_to_part=None)` takes one
@@ -351,7 +351,7 @@ from outside the original list
 `score_profile_layout.py`'s `staff_to_part` mapping) and returns structured `Finding`s -
 no MusicXML is altered. Decoupled from images/`Staff` geometry, same as
 `system_grouping.py`/`score_profile_layout.py`, so it is tested against hand-built token
-sequences (36 tests, `tests/test_cross_staff_consistency.py`).
+sequences (41 tests, `tests/test_cross_staff_consistency.py`).
 
 Built:
 
@@ -366,7 +366,21 @@ Built:
 - a beam or slur endpoint made dangling (`check_dangling_slurs`) - within one staff's own
   decode: a slur slot still open at the end, or a STOP/START_AND_STOP with nothing open
   in that slot;
-- (a 5th check, from a design discussion rather than §12.1's original list) a shared
+- missing or extra staff output relative to the rest of the page
+  (`check_page_staff_counts`) - the one check in this module that is genuinely page-wide
+  rather than one-system: a system's staff count means nothing on its own, only against
+  what the rest of the page does, so this compares every system's count against the
+  page's dominant count (ties resolve toward the larger count - a dropped voice is a
+  more common real failure than a spurious extra one). Deliberately does not reuse
+  `Finding.staff_indices`' per-system-staff-position meaning for a page-wide comparison -
+  which systems disagree is named in `message` instead, `staff_indices` is left empty.
+  Wired into `staff_parsing._report_cross_staff_findings` alongside the others, logged as
+  `"Page: ..."` rather than per-system. **Validated on a real page this session**: run
+  against `sq7313978:0001` on the GPU instance, no crash, valid MusicXML written, and it
+  immediately surfaced a real finding neither of the earlier two-page validation runs had
+  caught - `"system 0 has 3 staves, most of the page has 4"` - a genuinely missing staff
+  on the very first page checked;
+- (a 6th check, from a design discussion rather than §12.1's original list) a shared
   motif's articulation disagreeing between two staves (`check_shared_motifs`) - see the
   dedicated section below for what it covers and its known scope limits.
 
@@ -376,9 +390,10 @@ Not built, named honestly in the module docstring rather than left silently unco
   a count - two staves can agree on measure count and still have barlines drift);
 - one voice's measure duration disagreeing with the time signature (needs duration
   arithmetic across a whole measure, not just token-sequence comparison);
-- part order changing between systems, and missing/extra staff output - both need state
-  carried **across** systems on a page, which nothing built so far tracks (everything
-  above operates on one system's staves in isolation).
+- part **order** changing between systems specifically - `check_page_staff_counts` (above)
+  catches a staff *count* changing, not an order swap among parts that all stay present,
+  which is a different comparison (would need `staff_to_part_by_system`'s part identities
+  compared system to system, not just counted).
 
 ### Wired into the live pipeline, log-only, validated on real pages
 

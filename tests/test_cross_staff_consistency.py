@@ -6,6 +6,7 @@ from homr.cross_staff_consistency import (
     check_dangling_slurs,
     check_key_signatures,
     check_measure_counts,
+    check_page_staff_counts,
     check_shared_motifs,
     check_time_signatures,
     findings_by_page,
@@ -285,6 +286,41 @@ class TestSplitBySystem(unittest.TestCase):
 
     def test_an_empty_stream_produces_no_chunks(self) -> None:
         self.assertEqual(split_by_system([]), [])
+
+
+class TestCheckPageStaffCounts(unittest.TestCase):
+    def test_every_system_with_the_same_count_has_no_finding(self) -> None:
+        presence = [[True, True], [True, True], [True, True]]
+
+        self.assertEqual(check_page_staff_counts(presence), [])
+
+    def test_a_system_missing_a_voice_is_reported(self) -> None:
+        presence = [[True, True], [True, False], [True, True]]
+
+        findings = check_page_staff_counts(presence)
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].kind, "page_staff_count_mismatch")
+        self.assertIn("system 1", findings[0].message)
+
+    def test_a_tie_resolves_toward_the_larger_count(self) -> None:
+        # Two systems with 2 staves, two with 1 - an exact tie in frequency.
+        presence = [[True, True], [True, True], [True, False], [True, False]]
+
+        findings = check_page_staff_counts(presence)
+
+        reported_systems = {f.message.split()[1] for f in findings}
+        self.assertEqual(reported_systems, {"2", "3"})
+
+    def test_findings_do_not_use_staff_indices_the_way_other_checks_do(self) -> None:
+        presence = [[True, True], [True, False]]
+
+        findings = check_page_staff_counts(presence)
+
+        self.assertEqual(findings[0].staff_indices, ())
+
+    def test_a_single_system_page_has_no_finding(self) -> None:
+        self.assertEqual(check_page_staff_counts([[True, True, True]]), [])
 
 
 class TestFindingsByPage(unittest.TestCase):

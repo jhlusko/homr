@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from homr import constants
-from homr.cross_staff_consistency import analyze_system, staves_by_system
+from homr.cross_staff_consistency import analyze_system, check_page_staff_counts, staves_by_system
 from homr.cross_staff_repair import propose_repairs
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
@@ -504,7 +504,8 @@ def parse_staffs(
 def _report_cross_staff_findings(
     plan: SystemPlan, voices: list[list[EncodedSymbol]], score_profile: ScoreProfile | None
 ) -> None:
-    """Stage A (design §12.1) and Stage B tier 1 (design §12.2): log deterministic
+    """Stage A (design §12.1, plus a later shared-motif addition and the page-wide staff-
+    count check) and Stage B tier 1 (design §12.2): log deterministic
     cross-staff disagreements and, where one exists, the majority-correction proposal
     for it - without altering anything `voices` carries forward. The clef-vs-profile
     check only fires when the caller supplied a score profile; every other check runs
@@ -531,6 +532,8 @@ def _report_cross_staff_findings(
         staff_to_part = (
             staff_to_part_by_system(score_profile, presence) if score_profile is not None else None
         )
+        for finding in check_page_staff_counts(presence):
+            eprint(f"Page: {finding.message}")
         for system_index, staves in enumerate(staves_by_system(voices, presence)):
             part_map = staff_to_part[system_index] if staff_to_part else None
             for finding in analyze_system(staves, part_map):
