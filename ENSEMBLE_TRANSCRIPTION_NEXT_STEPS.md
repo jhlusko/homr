@@ -581,18 +581,20 @@ epoch   train loss   valid with   valid without   delta
 4       2.4264       1.9583       2.0318          +0.0735
 5       2.4263       1.9968       2.0321          +0.0353
 6       2.4238       1.9805       2.0370          +0.0565
+7       2.4208       1.9647       2.0347          +0.0700
+8       2.4249       1.9615       2.0291          +0.0676
+9       2.4221       1.9677       2.0313          +0.0636
 ```
 
 Training loss essentially flattened after epoch 1 (expected - a frozen core with only 8
 parameters converges fast). Epochs 1-4 looked like the with/without delta was steadily
 *strengthening* (+0.066 → +0.068 → +0.073 → +0.074); epoch 5 broke that story outright
-(delta roughly halved to +0.035, `valid with` itself got worse), and epoch 6 partially
-recovered (+0.057) without fully returning to the epoch 4 level. **Read as: positive but
-noisy, not a clean monotonic trend** - the correct update from the epoch 1-4 framing,
-not a reason to doubt the effect is real. Every epoch so far has still landed positive
-(with < without on all six), which is itself notable across six independent held-out
-passes - but the size of the effect is bouncing around, not settling, and calling it
-conclusive still wants more epochs.
+(delta roughly halved to +0.035, `valid with` itself got worse), and epochs 6-9 settled
+back into the same +0.06-0.07 band epochs 1-4 occupied, without a repeat of epoch 5's
+dip. **Read as: positive but noisy around a stable band, not a clean monotonic trend and
+not a decaying one either.** Every epoch so far has landed positive (`with` < `without`
+on all nine independent held-out passes), and epoch 5 now reads as the outlier rather
+than the start of a decline. One epoch (10) remains.
 
 ---
 
