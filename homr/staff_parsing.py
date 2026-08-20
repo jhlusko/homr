@@ -16,12 +16,13 @@ from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
 from homr.score_profile import ScoreProfile
-from homr.score_profile_layout import staff_to_part_by_system
+from homr.score_profile_layout import propose_part_assignment, staff_to_part_by_system
 from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
 from homr.staff_parsing_tromr import parse_staff_tromr
 from homr.staff_regions import StaffRegions
 from homr.system_grouping import (
+    SystemPartition,
     assign_voice_slots,
     find_system_grouping,
     report_grouping,
@@ -510,13 +511,22 @@ def _report_cross_staff_findings(
     plan: SystemPlan, voices: list[list[EncodedSymbol]], score_profile: ScoreProfile | None
 ) -> None:
     """Stage A (design §12.1, plus a later shared-motif addition and the page-wide staff-
-    count check) and Stage B tier 1 (design §12.2): log deterministic
-    cross-staff disagreements and, where one exists, the majority-correction proposal
-    for it - without altering anything `voices` carries forward. The clef-vs-profile
-    check only fires when the caller supplied a score profile; every other check runs
-    regardless. Proposals are logged only, never applied - the same "review question,
-    not an automatic correction" §12.2 states for Stage B generally; nothing here
-    changes `voices` or what `parse_staffs` returns.
+    count check), Stage B tier 1 (design §12.2), and §7.2's profile-layout deviations:
+    log deterministic cross-staff disagreements and, where one exists, the majority-
+    correction proposal for it - without altering anything `voices` carries forward. The
+    clef-vs-profile check and the layout deviation report both only fire when the caller
+    supplied a score profile; every other check runs regardless. Proposals are logged
+    only, never applied - the same "review question, not an automatic correction" §12.2
+    states for Stage B generally; nothing here changes `voices` or what `parse_staffs`
+    returns.
+
+    `propose_part_assignment`'s deviations (a system's detected staff count not matching
+    what the profile expects) are the first real consumer of that function - previously
+    built and tested but never called from anywhere, per the next-steps doc's own
+    tracking. Distinct from `check_page_staff_counts`, which compares a system against
+    the rest of the *page*: this compares a system against what the *profile* declared,
+    which can disagree even when every system on the page agrees with each other (a
+    profile that is simply wrong about how many parts this piece has).
 
     Stage A run end to end against two real OSSQ pages (`sq7313978:0001`,
     `sq8823783:0061`) on a GPU instance: no exception, `homr.main` wrote MusicXML
@@ -537,6 +547,26 @@ def _report_cross_staff_findings(
         staff_to_part = (
             staff_to_part_by_system(score_profile, presence) if score_profile is not None else None
         )
+        if score_profile is not None:
+            for system_index, slots in enumerate(plan.slots):
+                # propose_part_assignment (§7.2) wants one SystemPartition describing
+                # every system at once, with a single page-wide staves_per_system - a
+                # shape SystemPlan does not use, since its own systems can vary in size
+                # (an incomplete system recovered by _group_by_geometry, or the dense
+                # fallback path). Calling it once per system, with a single-system
+                # partition built from that system's own slot count, sidesteps the
+                # mismatch without needing propose_part_assignment itself to change:
+                # each call answers exactly "does the profile expect this many staves
+                # here", which is the only thing this diagnostic needs.
+                partition = SystemPartition(
+                    staves_per_system=len(slots),
+                    groups=(tuple(range(len(slots))),),
+                    separation=0.0,
+                    broken_connections=0,
+                )
+                assignment = propose_part_assignment(score_profile, partition, [slots])[0]
+                for deviation in assignment.deviations:
+                    eprint(f"System {system_index}: profile layout - {deviation}")
         for finding in check_page_staff_counts(presence):
             eprint(f"Page: {finding.message}")
         if staff_to_part is not None:

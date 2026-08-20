@@ -256,7 +256,7 @@ of resampling within that data can manufacture signal the corpus does not contai
 
 ---
 
-## 3. Score-profile conditioning — schema and layout use built; conditioning not started
+## 3. Score-profile conditioning — schema and layout use built and wired; decoder conditioning not started
 
 Full contract already specified in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §7; reproduced
 here so this file is self-contained.
@@ -368,20 +368,48 @@ The schema, the deterministic layout use (§7.2), `staff_to_part_by_system`, and
 profile now reaches `parse_staffs` and activates #4's clef-vs-profile check. What
 remains is genuinely new work, not plumbing:
 
-- **§7.2's layout use (`propose_part_assignment`) is still not called from
-  `parse_staffs` or surfaced anywhere** - only its `staff_to_part_by_system` sibling
-  (built for #4's clef check specifically) is wired in. The layout mapping itself -
-  proposed systems/staff rows, evidence score, deviations, source-image regions - has no
-  consumer yet. Worth revisiting whether `propose_part_assignment` and
-  `staff_to_part_by_system` should collapse into one function now that both exist and
-  overlap in purpose, or stay separate because they answer different questions
-  (`SystemPartition`-indexed staff mapping vs. voice-number-indexed).
+- ~~§7.2's layout use (`propose_part_assignment`) is still not called from
+  `parse_staffs` or surfaced anywhere~~ — **wired this session.** `propose_part_
+  assignment`'s *deviations* are now logged from `_report_cross_staff_findings`,
+  alongside everything else - the first real consumer of a function that was built and
+  tested but never called from anywhere. Distinct from `check_page_staff_counts`
+  (compares a system against the rest of the *page*): this compares a system against
+  what the *profile* declared, which can disagree even when every system on the page
+  agrees with each other (a profile that is simply wrong about how many parts a piece
+  has).
+
+  Not a drop-in call, and worth recording why: `propose_part_assignment` wants one
+  `SystemPartition` describing every system at once with a single page-wide
+  `staves_per_system`, but `staff_parsing.SystemPlan` allows systems to vary in size
+  (an incomplete system `_group_by_geometry` recovered, or the dense fallback path) - a
+  real shape mismatch, not a detail. Resolved by calling `propose_part_assignment` once
+  per system, each time with a synthetic single-system `SystemPartition` built from that
+  system's own slot count - each call then answers exactly "does the profile expect this
+  many staves here," the only thing this diagnostic needs; `propose_part_assignment`
+  itself was not changed. The evidence-score and source-image-region parts of its output
+  are still unused - there is still no review surface to show them to (§5's own status:
+  "no page-assembly/review surface has been built") - only the deviations, which fit the
+  existing log-line pattern every other check here already uses.
+
+  **Validated on the GPU instance**: run against the same `sq7313978:0001` page whose
+  system 0 was already known (from `check_page_staff_counts`'s own validation) to be
+  missing a staff, with a `STRING_QUARTET` profile - fired exactly where expected
+  (`"System 0: profile layout - profile expects 4 staff(s) per system, detected
+  geometry implies 3"`), silent on a second page whose staff counts matched throughout,
+  no crash, valid MusicXML both times. Full suite: 906/909 (3 pre-existing, unrelated
+  failures deselected).
+
+  The `propose_part_assignment`/`staff_to_part_by_system` collapse question named
+  previously is now answered by how this landed: kept separate. They answer genuinely
+  different questions from the same inputs (staff-count deviation vs. per-staff part
+  identity), and forcing one call site to serve both would have meant reshaping one of
+  them to fit the other's indexing scheme for no real gain.
 - **§7.3 decoder conditioning** — genuinely new work: instrument-family/part-ordinal/
   staff-within-part/expected-staff-count/likely-clef/transposition embeddings injected
   as prefix tokens or a zero-initialized gated additive vector, plus §7.4's training-time
-  context dropout. Needs a training run to validate. Do this after the layout use has a
-  real consumer — a profile with no way to reach a human reviewer or the decoder is not
-  yet worth conditioning training on.
+  context dropout. Needs a training run to validate. **The layout use now has a real
+  consumer** (above), so this is unblocked - the next genuinely new piece of work on
+  this track.
 
 ---
 
