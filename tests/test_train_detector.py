@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+import unittest.mock
 from argparse import Namespace
 from pathlib import Path
 
@@ -119,6 +120,8 @@ class TestTrainEntryPoint(unittest.TestCase):
             "batch_size": 2,
             "workers": 0,
             "seed": 0,
+            "positive_ratio": 0.7,
+            "class_weighted_sampling": False,
             "skip_pretrained": True,
             "device": "cpu",
         }
@@ -138,6 +141,33 @@ class TestTrainEntryPoint(unittest.TestCase):
             train(self._args(directory))
 
             self.assertTrue((directory / "w.pth").exists())
+
+    def test_weights_are_checkpointed_once_per_epoch(self) -> None:
+        # 27.91's gap: a long run killed partway used to lose everything, because
+        # nothing was written until the loop finished. Guard the fix directly - one
+        # torch.save call per epoch, not one at the very end.
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            with unittest.mock.patch("training.ocr.train_detector.torch.save") as save:
+                train(self._args(directory, epochs=3))
+
+        self.assertEqual(save.call_count, 3)
+
+    def test_history_json_is_written_incrementally_not_only_at_the_end(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            train(self._args(directory, epochs=2))
+
+            written = json.loads((directory / "history.json").read_text())
+
+        self.assertEqual(len(written["history"]), 2)
+
+    def test_class_weighted_sampling_does_not_break_training(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            report = train(self._args(directory, class_weighted_sampling=True))
+
+        self.assertEqual(len(report["history"]), 1)
 
     def test_a_valid_index_adds_a_valid_report_per_epoch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

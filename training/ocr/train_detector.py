@@ -205,9 +205,23 @@ def train(args: argparse.Namespace) -> dict:
 
         history.append(record)
 
-    if args.weights:
-        args.weights.parent.mkdir(parents=True, exist_ok=True)
-        torch.save(model.state_dict(), args.weights)
+        # Checkpoint every epoch, not just at the end - 27.91 named this gap for the
+        # recognizer, and it applies here identically: a long run that plateaus, OOMs,
+        # or is killed partway loses every epoch's progress, weights and metrics alike,
+        # if nothing is written until the loop finishes. Overwriting the same path each
+        # epoch (rather than one file per epoch) keeps this a drop-in addition - callers
+        # asking for `--weights`/`--out` already get exactly those paths, just refreshed
+        # sooner, not a new naming scheme to adopt.
+        if args.weights:
+            args.weights.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(model.state_dict(), args.weights)
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(
+                json.dumps({"history": history, "classes": list(CLASS_NAMES)}, indent=1),
+                encoding="utf-8",
+            )
+
     return {"history": history, "classes": list(CLASS_NAMES)}
 
 
@@ -250,10 +264,7 @@ def main() -> None:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
-    report = train(args)
-    if args.out:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(json.dumps(report, indent=1), encoding="utf-8")
+    train(args)  # writes --weights/--out itself, every epoch - see train()'s own comment.
 
 
 if __name__ == "__main__":
