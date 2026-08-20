@@ -408,8 +408,39 @@ remains is genuinely new work, not plumbing:
   staff-within-part/expected-staff-count/likely-clef/transposition embeddings injected
   as prefix tokens or a zero-initialized gated additive vector, plus §7.4's training-time
   context dropout. Needs a training run to validate. **The layout use now has a real
-  consumer** (above), so this is unblocked - the next genuinely new piece of work on
-  this track.
+  consumer** (above), so this is unblocked - started this session:
+
+  - **Injection point identified**: `ScoreTransformerWrapper.forward()`
+    (`training/architecture/transformer/decoder.py`) already builds the decoder's input
+    as a sum of independent per-field embeddings (`rhythm_emb + pitch_emb + lift_emb +
+    articulation_emb + slur_emb + pos_emb`) before the attention layers. The natural,
+    minimally-invasive injection is one more term in that sum - a `profile_emb`, one per
+    sequence (broadcast across positions, since profile context is staff/page-level, not
+    per-token), through a zero-initialized projection so at initialization its
+    contribution is exactly zero and the unconditioned path is bit-identical - not yet
+    built.
+  - **A real gap found and closed first, before touching the model**: there is no
+    `ScoreProfile` data anywhere in the *training* pipeline - only live inference
+    (`homr/main.py --score-profile`) has one. **User decision: synthesize it from the
+    training corpus' own MusicXML sources**, rather than train only on the (nonexistent)
+    subset that already carries profile metadata, or fabricate plausible-looking fake
+    profiles. `training/omr_datasets/score_profile_extraction.py`:
+    `extract_score_profile(xml_root)` reads a document's `<part-list>` (name,
+    `<instrument-sound>` - MusicXML's own standardized taxonomy, which
+    `ScorePart.instrument_family` was modeled on from the start, e.g. `"strings.violin"`)
+    and each `<part>`'s `<attributes>` across every measure (not just the first, since a
+    clef or instrument change can appear later) for clefs/staff-count/transposition/
+    lyrics. A part with no `<part-list>` entry still gets a `ScorePart`, per §7.1's
+    "unknown is valid." 10 tests, all passing. **Validated against 200 random real
+    corpus files, 0 errors**: 51.3% of parts carry a real `instrument_family`, 98.3%
+    carry `likely_clefs` - genuine signal, not sparse or fabricated. `display_name` came
+    back empty on every part (this corpus's `mbox` renders apparently strip
+    `<part-name>` text) - not fatal, instrument identity is carried by
+    `instrument_family` + clefs independently.
+  - **Not yet done**: pairing extracted profiles with the existing training index
+    (image/token pairs, keyed by source score), the decoder-side embedding module
+    itself, §7.4's training-time context dropout, and the training run to validate any
+    of it.
 
 ---
 
