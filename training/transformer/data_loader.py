@@ -1,5 +1,6 @@
 import os
 import random
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -8,6 +9,12 @@ from homr.simple_logging import eprint
 from homr.staff_parsing import add_image_into_tr_omr_canvas
 from homr.transformer.configs import Config, default_config
 from homr.transformer.vocabulary import Vocabulary
+from training.architecture.transformer.profile_context import (
+    ProfileContext,
+    apply_context_dropout,
+    context_to_batch_fields,
+)
+from training.omr_datasets.score_profile_pairing import profile_and_part_for_sample
 from training.transformer.image_utils import (
     distort_image,
     ndarray_to_tensor,
@@ -37,11 +44,20 @@ class DataLoader:
         corpus_list: list[str],
         config: Config,
         is_validation: bool = False,
+        dataset_root: str | None = None,
     ) -> None:
         self.corpus_list = self._add_mask_steps(corpus_list)
         self.vocab = Vocabulary()
         self.config = config
         self.is_validation = is_validation
+        # §7.3/§7.4 score-profile conditioning - None (the default) preserves the
+        # existing behaviour exactly: no profile_* keys are added to a sample at all,
+        # so a caller that never asks for this sees no difference. Only OSSQ samples
+        # currently resolve to anything (training.omr_datasets.score_profile_pairing);
+        # every other corpus mixed into the same corpus_list (mix_datasets.py routinely
+        # mixes several) falls through to the same "no profile" case a genuinely
+        # unresolvable OSSQ sample does.
+        self.dataset_root = dataset_root
 
     def _add_mask_steps(self, corpus_list: list[str]) -> Any:
         result = []
@@ -76,6 +92,17 @@ class DataLoader:
         img = distort_image(img, allow_occlusions=not self.is_validation)
         img = add_image_into_tr_omr_canvas(img)
 
+        if self.dataset_root is not None:
+            # Resolved (and, for training, dropped-out per §7.4) inside the same
+            # seeded/restored block as the image distortion above - validation gets a
+            # reproducible profile_context per idx across runs, same as the image
+            # augmentation already does, and training's dropout roll uses this call's
+            # live global `random` state rather than a separate generator, so it varies
+            # normally epoch to epoch the same way image distortion already does.
+            context = self._resolve_profile_context(entry["tokens"])
+            if not self.is_validation:
+                context = apply_context_dropout(context, random)
+
         if self.is_validation:
             random.setstate(state)
             np.random.set_state(np_state)
@@ -98,7 +125,18 @@ class DataLoader:
             "slurs": tokens.slurs,
             "mask": tokens.mask,
         }
+        if self.dataset_root is not None:
+            result.update(context_to_batch_fields(context))
         return result
+
+    def _resolve_profile_context(self, tokens_path: str) -> "ProfileContext | None":
+        assert self.dataset_root is not None  # only called when it is set
+        stem = Path(tokens_path).stem
+        resolved = profile_and_part_for_sample(self.dataset_root, stem)
+        if resolved is None:
+            return None
+        profile, part = resolved
+        return ProfileContext.from_score_part(part, part_ordinal=profile.parts.index(part))
 
 
 def _filter_valid_samples(samples: list[str]) -> list[str]:
@@ -126,7 +164,12 @@ def _filter_valid_samples(samples: list[str]) -> list[str]:
     return valid_samples
 
 
-def load_dataset(samples: list[str], config: Config, val_split: float = 0.0) -> dict[str, Any]:
+def load_dataset(
+    samples: list[str],
+    config: Config,
+    val_split: float = 0.0,
+    dataset_root: str | None = None,
+) -> dict[str, Any]:
     samples = _filter_valid_samples(samples)
     val_idx = int(len(samples) * val_split)
     training_list = samples[val_idx:]
@@ -143,12 +186,14 @@ def load_dataset(samples: list[str], config: Config, val_split: float = 0.0) -> 
             training_list,
             config,
             is_validation=False,
+            dataset_root=dataset_root,
         ),
         "train_list": training_list,
         "validation": DataLoader(
             validation_list,
             config,
             is_validation=True,
+            dataset_root=dataset_root,
         ),
         "validation_list": validation_list,
     }

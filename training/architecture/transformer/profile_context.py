@@ -23,7 +23,8 @@ training data), or any future corpus's own pairing all build a `ProfileContext` 
 hand it to this module; it has no per-corpus logic of its own.
 """
 
-from dataclasses import dataclass
+import random
+from dataclasses import dataclass, replace
 
 import torch
 from torch import nn
@@ -96,6 +97,48 @@ class ProfileContext:
             likely_clefs=part.likely_clefs,
             transposition_semitones=part.transposition_semitones,
         )
+
+
+#: §7.4's starting hypothesis (not fixed): 30% no profile, 30% partially masked, 40%
+#: complete.
+DEFAULT_NO_PROFILE_PROB = 0.3
+DEFAULT_PARTIAL_MASK_PROB = 0.3
+
+
+def apply_context_dropout(
+    context: "ProfileContext | None",
+    rng: random.Random,
+    no_profile_prob: float = DEFAULT_NO_PROFILE_PROB,
+    partial_mask_prob: float = DEFAULT_PARTIAL_MASK_PROB,
+) -> "ProfileContext | None":
+    """§7.4's training-time context dropout - so the model does not become dependent on
+    profile context always being present, since most real callers will not supply one.
+    A single roll chooses between three outcomes, in that order: drop to no profile at
+    all, partially mask, or leave the real context untouched. Nothing to drop from an
+    already-missing context - a `None` sample is not "dropped to `None`," it already
+    carries no signal.
+
+    **"Partially masked" is scoped to `instrument_family` specifically, not every field
+    independently** - a real, named simplification, not an oversight. That field is the
+    one genuinely optional piece of context a real caller is most likely to omit while
+    still knowing structural facts (staff count, position within the system) from
+    layout alone, and it is the only field with a pre-existing "unknown" sentinel (an
+    empty string) that does not also double as a legitimate real value the way
+    `part_ordinal == 0` or `transposition_semitones == 0` both do. Masking the integer
+    fields independently would need those fields to gain their own explicit "unknown"
+    states first (a third bucket beyond "real value" and "out-of-vocabulary," which
+    `ProfileContextEmbedding` does not currently have for anything but
+    `instrument_family` and `likely_clefs`) - a real design question, not attempted
+    here.
+    """
+    if context is None:
+        return None
+    roll = rng.random()
+    if roll < no_profile_prob:
+        return None
+    if roll < no_profile_prob + partial_mask_prob:
+        return replace(context, instrument_family="")
+    return context
 
 
 def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, int | list[int]]:
