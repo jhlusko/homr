@@ -145,14 +145,28 @@ suspect and has not been changed.**
 
 ### Not yet tried
 
-1. **Cap a class's positive-draw frequency by distinct page count, not just uniform
-   per-page draw.** 27.92's own diagnosis names this directly, and `phase18`'s result
-   above now gives it independent support: weight the sampler so the number of *distinct
-   pages* offering a class as a positive draw caps how often that class is chosen,
-   regardless of how many pages contain it or how they are distributed. This is a
-   `DetectorPatches`/`box_centres_by_class` change, not a new script - and `phase18`'s
-   already-built 400-page synthetic set can be reused directly against it without
-   resynthesizing.
+1. ~~Cap a class's positive-draw frequency by distinct page count, not just uniform
+   per-page draw~~ — **built this session, not yet run.** `training/ocr/detector_patches.py`:
+   `classes_present(mask)` (per-page class presence, no per-box centroid work needed),
+   `class_page_counts(masks)` (how many distinct pages carry each class - reads a stream
+   of masks, one pass, no I/O baked in so it stays testable without touching disk),
+   `class_draw_weights(counts)` (weight = `1 / page_count`, relative only, not normalized -
+   `random.choices` only needs relative magnitudes). `DetectorPatches` takes an optional
+   `class_weights: dict[str, float] | None = None` - `None` (the default) preserves the
+   exact original per-page-uniform choice; when supplied, the per-page class pick in
+   `__getitem__` uses `rng.choices(present, weights=...)` instead of `rng.choice(present)`,
+   so a class spread across many more pages than another no longer also wins a
+   proportionally larger share of positive draws corpus-wide just by having more pages to
+   be chosen on. 12 new tests (`tests/test_detector_patches.py`), all passing on the GPU
+   instance's venv (28/28) - also caught and fixed a pre-existing stale test comment/
+   assertion (`TestBoxCentresByClass` assumed class value 1 was "Fingering"; `cc7bb61`
+   later inserted "Dynamic" ahead of it in `CLASS_ORDER`, making value 1 "Dynamic" - the
+   tests were asserting on the wrong key and happened to still pass only because
+   `box_centres_by_class`'s dict comparison didn't care about the label, just presence).
+   **Not run against real training data yet** - the natural next GPU experiment is
+   `class_page_counts` computed over `phase18`'s already-synthesized 400-page Fingering
+   set plus the rest of the corpus, fed as `class_weights` to a retrain, combining both
+   halves of 27.92's original diagnosis for the first time.
 2. ~~Generate synthetic data on substantially more distinct source scores at lower
    density per page~~ — **tried (`phase18`, above).** Helped Fingering substantially
    (0%→46.8%, more than double the old approach), did not fix the collateral damage to

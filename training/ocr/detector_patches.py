@@ -24,6 +24,7 @@ a black bar), background class for the mask.
 """
 
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -88,6 +89,44 @@ def box_centres_by_class(mask: np.ndarray) -> dict[str, list[tuple[int, int]]]:
     return found
 
 
+def classes_present(mask: np.ndarray) -> set[str]:
+    return {label for label in CLASS_ORDER if (mask == CLASS_INDEX[label]).any()}
+
+
+def class_page_counts(masks: Iterable[np.ndarray]) -> dict[str, int]:
+    """How many distinct pages each class appears on at all, ignoring how many boxes of
+    that class a page holds - a fingering mark spread across 400 pages and a tempo mark
+    spread across 80 counts as 400 and 80 here, regardless of how many of each per page.
+
+    This is the corpus-wide count `class_draw_weights` needs and `box_centres_by_class`
+    cannot answer, because that function only ever sees one page at a time: it groups one
+    mask's centres by class, with no visibility into how many *other* pages also contain
+    that class. `DetectorPatches.__getitem__`'s per-page uniform choice among classes
+    present on that page looks class-balanced locally, but a class present on many pages
+    still accumulates far more total positive draws across an epoch than a class confined
+    to a few pages, purely because it gets a turn on more pages - the mechanism this
+    session's phase18 detector retrain result named as still unaddressed even after
+    synthesizing Fingering onto 400 distinct pages instead of concentrating on 79.
+    """
+    counts: dict[str, int] = {}
+    for mask in masks:
+        for label in classes_present(mask):
+            counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def class_draw_weights(counts: dict[str, int]) -> dict[str, float]:
+    """Per-class weight inversely proportional to how many distinct pages carry it, for
+    `DetectorPatches`' per-page class choice - so a class spread across many pages does
+    not out-compete a class confined to few pages just by having more chances to be
+    picked. Weights are relative, not normalized to sum to 1 - `random.choices` only
+    needs relative magnitudes. A class with a page count of 0 cannot appear here (nothing
+    to divide by), which is fine: `classes_present`/`box_centres_by_class` never report a
+    class that is not actually on the page being sampled.
+    """
+    return {label: 1.0 / count for label, count in counts.items()}
+
+
 def patch_origin(
     center: tuple[int, int], shape: tuple[int, int], jitter: float, rng: random.Random
 ) -> tuple[int, int]:
@@ -123,11 +162,17 @@ class DetectorPatches(Dataset):
         patches_per_image: int = 8,
         positive_ratio: float = POSITIVE_RATIO,
         seed: int = 0,
+        class_weights: dict[str, float] | None = None,
     ) -> None:
         self.samples = samples
         self.patches_per_image = patches_per_image
         self.positive_ratio = positive_ratio
         self.rng = random.Random(seed)
+        # None (the default) keeps the original per-page-uniform behaviour exactly -
+        # this is additive, not a replacement, since the uniform choice is still the
+        # right default for a corpus without the "one class spread across far more
+        # distinct pages than another" problem `class_draw_weights` exists to correct.
+        self.class_weights = class_weights
         # Every image is decoded up to `patches_per_image` times per epoch - once per
         # patch drawn from it. A one-slot cache turns that into one decode per image, as
         # long as those draws arrive consecutively (see ImageBlockSampler), which a plain
@@ -158,11 +203,20 @@ class DetectorPatches(Dataset):
         centres_by_class = box_centres_by_class(mask)
         positive = centres_by_class and self.rng.random() < self.positive_ratio
         if positive:
-            # Pick a class uniformly among those present on this page, then a centre of
-            # that class - not a centre uniformly among all boxes, which would draw a
-            # class in proportion to how much of the page it covers rather than giving
-            # every class an equal share of positive training examples.
-            label = self.rng.choice(sorted(centres_by_class))
+            # Pick a class among those present on this page, then a centre of that class
+            # - not a centre uniformly among all boxes, which would draw a class in
+            # proportion to how much of the page it covers rather than giving every
+            # class a controlled share of positive training examples. Uniform among
+            # present classes by default; `class_weights` (typically
+            # `class_draw_weights`'s inverse-page-count weighting) skews that per-page
+            # choice so a class present on many more pages does not also win far more
+            # positive draws corpus-wide purely by having more pages to be chosen on.
+            present = sorted(centres_by_class)
+            if self.class_weights is not None:
+                weights = [self.class_weights.get(label, 1.0) for label in present]
+                label = self.rng.choices(present, weights=weights, k=1)[0]
+            else:
+                label = self.rng.choice(present)
             center = self.rng.choice(centres_by_class[label])
         else:
             center = (

@@ -12,6 +12,9 @@ from training.ocr.detector_patches import (
     DetectorPatches,
     Sample,
     box_centres_by_class,
+    class_draw_weights,
+    class_page_counts,
+    classes_present,
     extract_patch,
     patch_origin,
     read_index,
@@ -45,14 +48,16 @@ class TestReadIndex(unittest.TestCase):
 
 class TestBoxCentresByClass(unittest.TestCase):
     """`_mask_with_boxes` writes class value 1, which `CLASS_INDEX` assigns to
-    "Fingering" (the first entry in `CLASS_ORDER` - 27.92 folded SystemText into
-    StaffText and dropped it from the order, so Fingering moved up to index 1).
+    "Dynamic" (the first entry in `CLASS_ORDER`, since `cc7bb61` added it ahead of
+    Fingering - this docstring previously said "Fingering" from before that commit;
+    fixed here since it was making these assertions accidentally correct only when
+    Fingering happened to still be first).
     """
 
     def test_one_box_gives_one_centre(self) -> None:
         mask = _mask_with_boxes((100, 100), [(10, 10, 30, 50)])
 
-        centres = box_centres_by_class(mask)["Fingering"]
+        centres = box_centres_by_class(mask)["Dynamic"]
 
         self.assertEqual(len(centres), 1)
         y, x = centres[0]
@@ -61,21 +66,61 @@ class TestBoxCentresByClass(unittest.TestCase):
     def test_two_separate_boxes_give_two_centres(self) -> None:
         mask = _mask_with_boxes((100, 100), [(0, 0, 10, 10), (80, 80, 90, 90)])
 
-        self.assertEqual(len(box_centres_by_class(mask)["Fingering"]), 2)
+        self.assertEqual(len(box_centres_by_class(mask)["Dynamic"]), 2)
 
     def test_an_empty_mask_has_no_classes(self) -> None:
         self.assertEqual(box_centres_by_class(np.zeros((50, 50), dtype=np.uint8)), {})
 
     def test_different_classes_are_kept_separate(self) -> None:
         mask = np.zeros((100, 100), dtype=np.uint8)
-        mask[10:30, 10:30] = 1  # Fingering
-        mask[60:80, 60:80] = 2  # Expression
+        mask[10:30, 10:30] = 1  # Dynamic
+        mask[60:80, 60:80] = 2  # Fingering
 
         by_class = box_centres_by_class(mask)
 
-        self.assertEqual(set(by_class), {"Fingering", "Expression"})
+        self.assertEqual(set(by_class), {"Dynamic", "Fingering"})
+        self.assertEqual(len(by_class["Dynamic"]), 1)
         self.assertEqual(len(by_class["Fingering"]), 1)
-        self.assertEqual(len(by_class["Expression"]), 1)
+
+
+class TestClassPageCounts(unittest.TestCase):
+    def test_a_class_on_two_pages_counts_two(self) -> None:
+        page_a = _mask_with_boxes((50, 50), [(0, 0, 10, 10)])  # Dynamic
+        page_b = _mask_with_boxes((50, 50), [(20, 20, 30, 30)])  # Dynamic
+
+        counts = class_page_counts([page_a, page_b])
+
+        self.assertEqual(counts, {"Dynamic": 2})
+
+    def test_multiple_boxes_of_the_same_class_on_one_page_still_count_once(self) -> None:
+        page = _mask_with_boxes((50, 50), [(0, 0, 10, 10), (20, 20, 30, 30)])
+
+        self.assertEqual(class_page_counts([page]), {"Dynamic": 1})
+
+    def test_a_class_absent_from_a_page_does_not_count_it(self) -> None:
+        with_class = _mask_with_boxes((50, 50), [(0, 0, 10, 10)])  # Dynamic
+        without_class = np.zeros((50, 50), dtype=np.uint8)
+
+        self.assertEqual(class_page_counts([with_class, without_class]), {"Dynamic": 1})
+
+    def test_classes_present_matches_box_centres_by_class_keys(self) -> None:
+        mask = np.zeros((100, 100), dtype=np.uint8)
+        mask[10:30, 10:30] = 1  # Dynamic
+        mask[60:80, 60:80] = 2  # Fingering
+
+        self.assertEqual(classes_present(mask), set(box_centres_by_class(mask)))
+
+
+class TestClassDrawWeights(unittest.TestCase):
+    def test_a_class_on_more_pages_gets_a_smaller_weight(self) -> None:
+        weights = class_draw_weights({"Fingering": 400, "Tempo": 80})
+
+        self.assertLess(weights["Fingering"], weights["Tempo"])
+
+    def test_the_weight_is_exactly_the_inverse_page_count(self) -> None:
+        weights = class_draw_weights({"Fingering": 4})
+
+        self.assertAlmostEqual(weights["Fingering"], 0.25)
 
 
 class TestPatchOrigin(unittest.TestCase):
@@ -199,6 +244,42 @@ class TestDetectorPatches(unittest.TestCase):
 
             with self.assertRaises(FileNotFoundError):
                 dataset[0]
+
+    def test_class_weights_skew_which_class_a_positive_patch_lands_on(self) -> None:
+        # A page far larger than one patch, with one Dynamic box (value 1) and one
+        # Fingering box (value 2) placed far apart, so only a centre drawn from the
+        # chosen class's own box lands the patch on it. Weighting Fingering 1000x
+        # should make it win essentially every positive draw.
+        with tempfile.TemporaryDirectory() as tmp:
+            size = (4000, 4000)
+            image_path = Path(tmp) / "a.png"
+            mask_path = Path(tmp) / "a.mask.png"
+            cv2.imwrite(str(image_path), np.full((*size, 3), 255, dtype=np.uint8))
+            mask = np.zeros(size, dtype=np.uint8)
+            mask[100:150, 100:150] = 1  # Dynamic
+            mask[3800:3850, 3800:3850] = 2  # Fingering
+            cv2.imwrite(str(mask_path), mask)
+            samples = [Sample(str(image_path), str(mask_path))]
+            dataset = DetectorPatches(
+                samples,
+                patches_per_image=30,
+                positive_ratio=1.0,
+                class_weights={"Dynamic": 0.001, "Fingering": 1.0},
+            )
+
+            hit_dynamic = sum(1 for i in range(30) if (dataset[i][1] == 1).any())
+            hit_fingering = sum(1 for i in range(30) if (dataset[i][1] == 2).any())
+
+        self.assertGreater(hit_fingering, hit_dynamic)
+
+    def test_no_class_weights_preserves_the_original_uniform_behaviour(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            samples = [_write_sample(Path(tmp), "a")]
+
+            with_default = DetectorPatches(samples, seed=0)[0]
+            with_explicit_none = DetectorPatches(samples, seed=0, class_weights=None)[0]
+
+        self.assertTrue((with_default[0] == with_explicit_none[0]).all())
 
     def test_the_same_index_gives_the_same_patch(self) -> None:
         # A seeded rng, so a training run is reproducible run to run.
