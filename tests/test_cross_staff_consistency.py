@@ -6,6 +6,7 @@ from homr.cross_staff_consistency import (
     check_dangling_slurs,
     check_key_signatures,
     check_measure_counts,
+    check_shared_motifs,
     check_time_signatures,
     findings_by_page,
     measure_count,
@@ -25,6 +26,10 @@ from homr.transformer.vocabulary import EncodedSymbol
 
 def _sym(rhythm: str) -> EncodedSymbol:
     return EncodedSymbol(rhythm)
+
+
+def _note(rhythm: str, pitch: str, articulation: str = "_") -> EncodedSymbol:
+    return EncodedSymbol(rhythm=rhythm, pitch=pitch, articulation=articulation)
 
 
 def _note_with_slur(slot: int, event: SlurEvent) -> EncodedSymbol:
@@ -170,6 +175,69 @@ class TestDanglingSlurs(unittest.TestCase):
         staff = [_sym("note_4"), _sym("barline")]
 
         self.assertEqual(check_dangling_slurs([staff]), [])
+
+
+class TestSharedMotifs(unittest.TestCase):
+    def test_a_matching_run_with_one_differing_articulation_is_reported(self) -> None:
+        staff_a = [_note("note_4", "C5"), _note("note_4", "D5", "accent"), _note("note_4", "E5")]
+        staff_b = [_note("note_4", "C5"), _note("note_4", "D5", "marcato"), _note("note_4", "E5")]
+
+        findings = check_shared_motifs([staff_a, staff_b], min_motif_length=3)
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].kind, "motif_articulation_mismatch")
+        self.assertEqual(findings[0].staff_indices, (0, 1))
+
+    def test_an_identical_run_produces_no_finding(self) -> None:
+        staff = [_note("note_4", "C5"), _note("note_4", "D5"), _note("note_4", "E5")]
+
+        findings = check_shared_motifs([staff, list(staff)], min_motif_length=3)
+
+        self.assertEqual(findings, [])
+
+    def test_a_run_shorter_than_the_minimum_is_ignored(self) -> None:
+        staff_a = [_note("note_4", "C5"), _note("note_4", "D5", "accent")]
+        staff_b = [_note("note_4", "C5"), _note("note_4", "D5", "marcato")]
+
+        findings = check_shared_motifs([staff_a, staff_b], min_motif_length=3)
+
+        self.assertEqual(findings, [])
+
+    def test_a_transposed_entry_is_not_matched(self) -> None:
+        # A known, named limitation - matching is on absolute pitch, not interval.
+        staff_a = [_note("note_4", "C5"), _note("note_4", "D5"), _note("note_4", "E5")]
+        staff_b = [_note("note_4", "G5"), _note("note_4", "A5"), _note("note_4", "B5")]
+
+        findings = check_shared_motifs([staff_a, staff_b], min_motif_length=3)
+
+        self.assertEqual(findings, [])
+
+    def test_non_note_symbols_do_not_break_the_alignment(self) -> None:
+        staff_a = [
+            _note("note_4", "C5"),
+            EncodedSymbol("barline"),
+            _note("note_4", "D5", "accent"),
+            _note("note_4", "E5"),
+        ]
+        staff_b = [
+            _note("note_4", "C5"),
+            _note("note_4", "D5", "marcato"),
+            EncodedSymbol("barline"),
+            _note("note_4", "E5"),
+        ]
+
+        findings = check_shared_motifs([staff_a, staff_b], min_motif_length=3)
+
+        self.assertEqual(len(findings), 1)
+
+    def test_every_pair_of_staves_is_compared(self) -> None:
+        matching = [_note("note_4", "C5"), _note("note_4", "D5", "accent"), _note("note_4", "E5")]
+        different = [_note("note_4", "C5"), _note("note_4", "D5", "marcato"), _note("note_4", "E5")]
+        unrelated = [_note("note_8", "F3"), _note("note_8", "G3"), _note("note_8", "A3")]
+
+        findings = check_shared_motifs([matching, different, unrelated], min_motif_length=3)
+
+        self.assertEqual({f.staff_indices for f in findings}, {(0, 1)})
 
 
 class TestAnalyzeSystem(unittest.TestCase):

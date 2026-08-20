@@ -16,9 +16,11 @@ the same deliberate decoupling `score_profile_layout.py` uses, and for the same 
 this can be built and tested against hand-built token sequences without running the
 transformer or touching a real page.
 
-Covers four of §12.1's eight listed findings so far: differing decoded measure counts,
+Covers five of §12.1's eight listed findings so far: differing decoded measure counts,
 conflicting key/time signatures, a clef inconsistent with a supplied score-profile part,
-and a slur left open or closed with nothing to match within one staff's own decode. Not
+a slur left open or closed with nothing to match within one staff's own decode, and (a
+later addition, from a design discussion rather than §12.1's original list) a shared
+melodic/rhythmic motif across two staves that disagrees on one note's articulation. Not
 yet covered, and not attempted here: conflicting barline *locations* (needs relative
 position, not just count), a voice's measure duration disagreeing with the time
 signature (needs duration arithmetic across the whole measure), part order changing
@@ -32,6 +34,7 @@ two - see `findings_by_page`'s docstring for why that is a real reshaping proble
 just a transpose, whenever a voice is missing from a system.
 """
 
+import difflib
 from dataclasses import dataclass
 
 from homr.score_profile import ScorePart
@@ -197,6 +200,71 @@ def check_dangling_slurs(staves: list[list[EncodedSymbol]]) -> list[Finding]:
     return findings
 
 
+def _note_indices(symbols: list[EncodedSymbol]) -> list[int]:
+    return [index for index, symbol in enumerate(symbols) if symbol.rhythm.startswith("note")]
+
+
+def _shared_motif_findings(
+    staff_a: list[EncodedSymbol],
+    staff_b: list[EncodedSymbol],
+    index_a: int,
+    index_b: int,
+    min_motif_length: int,
+) -> list[Finding]:
+    notes_a = _note_indices(staff_a)
+    notes_b = _note_indices(staff_b)
+    key_a = [(staff_a[k].rhythm, staff_a[k].pitch) for k in notes_a]
+    key_b = [(staff_b[k].rhythm, staff_b[k].pitch) for k in notes_b]
+    matcher = difflib.SequenceMatcher(a=key_a, b=key_b, autojunk=False)
+    findings = []
+    for block in matcher.get_matching_blocks():
+        if block.size < min_motif_length:
+            continue
+        for offset in range(block.size):
+            symbol_a = staff_a[notes_a[block.a + offset]]
+            symbol_b = staff_b[notes_b[block.b + offset]]
+            if symbol_a.articulation != symbol_b.articulation:
+                findings.append(
+                    Finding(
+                        kind="motif_articulation_mismatch",
+                        message=(
+                            f"staves {index_a} and {index_b} play a matching "
+                            f"{block.size}-note run but disagree on articulation at one "
+                            f"note: {symbol_a.articulation!r} vs {symbol_b.articulation!r}"
+                        ),
+                        staff_indices=(index_a, index_b),
+                    )
+                )
+    return findings
+
+
+def check_shared_motifs(
+    staves: list[list[EncodedSymbol]], min_motif_length: int = 4
+) -> list[Finding]:
+    """A run of at least `min_motif_length` notes with identical rhythm and pitch across
+    two staves, but a differing articulation at one note within that run.
+
+    Motivating case, from a design discussion rather than §12.1's original list: a fugal
+    subject, an imitative entry, or a doubled passage played identically by two parts,
+    where one part's decoded articulation reads staccato/accent/marcato differently from
+    the other's - the surrounding identical notes are strong evidence one of the two
+    misread, not that the parts are genuinely playing different articulations. No other
+    Stage A check looks at note-level content at all; every other check compares one
+    page-wide value per staff (key, time signature, clef).
+
+    Deliberately narrow, and the limitation is real, not an oversight: a match requires
+    identical rhythm *and* identical absolute pitch, so a transposed imitative entry (a
+    fugal answer played a fifth higher, for example) is invisible to this check. A fuller
+    version would need pitch-interval normalization instead of absolute-pitch equality -
+    named as the natural next step, not built here.
+    """
+    findings: list[Finding] = []
+    for i in range(len(staves)):
+        for j in range(i + 1, len(staves)):
+            findings.extend(_shared_motif_findings(staves[i], staves[j], i, j, min_motif_length))
+    return findings
+
+
 def analyze_system(
     staves: list[list[EncodedSymbol]],
     staff_to_part: dict[int, ScorePart] | None = None,
@@ -214,6 +282,7 @@ def analyze_system(
     if staff_to_part:
         findings.extend(check_clefs_against_profile(staves, staff_to_part))
     findings.extend(check_dangling_slurs(staves))
+    findings.extend(check_shared_motifs(staves))
     return findings
 
 

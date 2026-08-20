@@ -329,14 +329,15 @@ from least to most invasive — **do not start Stage C before Stages A and B are
 benchmarked**, per §12.3's own explicit precondition, which still has not been met (only
 part of Stage A exists).
 
-### Stage A: deterministic consistency analysis — 4 of 8 checks built
+### Stage A: deterministic consistency analysis — 4 of 8 §12.1 checks built, plus a 5th
+from outside the original list
 
 `homr/cross_staff_consistency.py`: `analyze_system(staves, staff_to_part=None)` takes one
 `list[EncodedSymbol]` per staff of an already-decoded system (plus, optionally,
 `score_profile_layout.py`'s `staff_to_part` mapping) and returns structured `Finding`s -
 no MusicXML is altered. Decoupled from images/`Staff` geometry, same as
 `system_grouping.py`/`score_profile_layout.py`, so it is tested against hand-built token
-sequences (21 tests, `tests/test_cross_staff_consistency.py`).
+sequences (36 tests, `tests/test_cross_staff_consistency.py`).
 
 Built:
 
@@ -350,7 +351,10 @@ Built:
   valid, not an error";
 - a beam or slur endpoint made dangling (`check_dangling_slurs`) - within one staff's own
   decode: a slur slot still open at the end, or a STOP/START_AND_STOP with nothing open
-  in that slot.
+  in that slot;
+- (a 5th check, from a design discussion rather than §12.1's original list) a shared
+  motif's articulation disagreeing between two staves (`check_shared_motifs`) - see the
+  dedicated section below for what it covers and its known scope limits.
 
 Not built, named honestly in the module docstring rather than left silently uncovered:
 
@@ -559,32 +563,43 @@ misread?), not a bug fix to the existing one. Recorded here as a named open ques
 whoever picks this thread up next, not resolved.
 
 ### A second motivating case for cross-staff repair, from a design discussion: shared
-motifs, not just shared attributes
+motifs, not just shared attributes - built, this session
 
-Not yet built, and a different kind of check from anything in §12.1's original list.
 Key/time signature/clef are page-wide *attributes* that should trivially agree across
-parts - Stage A's existing checks are all this shape: compare one value per staff,
+parts - Stage A's original four checks are all this shape: compare one value per staff,
 flag disagreement. A shared *motif* is richer: multiple voices playing the same
 rhythmic/melodic idea (a fugal subject, an imitative entry, doubled parts) is content-level
 agreement, not attribute-level, and one voice mistaking an accent for a marcato (or any
-single-note articulation/ornament misread) would not show up in any check built so far -
-nothing currently compares *note-level* content across staves at all, only page-wide
-attributes and each staff's own internal slur consistency.
+single-note articulation/ornament misread) would not show up in any of the original four
+checks - nothing they do compares *note-level* content across staves at all.
 
-What this would need, not yet designed in detail: a similarity/alignment pass between
-two decoded voices' rhythm+articulation (and plausibly pitch-interval-normalized, so a
-transposed imitative entry still matches) token sequences - a windowed alignment or
-edit-distance search, not exact equality, since the "same" motif can appear at different
-metric positions or transposed. Once a matching span is found with one voice disagreeing
-on a single field (articulation being the concrete example), the repair question is the
-same Stage B question already answered above: apply the majority reading, and per the
-tier-1/tier-2 finding just measured, a deterministic swap is the reasonable first attempt
-rather than assuming forced-prefix conditioning is needed.
+**`check_shared_motifs` (`homr/cross_staff_consistency.py`), a fifth Stage A check, now
+wired into `analyze_system` alongside the original four.** Uses `difflib.SequenceMatcher`
+over each pair of staves' note-only `(rhythm, pitch)` sequences to find matching runs of
+at least `min_motif_length` (default 4) consecutive notes; within a matching run, any
+note where the two staves' `articulation` field differs is reported as
+`motif_articulation_mismatch`. Non-note symbols (barlines, clefs, rests) are excluded from
+the matched sequence entirely rather than passed through as mismatches, so they cannot
+break an otherwise-matching run in two.
 
-This is a real, valuable addition to what Stage A checks for, but it is new detection
-work (motif alignment across staves), not a repair-tier question - left here as a named
-idea rather than folded into the existing 4 built checks, since it needs its own design
-pass on the alignment method before implementation.
+**Deliberately narrower than the design discussion's fuller version, and the gap is
+real, not an oversight.** Matching requires identical rhythm *and* identical absolute
+pitch - a transposed imitative entry (a fugal answer played a fifth higher, the single
+most common way this pattern shows up in real quartet writing) is invisible to this
+version, since nothing here normalizes by pitch interval. Building that normalization
+was named as the natural fuller version in the original design discussion and still is -
+what shipped this session is the exact-pitch case (unison doubling, octave doubling
+detected only if pitch strings are compared at unison, same-register repeated entries),
+which is real and common but is a strict subset of "shared motif" in the harmonic sense.
+14 tests, all passing locally (`tests/test_cross_staff_consistency.py`); not yet run
+against a real page - no real string-quartet page this session's validation runs
+happened to sample surfaced a `motif_articulation_mismatch` finding, so this remains
+unvalidated against genuine model output, only against hand-built token sequences.
+
+The repair question, once a mismatch is found, is the same Stage B question already
+answered above: apply the majority reading, and per the tier-1/tier-2 finding, a
+deterministic swap is the reasonable first attempt rather than forced-prefix
+conditioning - not built, since no real-page case to correct has been found yet.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
