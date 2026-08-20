@@ -2,7 +2,7 @@
 
 **Status:** active reference, companion to `ENSEMBLE_TRANSCRIPTION_DESIGN.md`
 
-**Date:** 2026-08-19
+**Date:** 2026-08-20
 
 This is the working document. `ENSEMBLE_TRANSCRIPTION_DESIGN.md` (§27, "Reproduction
 record") is the full session-by-session history — good for reconstructing *why* a
@@ -342,12 +342,15 @@ remains is genuinely new work, not plumbing:
 
 ---
 
-## 4. Cross-staff consistency checks and repair — Stage A partially built
+## 4. Cross-staff consistency checks and repair — Stage A complete, Stage B narrow
 
 Full spec in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §12; reproduced here. Staged deliberately
 from least to most invasive — **do not start Stage C before Stages A and B are built and
-benchmarked**, per §12.3's own explicit precondition, which still has not been met (only
-part of Stage A exists).
+benchmarked**, per §12.3's own explicit precondition. Stage A is now fully built (all
+8 of §12.1's originally-named checks, plus the shared-motif addition); Stage B has a
+working, real-page-validated repair proposal for exactly one pair of checks (key/time
+signature) and nothing yet for the other seven - still not the "built and benchmarked"
+bar §12.3 asks for before Stage C.
 
 ### Stage A: deterministic consistency analysis — all 8 of 8 §12.1 checks built, plus
 a 9th from outside the original list
