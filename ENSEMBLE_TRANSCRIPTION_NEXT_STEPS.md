@@ -579,16 +579,20 @@ epoch   train loss   valid with   valid without   delta
 2       2.4305       1.9712       2.0394          +0.0682
 3       2.4308       1.9665       2.0392          +0.0727
 4       2.4264       1.9583       2.0318          +0.0735
+5       2.4263       1.9968       2.0321          +0.0353
+6       2.4238       1.9805       2.0370          +0.0565
 ```
 
 Training loss essentially flattened after epoch 1 (expected - a frozen core with only 8
-parameters converges fast), but **the with/without delta is not just holding, it is
-gradually strengthening epoch over epoch** (+0.066 → +0.068 → +0.073 → +0.074). That
-trend, not the flat training loss, is the meaningful signal: it means the embedding
-tables and gate keep finding more use for the real profile context even after the
-model's raw predictive loss has stopped improving - four consistent epochs is real
-evidence this is a genuine effect, not noise or an early-training artifact. Still
-watching whether it holds through the remaining epochs before calling it conclusive.
+parameters converges fast). Epochs 1-4 looked like the with/without delta was steadily
+*strengthening* (+0.066 → +0.068 → +0.073 → +0.074); epoch 5 broke that story outright
+(delta roughly halved to +0.035, `valid with` itself got worse), and epoch 6 partially
+recovered (+0.057) without fully returning to the epoch 4 level. **Read as: positive but
+noisy, not a clean monotonic trend** - the correct update from the epoch 1-4 framing,
+not a reason to doubt the effect is real. Every epoch so far has still landed positive
+(with < without on all six), which is itself notable across six independent held-out
+passes - but the size of the effect is bouncing around, not settling, and calling it
+conclusive still wants more epochs.
 
 ---
 
