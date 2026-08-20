@@ -28,11 +28,23 @@ pick back up directly, in the priority order the evidence supports.
 
 ---
 
-## 1. The text detector's page-level precision has collapsed for five of seven classes
+## 1. The text detector's page-level precision has collapsed for five of seven classes — **CLOSED 2026-08-20, user decision**
 
 **This is the most immediately actionable thread** — the detector, training scripts, and
 evaluation tooling all already exist and work; this is a training-recipe/architecture
 question, not a new subsystem.
+
+**Closed per explicit user decision after `phase19`'s result** (below): Fingering is not
+particularly important to this project, and `phase19`'s Dynamic/Lyrics numbers (both now
+*better than the no-synthesis baseline*) plus its partial Tempo/MeasureNumber recovery
+versus `phase18` are good enough to stop here. Not every open sub-question was resolved (item 3, `--positive-ratio`, was built but
+never run; the Fingering-specific weighting overcorrection below was diagnosed but not
+fixed) - closed as "good enough for this project's actual priorities," not as "fully
+solved." `phase19`'s overall F1 (65.6%) is still below `detector4`'s no-synthesis
+baseline (68.1%), so this is **not** a recommendation to replace `detector4` as the
+production default - the decision to close is specifically that further chasing
+Fingering/Tempo/StaffText precision is not worth more session time, not that `phase19`'s
+weights are an improvement to adopt.
 
 ### Where it stands
 
@@ -166,10 +178,40 @@ suspect and has not been changed.**
    **`train_detector.py` now has `--class-weighted-sampling`** (`compute_class_weights`
    reads every training mask once at startup, prints the counts/weights, feeds the
    result to `DetectorPatches`) so this is usable from the CLI, not just the library
-   function. **`phase19` (this session) is running this combined with `phase18`'s
-   already-synthesized 400-page Fingering set** - `phase18/train_index_combined.txt`
-   reused directly, no resynthesis - the first run to combine both halves of 27.92's
-   original diagnosis. In progress; not yet evaluated.
+   function. **`phase19` (this session) combined this with `phase18`'s already-
+   synthesized 400-page Fingering set** - `phase18/train_index_combined.txt` reused
+   directly, no resynthesis - the first run to combine both halves of 27.92's original
+   diagnosis. Complete:
+
+   ```
+   class           precision     recall         f1   gt boxes   detector4   phase18
+   Dynamic             76.7%      93.7%      84.4%        429       84.0%     78.0%
+   Expression           5.0%      65.9%       9.3%         44        8.3%      7.5%
+   Fingering            2.8%      91.7%       5.3%         12        0.0%     46.8%
+   Lyrics               75.5%      94.5%      83.9%      3,555      78.1%     82.9%
+   MeasureNumber        58.9%      93.6%      72.3%         78       84.1%     66.0%
+   StaffText             6.2%      73.6%      11.5%        106       17.4%     18.8%
+   Tempo                 6.6%      69.8%      12.1%         53       26.2%      4.2%
+   overall              50.6%      93.3%      65.6%      4,277      68.1%     60.8%
+   ```
+
+   **A real, decisive, and genuinely surprising result: combining both levers did not
+   give the hoped-for "best of both."** Dynamic and Lyrics both ended up *better than
+   the no-synthesis baseline* - an unexpected win for the two already-strongest classes.
+   Tempo (4.2%→12.1%) and MeasureNumber (66.0%→72.3%) both improved over `phase18` alone,
+   confirming class-weighting does reduce collateral damage the way it was meant to.
+   **But Fingering collapsed from `phase18`'s 46.8% down to 5.3%** - `class_draw_weights`'
+   inverse-page-count formula does not distinguish "genuinely scarce, needs protecting"
+   from "was made artificially page-common by synthesis": Fingering now sits on 402
+   distinct pages (`phase18`'s own synthesis), more than Tempo's 362 or Expression's 360,
+   so the weighting suppressed it *alongside* the classes it was meant to protect against,
+   overcorrecting its own hard-won gain away. StaffText (11.5%) also came out slightly
+   worse than either single-lever run. Overall F1 65.6% sits between `phase18`'s 60.8% and
+   `detector4`'s 68.1% - better than synthesis alone, still below not synthesizing at all.
+
+   **Closed here per user decision** (Fingering is not important to this project) rather
+   than continuing to chase a fix for the weighting-formula overcorrection this surfaced -
+   see the top of this section.
 2. ~~Generate synthetic data on substantially more distinct source scores at lower
    density per page~~ — **tried (`phase18`, above).** Helped Fingering substantially
    (0%→46.8%, more than double the old approach), did not fix the collateral damage to
@@ -189,14 +231,14 @@ suspect and has not been changed.**
    purposes, so SystemText-vs-StaffText is not worth further detector capacity or
    analysis regardless of what a confusion matrix would show. The fold (27.93) is final,
    not conditional on a future measurement.
-5. **`train_detector.py` has no per-epoch checkpointing** (27.91) — a real gap independent
-   of the above: a long run that plateaus early cannot be stopped without losing all
-   progress. Worth fixing before the next multi-hour detector run, the same problem 27.88
-   hit for the recognizer.
+5. ~~`train_detector.py` has no per-epoch checkpointing~~ (27.91) — **fixed this session.**
+   `--weights`/`--out` are now written after every epoch, not only once the whole run
+   finishes - directly relevant since `phase19` (above) was a long run in progress when
+   this was built. 3 new tests, 13/13 passing.
 
 ---
 
-## 2. Fingering's corpus-level rarity (sharpest edge of §1; SystemText is closed, see below)
+## 2. Fingering's corpus-level rarity — **CLOSED 2026-08-20, user decision, same as §1**
 
 Kept separate from §1 because the fix shape is different: this is not a training-recipe
 problem on the existing corpus, it is that the *source* corpus contains 12 (Fingering)
@@ -206,10 +248,11 @@ of resampling within that data can manufacture signal the corpus does not contai
 - SystemText: folded into StaffText (§1.3 above) — final, per user decision. Not a
   measurement question; the staff/system distinction does not matter for this project's
   purposes, so there is nothing left to check here.
-- Fingering: synthesis (§1) is the only lever that has moved it off zero, and items 1–2
-  in §1's "not yet tried" list are exactly what would make that lever usable without
-  collateral damage. There is no separate Fingering-only next step beyond what §1 already
-  lists — resolving §1 resolves this.
+- Fingering: synthesis (§1's `phase18`) moved it to 46.8% F1; combining it with
+  class-weighted sampling (`phase19`) overcorrected it back down to 5.3% - see §1 for
+  the full result. **Closed alongside §1**: explicit user decision that Fingering is not
+  particularly important to this project, so the weighting-formula overcorrection
+  `phase19` surfaced is not worth further session time to fix.
 
 ---
 
