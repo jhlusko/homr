@@ -486,13 +486,37 @@ remains is genuinely new work, not plumbing:
     zero *does* change it - ruling out the parameter being silently ignored anywhere in
     the wiring. Full suite: 954/957 (3 pre-existing, unrelated failures deselected).
 
-  - **Still not done**: §7.4's training-time context dropout, threading a real
-    `ProfileContext` into the actual training loop/dataset (using this session's
-    `score_profile_pairing.py`), and the training run itself to see whether any of this
-    actually helps. Pairing is also scoped to OSSQ only - `mbox`- and `lieder`-derived
-    training samples (also mixed into decoder training via `mix_datasets.py`) have
-    their own naming/provenance and would need their own pairing logic, not attempted
-    here.
+  - **A real integration constraint found, not yet resolved**: `training/transformer/
+    train.py` drives training through HuggingFace's `Trainer` (`HomrTrainer` in
+    `metrics.py`), with **no custom `data_collator`** - the default collator only
+    handles tensor/int-convertible dict values. `ProfileContextEmbedding.forward`'s
+    current interface (`list[ProfileContext | None]`, one raw dataclass per sample) does
+    not fit that at all: it works for a direct caller (live inference, a unit test) but
+    `DataLoader.__getitem__` cannot hand a `ProfileContext` or `None` through the
+    default collator and have it arrive intact in `model(**batch)`.
+
+    The actual fix, named precisely rather than guessed at blind: `DataLoader.
+    __getitem__` needs to emit **fixed-shape per-field index tensors** (the same
+    bucket-index logic `ProfileContextEmbedding` already computes internally, just
+    computed in the dataloader instead and handed in as plain ints), and
+    `ProfileContextEmbedding` should become a submodule **owned by `ScoreDecoder`**
+    (constructed in `__init__` alongside `structured_heads`, consuming those index
+    tensors in `forward` via the same `**kwargs` threading already proven to work) -
+    not something an external caller precomputes a `(batch, dim)` tensor for, which is
+    what the current, already-landed wiring assumes. The one genuinely tricky part:
+    `likely_clefs` is a variable-length set, which needs capping to a fixed number of
+    slots (e.g. 3, covering essentially every real case - a cello's F4/C4/G2 is exactly
+    3) to be representable as a fixed-shape tensor at all.
+
+    Not attempted this session - getting the padding/index scheme wrong would mean
+    redoing the collation-facing interface later, and this needed dedicated design time
+    the session didn't have left. **This is the actual next step for §7.3**, ahead of
+    §7.4's dropout (which naturally becomes part of the same dataloader-side change,
+    once the index-tensor shape exists to apply dropout to) and the training run
+    itself.
+  - Pairing is also scoped to OSSQ only - `mbox`- and `lieder`-derived training samples
+    (also mixed into decoder training via `mix_datasets.py`) have their own naming/
+    provenance and would need their own pairing logic, not attempted here.
 
 ---
 
