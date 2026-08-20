@@ -32,12 +32,17 @@ def _config(enable_profile_context: bool = False) -> Config:
 def _profile_batch_fields(*contexts: "ProfileContext | None") -> dict:
     """Mimics what HuggingFace Trainer's default collator does to a batch of
     DataLoader.__getitem__ samples: stack each key across samples into one tensor.
+    profile_clef_indices is already a per-sample tensor, so it stacks via torch.stack;
+    every other field is a plain int.
     """
     per_sample = [context_to_batch_fields(context) for context in contexts]
-    return {
-        key: torch.tensor([sample[key] for sample in per_sample], dtype=torch.long)
-        for key in per_sample[0]
-    }
+    result = {}
+    for key in per_sample[0]:
+        values = [sample[key] for sample in per_sample]
+        result[key] = (
+            torch.stack(values) if key == "profile_clef_indices" else torch.tensor(values)
+        )
+    return result
 
 
 def _batch(config: Config, length: int = 6, with_profile_context: bool = False) -> dict:

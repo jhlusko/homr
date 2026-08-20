@@ -141,11 +141,23 @@ def apply_context_dropout(
     return context
 
 
-def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, int | list[int]]:
+def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, "int | torch.Tensor"]:
     """Plain, default-collatable representation of one sample's profile context - small
-    ints and a fixed-length list, no dataclass or `None` - for `DataLoader.__getitem__`
-    to emit directly into a batch dict that HuggingFace `Trainer`'s default collator
-    (`train.py` has no custom `data_collator`) can stack without special-casing.
+    ints and one fixed-length tensor, no dataclass or `None` - for `DataLoader.
+    __getitem__` to emit directly into a batch dict that HuggingFace `Trainer`'s default
+    collator (`train.py` has no custom `data_collator`) can stack without special-
+    casing.
+
+    `profile_clef_indices` is a `torch.Tensor`, not a plain Python list, and this is
+    load-bearing, not stylistic: PyTorch's default collate treats a per-sample Python
+    `list` as a sequence to recurse into (zipping position-by-position across the
+    batch into several `(batch,)` tensors), not as one fixed-size unit to stack - so a
+    plain list here would silently arrive at `forward_from_batch` as a `list` of
+    tensors instead of one `(batch, MAX_CLEF_SLOTS)` tensor and crash `nn.Embedding`
+    ("must be Tensor, not list"). A per-sample tensor is what collates into the single
+    stacked tensor `forward_from_batch` actually expects - caught by running the real
+    training script end to end, not by any of this module's own unit tests, since none
+    of them exercise PyTorch's default collate function at all.
 
     `profile_clef_count` alongside the padded `profile_clef_indices` is what lets
     `ProfileContextEmbedding.forward_from_batch` mask out the padding before averaging -
@@ -163,7 +175,7 @@ def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, int |
             "profile_part_ordinal_index": 0,
             "profile_staff_within_part_index": 0,
             "profile_staff_count_index": 0,
-            "profile_clef_indices": [0] * MAX_CLEF_SLOTS,
+            "profile_clef_indices": torch.zeros(MAX_CLEF_SLOTS, dtype=torch.long),
             "profile_clef_count": 0,
             "profile_transposition_index": 0,
         }
@@ -178,7 +190,7 @@ def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, int |
             max(context.staff_within_part, 0), MAX_STAFF_WITHIN_PART
         ),
         "profile_staff_count_index": min(max(context.expected_staff_count, 0), MAX_STAFF_COUNT),
-        "profile_clef_indices": clef_indices,
+        "profile_clef_indices": torch.tensor(clef_indices, dtype=torch.long),
         "profile_clef_count": len(clefs),
         "profile_transposition_index": min(
             max(context.transposition_semitones, MIN_TRANSPOSITION), MAX_TRANSPOSITION

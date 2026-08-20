@@ -131,13 +131,18 @@ class TestBucketing(unittest.TestCase):
 
 
 def _stack_batch_fields(*field_dicts: dict) -> dict:
-    """Mimics what HuggingFace Trainer's default collator does: stack each key across
-    samples into a batched tensor."""
+    """Mimics what HuggingFace Trainer's default collator (and, in the real training
+    script, plain torch.utils.data.DataLoader's own default collate_fn) does: stack
+    each key across samples into a batched tensor. profile_clef_indices is already a
+    per-sample tensor, so it stacks via torch.stack; every other field is a plain int."""
     keys = field_dicts[0].keys()
-    return {
-        key: torch.tensor([fields[key] for fields in field_dicts], dtype=torch.long)
-        for key in keys
-    }
+    result = {}
+    for key in keys:
+        values = [fields[key] for fields in field_dicts]
+        result[key] = (
+            torch.stack(values) if key == "profile_clef_indices" else torch.tensor(values)
+        )
+    return result
 
 
 class TestContextToBatchFields(unittest.TestCase):
@@ -145,8 +150,19 @@ class TestContextToBatchFields(unittest.TestCase):
         fields = context_to_batch_fields(None)
 
         self.assertEqual(fields["profile_present"], 0)
-        self.assertEqual(fields["profile_clef_indices"], [0] * MAX_CLEF_SLOTS)
+        self.assertTrue(
+            torch.equal(
+                fields["profile_clef_indices"], torch.zeros(MAX_CLEF_SLOTS, dtype=torch.long)
+            )
+        )
         self.assertEqual(fields["profile_clef_count"], 0)
+
+    def test_clef_indices_are_a_tensor_not_a_plain_list(self) -> None:
+        # Load-bearing for collation - see context_to_batch_fields' own docstring for
+        # why a plain list here silently breaks PyTorch's default collate.
+        fields = context_to_batch_fields(_context(likely_clefs=("G2",)))
+
+        self.assertIsInstance(fields["profile_clef_indices"], torch.Tensor)
 
     def test_a_real_context_is_present_one(self) -> None:
         fields = context_to_batch_fields(_context())
