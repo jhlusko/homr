@@ -23,15 +23,17 @@ duration rather than a decoded time-signature numerator, which does not exist: t
 decoder only ever states a denominator), conflicting key/time signatures, a clef
 inconsistent with a supplied score-profile part, a slur left open or closed with nothing
 to match within one staff's own decode, missing or extra staff output relative to the
-rest of a page (`check_page_staff_counts` - the one check here that is genuinely
-page-wide rather than one-system, since a staff count means nothing on its own without
-the rest of the page to compare against), and (a later addition, from a design
-discussion rather than §12.1's original list) a shared melodic/rhythmic motif across two
-staves that disagrees on one note's articulation. Not yet covered, and not attempted
-here: conflicting barline *locations* (needs relative position, not just count or total
-duration), and part *order* changing between systems specifically
-(`check_page_staff_counts` catches a count changing, not an order swap among parts that
-stay present) - left as further Stage A work, not silently assumed solved.
+rest of a page (`check_page_staff_counts` - the one check here that is page-wide over
+staff *counts* rather than one-system, since a count means nothing on its own without
+the rest of the page to compare against), part order changing between systems
+specifically (`check_page_staff_counts` catches a count changing; `check_part_order` -
+also page-wide, needs a score profile - catches the parts that all stay present
+nonetheless swapping position between one system and the next), and (a later addition,
+from a design discussion rather than §12.1's original list) a shared melodic/rhythmic
+motif across two staves that disagrees on one note's articulation. Not yet covered, and
+not attempted here: conflicting barline *locations* (needs relative position, not just
+count or total duration) - the one remaining named item from §12.1's original eight -
+left as further Stage A work, not silently assumed solved.
 
 `analyze_system`'s input shape (one list of symbols per staff *of one system*) is not
 `staff_parsing.parse_staffs`' output shape (one list per *voice*, concatenated across
@@ -445,6 +447,51 @@ def check_page_staff_counts(voice_present_by_system: list[list[bool]]) -> list[F
         for system_index, count in enumerate(counts)
         if count != majority
     ]
+
+
+def _ordered_parts(part_map: dict[int, ScorePart]) -> list[str]:
+    return [part_map[index].stable_id for index in sorted(part_map)]
+
+
+def check_part_order(staff_to_part_by_system: list[dict[int, ScorePart]]) -> list[Finding]:
+    """Two consecutive systems disagreeing on the relative order of the parts they both
+    resolved a mapping for - the last of §12.1's originally-named checks: part order
+    changing between systems. Needs a score profile (the same `staff_to_part_by_system`
+    mapping `check_clefs_against_profile` and `check_page_staff_counts` use, the latter
+    for a plain count rather than identity) to know which staff is which *part*, not
+    just how many staves there are - a count changing is already `check_page_staff_
+    counts`' territory; this catches the parts that all stay present nonetheless
+    swapping position, which a count comparison cannot see at all.
+
+    Compares each system only against the one immediately before it, restricted to the
+    parts *both* systems resolved a mapping for - a part missing a mapping in either
+    system (already covered elsewhere: `check_page_staff_counts` for a genuine staff-
+    count change, or simply an unresolved profile match) is dropped from the comparison
+    rather than treated as evidence of a swap. A restricted list of 0 or 1 parts is
+    trivially "in order" and produces no finding - there is nothing to compare.
+    """
+    findings = []
+    previous_order: list[str] | None = None
+    previous_index = -1
+    for system_index, part_map in enumerate(staff_to_part_by_system):
+        order = _ordered_parts(part_map)
+        if previous_order is not None:
+            common_previous = [part for part in previous_order if part in order]
+            common_current = [part for part in order if part in previous_order]
+            if len(common_current) > 1 and common_previous != common_current:
+                findings.append(
+                    Finding(
+                        kind="part_order_mismatch",
+                        message=(
+                            f"system {system_index} orders shared parts {common_current}, "
+                            f"system {previous_index} ordered them {common_previous}"
+                        ),
+                        staff_indices=(),
+                    )
+                )
+        previous_order = order
+        previous_index = system_index
+    return findings
 
 
 def findings_by_page(

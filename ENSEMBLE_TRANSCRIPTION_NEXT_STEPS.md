@@ -343,7 +343,7 @@ from least to most invasive — **do not start Stage C before Stages A and B are
 benchmarked**, per §12.3's own explicit precondition, which still has not been met (only
 part of Stage A exists).
 
-### Stage A: deterministic consistency analysis — 6 of 8 §12.1 checks built, plus a 7th
+### Stage A: deterministic consistency analysis — 7 of 8 §12.1 checks built, plus an 8th
 from outside the original list
 
 `homr/cross_staff_consistency.py`: `analyze_system(staves, staff_to_part=None)` takes one
@@ -351,7 +351,7 @@ from outside the original list
 `score_profile_layout.py`'s `staff_to_part` mapping) and returns structured `Finding`s -
 no MusicXML is altered. Decoupled from images/`Staff` geometry, same as
 `system_grouping.py`/`score_profile_layout.py`, so it is tested against hand-built token
-sequences (46 tests, `tests/test_cross_staff_consistency.py`).
+sequences (51 tests, `tests/test_cross_staff_consistency.py`).
 
 Built:
 
@@ -398,7 +398,21 @@ Built:
   immediately surfaced a real finding neither of the earlier two-page validation runs had
   caught - `"system 0 has 3 staves, most of the page has 4"` - a genuinely missing staff
   on the very first page checked;
-- (a 7th check, from a design discussion rather than §12.1's original list) a shared
+- part **order** changing between systems specifically (`check_part_order`) - closes the
+  last of §12.1's originally-named eight items other than barline location.
+  `check_page_staff_counts` (above) catches a staff *count* changing; this catches the
+  parts that all stay present nonetheless swapping position between one system and the
+  next, using `staff_to_part_by_system`'s part identities rather than a plain count -
+  the same reason `check_clefs_against_profile` needs a score profile, this does too.
+  Compares each system only against the one immediately before it, restricted to the
+  parts both resolved a mapping for (a part missing from one system is already
+  `check_page_staff_counts`'s territory, not treated as evidence of a swap here). Wired
+  into `_report_cross_staff_findings` next to `check_page_staff_counts`, only when a
+  score profile was supplied. 5 new tests. **Validated on a real page with a
+  `STRING_QUARTET` profile this session**: no crash, valid MusicXML written - this
+  particular page's part order stayed consistent across systems, so no finding fired,
+  but the wiring itself is confirmed not to break the pipeline;
+- (an 8th check, from a design discussion rather than §12.1's original list) a shared
   motif's articulation disagreeing between two staves (`check_shared_motifs`) - see the
   dedicated section below for what it covers and its known scope limits.
 
@@ -406,11 +420,8 @@ Not built, named honestly in the module docstring rather than left silently unco
 
 - conflicting barline **locations** (needs relative position within the measure, not just
   a count - two staves can agree on measure count and total duration and still have
-  barlines drift *within* the measure);
-- part **order** changing between systems specifically - `check_page_staff_counts` (above)
-  catches a staff *count* changing, not an order swap among parts that all stay present,
-  which is a different comparison (would need `staff_to_part_by_system`'s part identities
-  compared system to system, not just counted).
+  barlines drift *within* the measure) - the last remaining item from §12.1's original
+  eight.
 
 ### Wired into the live pipeline, log-only, validated on real pages
 

@@ -5,7 +5,12 @@ import cv2
 import numpy as np
 
 from homr import constants
-from homr.cross_staff_consistency import analyze_system, check_page_staff_counts, staves_by_system
+from homr.cross_staff_consistency import (
+    analyze_system,
+    check_page_staff_counts,
+    check_part_order,
+    staves_by_system,
+)
 from homr.cross_staff_repair import propose_repairs
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
@@ -534,6 +539,9 @@ def _report_cross_staff_findings(
         )
         for finding in check_page_staff_counts(presence):
             eprint(f"Page: {finding.message}")
+        if staff_to_part is not None:
+            for finding in check_part_order(staff_to_part):
+                eprint(f"Page: {finding.message}")
         for system_index, staves in enumerate(staves_by_system(voices, presence)):
             part_map = staff_to_part[system_index] if staff_to_part else None
             for finding in analyze_system(staves, part_map):

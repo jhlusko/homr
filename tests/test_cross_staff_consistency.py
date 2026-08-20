@@ -10,6 +10,7 @@ from homr.cross_staff_consistency import (
     check_measure_counts,
     check_measure_durations,
     check_page_staff_counts,
+    check_part_order,
     check_shared_motifs,
     check_time_signatures,
     findings_by_page,
@@ -377,6 +378,55 @@ class TestCheckPageStaffCounts(unittest.TestCase):
 
     def test_a_single_system_page_has_no_finding(self) -> None:
         self.assertEqual(check_page_staff_counts([[True, True, True]]), [])
+
+
+def _parts(*stable_ids: str) -> dict[int, ScorePart]:
+    return {index: ScorePart(stable_id) for index, stable_id in enumerate(stable_ids)}
+
+
+class TestCheckPartOrder(unittest.TestCase):
+    def test_the_same_order_across_systems_has_no_finding(self) -> None:
+        by_system = [_parts("violin-1", "violin-2", "viola", "cello")] * 3
+
+        self.assertEqual(check_part_order(by_system), [])
+
+    def test_a_swap_between_consecutive_systems_is_reported(self) -> None:
+        by_system = [
+            _parts("violin-1", "violin-2", "viola", "cello"),
+            _parts("violin-1", "viola", "violin-2", "cello"),
+        ]
+
+        findings = check_part_order(by_system)
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].kind, "part_order_mismatch")
+        self.assertEqual(findings[0].staff_indices, ())
+
+    def test_a_part_missing_from_one_system_is_not_treated_as_a_swap(self) -> None:
+        by_system = [
+            _parts("violin-1", "violin-2", "viola", "cello"),
+            _parts("violin-1", "viola", "cello"),  # violin-2 dropped, order otherwise kept
+        ]
+
+        self.assertEqual(check_part_order(by_system), [])
+
+    def test_only_one_shared_part_is_trivially_in_order(self) -> None:
+        by_system = [_parts("violin-1", "viola"), _parts("violin-1", "cello")]
+
+        self.assertEqual(check_part_order(by_system), [])
+
+    def test_a_swap_is_compared_only_against_the_immediately_preceding_system(self) -> None:
+        # System 2 reverts to system 0's order - that is not a mismatch against system 1
+        # immediately before it in the other direction, only a mismatch is reported once.
+        by_system = [
+            _parts("violin-1", "violin-2"),
+            _parts("violin-2", "violin-1"),
+            _parts("violin-1", "violin-2"),
+        ]
+
+        findings = check_part_order(by_system)
+
+        self.assertEqual(len(findings), 2)
 
 
 class TestFindingsByPage(unittest.TestCase):
