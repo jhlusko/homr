@@ -570,13 +570,25 @@ only the 8 `decoder.profile_context.*` tensors training): 105,305 training examp
 index.txt`), `--epochs 10 --batch-size 8 --lr 1e-3`, starting from the pinned checkpoint
 every earlier structured-heads phase also used.
 
-**Epoch 1**: mean training loss 2.4626 over 13,164 batches. Validation ablation (same
-held-out examples, same trained gate, only `profile_present` toggled) - **with profile
-context 1.9814, without 2.0478, delta +0.0664 in favor of having profile context.** A
-real, positive first signal, not yet a conclusion - one epoch on a frozen core with only
-8 parameters moved is not enough to rule out noise or an early-training artifact. Watch
-whether the delta holds or grows across the remaining 9 epochs before treating this as
-evidence the signal is usable.
+Validation ablation each epoch (same held-out examples, same trained gate, only
+`profile_present` toggled) - **with profile context vs. without**:
+
+```
+epoch   train loss   valid with   valid without   delta
+1       2.4626       1.9814       2.0478          +0.0664
+2       2.4305       1.9712       2.0394          +0.0682
+3       2.4308       1.9665       2.0392          +0.0727
+4       2.4264       1.9583       2.0318          +0.0735
+```
+
+Training loss essentially flattened after epoch 1 (expected - a frozen core with only 8
+parameters converges fast), but **the with/without delta is not just holding, it is
+gradually strengthening epoch over epoch** (+0.066 → +0.068 → +0.073 → +0.074). That
+trend, not the flat training loss, is the meaningful signal: it means the embedding
+tables and gate keep finding more use for the real profile context even after the
+model's raw predictive loss has stopped improving - four consistent epochs is real
+evidence this is a genuine effect, not noise or an early-training artifact. Still
+watching whether it holds through the remaining epochs before calling it conclusive.
 
 ---
 
