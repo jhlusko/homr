@@ -752,10 +752,29 @@ against the source image to confirm which staff actually misread (that would req
 looking at the page itself, not just the token stream) - recorded as a real finding this
 check surfaced, not yet as a confirmed correction.
 
-The repair question, once a mismatch is found, is the same Stage B question already
-answered above: apply the majority reading, and per the tier-1/tier-2 finding, a
-deterministic swap is the reasonable first attempt rather than forced-prefix
-conditioning - not built, since no real-page case to correct has been found yet.
+**The repair question turns out not to be a simple copy of tier 1, and this is worth
+recording precisely rather than assumed solved.** `check_shared_motifs`/
+`_shared_motif_findings` compares staves *pairwise* - each finding names exactly two
+staves that disagree, with no third staff's evidence attached. `propose_majority_
+correction` (tier 1's key/time-signature repair) works because it pools *every* staff in
+the system and only proposes a correction when there is an actual majority to correct
+toward, refusing on a tie or too few staves stating a value - the same "report nothing
+rather than guess" discipline used everywhere else in this codebase. A shared-motif
+finding has no analogous majority: two staves disagreeing on one note's articulation, on
+their own, gives no evidence for *which* of the two is the misread - proposing "correct
+staff B toward staff A" (or vice versa) from a pairwise finding alone would be a coin
+flip dressed up as a repair, not a majority correction.
+
+A real fix needs the third-or-more-staff corroboration the original design discussion's
+motivating case was actually about (multiple voices playing the same motif, one
+misreading it) - which means first solving a different, harder alignment problem than
+what `check_shared_motifs` currently does: not "do these two staves' note runs match,"
+but "which *group* of staves are all playing the same motif at the same point," so a
+genuine majority (2-against-1 or better) can be counted the same way tier 1 counts key/
+time-signature agreement. Not designed here - named as the concrete blocker rather than
+attempted half-built, since building a two-staff "repair" with no real majority evidence
+would be a step backward from this codebase's stated discipline, not a small extension
+of it.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
