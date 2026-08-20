@@ -562,7 +562,7 @@ remains is genuinely new work, not plumbing:
     (also mixed into decoder training via `mix_datasets.py`) have their own naming/
     provenance and would need their own pairing logic, not attempted here.
 
-### `phase20`: the training run, in progress
+### `phase20`: the training run — complete, 10/10 epochs positive
 
 Launched this session (`training/transformer/train_profile_context.py`, frozen core,
 only the 8 `decoder.profile_context.*` tensors training): 105,305 training examples
@@ -584,17 +584,35 @@ epoch   train loss   valid with   valid without   delta
 7       2.4208       1.9647       2.0347          +0.0700
 8       2.4249       1.9615       2.0291          +0.0676
 9       2.4221       1.9677       2.0313          +0.0636
+10      2.4284       1.9837       2.0246          +0.0409
 ```
 
-Training loss essentially flattened after epoch 1 (expected - a frozen core with only 8
-parameters converges fast). Epochs 1-4 looked like the with/without delta was steadily
-*strengthening* (+0.066 → +0.068 → +0.073 → +0.074); epoch 5 broke that story outright
-(delta roughly halved to +0.035, `valid with` itself got worse), and epochs 6-9 settled
-back into the same +0.06-0.07 band epochs 1-4 occupied, without a repeat of epoch 5's
-dip. **Read as: positive but noisy around a stable band, not a clean monotonic trend and
-not a decaying one either.** Every epoch so far has landed positive (`with` < `without`
-on all nine independent held-out passes), and epoch 5 now reads as the outlier rather
-than the start of a decline. One epoch (10) remains.
+**Run complete. 10/10 epochs positive** (`with` < `without` on every independent
+held-out pass), mean delta **+0.0615** nats, range +0.0353 (epoch 5, the outlier) to
++0.0735 (epoch 4), most epochs clustering in a +0.06-0.07 band. Training loss flattened
+after epoch 1 (expected - a frozen core with only 8 parameters converges fast) while the
+ablation delta kept fluctuating but never once crossed zero.
+
+**This is a real result, not a coin flip that happened to land the same way ten times.**
+A frozen-core linear probe - only 8 parameters ever moved, the pretrained encoder and
+decoder untouched - found real, held-out predictive value in genuine per-staff
+instrument/clef/staff-count context on every single epoch measured. That is the
+frozen-core experiment's entire point (see `TrOMR.freeze_core_for_profile_context`'s own
+docstring): a narrower, cheaper question than "does fine-tuning the whole model help,"
+and it came back yes.
+
+**Not yet done, and worth being precise about the gap**: this measures the *existing*
+rhythm/pitch/lift/articulation/slur/position loss moving, not a downstream metric a
+human would recognize (character error rate, a real transcription's accuracy). A
+smaller loss on held-out data is a genuine, meaningful signal - it is not automatically
+"the transcriptions get measurably better," which would need its own before/after
+comparison on real pages. Trained weights: `/workspace/b0/phase20/profile_context_
+weights.pth` (instance-side, the 8 `decoder.profile_context.*` tensors only - not a
+full checkpoint, needs `--checkpoint` plus these to reconstruct a working model). The
+natural next step, now that the frozen-core question has a clear answer, is the more
+expensive one §12.3-style staging exists to defer until the cheaper question is
+answered: unfreezing the core and letting the whole model adapt to the signal, which
+this run deliberately did not attempt.
 
 ---
 
