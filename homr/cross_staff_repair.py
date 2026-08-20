@@ -1,9 +1,10 @@
 """
 Cross-staff context and repair, Stage B tier 1 (design §12.2, refined per
 ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4): propose - never apply - a deterministic
-correction when a system's staves disagree on their opening key or time signature, or
-when three or more staves corroborate the same motif and one of them disagrees on a
-note's articulation.
+correction when a system's staves disagree on their opening key or time signature, when
+a staff is silently missing a key signature every other staff agrees on, or when three
+or more staves corroborate the same motif and one of them disagrees on a note's
+articulation.
 
 Tier 1, not tier 2: 20 real forced-prefix conditioning tests
 (`homr.transformer.decoder_inference.ScoreDecoder.generate_from_prefix`, recorded in
@@ -100,6 +101,97 @@ def propose_majority_correction(
         for staff_index, position, rhythm in found
         if rhythm != majority_value
     ]
+
+
+@dataclass(frozen=True)
+class InsertionRepairProposal:
+    """One proposed token *insertion*, on one staff, before one position - unlike
+    `RepairProposal` (replaces an existing token) or `ArticulationRepairProposal`
+    (replaces one field of an existing token), there is nothing at `position` to
+    replace here: the staff never decoded a key signature at all, so a symbol is added,
+    shifting every later position on that staff by one. `apply_proposal`/
+    `apply_articulation_proposal` cannot express that, hence a dedicated type and a
+    dedicated `apply_insertion_proposal`.
+    """
+
+    staff_index: int
+    #: Insert *before* this index - 0 inserts at the very start of the staff.
+    position: int
+    inserted_rhythm: str
+    reason: str
+
+
+def propose_carry_forward_key_signature(
+    staves: list[list[EncodedSymbol]],
+) -> list[InsertionRepairProposal]:
+    """A staff with *no* key signature token anywhere in this system's decode, when
+    every other staff that states one agrees on the same value - modern engraving
+    convention restates the key signature on every staff at every system (confirmed
+    directly against a real page's ground-truth MusicXML this session: all four parts
+    of a string quartet system carried an identical `<key>` element the model decoded
+    correctly on only one of the four), so a silent staff here reads as a decode
+    omission, not a genuine "this part carries no key signature."
+
+    Deliberately does **not** generalise to time signature: that field's own convention
+    is the opposite (restated only when it changes), so a silent staff there is normal,
+    expected behaviour, not evidence of anything missing - applying this same carry-
+    forward logic to time signature would be a real, wrong guess, not a small extension.
+
+    Fires whenever at least one staff states a key signature and no *other* staff states
+    a genuinely conflicting value - deliberately a lower bar than
+    `propose_majority_correction`'s "at least two staves stating a value," since a lone
+    stated value with everyone else silent is exactly the case this convention argument
+    covers; two conflicting stated values is not this rule's territory at all, and is
+    left entirely to `propose_majority_correction` instead of guessing between the two
+    mechanisms for the same system.
+    """
+    stated = [
+        (index, *result)
+        for index, staff in enumerate(staves)
+        if (result := _first_of_prefix(staff, "keySignature")) is not None
+    ]
+    if not stated:
+        return []
+    values = {rhythm for _, _, rhythm in stated}
+    if len(values) != 1:
+        return []  # a genuine disagreement - propose_majority_correction's territory
+    majority_value = next(iter(values))
+    stating_indices = {index for index, _, _ in stated}
+    silent_indices = [index for index in range(len(staves)) if index not in stating_indices]
+
+    proposals = []
+    for staff_index in silent_indices:
+        staff = staves[staff_index]
+        insert_at = 1 if staff and staff[0].rhythm.startswith("clef") else 0
+        proposals.append(
+            InsertionRepairProposal(
+                staff_index=staff_index,
+                position=insert_at,
+                inserted_rhythm=majority_value,
+                reason=(
+                    f"staff {staff_index} states no key signature this system; every "
+                    f"other staff that states one agrees on {majority_value!r} - modern "
+                    "convention restates the key signature on every staff, so this "
+                    "reads as a decode omission, not a genuine absence"
+                ),
+            )
+        )
+    return proposals
+
+
+def apply_insertion_proposal(
+    staff: list[EncodedSymbol], proposal: InsertionRepairProposal
+) -> list[EncodedSymbol]:
+    """A new symbol list with `proposal`'s symbol inserted before `proposal.position` -
+    `staff` is never mutated in place, the same discipline every other `apply_*`
+    function in this module uses.
+    """
+    if not 0 <= proposal.position <= len(staff):
+        raise ValueError(
+            f"position {proposal.position} out of range for a {len(staff)}-symbol staff"
+        )
+    inserted = EncodedSymbol(rhythm=proposal.inserted_rhythm)
+    return staff[: proposal.position] + [inserted] + staff[proposal.position :]
 
 
 def propose_repairs(staves: list[list[EncodedSymbol]]) -> list[RepairProposal]:

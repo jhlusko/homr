@@ -2,9 +2,12 @@ import unittest
 
 from homr.cross_staff_repair import (
     ArticulationRepairProposal,
+    InsertionRepairProposal,
     RepairProposal,
     apply_articulation_proposal,
+    apply_insertion_proposal,
     apply_proposal,
+    propose_carry_forward_key_signature,
     propose_majority_correction,
     propose_motif_articulation_corrections,
     propose_repairs,
@@ -89,6 +92,120 @@ class TestProposeMajorityCorrection(unittest.TestCase):
         )
 
         self.assertEqual(proposals, [])
+
+
+class TestProposeCarryForwardKeySignature(unittest.TestCase):
+    def test_a_lone_stated_value_is_carried_to_every_silent_staff(self) -> None:
+        # The exact real-page case this rule exists for: one staff states it, the rest
+        # are silent, and no staff states a conflicting value.
+        stating = [_sym("clef_C3"), _sym("keySignature_3"), _sym("note_4")]
+        silent = [_sym("clef_G2"), _sym("note_4")]
+
+        proposals = propose_carry_forward_key_signature(
+            [list(silent), list(silent), list(stating), list(silent)]
+        )
+
+        self.assertEqual(len(proposals), 3)
+        self.assertEqual({p.staff_index for p in proposals}, {0, 1, 3})
+        self.assertTrue(all(p.inserted_rhythm == "keySignature_3" for p in proposals))
+
+    def test_inserts_after_a_leading_clef_not_before_it(self) -> None:
+        stating = [_sym("keySignature_2"), _sym("note_4")]
+        silent = [_sym("clef_F4"), _sym("note_4")]
+
+        proposals = propose_carry_forward_key_signature([list(stating), list(silent)])
+
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0].position, 1)
+
+    def test_inserts_at_position_zero_with_no_leading_clef(self) -> None:
+        stating = [_sym("keySignature_2"), _sym("note_4")]
+        silent = [_sym("note_4")]
+
+        proposals = propose_carry_forward_key_signature([list(stating), list(silent)])
+
+        self.assertEqual(proposals[0].position, 0)
+
+    def test_a_conflicting_stated_value_proposes_nothing(self) -> None:
+        # A genuine disagreement is propose_majority_correction's territory, not this
+        # rule's - refusing here rather than guessing between the two mechanisms.
+        a = [_sym("keySignature_0"), _sym("note_4")]
+        b = [_sym("keySignature_-1"), _sym("note_4")]
+        silent = [_sym("note_4")]
+
+        proposals = propose_carry_forward_key_signature([list(a), list(b), list(silent)])
+
+        self.assertEqual(proposals, [])
+
+    def test_no_staff_stating_anything_proposes_nothing(self) -> None:
+        silent = [_sym("note_4")]
+
+        proposals = propose_carry_forward_key_signature([list(silent), list(silent)])
+
+        self.assertEqual(proposals, [])
+
+    def test_every_staff_already_stating_the_same_value_proposes_nothing(self) -> None:
+        staff = [_sym("keySignature_0"), _sym("note_4")]
+
+        proposals = propose_carry_forward_key_signature([list(staff), list(staff)])
+
+        self.assertEqual(proposals, [])
+
+    def test_a_single_staff_system_has_nothing_silent_to_fix(self) -> None:
+        staff = [_sym("keySignature_0"), _sym("note_4")]
+
+        self.assertEqual(propose_carry_forward_key_signature([staff]), [])
+
+
+class TestApplyInsertionProposal(unittest.TestCase):
+    def test_inserts_before_the_given_position(self) -> None:
+        staff = [_sym("clef_G2"), _sym("note_4")]
+        proposal = InsertionRepairProposal(
+            staff_index=0, position=1, inserted_rhythm="keySignature_3", reason="test"
+        )
+
+        corrected = apply_insertion_proposal(staff, proposal)
+
+        self.assertEqual([s.rhythm for s in corrected], ["clef_G2", "keySignature_3", "note_4"])
+
+    def test_the_original_list_is_not_mutated(self) -> None:
+        staff = [_sym("clef_G2"), _sym("note_4")]
+        proposal = InsertionRepairProposal(0, 1, "keySignature_3", "test")
+
+        apply_insertion_proposal(staff, proposal)
+
+        self.assertEqual([s.rhythm for s in staff], ["clef_G2", "note_4"])
+
+    def test_position_zero_inserts_at_the_very_start(self) -> None:
+        staff = [_sym("note_4")]
+        proposal = InsertionRepairProposal(0, 0, "keySignature_0", "test")
+
+        corrected = apply_insertion_proposal(staff, proposal)
+
+        self.assertEqual([s.rhythm for s in corrected], ["keySignature_0", "note_4"])
+
+    def test_position_equal_to_length_appends_at_the_end(self) -> None:
+        staff = [_sym("note_4")]
+        proposal = InsertionRepairProposal(0, 1, "keySignature_0", "test")
+
+        corrected = apply_insertion_proposal(staff, proposal)
+
+        self.assertEqual([s.rhythm for s in corrected], ["note_4", "keySignature_0"])
+
+    def test_an_out_of_range_position_is_refused(self) -> None:
+        staff = [_sym("note_4")]
+        proposal = InsertionRepairProposal(0, 5, "keySignature_0", "test")
+
+        with self.assertRaises(ValueError):
+            apply_insertion_proposal(staff, proposal)
+
+    def test_the_staff_grows_by_exactly_one_symbol(self) -> None:
+        staff = [_sym("clef_G2"), _sym("note_4"), _sym("barline")]
+        proposal = InsertionRepairProposal(0, 1, "keySignature_3", "test")
+
+        corrected = apply_insertion_proposal(staff, proposal)
+
+        self.assertEqual(len(corrected), len(staff) + 1)
 
 
 class TestApplyProposal(unittest.TestCase):

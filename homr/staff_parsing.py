@@ -11,7 +11,11 @@ from homr.cross_staff_consistency import (
     check_part_order,
     staves_by_system,
 )
-from homr.cross_staff_repair import propose_motif_articulation_corrections, propose_repairs
+from homr.cross_staff_repair import (
+    propose_carry_forward_key_signature,
+    propose_motif_articulation_corrections,
+    propose_repairs,
+)
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
@@ -591,6 +595,14 @@ def _report_cross_staff_findings(
                     f"position {articulation_proposal.position}: "
                     f"{articulation_proposal.current_articulation!r} -> "
                     f"{articulation_proposal.proposed_articulation!r})"
+                )
+            for insertion_proposal in propose_carry_forward_key_signature(staves):
+                eprint(
+                    f"System {system_index}: repair proposal - "
+                    f"{insertion_proposal.reason} "
+                    f"(staff {insertion_proposal.staff_index}, "
+                    f"insert before position {insertion_proposal.position}: "
+                    f"{insertion_proposal.inserted_rhythm!r})"
                 )
     except Exception as error:  # noqa: BLE001
         eprint(f"Cross-staff consistency check failed, skipping: {error}")
