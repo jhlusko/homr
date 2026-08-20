@@ -13,15 +13,71 @@ Reuses metadata already present in the source rather than inventing it -
 taxonomy ("strings.violin", "keyboard.piano", ...), which is exactly the vocabulary
 `homr.score_profile.ScorePart.instrument_family` was designed around (see
 `STRING_QUARTET`'s own values in `homr/score_profile.py`) - not a coincidence to
-exploit, the schema was modeled on this taxonomy from the start. When a source lacks
-`<instrument-sound>` (or lacks a `<part-list>` entry at all), the corresponding field
-is simply left empty - §7.1's "unknown is valid, not an error" applies here exactly as
-it does to a caller-supplied profile.
+exploit, the schema was modeled on this taxonomy from the start.
+
+Not every real source states it, though - measured directly against OSSQ (this
+design's own running example corpus): 0 of its whole-score MusicXML files carry
+`<instrument-sound>` at all, but they do carry clean `<instrument-name>`/`<part-name>`
+text ("Violin 1", "Viola", "Violoncello"). `_family_from_name` falls back to a small,
+explicit name→taxonomy table for exactly this case, checked as a case-insensitive
+substring so a hit is the same vocabulary `<instrument-sound>` would have given
+directly - not a separate guess. An unmatched name (or no `<part-list>` entry at all)
+leaves `instrument_family` empty - §7.1's "unknown is valid, not an error" applies here
+exactly as it does to a caller-supplied profile.
 """
 
 import xml.etree.ElementTree as ET
 
 from homr.score_profile import ScorePart, ScoreProfile
+
+#: Fallback for a source with a real `<instrument-name>`/`<part-name>` but no
+#: `<instrument-sound>` - OSSQ (this design's own running example corpus) is exactly
+#: this case: clean names ("Violin 1", "Viola", "Violoncello"), no sound-ID taxonomy at
+#: all. Matched as a case-insensitive substring against MusicXML's own sound-ID
+#: vocabulary, so a hit here is the same taxonomy `<instrument-sound>` would have given
+#: directly, not a separate guess. Deliberately small and specific rather than
+#: exhaustive - an unmatched name leaves `instrument_family` empty, which §7.1 already
+#: treats as valid, not an error; a wrong guess would be worse than no guess.
+_NAME_TO_FAMILY = (
+    ("violoncello", "strings.cello"),
+    ("cello", "strings.cello"),
+    ("contrabass", "strings.contrabass"),
+    ("double bass", "strings.contrabass"),
+    ("violin", "strings.violin"),
+    ("viola", "strings.viola"),
+    ("harp", "strings.harp"),
+    ("piano", "keyboard.piano"),
+    ("organ", "keyboard.organ"),
+    ("harpsichord", "keyboard.harpsichord"),
+    ("soprano", "voice.vocals"),
+    ("alto", "voice.vocals"),
+    ("tenor", "voice.vocals"),
+    ("bass voice", "voice.vocals"),
+    ("baritone", "voice.vocals"),
+    ("choir", "voice.vocals"),
+    ("chorus", "voice.vocals"),
+    ("flute", "wind.flutes.flute"),
+    ("piccolo", "wind.flutes.piccolo"),
+    ("oboe", "wind.reed.oboe"),
+    ("clarinet", "wind.reed.clarinet"),
+    ("bassoon", "wind.reed.bassoon"),
+    ("saxophone", "wind.reed.saxophone"),
+    ("horn", "brass.french-horn"),
+    ("trumpet", "brass.trumpet"),
+    ("trombone", "brass.trombone"),
+    ("tuba", "brass.tuba"),
+    ("timpani", "drum.timpani"),
+    ("guitar", "pluck.guitar"),
+)
+
+
+def _family_from_name(*names: str) -> str:
+    for name in names:
+        lowered = name.lower()
+        for needle, family in _NAME_TO_FAMILY:
+            if needle in lowered:
+                return family
+    return ""
 
 
 def _children(el: ET.Element, tag: str) -> list[ET.Element]:
@@ -52,10 +108,15 @@ def _part_names_and_instruments(score_root: ET.Element) -> dict[str, tuple[str, 
         if part_id is None:
             continue
         display_name = _text(_child(score_part, "part-name"))
-        family = ""
         instrument = _child(score_part, "score-instrument")
-        if instrument is not None:
-            family = _text(_child(instrument, "instrument-sound"))
+        instrument_name = (
+            _text(_child(instrument, "instrument-name")) if instrument is not None else ""
+        )
+        family = (
+            _text(_child(instrument, "instrument-sound")) if instrument is not None else ""
+        )
+        if not family:
+            family = _family_from_name(instrument_name, display_name)
         result[part_id] = (display_name, family)
     return result
 

@@ -1,11 +1,31 @@
 import unittest
 import xml.etree.ElementTree as ET
 
-from training.omr_datasets.score_profile_extraction import extract_score_profile
+from training.omr_datasets.score_profile_extraction import (
+    _family_from_name,
+    extract_score_profile,
+)
 
 
 def _parse(xml_text: str) -> ET.Element:
     return ET.fromstring(xml_text)  # noqa: S314
+
+
+class TestFamilyFromName(unittest.TestCase):
+    def test_matches_are_case_insensitive(self) -> None:
+        self.assertEqual(_family_from_name("VIOLIN 1"), "strings.violin")
+
+    def test_a_numbered_part_name_still_matches(self) -> None:
+        self.assertEqual(_family_from_name("Violin 2"), "strings.violin")
+
+    def test_the_first_matching_name_of_several_is_used(self) -> None:
+        self.assertEqual(_family_from_name("", "Viola"), "strings.viola")
+
+    def test_no_match_across_any_name_returns_empty(self) -> None:
+        self.assertEqual(_family_from_name("Theremin", "Kazoo"), "")
+
+    def test_cello_and_violoncello_agree(self) -> None:
+        self.assertEqual(_family_from_name("Cello"), _family_from_name("Violoncello"))
 
 
 class TestExtractScoreProfile(unittest.TestCase):
@@ -165,6 +185,56 @@ class TestExtractScoreProfile(unittest.TestCase):
         profile = extract_score_profile(root)
 
         self.assertEqual([p.stable_id for p in profile.parts], ["P1", "P2"])
+
+    def test_instrument_name_falls_back_when_no_instrument_sound(self) -> None:
+        # OSSQ itself: real <instrument-name>/<part-name>, no <instrument-sound> at all.
+        root = _parse("""
+            <score-partwise>
+              <part-list>
+                <score-part id="P1">
+                  <part-name>Violoncello</part-name>
+                  <score-instrument id="P1-I1"><instrument-name>Violoncello</instrument-name></score-instrument>
+                </score-part>
+              </part-list>
+              <part id="P1"><measure number="1"/></part>
+            </score-partwise>
+        """)
+
+        profile = extract_score_profile(root)
+
+        self.assertEqual(profile.parts[0].instrument_family, "strings.cello")
+
+    def test_instrument_sound_wins_over_the_name_fallback_when_both_present(self) -> None:
+        root = _parse("""
+            <score-partwise>
+              <part-list>
+                <score-part id="P1">
+                  <part-name>Violin</part-name>
+                  <score-instrument id="P1-I1">
+                    <instrument-name>Violin</instrument-name>
+                    <instrument-sound>strings.violin</instrument-sound>
+                  </score-instrument>
+                </score-part>
+              </part-list>
+              <part id="P1"><measure number="1"/></part>
+            </score-partwise>
+        """)
+
+        self.assertEqual(extract_score_profile(root).parts[0].instrument_family, "strings.violin")
+
+    def test_an_unrecognised_instrument_name_leaves_family_empty(self) -> None:
+        root = _parse("""
+            <score-partwise>
+              <part-list>
+                <score-part id="P1">
+                  <part-name>Theremin</part-name>
+                </score-part>
+              </part-list>
+              <part id="P1"><measure number="1"/></part>
+            </score-partwise>
+        """)
+
+        self.assertEqual(extract_score_profile(root).parts[0].instrument_family, "")
 
     def test_a_score_with_no_parts_produces_an_empty_profile(self) -> None:
         root = _parse("<score-partwise><part-list></part-list></score-partwise>")
