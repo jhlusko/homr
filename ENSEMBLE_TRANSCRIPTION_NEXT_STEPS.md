@@ -460,12 +460,39 @@ remains is genuinely new work, not plumbing:
     and `instrument_family` coverage went from 0% to **100%** on the resolved set (all
     violin/viola/cello, correctly identified).
 
-  - **Still not done**: the decoder-side embedding module itself (the zero-init gated
-    additive term identified above), §7.4's training-time context dropout, and the
-    training run to validate any of it. Pairing is also scoped to OSSQ only - `mbox`-
-    and `lieder`-derived training samples (also mixed into decoder training via
-    `mix_datasets.py`) have their own naming/provenance and would need their own
-    pairing logic, not attempted here.
+  - ~~Still not done: the decoder-side embedding module itself~~ — **built and wired
+    this session.** `training/architecture/transformer/profile_context.py`:
+    `ProfileContext` (the six fields §7.2 names) and `ProfileContextEmbedding`, an
+    `nn.Module` combining them into one additive vector per sequence via bounded,
+    explicit vocabularies (an unenumerable field like `instrument_family` falls into a
+    shared "unknown" bucket rather than growing at training time). A dedicated
+    `missing_emb` gives "no profile at all" its own learnable representation, per
+    §7.2's "unknown/context-missing indicator" - distinct from silence, not silence
+    itself.
+
+    The module's output is scaled by a single **zero-initialized gate** parameter, per
+    §7.2's own stated requirement. Wired into `ScoreTransformerWrapper.forward`
+    (`decoder.py`) as an optional `profile_context_emb` parameter, added to the
+    existing per-field embedding sum in both the cached and uncached decode paths -
+    `ScoreDecoder.forward`'s existing `**kwargs` already threads it through at all three
+    call sites (training forward, scheduled-sampling, `generate`'s incremental decode
+    loop), no changes needed there.
+
+    **Validated end to end, not just the module in isolation**: 13 unit tests plus 3
+    real-model wiring tests confirm a real context, a missing context, and a mixed
+    batch all produce exactly `torch.zeros` at initialization; that a freshly
+    constructed zero-gated `ProfileContextEmbedding` wired into a freshly constructed
+    model changes nothing about the model's loss; and that moving the gate away from
+    zero *does* change it - ruling out the parameter being silently ignored anywhere in
+    the wiring. Full suite: 954/957 (3 pre-existing, unrelated failures deselected).
+
+  - **Still not done**: §7.4's training-time context dropout, threading a real
+    `ProfileContext` into the actual training loop/dataset (using this session's
+    `score_profile_pairing.py`), and the training run itself to see whether any of this
+    actually helps. Pairing is also scoped to OSSQ only - `mbox`- and `lieder`-derived
+    training samples (also mixed into decoder training via `mix_datasets.py`) have
+    their own naming/provenance and would need their own pairing logic, not attempted
+    here.
 
 ---
 
