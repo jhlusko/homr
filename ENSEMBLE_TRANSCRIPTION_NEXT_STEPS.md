@@ -163,10 +163,13 @@ suspect and has not been changed.**
    later inserted "Dynamic" ahead of it in `CLASS_ORDER`, making value 1 "Dynamic" - the
    tests were asserting on the wrong key and happened to still pass only because
    `box_centres_by_class`'s dict comparison didn't care about the label, just presence).
-   **Not run against real training data yet** - the natural next GPU experiment is
-   `class_page_counts` computed over `phase18`'s already-synthesized 400-page Fingering
-   set plus the rest of the corpus, fed as `class_weights` to a retrain, combining both
-   halves of 27.92's original diagnosis for the first time.
+   **`train_detector.py` now has `--class-weighted-sampling`** (`compute_class_weights`
+   reads every training mask once at startup, prints the counts/weights, feeds the
+   result to `DetectorPatches`) so this is usable from the CLI, not just the library
+   function. **`phase19` (this session) is running this combined with `phase18`'s
+   already-synthesized 400-page Fingering set** - `phase18/train_index_combined.txt`
+   reused directly, no resynthesis - the first run to combine both halves of 27.92's
+   original diagnosis. In progress; not yet evaluated.
 2. ~~Generate synthetic data on substantially more distinct source scores at lower
    density per page~~ — **tried (`phase18`, above).** Helped Fingering substantially
    (0%→46.8%, more than double the old approach), did not fix the collateral damage to
@@ -178,6 +181,9 @@ suspect and has not been changed.**
    is the fix that would move Tempo/StaffText/Expression, which the class-balancing and
    synthesis work never targeted (Tempo already existed in every page category; its
    problem is background-vs-foreground ratio, not within-page class competition).
+   **CLI exposed this session** (`train_detector.py --positive-ratio`, default unchanged)
+   so this is ready to test without further code changes - still not actually run,
+   since the GPU was occupied by `phase19` (item 1, below) when this was built.
 4. ~~A confusion matrix for SystemText specifically~~ — **closed, not to be revisited.**
    User decision: the staff/system distinction does not matter for this project's
    purposes, so SystemText-vs-StaffText is not worth further detector capacity or

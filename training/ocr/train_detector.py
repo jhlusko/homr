@@ -35,6 +35,7 @@ import collections
 import json
 from pathlib import Path
 
+import cv2
 import numpy as np
 import segmentation_models_pytorch as smp
 import torch
@@ -42,7 +43,15 @@ from torch.utils.data import DataLoader
 
 from training.architecture.segmentation.model import CamVidModel
 from training.ocr.detector_masks import CLASS_ORDER
-from training.ocr.detector_patches import DetectorPatches, ImageBlockSampler, read_index
+from training.ocr.detector_patches import (
+    POSITIVE_RATIO,
+    DetectorPatches,
+    ImageBlockSampler,
+    Sample,
+    class_draw_weights,
+    class_page_counts,
+    read_index,
+)
 
 #: Background plus every detection class.
 NUM_CLASSES = len(CLASS_ORDER) + 1
@@ -92,9 +101,34 @@ def evaluate(model: CamVidModel, loader: DataLoader, device: str) -> dict[str, f
     return {name: sum(values) / len(values) for name, values in totals.items()}
 
 
+def compute_class_weights(samples: list[Sample]) -> dict[str, float]:
+    """`class_draw_weights` over every training mask's class presence - a one-time,
+    read-every-mask-once pass at startup (not per epoch), the same information
+    `class_page_counts`' own docstring says `box_centres_by_class` cannot answer since
+    that function only ever sees one page at a time. Session note: built to test the
+    still-untried half of 27.92's two-part diagnosis (see §1 item 1 in
+    ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md) - "more distinct scores" (phase18) fixed
+    Fingering but not the sampler-level competition; this is the other lever, not yet
+    combined with phase18's data before this run.
+    """
+    masks = (cv2.imread(sample.mask, cv2.IMREAD_GRAYSCALE) for sample in samples)
+    counts = class_page_counts(masks)
+    print(f"class page counts: {counts}")
+    weights = class_draw_weights(counts)
+    print(f"class draw weights: { {k: round(v, 5) for k, v in weights.items()} }")
+    return weights
+
+
 def train(args: argparse.Namespace) -> dict:
     samples = read_index(args.index)
-    dataset = DetectorPatches(samples, patches_per_image=args.patches_per_image, seed=args.seed)
+    class_weights = compute_class_weights(samples) if args.class_weighted_sampling else None
+    dataset = DetectorPatches(
+        samples,
+        patches_per_image=args.patches_per_image,
+        positive_ratio=args.positive_ratio,
+        seed=args.seed,
+        class_weights=class_weights,
+    )
     # A plain `shuffle=True` scatters one image's patches randomly across the whole epoch,
     # defeating DetectorPatches' one-slot decode cache - up to `patches_per_image` reads
     # of the same full-resolution page per epoch instead of one. ImageBlockSampler shuffles
@@ -184,11 +218,31 @@ def main() -> None:
     parser.add_argument("--weights", type=Path)
     parser.add_argument("--out", type=Path)
     parser.add_argument("--patches-per-image", type=int, default=8)
+    parser.add_argument(
+        "--positive-ratio", type=float, default=POSITIVE_RATIO,
+        help=(
+            "Share of drawn training patches centred on a box rather than a random "
+            "page location (DetectorPatches.positive_ratio). 27.87's leading, still-"
+            "untested hypothesis for Tempo/StaffText/Expression's precision collapse is "
+            "that this needs to move toward true page frequency, or be made class-"
+            "dependent - not exposed until now, since nothing had tried it."
+        ),
+    )
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--class-weighted-sampling", action="store_true",
+        help=(
+            "Weight DetectorPatches' per-page positive-class choice by inverse distinct "
+            "-page count (class_draw_weights), so a class spread across far more pages "
+            "than another does not also win a proportionally larger share of positive "
+            "draws corpus-wide. Off by default - preserves the existing uniform-among-"
+            "present-classes behaviour."
+        ),
+    )
     parser.add_argument(
         "--skip-pretrained", action="store_true",
         help="Skip downloading imagenet encoder weights (offline runs, or tests).",
