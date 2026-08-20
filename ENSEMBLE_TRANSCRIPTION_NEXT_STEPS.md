@@ -562,6 +562,22 @@ remains is genuinely new work, not plumbing:
     (also mixed into decoder training via `mix_datasets.py`) have their own naming/
     provenance and would need their own pairing logic, not attempted here.
 
+### `phase20`: the training run, in progress
+
+Launched this session (`training/transformer/train_profile_context.py`, frozen core,
+only the 8 `decoder.profile_context.*` tensors training): 105,305 training examples
+(`phase9/index.txt`, ~70% OSSQ-shaped), 4,912 validation examples (`phase4/valid/
+index.txt`), `--epochs 10 --batch-size 8 --lr 1e-3`, starting from the pinned checkpoint
+every earlier structured-heads phase also used.
+
+**Epoch 1**: mean training loss 2.4626 over 13,164 batches. Validation ablation (same
+held-out examples, same trained gate, only `profile_present` toggled) - **with profile
+context 1.9814, without 2.0478, delta +0.0664 in favor of having profile context.** A
+real, positive first signal, not yet a conclusion - one epoch on a frozen core with only
+8 parameters moved is not enough to rule out noise or an early-training artifact. Watch
+whether the delta holds or grows across the remaining 9 epochs before treating this as
+evidence the signal is usable.
+
 ---
 
 ## 4. Cross-staff consistency checks and repair — Stage A complete, Stage B narrow
