@@ -912,8 +912,32 @@ pattern (one voice restates, others carry forward silently) is not the pattern i
 unilaterally - "fill in a carried-forward value when one voice restates it" is a different,
 new repair rule with its own correctness questions (does a later system's restatement
 apply retroactively to earlier missing ones? what if the lone stated value is itself the
-misread?), not a bug fix to the existing one. Recorded here as a named open question for
-whoever picks this thread up next, not resolved.
+misread?).
+
+**Resolved, and built.** User confirmation: modern engraving convention restates the key
+signature on *every* staff at every system (time signature is the opposite - restated
+only on change, so this deliberately does not generalise there). Checked directly against
+real ground truth to confirm this specific corpus follows that convention, not assumed:
+`sq7313978:0001`'s system 2 (the exact page carrying the `[(), (), ('keySignature_3',),
+())]` finding above) has an identical `<key><fifths>3</fifths></key>` on all four parts
+in the source MusicXML - the model decoded it correctly on only the viola. A silent
+staff here is a decode omission, not a genuine absence.
+
+`homr/cross_staff_repair.py`: `InsertionRepairProposal`/`apply_insertion_proposal` (a new
+proposal shape - a silent staff has no existing token to replace, unlike
+`RepairProposal`/`ArticulationRepairProposal`) and `propose_carry_forward_key_signature`,
+which fires whenever at least one staff states a key signature and no other staff states
+a *conflicting* value - a lower bar than `propose_majority_correction`'s "two staves
+stating a value," since a lone stated value with everyone else silent is exactly the case
+this convention covers. A genuine value conflict is left entirely to
+`propose_majority_correction`, not guessed between the two mechanisms. 18 tests.
+
+**Validated against the exact page that motivated this thread**: `sq7313978:0001`
+correctly proposed inserting `keySignature_3` into all three silent staves (0, 1, 3),
+exactly matching the confirmed ground truth - no crash, valid MusicXML written. Wired
+into `staff_parsing._report_cross_staff_findings`. This closes the open question
+recorded above - it was left open pending exactly this kind of external confirmation,
+not resolved by guessing.
 
 ### A second motivating case for cross-staff repair, from a design discussion: shared
 motifs, not just shared attributes - built, this session
