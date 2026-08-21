@@ -1314,7 +1314,16 @@ did not survive contact with the bigger question it was meant to answer):
    than corpus noise. Full results and methodology: `OSSQ_GROUND_TRUTH_ERRORS.md`
    (drafted for possible forwarding to the ossq-omr authors, not filed anywhere yet),
    `training/omr_datasets/ossq_measure_length_audit.py`. Detail on both spot-checked
-   pages: `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1.
+   pages: `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1. Also caught a second, more general
+   mistake in the Borodin analysis: its "constant 1/8 offset" description was only ever
+   checked against the first divergent measure, not the whole system - the real offset
+   across all five barlines is `-3/8, -3/4, -9/8, -9/8, -9/8`, not constant, so
+   `propose_majority_position_corrections` correctly never fires there at all. Built
+   `deep_barline_audit.py` (in-process, not subprocess+regex - computes exact
+   per-system barline counts to convert every majority-corrected measure to an absolute
+   ground-truth measure number and check it programmatically) specifically to catch
+   this class of mistake at scale rather than repeat it one page at a time; running
+   across the full 200-page sample overnight, in progress as of this entry.
 2. **Phase 1** - decode-time beam search + cross-staff-consistency reranking, no
    retraining. Confirmed while writing this doc: generation is purely greedy argmax on
    every code path today (`homr/transformer/decoder_inference.py`,
