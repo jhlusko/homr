@@ -256,7 +256,7 @@ of resampling within that data can manufacture signal the corpus does not contai
 
 ---
 
-## 3. Score-profile conditioning — everything built and tested; only the training run itself remains
+## 3. Score-profile conditioning — both training runs complete; frozen-core result stands, unfrozen follow-up did not improve on it
 
 Full contract already specified in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §7; reproduced
 here so this file is self-contained.
@@ -613,6 +613,58 @@ natural next step, now that the frozen-core question has a clear answer, is the 
 expensive one §12.3-style staging exists to defer until the cheaper question is
 answered: unfreezing the core and letting the whole model adapt to the signal, which
 this run deliberately did not attempt.
+
+### `phase21`: the unfrozen follow-up — complete, and it reverses phase20's read
+
+Same corpus, same held-out validation split, same with/without-profile ablation
+methodology as phase20 - only the freeze policy differs
+(`TrOMR.unfreeze_decoder_for_profile_context`: encoder frozen, whole decoder trainable,
+150 tensors instead of phase20's 8), so unfreezing is the one variable that changed.
+Conservative LR (1e-5, two orders of magnitude below phase20's 1e-3 probe), full model
+checkpointed every epoch (`/workspace/b0/phase21/checkpoints/epoch_{1..5}.pth`).
+
+```
+epoch   train loss   valid with   valid without   delta
+1       1.7829       1.0848       1.0840          -0.0008
+2       1.6330       1.0628       1.0634          +0.0006
+3       1.5849       1.0532       1.0539          +0.0007
+4       1.5542       1.0509       1.0490          -0.0018
+5       1.5344       1.0429       1.0416          -0.0013
+```
+
+For comparison, phase20's ablation delta by epoch: +0.0664, +0.0682, +0.0727, +0.0735,
++0.0353, +0.0565, +0.0700, +0.0676, +0.0636, +0.0409 - positive on all 10 epochs, never
+closer to zero than +0.0353.
+
+**Absolute loss dropped sharply and steadily** (1.78 → 1.53 over 5 epochs, versus
+phase20's ~1.98-2.05 range) - expected and healthy for an unfrozen fine-tune actually
+adapting to the training distribution, not a regression signal. **But the
+profile-context delta itself collapsed to noise**: all 5 epochs land within ±0.002 nats
+of zero, oscillating sign, an order of magnitude below phase20's smallest value
+(+0.0353) and never once matching its direction consistently the way phase20 did on
+every single epoch.
+
+**Verdict: unfreezing did not improve on phase20's result - it erased the measurable
+part of it.** This is not the core-competence regression this run was watching for
+specifically (that would show up as `without`-profile loss getting *worse* than
+phase20's own numbers at the same epoch; instead it dropped by almost half, a genuine
+improvement in the model's general fit). What collapsed is narrower and more specific:
+the *marginal* value of telling the decoder about a staff's instrument/clef/part
+explicitly, over and above what the decoder can already infer once every one of its
+150 tensors is allowed to adapt to the same training data profile context was built
+from. Once the core can adapt, it appears to absorb whatever profile context was
+supplying into its general weights, making the explicit signal redundant rather than
+additive - a real, coherent finding, just not the one this experiment was hoping for.
+
+**Recommendation**: prefer phase20's frozen-core checkpoint
+(`/workspace/b0/phase20/profile_context_weights.pth`) over phase21's for any decision
+that follows from this track - phase20 is the run with a clear, positive, held-out
+result; phase21's checkpoints remain on disk
+(`/workspace/b0/phase21/checkpoints/epoch_{1..5}.pth`) if there is reason to inspect
+them further, but nothing in this run's own numbers argues for preferring it. Whether
+score-profile conditioning is worth deploying at all now rests on phase20's frozen-core
+result alone, with the understanding that its ceiling (a training-loss-only, no
+downstream-metric signal - see this section's own earlier caveat) has not moved.
 
 ---
 
