@@ -268,9 +268,50 @@ original conclusion) - Phase 1's beam-search reranking now has real justificatio
 Moeran/Dvořák caveat matters for scope, though: some real fraction of "agrees" cases may
 turn out to be Moeran-shaped (broadly poor decode across a hard passage, where
 reranking against a majority that is itself wrong doesn't help) rather than Beethoven-
-shaped (one clean, isolated wrong note, exactly what reranking targets). Distinguishing
-the two at scale - not attempted here - would need the same content-level check
-Beethoven got, run across all 87, not just totals.
+shaped (one clean, isolated wrong note, exactly what reranking targets).
+
+### Distinguishing the two at scale: `content_verify_agrees.py` - the final answer
+
+Built to run the same content-level check Beethoven got across all 87 "agrees" entries,
+not just totals: for each entry, decodes the page fresh, compares each part's (pitch,
+octave, duration) sequence at the flagged measure against real ground truth (duration
+normalized by each file's own `<divisions>` - comparing raw duration strings across a
+whole-score file with `divisions=1920` and HOMR's own `divisions=2-4` output made every
+comparison spuriously show zero overlap regardless of actual content until this was
+fixed), and classifies each entry by whether the *majority* (non-flagged) staves' content
+closely matches ground truth (Beethoven-shaped) or not (Moeran-shaped).
+
+```
+total agree-entries checked: 87
+  Beethoven-shaped (majority overlap >=0.8, flagged staff <0.8): 17
+  Moeran-shaped (majority overlap <0.8 too): 57
+  inconclusive/no data: 13
+```
+
+Spot-checked one Moeran-shaped entry (all four parts showing exactly `0.0` overlap -
+the largest sub-bucket, 36 of the 57) directly against both files' raw content to rule
+out a residual alignment artifact rather than genuine divergence: the content is
+genuinely, completely different on both sides (different pitches, different note
+counts, no scale/units confusion visible) - a real Moeran-shaped case, not a tooling
+miss.
+
+**Final read**: of the 87 measures where the corpus's real ground truth confirms a
+genuine decoder divergence, roughly **1 in 5 (17, ~20%) are Beethoven-shaped** - clean,
+isolated errors exactly matching what Phase 1's beam-search reranking is designed to
+catch. The majority, **57 (~65%), are Moeran-shaped** - the whole system's decode
+diverges from truth, not just the flagged staff, on passages that are plausibly
+genuinely hard for the current model. The remaining 13 (~15%) had no page-local
+measure to compare (a HOMR-detected system/measure count mismatch with the reference,
+or a missing corresponding measure) and are simply unverified, not evidence either way.
+
+**This sets real, calibrated expectations for Phase 1**: reranking against a
+cross-staff majority is a sound strategy for roughly a fifth of this failure family
+(the Beethoven-shaped fifth) but would not help - and could even entrench a wrong
+answer - for the Moeran-shaped majority, where the "majority" itself is not reliably
+correct. A full fix for the Moeran-shaped share would need something that doesn't
+assume a majority of staves are right, which nothing in this document's staged plan
+(§7) currently provides - worth naming as a real gap rather than assuming Phase 1 alone
+closes this out.
 
 Before attributing every flagged disagreement to a *decoding* error, rule out training
 data itself being part of the story: sample some number of already-flagged

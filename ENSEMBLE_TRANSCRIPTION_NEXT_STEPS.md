@@ -1292,7 +1292,7 @@ completely open.
 
 ---
 
-## 5. Decoder rhythm/duration accuracy — corrected and corpus-wide: 87/91 now show real decode divergence (was invalidly 91/91 "noise")
+## 5. Decoder rhythm/duration accuracy — final: real decoder divergence confirmed, ~20% Beethoven-shaped (Phase 1's target), ~65% Moeran-shaped (broadly poor decode, Phase 1 alone won't fix)
 
 **The original Phase 0 result below was fully retracted, then redone correctly - see
 `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1 for the complete account.** Short version: the
@@ -1339,13 +1339,31 @@ predominantly decoder error, giving Phase 1 real justification at last.
 `ossq_measure_length_audit.py` - it doesn't verify each flagged note individually.
 A second content-level spot-check (Dvořák Op.51, real measure 274, attempting the same
 verification Beethoven got) came back inconclusive, similar to Moeran - all four parts
-differed substantially from ground truth, not just the flagged staff. Only Beethoven is
-a clean, fully content-verified confirmed decode error; the other 86 "agrees" entries
-are real, meaningful evidence at the duration-total level, not yet individually
-verified. Distinguishing Beethoven-shaped (one clean wrong note, what Phase 1 targets)
-from Moeran-shaped (broadly poor decode on a hard passage, which reranking against an
-already-wrong majority wouldn't fix) at scale is the actual remaining open question, not
-attempted here.
+differed substantially from ground truth, not just the flagged staff.
+
+**Resolved at scale** (`content_verify_agrees.py`, all 87 "agrees" entries, comparing
+actual `(pitch, octave, duration)` content per part - not just totals - against real
+ground truth):
+
+```
+total agree-entries checked: 87
+  Beethoven-shaped (one clean isolated wrong note): 17  (~20%)
+  Moeran-shaped (whole system diverges, not just the flagged staff): 57  (~65%)
+  inconclusive/no comparable measure: 13  (~15%)
+```
+
+Spot-checked the largest sub-bucket (36 entries showing exactly `0.0` overlap on every
+part) directly against raw file content to rule out an alignment artifact: genuinely
+different pitches and note counts on both sides, no scale/units confusion - a real
+Moeran-shaped case, not a tooling miss.
+
+**This is the final, calibrated answer**: about a fifth of this failure family is
+exactly what Phase 1's beam-search reranking targets (Beethoven-shaped, one clean wrong
+note against a reliable majority); the majority (~65%) is Moeran-shaped, where
+reranking against a majority that is itself unreliable would not help and could
+entrench a wrong answer. Phase 1 alone would not close this whole failure family -
+worth setting that expectation explicitly before investing in it, and a real gap this
+document's current staged plan doesn't yet address for the Moeran-shaped majority.
 
 Full design in `DECODER_RHYTHM_ACCURACY_DESIGN.md` (new file, this session). Directly
 motivated by §4's own "net read": the dominant unrepaired Stage A finding
