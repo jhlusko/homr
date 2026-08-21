@@ -674,12 +674,14 @@ Full spec in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §12; reproduced here. Staged de
 from least to most invasive — **do not start Stage C before Stages A and B are built and
 benchmarked**, per §12.3's own explicit precondition. Stage A is now fully built (all
 8 of §12.1's originally-named checks, plus the shared-motif addition); Stage B covers
-key/time signature (majority vote + carry-forward) and motif-corroborated articulation.
-A systematic 200-page benchmark (below, just above Stage C) is the "built and
-benchmarked" evidence §12.3 asks for: Stage A fires on 71.4% of pages, Stage B proposes
-a fix on 14.6% - real coverage, but the dominant Stage A finding
-(`barline_position_mismatch`) still has no repair, since it's a decoder duration-drift
-signal rather than a "silent staff"/"clear majority" pattern Stage B's rules target.
+key/time signature (majority vote + carry-forward), motif-corroborated articulation,
+and a majority-corroborated localization (not a content repair) for barline-position
+divergence. A systematic 200-page benchmark (below, just above Stage C) is the "built
+and benchmarked" evidence §12.3 asks for: Stage A fires on 71.4% of pages, Stage B
+proposes something on 44.2% - real, substantial coverage, but the dominant Stage A
+finding (`barline_position_mismatch`) still has no *content* repair for most
+occurrences, since it's a decoder duration-drift signal rather than a "silent
+staff"/"clear majority" pattern Stage B's rules can safely fix outright.
 
 ### Stage A: deterministic consistency analysis — all 8 of 8 §12.1 checks built, plus
 a 9th from outside the original list
@@ -1212,15 +1214,34 @@ spot-checked pages) declines to propose, for the same reason. Validated against 
 flagged page (Beethoven Op.133 p.13): correctly fired on two genuine constant-offset
 divergences and declined the ratio case. 5 new tests, `tests/test_cross_staff_repair.py`.
 
+**Re-benchmarked with `propose_majority_position_corrections` included: Stage B proposal
+rate jumps from 14.6% to 44.2% of pages (88/199).** Full corrected proposal counts on
+the same 200-page sample:
+
+| proposal | count |
+|---|---|
+| carry_forward_key_signature | 102 |
+| majority_position_correction | 91 |
+| tier1_key_time_signature | 8 |
+| motif_articulation_correction | 4 |
+
+91 occurrences against 306 `barline_position_mismatch` findings means roughly **30% of
+that single largest Stage A finding now gets at least a diagnostic localization** (which
+staff, which measure, how large an offset) - real, useful progress, but still not a
+*content* repair: these remain genuine decoder duration errors with no low-ambiguity
+edit to propose, by design (see `propose_majority_position_corrections`' own docstring
+above for why). The remaining ~70% either lack a clean 3+ staff majority, show a
+non-constant offset, or show a constant-ratio (different-meter) pattern - all cases this
+rule correctly declines rather than guesses at.
+
 **Net read on Stage C's precondition**: Stage A is working and catching real, frequent
-disagreement (71.4% of pages). Stage B now covers a much larger share of that
-(14.6% before the position-localization addition above; not yet re-benchmarked with it)
-but the dominant Stage A finding (`barline_position_mismatch`, and probably
-`measure_duration_mismatch` for the same underlying reason) still has no *content*
-repair, only localization - these are genuine decoder duration errors, not "silent
-staff" or "clear majority" patterns Stage B's conservative rules can safely fix outright.
-That gap is real, but it argues for improving decoder rhythm accuracy or extending Stage
-B's repair vocabulary before reaching for Stage C's learned
+disagreement (71.4% of pages). Stage B now covers a much larger share of that (44.2%,
+up from the first benchmark's undercounted 5.5%) - genuine, measured progress - but the
+dominant Stage A finding still only gets localization, not a content fix, for the same
+reason it never will without guessing: these are genuine decoder duration errors, not
+"silent staff" or "clear majority" patterns Stage B's conservative rules can safely fix
+outright. That gap is real, but it argues for improving decoder rhythm accuracy or
+extending Stage B's repair vocabulary further before reaching for Stage C's learned
 adapter, not for Stage C being obviously warranted yet.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
