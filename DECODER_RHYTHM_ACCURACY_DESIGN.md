@@ -168,6 +168,40 @@ truth rather than a model error, that changes the ceiling every later phase shou
 expect, and is worth knowing before spending GPU time chasing a problem that is partly
 a labeling artifact.
 
+**Started (n=2 pages, small - a first read, not a corpus-wide answer):** both pages
+already used in this document's own §4 spot check have a page-level ground-truth
+MusicXML sitting right next to the training image (`<name>.musicxml`), letting the
+decoded divergence be checked directly against it, no whole-score lookup needed.
+
+- **Beethoven Op.133 p.13, system 0, staff 2 (viola), measure 8**: HOMR's decode put
+  this staff's cumulative position at barline 8 exactly `1/4` whole note ahead of the
+  3-staff majority (`25/4` vs `6`). The ground truth for this measure, part 3, is
+  `quarter(2) + dotted-quarter(3) + quarter(2) + eighth(1)` = 8 duration units = a full
+  whole note, against the other three parts' `quarter+eighth+quarter+eighth` = 6 units =
+  `3/4` - the same `1/4`-whole-note excess, in the *ground truth itself*, before any
+  model ever saw the page. **HOMR decoded this correctly** - the "disagreement" Stage A
+  flagged is a genuine irregularity already present in the source data (a real
+  over-length measure in one part, or an artifact of this specific corpus entry's own
+  authoring - either way, not something the decoder introduced.
+- **Borodin Quartet No. 2 p.24, system 1, staff 1, measure 6 (first measure of that
+  system)**: HOMR's decode showed a constant `1/8`-whole-note offset for this staff
+  against a 3-staff majority. Checking ground truth required first noticing each part
+  uses its *own* `<divisions>` value (12 for P1/P2, 2 for P3/P4 in this file) - raw
+  `<duration>` units are not comparable across parts without normalizing by each part's
+  own divisions first. Once normalized, **all four parts' ground truth agree exactly**
+  on this measure (`3/4` each) - no irregularity, no ambiguity. HOMR's divergence here
+  is a genuine decode error, not a labeling artifact.
+
+**Read on these two**: both failure sources are real. At least some fraction of
+`barline_position_mismatch` reflects genuine source-data irregularities the decoder
+reproduced faithfully, not model error - meaning the raw finding count (306) should not
+be read as "306 decoder mistakes." But real decoder errors also occur (the Borodin
+case), so Phases 1-2 remain worth pursuing; the goal is a corpus-wide estimate of the
+split, not a claim that decode accuracy is fine as-is. Widening this sample (and
+watching for the `<divisions>`-per-part normalization trap the Borodin case surfaced,
+which a naive raw-duration comparison would have silently gotten wrong) is the natural
+next step here, before or alongside Phase 1.
+
 ### 7.2 Phase 1: decode-time cross-staff-consistency reranking (no retraining)
 
 Build k-best beam search for the rhythm head (§3 already confirms none exists on any
