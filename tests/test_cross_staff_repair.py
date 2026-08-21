@@ -1,4 +1,5 @@
 import unittest
+from fractions import Fraction
 
 from homr.cross_staff_repair import (
     ArticulationRepairProposal,
@@ -9,6 +10,7 @@ from homr.cross_staff_repair import (
     apply_proposal,
     propose_carry_forward_key_signature,
     propose_majority_correction,
+    propose_majority_position_corrections,
     propose_motif_articulation_corrections,
     propose_repairs,
 )
@@ -389,6 +391,74 @@ class TestApplyArticulationProposal(unittest.TestCase):
         self.assertEqual(corrected[0].lift, "#")
         self.assertEqual(corrected[0].rhythm, "note_4")
         self.assertEqual(corrected[0].slur, "slurStart")
+
+
+def _measures(*measure_note_counts: int) -> list:
+    """A staff of quarter-note measures, one `_sym("barline")` after each - e.g.
+    `_measures(4, 4)` is two full 4/4 measures."""
+    symbols = []
+    for note_count in measure_note_counts:
+        symbols.extend([_sym("note_4")] * note_count)
+        symbols.append(_sym("barline"))
+    return symbols
+
+
+class TestProposeMajorityPositionCorrections(unittest.TestCase):
+    def test_agreeing_staves_propose_nothing(self) -> None:
+        staff = _measures(4, 4)
+
+        proposals = propose_majority_position_corrections([list(staff) for _ in range(4)])
+
+        self.assertEqual(proposals, [])
+
+    def test_three_staff_majority_flags_the_lone_diverging_staff(self) -> None:
+        majority = _measures(4, 4)
+        # An extra quarter note in the first measure only - every later barline is
+        # shifted by the same constant amount, never catching back up.
+        diverging = _measures(5, 4)
+
+        proposals = propose_majority_position_corrections(
+            [list(majority), list(majority), list(majority), diverging]
+        )
+
+        self.assertEqual(len(proposals), 1)
+        proposal = proposals[0]
+        self.assertEqual(proposal.staff_index, 3)
+        self.assertEqual(proposal.measure_index, 0)
+        self.assertEqual(proposal.offset, Fraction(-1, 4))
+        self.assertEqual(proposal.corroborating_staves, 3)
+        self.assertIn("staff 3", proposal.reason)
+        self.assertIn("measure 1", proposal.reason)
+
+    def test_fewer_than_three_agreeing_staves_proposes_nothing(self) -> None:
+        majority = _measures(4, 4)
+        diverging = _measures(5, 4)
+
+        proposals = propose_majority_position_corrections([majority, diverging])
+
+        self.assertEqual(proposals, [])
+
+    def test_a_tied_majority_proposes_nothing(self) -> None:
+        sequence_a = _measures(4, 4)
+        sequence_b = _measures(3, 4)
+
+        proposals = propose_majority_position_corrections(
+            [list(sequence_a)] * 3 + [list(sequence_b)] * 3
+        )
+
+        self.assertEqual(proposals, [])
+
+    def test_a_non_constant_offset_declines_to_propose(self) -> None:
+        majority = _measures(4, 4, 4)
+        # Diverges by a different amount at each barline - a messier disagreement than
+        # one localized mis-decode, so this should decline rather than guess.
+        messy = _measures(5, 3, 6)
+
+        proposals = propose_majority_position_corrections(
+            [list(majority), list(majority), list(majority), messy]
+        )
+
+        self.assertEqual(proposals, [])
 
 
 if __name__ == "__main__":

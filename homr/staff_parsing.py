@@ -13,6 +13,7 @@ from homr.cross_staff_consistency import (
 )
 from homr.cross_staff_repair import (
     propose_carry_forward_key_signature,
+    propose_majority_position_corrections,
     propose_motif_articulation_corrections,
     propose_repairs,
 )
@@ -603,6 +604,14 @@ def _report_cross_staff_findings(
                     f"(staff {insertion_proposal.staff_index}, "
                     f"insert before position {insertion_proposal.position}: "
                     f"{insertion_proposal.inserted_rhythm!r})"
+                )
+            for position_proposal in propose_majority_position_corrections(staves):
+                eprint(
+                    f"System {system_index}: repair proposal - "
+                    f"{position_proposal.reason} "
+                    f"(staff {position_proposal.staff_index}, "
+                    f"measure {position_proposal.measure_index}, "
+                    f"offset {position_proposal.offset})"
                 )
     except Exception as error:  # noqa: BLE001
         eprint(f"Cross-staff consistency check failed, skipping: {error}")

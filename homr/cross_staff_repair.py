@@ -26,12 +26,23 @@ Never touches MusicXML or a decoded symbol list in place - `propose_majority_cor
 returns proposals a caller logs, hands to a human reviewer, or passes to
 `apply_proposal` explicitly. The same discipline §12.2 states for Stage B generally: "a
 review question, not an automatic correction."
+
+`propose_majority_position_corrections` is a narrower kind of proposal than the rest of
+this module: it *localizes* a majority-corroborated cumulative-barline-position
+divergence (the single largest Stage A finding in the 200-page benchmark,
+ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4) to one staff and one measure, but deliberately
+has no `apply_*` counterpart - unlike a key/time-signature or articulation value, there
+is no single low-ambiguity token to correct here (the divergence could originate from
+any note or rest within the flagged measure), so it stops at diagnosis rather than
+guess at content it has no way to verify.
 """
 
 import difflib
 from collections import Counter
 from dataclasses import dataclass
+from fractions import Fraction
 
+from homr.cross_staff_consistency import _cumulative_barline_positions
 from homr.transformer.vocabulary import EncodedSymbol
 
 #: Matches check_shared_motifs' own default (homr/cross_staff_consistency.py) - both
@@ -385,3 +396,92 @@ def apply_articulation_proposal(
         notation=original.notation,
     )
     return staff[: proposal.position] + [corrected] + staff[proposal.position + 1 :]
+
+
+@dataclass(frozen=True)
+class PositionDivergenceProposal:
+    """A cross-staff cumulative-barline-position divergence, localized to one staff and
+    one measure and corroborated by a majority of the system's other staves -
+    diagnostic only, no `apply_*` function. Every real instance seen in this session's
+    benchmark spot check (ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4) showed a clean
+    signature: a majority of staves agree exactly, and one staff's cumulative position
+    diverges by a *constant* offset from that point on - one mis-decoded note's
+    duration, or a systematic meter/subdivision misread, cascading through every later
+    barline. That signature says *where* (which measure) but not *what* (which note or
+    rest, and how) - the same ambiguity that keeps this proposal from having an
+    `apply_*` counterpart the way a key/time-signature or articulation correction does.
+    """
+
+    staff_index: int
+    #: 0-based - the measure ending at the first barline where this staff's cumulative
+    #: position diverges from the majority.
+    measure_index: int
+    #: majority's cumulative position minus this staff's, at and after divergence -
+    #: positive means this staff is missing duration, negative means it has extra.
+    offset: Fraction
+    corroborating_staves: int
+    reason: str
+
+
+def propose_majority_position_corrections(
+    staves: list[list[EncodedSymbol]],
+) -> list[PositionDivergenceProposal]:
+    """A localized, majority-corroborated cumulative-barline-position divergence, for
+    every staff whose barline positions diverge from at least three staves that agree
+    with each other exactly, *and* whose divergence is a constant offset from its first
+    mismatched barline through the rest of the compared range.
+
+    The corroboration bar mirrors `propose_motif_articulation_corrections`' three-staff
+    threshold: a two-staff disagreement alone cannot say which staff is wrong (this is
+    already `cross_staff_consistency.check_barline_positions`' territory), but a
+    three-or-more-staff majority against a lone dissenter is real evidence, the same
+    "report nothing rather than guess" bar every other proposal in this module holds
+    itself to. A tied majority, or a divergence whose offset does *not* stay constant
+    through the rest of the shared range (a messier, less localized disagreement -
+    seen, for instance, on a synthetic sample where most staves disagreed throughout
+    most systems) declines to propose anything for that staff, for the same reason.
+    """
+    positions = {index: _cumulative_barline_positions(staff) for index, staff in enumerate(staves)}
+    with_barlines = {index: value for index, value in positions.items() if value}
+    if len(with_barlines) < 4:
+        return []
+    shortest = min(len(value) for value in with_barlines.values())
+    if shortest == 0:
+        return []
+    truncated = {index: tuple(value[:shortest]) for index, value in with_barlines.items()}
+
+    counts = Counter(truncated.values())
+    majority_sequence, majority_count = counts.most_common(1)[0]
+    if majority_count < 3:
+        return []
+    if list(counts.values()).count(majority_count) > 1:
+        return []  # a genuine tie - the same refusal propose_majority_correction uses
+
+    proposals = []
+    for staff_index, sequence in truncated.items():
+        if sequence == majority_sequence:
+            continue
+        divergence_index = next(i for i in range(shortest) if sequence[i] != majority_sequence[i])
+        offsets = {
+            majority_sequence[i] - sequence[i] for i in range(divergence_index, shortest)
+        }
+        if len(offsets) != 1:
+            continue  # not a clean, localized divergence - decline rather than guess
+        offset = next(iter(offsets))
+        proposals.append(
+            PositionDivergenceProposal(
+                staff_index=staff_index,
+                measure_index=divergence_index,
+                offset=offset,
+                corroborating_staves=majority_count,
+                reason=(
+                    f"staff {staff_index}'s cumulative barline position diverges from "
+                    f"a {majority_count}-staff majority starting at measure "
+                    f"{divergence_index + 1}, by a constant {offset} whole note(s) for "
+                    "the rest of the compared range - localizes the divergence to this "
+                    "one measure, but not to a specific note or rest within it, so no "
+                    "automatic correction is proposed"
+                ),
+            )
+        )
+    return proposals
