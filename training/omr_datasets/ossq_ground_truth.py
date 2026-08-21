@@ -52,5 +52,12 @@ def measure_start_for_system(image_path: Path, system_index: int) -> int | None:
     for path in candidates:
         if path.exists():
             data = yaml.safe_load(path.read_text())
-            return int(data["measure_start"])
+            raw = data["measure_start"]
+            try:
+                return int(raw)
+            except (TypeError, ValueError):
+                # Some corpus metadata carries a non-numeric placeholder here (e.g.
+                # "X2") - presumably marking an alignment the corpus itself is unsure
+                # of. Treat exactly like no metadata rather than guessing at it.
+                continue
     return None

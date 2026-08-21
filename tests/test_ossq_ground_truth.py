@@ -79,6 +79,18 @@ class TestMeasureStartForSystem(unittest.TestCase):
             )
             self.assertEqual(measure_start_for_system(image, system_index=1), 44)
 
+    def test_a_non_numeric_placeholder_is_treated_as_no_mapping(self) -> None:
+        # Real corpus metadata has been observed carrying "X2" here - presumably
+        # marking an alignment the corpus itself isn't sure of.
+        with tempfile.TemporaryDirectory() as tmp:
+            image = _make_piece(Path(tmp))
+            systemwise = image.parents[3] / "metadata" / "scanned" / "systemwise"
+            (systemwise / "sq1234:0005:0002.yaml").write_text(
+                "score_id: sq1234\npage_idx: 4\nsystem_idx: 2\nmeasure_start: X2\nmeasure_end: X4\n",
+                encoding="utf-8",
+            )
+            self.assertIsNone(measure_start_for_system(image, system_index=1))
+
 
 if __name__ == "__main__":
     unittest.main()
