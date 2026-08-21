@@ -1275,3 +1275,36 @@ never assumes it will need Stage C. Starting here means starting at the beginnin
 this document because it is the newest, least-derisked of the four threads: no code, no
 measurement, and its own success criterion (Stage C being *unnecessary*) is still
 completely open.
+
+---
+
+## 5. Decoder rhythm/duration accuracy — design drafted, nothing built yet
+
+Full design in `DECODER_RHYTHM_ACCURACY_DESIGN.md` (new file, this session). Directly
+motivated by §4's own "net read": the dominant unrepaired Stage A finding
+(`barline_position_mismatch`, `measure_duration_mismatch`) is a decoder duration-drift
+signal, not something Stage B can safely fix outright, and the design doc argues this
+should be tried before Stage C's learned adapter, not instead of it.
+
+Staged cheapest-first, each phase measured against the same 200-page Stage A/B
+benchmark rather than training loss alone (phase21's own lesson - a clean loss signal
+did not survive contact with the bigger question it was meant to answer):
+
+1. **Phase 0** - audit whether some fraction of flagged disagreements are actually
+   mislabeled training data, not decoder error, reusing existing ground-truth
+   cross-checking and label-audit tooling already in this repo.
+2. **Phase 1** - decode-time beam search + cross-staff-consistency reranking, no
+   retraining. Confirmed while writing this doc: generation is purely greedy argmax on
+   every code path today (`homr/transformer/decoder_inference.py`,
+   `training/architecture/transformer/decoder.py`) - beam search does not exist yet and
+   would need building from nothing. Targets the "one mis-decoded note, constant
+   additive offset" failure type specifically; not expected to help a systematic
+   meter/subdivision misread (constant-ratio type) or chaotic multi-staff disagreement.
+3. **Phase 2** - a new auxiliary cumulative-position/duration head (frozen-core probe
+   first, exactly phase20's precedent), only if 0-1 don't close enough of the gap.
+4. **Phase 3** - Stage C itself (§4 above), if the smaller interventions still leave a
+   real gap.
+
+Not started - no code, no experiment run. The design doc itself flags its main open
+risk: whether the systematic-misread failure type is fixable by anything smaller than
+Stage C's cross-staff context at all.
