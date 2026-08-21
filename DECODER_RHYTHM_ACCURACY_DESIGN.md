@@ -178,29 +178,47 @@ decoded divergence be checked directly against it, no whole-score lookup needed.
   3-staff majority (`25/4` vs `6`). The ground truth for this measure, part 3, is
   `quarter(2) + dotted-quarter(3) + quarter(2) + eighth(1)` = 8 duration units = a full
   whole note, against the other three parts' `quarter+eighth+quarter+eighth` = 6 units =
-  `3/4` - the same `1/4`-whole-note excess, in the *ground truth itself*, before any
-  model ever saw the page. **HOMR decoded this correctly** - the "disagreement" Stage A
-  flagged is a genuine irregularity already present in the source data (a real
-  over-length measure in one part, or an artifact of this specific corpus entry's own
-  authoring - either way, not something the decoder introduced.
+  `3/4` - the same `1/4`-whole-note excess, in the *ground truth itself*. First read: "a
+  genuine irregularity already present in the source, HOMR decoded it correctly."
+  **Overturned by comparing directly against the scan**: the actual page shows a plain
+  quarter-eighth-quarter-eighth in the viola, identical to the other three parts - no
+  dotted quarter anywhere. The ground truth's dot doesn't exist on the page. **The
+  ground truth is wrong, not HOMR** - and since HOMR's decode reproduces this exact
+  error, and this page is very likely in HOMR's own training set, the model may have
+  learned this specific wrong duration directly from the mislabeled example. This
+  single case justified a corpus-wide check (never legitimate for two parts to disagree
+  on measure length): **999 measures across 164 of 475 ground-truth files (~35%)** show
+  the same kind of internal disagreement (`OSSQ_GROUND_TRUTH_ERRORS.md`,
+  `training/omr_datasets/ossq_measure_length_audit.py`) - split almost evenly between
+  excess (499) and shortfall (459), which rules out a single benign explanation (an
+  omitted-trailing-rest convention could only ever produce shortfalls). Only this one
+  case has been confirmed against its actual scan so far; the other 998 are flagged by
+  the invariant alone.
 - **Borodin Quartet No. 2 p.24, system 1, staff 1, measure 6 (first measure of that
   system)**: HOMR's decode showed a constant `1/8`-whole-note offset for this staff
   against a 3-staff majority. Checking ground truth required first noticing each part
   uses its *own* `<divisions>` value (12 for P1/P2, 2 for P3/P4 in this file) - raw
   `<duration>` units are not comparable across parts without normalizing by each part's
   own divisions first. Once normalized, **all four parts' ground truth agree exactly**
-  on this measure (`3/4` each) - no irregularity, no ambiguity. HOMR's divergence here
-  is a genuine decode error, not a labeling artifact.
+  on this measure (`3/4` each) - no irregularity, no ambiguity, and (unlike Beethoven)
+  no internal inconsistency either. HOMR's divergence here is a genuine decode error;
+  the likely cause is an implicit (unmarked) triplet in the passage - a real notational
+  ambiguity HOMR's per-staff decoder has no cross-part or metrical context to resolve,
+  not an arbitrary slip.
 
-**Read on these two**: both failure sources are real. At least some fraction of
-`barline_position_mismatch` reflects genuine source-data irregularities the decoder
-reproduced faithfully, not model error - meaning the raw finding count (306) should not
-be read as "306 decoder mistakes." But real decoder errors also occur (the Borodin
-case), so Phases 1-2 remain worth pursuing; the goal is a corpus-wide estimate of the
-split, not a claim that decode accuracy is fine as-is. Widening this sample (and
-watching for the `<divisions>`-per-part normalization trap the Borodin case surfaced,
-which a naive raw-duration comparison would have silently gotten wrong) is the natural
-next step here, before or alongside Phase 1.
+**Read on these two, revised**: the Beethoven case flipped from "confirmed source
+irregularity" to "confirmed ground-truth labeling error" once checked against the
+actual scan rather than trusting the encoding at face value - a reminder that this
+whole Phase 0 exercise needs the primary source, not just internal cross-checks, to
+reach a real verdict. Given the corpus-wide result (999 measures, ~35% of files), a
+meaningful share of `barline_position_mismatch`'s 306-count is likely training-data
+noise rather than decoder error - but the Borodin case shows real decode errors happen
+too, on genuinely hard passages (implicit triplets) a wider or more careful reading
+could still address. Phases 1-2 remain worth pursuing; the open work is (a) sampling
+more of the 999 against their actual scans to get a real error-rate estimate rather than
+an internal-consistency proxy, and (b) checking whether other flagged
+`barline_position_mismatch`/`measure_duration_mismatch` pages land on one of the 999
+already-known-bad measures before assuming they're decoder errors at all.
 
 ### 7.2 Phase 1: decode-time cross-staff-consistency reranking (no retraining)
 

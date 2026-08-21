@@ -1278,7 +1278,7 @@ completely open.
 
 ---
 
-## 5. Decoder rhythm/duration accuracy — design drafted, Phase 0 started
+## 5. Decoder rhythm/duration accuracy — design drafted, Phase 0 found real corpus errors
 
 Full design in `DECODER_RHYTHM_ACCURACY_DESIGN.md` (new file, this session). Directly
 motivated by §4's own "net read": the dominant unrepaired Stage A finding
@@ -1292,15 +1292,25 @@ did not survive contact with the bigger question it was meant to answer):
 
 1. **Phase 0** - audit whether some fraction of flagged disagreements are actually
    mislabeled training data, not decoder error, reusing existing ground-truth
-   cross-checking and label-audit tooling already in this repo. **Started, n=2 pages
-   (small - a first read)**: Beethoven Op.133 p.13's flagged divergence turned out to
-   already exist in the ground truth itself (HOMR decoded it correctly - a genuine
-   source irregularity, not a model error); Borodin Quartet No. 2 p.24's flagged
-   divergence does not exist in ground truth (all four parts agree once each part's own
-   `<divisions>` value is normalized - a real decode error). Both failure sources are
-   real; the 306-count finding total should not be read as 306 decoder mistakes, but
-   real decode errors do occur and Phases 1-2 remain worth pursuing. Full detail and the
-   `<divisions>`-per-part normalization trap this surfaced:
+   cross-checking and label-audit tooling already in this repo. **n=2 pages checked
+   against their actual scans, then widened to a corpus-wide structural check**:
+   Beethoven Op.133 p.13's flagged divergence first looked like a genuine source
+   irregularity HOMR decoded correctly - **overturned on comparing directly against the
+   scan**: the page shows no dotted quarter at all, identical to the other three parts.
+   The ground truth is wrong, not HOMR, and since HOMR's decode reproduces the exact
+   error, the model may have learned it from this same mislabeled training example.
+   Borodin Quartet No. 2 p.24's divergence, by contrast, has internally consistent
+   ground truth (all four parts agree once each part's own `<divisions>` value is
+   normalized) - a genuine decode error, likely from an implicit (unmarked) triplet in
+   the passage. Since two parts disagreeing on measure length is never legitimate
+   notation, the confirmed Beethoven case justified a full corpus scan: **999 measures
+   across 164 of 475 ground-truth files (~35%)** show the same internal disagreement,
+   split almost evenly between excess (499) and shortfall (459) - ruling out a single
+   benign explanation. Only the Beethoven case is confirmed against its actual scan;
+   the rest are flagged by the invariant alone. Full results and methodology:
+   `OSSQ_GROUND_TRUTH_ERRORS.md` (drafted for possible forwarding to the ossq-omr
+   authors, not filed anywhere yet), `training/omr_datasets/
+   ossq_measure_length_audit.py`. Detail on both spot-checked pages:
    `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1.
 2. **Phase 1** - decode-time beam search + cross-staff-consistency reranking, no
    retraining. Confirmed while writing this doc: generation is purely greedy argmax on
