@@ -199,26 +199,38 @@ decoded divergence be checked directly against it, no whole-score lookup needed.
   against a 3-staff majority. Checking ground truth required first noticing each part
   uses its *own* `<divisions>` value (12 for P1/P2, 2 for P3/P4 in this file) - raw
   `<duration>` units are not comparable across parts without normalizing by each part's
-  own divisions first. Once normalized, **all four parts' ground truth agree exactly**
-  on this measure (`3/4` each) - no irregularity, no ambiguity, and (unlike Beethoven)
-  no internal inconsistency either. HOMR's divergence here is a genuine decode error;
-  the likely cause is an implicit (unmarked) triplet in the passage - a real notational
-  ambiguity HOMR's per-staff decoder has no cross-part or metrical context to resolve,
-  not an arbitrary slip.
+  own divisions first. Once normalized, **all four parts' ground truth *totals* agree
+  exactly** (`3/4` each) - which first read as "no irregularity, no internal
+  inconsistency, so this must be a genuine decode error," most likely an implicit
+  (unmarked) triplet HOMR's per-staff decoder had no context to resolve. **That reading
+  does not survive comparing the actual note content against the scan.** The encoded
+  ground truth for this measure is a quarter rest, four 16th notes, and a closing
+  quarter - five discrete events. The scan shows six plain eighth notes beamed 3+3
+  under one slur, no rest, no closing quarter. These are different rhythms that happen
+  to sum to the same total - there is no triplet ambiguity to explain here, the
+  encoding simply does not match the page. **This is a second, structurally different
+  ground-truth error** - a content substitution that a duration-only check (like
+  `ossq_measure_length_audit.py`, §7.1's corpus-wide follow-up) cannot detect, since the
+  wrong content still totals correctly. The "implicit triplet" explanation was wrong,
+  not just incomplete.
 
-**Read on these two, revised**: the Beethoven case flipped from "confirmed source
-irregularity" to "confirmed ground-truth labeling error" once checked against the
-actual scan rather than trusting the encoding at face value - a reminder that this
-whole Phase 0 exercise needs the primary source, not just internal cross-checks, to
-reach a real verdict. Given the corpus-wide result (999 measures, ~35% of files), a
-meaningful share of `barline_position_mismatch`'s 306-count is likely training-data
-noise rather than decoder error - but the Borodin case shows real decode errors happen
-too, on genuinely hard passages (implicit triplets) a wider or more careful reading
-could still address. Phases 1-2 remain worth pursuing; the open work is (a) sampling
-more of the 999 against their actual scans to get a real error-rate estimate rather than
-an internal-consistency proxy, and (b) checking whether other flagged
-`barline_position_mismatch`/`measure_duration_mismatch` pages land on one of the 999
-already-known-bad measures before assuming they're decoder errors at all.
+**Read on these two, revised twice now**: both cases initially looked like clean
+explanations of HOMR's behavior - a real source irregularity in one case, an implicit
+triplet in the other - and neither survived comparison against the actual scan. Both
+are ground-truth errors, of different kinds (a wrong duration value; a wrong note
+sequence with a coincidentally-correct total). **Of the two cases checked against their
+scans, zero are confirmed HOMR decode errors** - finding a genuine one is still open.
+Given the corpus-wide result (999 measures, ~35% of files, via the duration-only
+method), a meaningful share of `barline_position_mismatch`'s 306-count is likely
+training-data noise - and the true share is probably *higher* than that count suggests,
+since the Borodin case is exactly the kind of error the duration-only audit cannot see
+at all. Phases 1-2 remain worth pursuing, but their premise - that some real share of
+this finding is a decoder problem worth fixing - itself still needs a clean confirmed
+example, not just an assumption. The open work is (a) checking several more flagged
+pages against their scans specifically looking for a genuine decode error, not stopping
+at the first plausible-sounding explanation, and (b) checking whether other flagged
+pages land on one of the 999 already-known-bad measures before assuming they're decoder
+errors at all.
 
 ### 7.2 Phase 1: decode-time cross-staff-consistency reranking (no retraining)
 

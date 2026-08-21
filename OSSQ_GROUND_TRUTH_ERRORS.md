@@ -79,20 +79,44 @@ not necessarily where they're worst):
 
 ## Confirmed against the actual scan (not just the encoding)
 
-Only the Beethoven case above has been checked against the primary source image
-directly - that check is what turns "the encoding is internally inconsistent" into "the
-encoding is definitely wrong," so it's the one case in this doc confirmed at that level
-of certainty. The remaining 998 measures are flagged by the invariant alone (internal
-disagreement between parts in the same encoded file), which is sufficient to say
-*something* is wrong, but not yet checked against each page's scan to confirm exactly
-what.
+Two cases in this investigation have been checked against the primary source image
+directly, and **both turned out to be ground-truth errors, of two different kinds** -
+neither survived as "HOMR made a decode error" once the actual page was checked. The
+remaining 997 measures below are flagged by the invariant alone (internal disagreement
+between parts in the same encoded file), which is sufficient to say *something* is
+wrong, but not yet checked against each page's scan to confirm exactly what - these two
+are the only ones confirmed at that level of certainty so far, and both point the same
+direction: don't trust the encoding at face value even when it looks internally
+consistent.
 
-A related but distinct case surfaced during the same investigation - Borodin Quartet
-No. 2, p.24, measure 6 (internal numbering) - where HOMR's decode disagreed with the
-ground truth, but the ground truth itself is internally consistent (all four parts
-agree once normalized) and not part of this list. That one is a genuine HOMR decode
-error, most likely triggered by an implicit (unmarked) triplet in the passage - it
-belongs in `DECODER_RHYTHM_ACCURACY_DESIGN.md`, not here.
+- **Beethoven Grosse Fuge Op.133, p.13, measure 8** (detailed above): a wrong note
+  value - a dotted quarter in the ground truth that doesn't exist on the page. This one
+  *is* on the measure-length-disagreement list (the wrong duration shows up as a total
+  that disagrees with the other three parts).
+
+- **Borodin Quartet No. 2, p.24, measure 6 (internal numbering), violin II**: a
+  different and arguably more concerning failure mode. HOMR's decode disagreed with the
+  ground truth by a constant `1/8` whole note, and the ground truth's *total* duration
+  for this measure agreed exactly with the other three parts (`3/4` each) once
+  normalized for each part's own `<divisions>` value - which first read as "the
+  encoding is internally consistent, so this must be a genuine HOMR decode error,"
+  probably an implicit (unmarked) triplet HOMR's decoder had no context to resolve.
+  **That reading didn't survive comparing the actual note content against the scan.**
+  The encoded ground truth is a quarter rest, four 16th notes, and a closing quarter -
+  five discrete events. The scan shows six plain eighth notes beamed 3+3 under one
+  slur, no rest, no closing quarter. These are different rhythms that happen to sum to
+  the same total, not two readings of the same passage - there is no triplet ambiguity
+  to explain, the encoding simply doesn't match the page. **This measure is *not* on
+  the 999-count list above**, because `ossq_measure_length_audit.py` only compares
+  total duration per measure across parts - it is structurally blind to a content
+  substitution that preserves the correct total. That is a real limitation of the
+  method: the true error count in this corpus is likely higher than 999, and finding
+  the rest would need a check that compares actual note content, not just totals.
+
+Net effect: of the two cases checked against their scans, zero are confirmed HOMR
+decode errors. Finding one - to actually validate the Phase 1/2 remedies in
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` are addressing a real model problem, not corpus
+noise - is still open.
 
 ## Open questions before this goes anywhere
 
@@ -106,3 +130,9 @@ belongs in `DECODER_RHYTHM_ACCURACY_DESIGN.md`, not here.
 - Whether this method (or `ossq_measure_length_audit.py` itself) is useful to the
   ossq-omr/omr-data-preprocessor authors as a validation check in their own pipeline,
   independent of whether these specific 999 measures get individually corrected.
+- The Borodin case shows the duration-only method has a real blind spot: a content
+  substitution that preserves the correct total goes undetected. Whether a
+  content-level check (comparing note sequences, not just totals) is worth building -
+  and how it would even establish ground truth to compare against, given the primary
+  source is a scan, not another symbolic file - is an open design question, not just an
+  extension of the existing script.
