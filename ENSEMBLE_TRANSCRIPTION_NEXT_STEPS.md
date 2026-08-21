@@ -1278,7 +1278,7 @@ completely open.
 
 ---
 
-## 5. Decoder rhythm/duration accuracy — design drafted, Phase 0 found corpus errors (no confirmed decode error yet)
+## 5. Decoder rhythm/duration accuracy — Phase 0 complete: this finding is corpus noise, not decoder error (91/91)
 
 Full design in `DECODER_RHYTHM_ACCURACY_DESIGN.md` (new file, this session). Directly
 motivated by §4's own "net read": the dominant unrepaired Stage A finding
@@ -1322,8 +1322,26 @@ did not survive contact with the bigger question it was meant to answer):
    `deep_barline_audit.py` (in-process, not subprocess+regex - computes exact
    per-system barline counts to convert every majority-corrected measure to an absolute
    ground-truth measure number and check it programmatically) specifically to catch
-   this class of mistake at scale rather than repeat it one page at a time; running
-   across the full 200-page sample overnight, in progress as of this entry.
+   this class of mistake at scale rather than repeat it one page at a time.
+
+   **Run to completion across all 200 pages: 91 `majority_position_correction`
+   proposals total. All 91 land on a measure where ground truth already disagrees.
+   Zero land on a measure where ground truth agrees.** Not "some corpus noise" -
+   total, for this specific slice. One additional instance (Wolf String Quartet,
+   p.22) spot-checked visually for extra confidence beyond the raw numbers, consistent
+   with the ground truth's own numbers. Full output:
+   `training/omr_datasets/ossq_audit_findings/majority_position_correction_ground_truth_check.json`.
+
+   **Phase 0 is done, and the answer changes the plan.** The clean, majority-
+   corroborated position-divergence signature `propose_majority_position_corrections`
+   targets appears to function as a ground-truth-defect detector, not an independent
+   decoder-error detector - a decoder that has learned to faithfully reproduce specific
+   corpus labeling defects, not one making its own independent mistakes. **Corpus
+   cleanup (`OSSQ_GROUND_TRUTH_ERRORS.md`) is now the higher-priority lever for this
+   specific finding, ahead of Phase 1's beam-search machinery** - Phase 1/2 remain
+   worth pursuing only for whatever genuine decode-error share exists outside this
+   slice (Type 3/chaotic disagreements, 2-staff cases below the 3-staff corroboration
+   bar), which this tool doesn't reach and remains unmeasured.
 2. **Phase 1** - decode-time beam search + cross-staff-consistency reranking, no
    retraining. Confirmed while writing this doc: generation is purely greedy argmax on
    every code path today (`homr/transformer/decoder_inference.py`,

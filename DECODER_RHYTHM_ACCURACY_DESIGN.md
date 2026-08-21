@@ -232,18 +232,59 @@ explanations of HOMR's behavior - a real source irregularity in one case, an imp
 triplet in the other - and neither survived comparison against the actual scan. Both
 are ground-truth errors, of different kinds (a wrong duration value; a wrong note
 sequence with a coincidentally-correct total). **Of the two cases checked against their
-scans, zero are confirmed HOMR decode errors** - finding a genuine one is still open.
-Given the corpus-wide result (999 measures, ~35% of files, via the duration-only
-method), a meaningful share of `barline_position_mismatch`'s 306-count is likely
-training-data noise - and the true share is probably *higher* than that count suggests,
-since the Borodin case is exactly the kind of error the duration-only audit cannot see
-at all. Phases 1-2 remain worth pursuing, but their premise - that some real share of
-this finding is a decoder problem worth fixing - itself still needs a clean confirmed
-example, not just an assumption. The open work is (a) checking several more flagged
-pages against their scans specifically looking for a genuine decode error, not stopping
-at the first plausible-sounding explanation, and (b) checking whether other flagged
-pages land on one of the 999 already-known-bad measures before assuming they're decoder
-errors at all.
+scans, zero are confirmed HOMR decode errors.**
+
+### `deep_barline_audit.py`: the corpus-wide answer, not just two pages
+
+Built to do properly, at scale, what the Borodin correction above showed manual
+spot-checking gets wrong one page at a time: rather than shelling out to `homr.main`
+and scraping printed diagnostics, it calls HOMR's own pipeline in-process
+(`homr.main.detect_staffs_in_image` + `homr.staff_parsing.parse_staffs`) to get the
+actual decoded staves per system, computes `_cumulative_barline_positions` on *every*
+system (not just the ones with a printed mismatch), and sums barline counts across all
+earlier systems on a page to convert a `propose_majority_position_corrections`
+proposal's local `measure_index` into the correct absolute ground-truth measure number
+- the exact conversion manual spot-checking has to get right by hand every time, and
+the Borodin case shows how easy it is to get wrong. For every proposal, it then checks
+that absolute measure's ground truth directly (reusing `measure_length_by_part` from
+`ossq_measure_length_audit.py`), rather than only comparing against a pre-computed
+static list.
+
+**Run across the full 200-page benchmark sample: 91 `majority_position_correction`
+proposals total. All 91 land on a measure where ground truth already disagrees. Zero
+land on a measure where ground truth agrees.** Full output:
+`training/omr_datasets/ossq_audit_findings/majority_position_correction_ground_truth_check.json`.
+Spot-checked one additional instance against its scan for confidence beyond the raw
+numbers (Wolf's String Quartet, p.22, system 1, measure 6/334, cello) - the flagged
+part's measure is visually a long sustained figure clearly different in character from
+the same measure in the other three parts, consistent with the `+1/2`-whole-note excess
+the ground truth encodes; not pursued to the same full-restaging as Beethoven/Borodin
+given the 91/91 result already stated the case on its own.
+
+**This is a materially stronger result than "some training-data noise, some decoder
+errors, unknown split."** Every single clean, majority-corroborated position divergence
+found across 200 real pages traces to an already-broken ground-truth measure - not most
+of them, all of them. The Beethoven case's own speculation ("the model may have learned
+this specific wrong duration directly from the mislabeled training example") looks like
+the general mechanism, not a one-off: a `propose_majority_position_corrections` firing
+(3+ staves cleanly agreeing, one cleanly offset by a constant amount) appears to be, in
+this sample, a *ground-truth-defect detector* riding on top of a decoder that has
+learned to reproduce those specific defects faithfully, not an independent
+decoder-error detector at all.
+
+**What this means for Phases 1-2**: their premise - that some real share of
+`barline_position_mismatch` is a decoder problem beam search or an auxiliary head could
+fix - has no supporting example in this sample, for the specific "clean, constant-offset"
+signature those phases are aimed at. That doesn't mean HOMR never makes a genuine
+duration decode error (Type 3/chaotic disagreements, and 2-staff disagreements below
+`propose_majority_position_corrections`' 3-staff corroboration bar, are both outside
+what this check covers), but the narrow slice this document scoped Phase 1 toward -
+exactly the slice Stage B's rule already isolates - now looks like it should be
+retargeted at the corpus, not the decoder. **Recommendation: treat corpus cleanup
+(`OSSQ_GROUND_TRUTH_ERRORS.md`) as the higher-priority lever for this specific finding
+before investing in Phase 1's beam-search machinery**, and keep looking for a genuine
+decode error specifically among the Type 3/chaotic and 2-staff cases this tool doesn't
+reach, if Phases 1-2 are still to be pursued on solid footing rather than an assumption.
 
 ### 7.2 Phase 1: decode-time cross-staff-consistency reranking (no retraining)
 

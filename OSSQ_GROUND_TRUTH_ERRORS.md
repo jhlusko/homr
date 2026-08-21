@@ -123,10 +123,41 @@ consistent.
   is still wrong, confirmed against the scan directly), but it does mean this measure
   was never a clean, isolated single-measure divergence to begin with.
 
-Net effect: of the two cases checked against their scans, zero are confirmed HOMR
-decode errors. Finding one - to actually validate the Phase 1/2 remedies in
-`DECODER_RHYTHM_ACCURACY_DESIGN.md` are addressing a real model problem, not corpus
-noise - is still open.
+Net effect from the two manually-checked pages: of the two cases checked against their
+scans, zero are confirmed HOMR decode errors.
+
+## Corpus-wide follow-up: `deep_barline_audit.py` (91/91, not just 2 pages)
+
+The two-page result above prompted a proper corpus-wide version, not just more manual
+spot-checks: `training/omr_datasets/deep_barline_audit.py` calls HOMR's own pipeline
+in-process (rather than shelling out and scraping printed diagnostics) to get exact
+per-system barline counts on every system, converts each `propose_majority_position_
+correction` proposal's local measure index into the correct absolute ground-truth
+measure number (summing barline counts across every earlier system on the page - the
+exact step that made the manual Borodin check unreliable), and checks that measure's
+ground truth directly.
+
+**Run across the full 200-page benchmark sample: 91 `majority_position_correction`
+proposals total. All 91 land on a measure where ground truth already disagrees by the
+invariant. Zero land on a measure where ground truth agrees.** Full output:
+`training/omr_datasets/ossq_audit_findings/majority_position_correction_ground_truth_check.json`.
+One additional instance (Wolf String Quartet, p.22, system 1, measure 6, cello - a
+`+1/2`-whole-note excess) was spot-checked visually for extra confidence: the flagged
+part's measure is a clearly different, longer sustained figure than the same measure in
+the other three parts, consistent with the ground truth's own numbers.
+
+**This is stronger than "some corpus noise" - it's total, for this specific slice.**
+Every clean, majority-corroborated position divergence found across 200 real pages
+traces to an already-broken ground-truth measure. Read alongside the Beethoven case's
+own speculation (HOMR's decode reproduces the *exact* wrong duration the mislabeled
+ground truth encodes) and this looks like the general mechanism, not a one-off:
+`propose_majority_position_corrections` firing appears to function as a ground-truth-
+defect detector, riding on a decoder that has learned to faithfully reproduce those
+specific defects - not an independent decoder-error detector. See
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1 for what this means for that document's
+Phase 1/2 plans (short version: corpus cleanup now looks like the higher-priority lever
+for this specific finding, ahead of building beam-search reranking to fix decoder
+errors this sample found none of).
 
 ## Open questions before this goes anywhere
 
