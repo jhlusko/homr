@@ -1292,7 +1292,7 @@ completely open.
 
 ---
 
-## 5. Decoder rhythm/duration accuracy — corrected: one confirmed decode error found, redo is genuinely mixed
+## 5. Decoder rhythm/duration accuracy — corrected and corpus-wide: 87/91 now show real decode divergence (was invalidly 91/91 "noise")
 
 **The original Phase 0 result below was fully retracted, then redone correctly - see
 `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1 for the complete account.** Short version: the
@@ -1320,8 +1320,32 @@ page-local-to-absolute mapping needed, already provided, not self-derived):
   evidence they're correct - a real, important caveat for how much to trust Stage A's
   whole cross-staff-agreement premise on a hard passage (`ff`, dense chords, trills).
 
-Not corpus-wide - two pages, redone properly this time, not a full sweep. That would
-need the same corrected methodology applied broadly, not attempted here.
+**Redone corpus-wide too** (`deep_barline_audit_v2.py`, same 200-page sample):
+
+```
+total majority_position_correction proposals: 91
+  ground truth disagrees (known corpus defect): 1  (a 1/1440-unit rounding blip, not a real error)
+  ground truth agrees (candidate: real decode error): 87
+  no ground truth / no measure-mapping metadata: 3
+```
+
+**The exact opposite of the invalid original "91/91 corpus noise" result.** That number
+was always going to be near-total agreement - it compared a near-deterministic model
+against its own prior output. Against real ground truth: 87 of 91 diverge from truth in
+a way the corpus doesn't explain - strong, reversed evidence this failure family is
+predominantly decoder error, giving Phase 1 real justification at last.
+
+**Caveat, not full confirmation**: this is still a duration-*total* check, same as
+`ossq_measure_length_audit.py` - it doesn't verify each flagged note individually.
+A second content-level spot-check (Dvořák Op.51, real measure 274, attempting the same
+verification Beethoven got) came back inconclusive, similar to Moeran - all four parts
+differed substantially from ground truth, not just the flagged staff. Only Beethoven is
+a clean, fully content-verified confirmed decode error; the other 86 "agrees" entries
+are real, meaningful evidence at the duration-total level, not yet individually
+verified. Distinguishing Beethoven-shaped (one clean wrong note, what Phase 1 targets)
+from Moeran-shaped (broadly poor decode on a hard passage, which reranking against an
+already-wrong majority wouldn't fix) at scale is the actual remaining open question, not
+attempted here.
 
 Full design in `DECODER_RHYTHM_ACCURACY_DESIGN.md` (new file, this session). Directly
 motivated by §4's own "net read": the dominant unrepaired Stage A finding

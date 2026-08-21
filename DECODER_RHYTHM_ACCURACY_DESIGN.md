@@ -221,10 +221,56 @@ against a majority that is itself wrong just picks a different wrong answer.
 **Net read, corrected**: a real, confirmed decode error exists (Beethoven), giving
 Phase 1 a genuine target at last - but it is not necessarily representative. The Moeran
 case is a reminder that cross-staff *agreement* is a much weaker signal of correctness
-than this whole track has been assuming; a corpus-wide redo (same corrected
-methodology: whole-score ground truth + `measure_start` alignment from the corpus's own
-metadata) would be needed to know how common each failure shape actually is, not
-attempted here given the scope of what's already been redone.
+than this whole track has been assuming.
+
+### The corpus-wide redo, done properly: 87/91 now show a real divergence from truth
+
+`deep_barline_audit_v2.py` (`training/omr_datasets/`) is the corrected rerun of the
+original `deep_barline_audit.py`, using `ossq_ground_truth.py`'s `real_ground_truth_path`
+and `measure_start_for_system` instead of the broken `<page>.musicxml` path. Run across
+the same 200-page benchmark sample:
+
+```
+total majority_position_correction proposals: 91
+  ground truth disagrees (known corpus defect by the invariant): 1
+  ground truth agrees (candidate: real decode error): 87
+  no ground truth / no measure-mapping metadata available: 3
+```
+
+**This is the exact opposite of the invalid original result (91/91 "corpus noise").**
+That number was always going to be near-total agreement, because it was comparing HOMR
+against its own prior output - a near-deterministic model agreeing with itself. Against
+real ground truth, the picture flips: only 1 of 91 lands on an actual corpus defect
+(and a tiny one - three parts read `1440`, one reads `1441`, a 1-part-in-1440 rounding
+discrepancy, not a meaningful musical error). The other 87 diverge from ground truth in
+a way the corpus does not explain.
+
+**A caveat before treating "87" as "87 confirmed decode errors" the way Beethoven is
+confirmed**: `agrees`/`disagrees` here is still a *duration-total* check, the same kind
+`ossq_measure_length_audit.py` does - it says the flagged measure's real ground truth
+does not exhibit the same disagreement HOMR's decode shows, not that the specific note
+HOMR got wrong has been identified. A second spot-check (Dvořák Op.51, real measure
+274) attempted the same full content-level verification Beethoven got, and came back
+inconclusive - HOMR's fresh decode differed substantially from ground truth across
+*all four* parts, not just the one flagged staff, similar to the Moeran case. Total
+measure count matched exactly (25 HOMR-decoded measures for a page the corpus's own
+metadata also spans 25 measures), so this isn't obviously a broken alignment, but
+per-system boundaries could still differ between HOMR's own detected system sizes and
+the corpus's reference breakdown in a way that shifts individual measure mappings even
+when the page grand total matches - not ruled out. Only Beethoven has a clean,
+fully content-verified confirmed decode error; the other 86 "agrees" entries are
+real, meaningful evidence (the corpus's own data doesn't explain the divergence) at
+the duration-total level, not yet each individually verified note-by-note.
+
+**Net implication for Phase 1/2**: strong, aggregate evidence that this failure family
+is predominantly decoder error, not corpus noise (a full reversal from the invalid
+original conclusion) - Phase 1's beam-search reranking now has real justification. The
+Moeran/Dvořák caveat matters for scope, though: some real fraction of "agrees" cases may
+turn out to be Moeran-shaped (broadly poor decode across a hard passage, where
+reranking against a majority that is itself wrong doesn't help) rather than Beethoven-
+shaped (one clean, isolated wrong note, exactly what reranking targets). Distinguishing
+the two at scale - not attempted here - would need the same content-level check
+Beethoven got, run across all 87, not just totals.
 
 Before attributing every flagged disagreement to a *decoding* error, rule out training
 data itself being part of the story: sample some number of already-flagged

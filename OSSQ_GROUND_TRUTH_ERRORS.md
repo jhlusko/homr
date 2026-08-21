@@ -38,10 +38,22 @@ specifically (real whole-score ground truth + this mapping + a fresh `homr.main`
 with the other three parts exactly (`quarter-eighth-quarter-eighth`); HOMR's own fresh
 decode is what turns the eighth into a dotted quarter. This page contributes zero
 entries to this document - it's a confirmed HOMR decode error instead, documented in
-`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1. The 999-measure sweep and every other entry
-in this document remain unverified against real ground truth (not redone) - could be
-real corpus defects, could be more of the same mistake this document was originally
-built on. Not known either way without redoing each one the same corrected way.
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1.
+
+**Extended corpus-wide with `deep_barline_audit_v2.py`** (the corrected rerun of
+`deep_barline_audit.py`, same 200-page sample, using `ossq_ground_truth.py` instead of
+the broken path): of the 91 `majority_position_correction` proposals across the sample,
+only **1** lands on a real ground-truth disagreement - and it's a rounding-scale blip
+(three parts read `1440` duration units, one reads `1441` - a 1-part-in-1440
+discrepancy, not a meaningful musical error). The other 90 either show ground truth
+agreeing (87 - real evidence of decoder divergence, not a corpus defect) or have no
+usable mapping (3). **This corpus, at least for this specific failure family, looks
+much cleaner than the invalid 999-measure sweep suggested** - that number was itself
+built on the same broken ground-truth file and should not be trusted at its prior
+value. The 999-measure sweep and every entry above it in this document remain
+genuinely unverified against real ground truth (not redone) - this new, much smaller
+scope (91 measures, corrected) is the only part of this document with a trustworthy
+answer as of this update.
 
 The rest of this document is kept for the historical record of what was (incorrectly)
 found and how the error was investigated - not as a source of real findings.
