@@ -153,6 +153,30 @@ reproduced by reference, not restated):
 
 ### 7.1 Phase 0: training-data rhythm-label audit (cheapest - do this first)
 
+**RETRACTED, in full - every "ground truth" comparison below is invalid.** The
+`<name>.musicxml` files read throughout this section (sitting next to each training
+image at `images/*/original/<page>.musicxml`) are not the OSSQ-OMR corpus's ground
+truth - they are `homr.main`'s own prior output, written to that exact path as a side
+effect of running it earlier in this session. Confirmed directly: their
+`<identification>` block reads `<encoding><software>homr</software></encoding>`, and
+their titles are HOMR's own garbled title-detection output, not the real title. The
+pristine local backup (from before this session's runs) has no `.musicxml` at that path
+at all - only images and bbox files. The real ground truth lives at each piece's own
+top level (`scores/<composer>/<piece>/sq<id>.musicxml`, a whole-score file with genuine
+MuseScore/IMSLP/OpenScore provenance).
+
+Every claim below - the Beethoven and Borodin spot-checks, the 999-measure corpus
+sweep, and both `deep_barline_audit.py` runs' "91/91 corpus noise" and "509/517 corpus
+noise" results - compared HOMR's decode against **HOMR's own earlier output**, not real
+ground truth. None of it is evidence about the corpus. Whether the underlying pattern
+(a decoder appearing to reproduce specific "defects") is a real phenomenon or an
+artifact of near-deterministic decoding producing similar output across two runs of the
+same model is genuinely unknown - unaddressed by anything below. Left below for the
+historical record of the error and how it was found, not as a source of real
+conclusions. A correct redo needs the whole-score ground truth files and a way to map
+page-local measure numbers to their absolute position in the whole score - not
+attempted here.
+
 Before attributing every flagged disagreement to a *decoding* error, rule out training
 data itself being part of the story: sample some number of already-flagged
 disagreements (real pages this session's benchmark has already identified), and where a

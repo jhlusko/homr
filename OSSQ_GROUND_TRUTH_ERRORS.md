@@ -1,8 +1,48 @@
 # OSSQ-OMR ground-truth errors: measures where parts disagree on length
 
-Drafted for possible forwarding to the [ossq-omr](https://github.com/MALerLab/ossq-omr)
-authors. Not filed anywhere - this is a local write-up of what was found and how, for
-review before anyone decides whether/how to report it upstream.
+## RETRACTED - do not forward anything in this document to anyone
+
+**Every finding below is invalid.** The `<name>.musicxml` files this entire investigation
+read as "ground truth" (sitting next to each training image at `images/*/original/
+<page>.musicxml`) are not part of the OSSQ-OMR corpus at all - they are `homr.main`'s own
+output, written to that exact path as a side effect of running it, from an earlier point
+in this session. Confirmed directly: every one of these files' `<identification>` block
+reads `<encoding><software>homr</software></encoding>`, and their `<work-title>` is
+whatever HOMR's own (imperfect) title-detection produced, not the real title. Checked
+against the pristine local backup taken before this session's runs: no `.musicxml` ever
+existed at that path in the real corpus - only `.png`, `_teaser.png`, and the bbox `.txt`
+files.
+
+**The real ground truth** lives at each piece's own top level -
+`scores/<composer>/<piece>/sq<id>.musicxml` - a whole-score file with genuine MuseScore/
+IMSLP/OpenScore provenance. Confirmed for the Moeran page that prompted this discovery:
+real composer credit, real transcriber credit, `<software>MuseScore 3.6.2</software>`,
+CC0 license.
+
+**What this means for every finding below**: the 999-measure corpus sweep, the
+Beethoven/Borodin spot-checks, and the corpus-wide `deep_barline_audit.py`/
+`deep_barline_audit_broad.py` runs (documented in `DECODER_RHYTHM_ACCURACY_DESIGN.md`
+§7.1) all compared HOMR's decode against **HOMR's own earlier output**, not real ground
+truth. None of it says anything about the OSSQ-OMR corpus's actual quality. Whether the
+underlying pattern (a decoder reproducing specific "errors") reflects anything real about
+the model, or is simply an artifact of near-deterministic decoding producing similar
+output across two runs, is genuinely unknown and unaddressed by anything in this
+document.
+
+A correct redo would need the whole-score ground truth files, plus a way to map each
+page-local measure number to its absolute position in the whole score (not a trivial
+offset - would need counting measures across every preceding page, or a corpus-provided
+mapping if one exists in the derived `musicxml/`/`lmxe/` formats). Not attempted here.
+Left as the actual next step if this thread is worth continuing.
+
+The rest of this document is kept for the historical record of what was (incorrectly)
+found and how the error was investigated - not as a source of real findings.
+
+---
+
+Originally drafted for possible forwarding to the
+[ossq-omr](https://github.com/MALerLab/ossq-omr) authors. **Do not do this** - see the
+retraction above.
 
 ## The invariant
 

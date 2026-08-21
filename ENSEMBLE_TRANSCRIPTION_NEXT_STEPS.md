@@ -973,12 +973,23 @@ misread?).
 
 **Resolved, and built.** User confirmation: modern engraving convention restates the key
 signature on *every* staff at every system (time signature is the opposite - restated
-only on change, so this deliberately does not generalise there). Checked directly against
-real ground truth to confirm this specific corpus follows that convention, not assumed:
-`sq7313978:0001`'s system 2 (the exact page carrying the `[(), (), ('keySignature_3',),
-())]` finding above) has an identical `<key><fifths>3</fifths></key>` on all four parts
-in the source MusicXML - the model decoded it correctly on only the viola. A silent
-staff here is a decode omission, not a genuine absence.
+only on change, so this deliberately does not generalise there).
+
+**Correction (found later, see §5): the "checked directly against real ground truth"
+claim below was wrong.** `sq7313978:0001.musicxml` (read at the time as this page's
+ground truth) is actually `homr.main`'s own prior output, not the real corpus source -
+confirmed via its own `<encoding><software>homr</software></encoding>` metadata; the
+real ground truth lives at the piece's top level instead (`sq7313978.musicxml`), not
+checked here. The rule itself doesn't depend on this one page's confirmation to be
+sound - "restate the key signature on every staff" is a well-established, near-universal
+engraving convention independent of any one corpus check - but the specific claim that
+this corpus's own data was verified to follow it is unsupported by what was actually
+read. ~~Checked directly against real ground truth to confirm this specific corpus
+follows that convention, not assumed: `sq7313978:0001`'s system 2 (the exact page
+carrying the `[(), (), ('keySignature_3',), ())]` finding above) has an identical
+`<key><fifths>3</fifths></key>` on all four parts in the source MusicXML - the model
+decoded it correctly on only the viola. A silent staff here is a decode omission, not a
+genuine absence.~~
 
 `homr/cross_staff_repair.py`: `InsertionRepairProposal`/`apply_insertion_proposal` (a new
 proposal shape - a silent staff has no existing token to replace, unlike
@@ -990,11 +1001,14 @@ this convention covers. A genuine value conflict is left entirely to
 `propose_majority_correction`, not guessed between the two mechanisms. 18 tests.
 
 **Validated against the exact page that motivated this thread**: `sq7313978:0001`
-correctly proposed inserting `keySignature_3` into all three silent staves (0, 1, 3),
-exactly matching the confirmed ground truth - no crash, valid MusicXML written. Wired
-into `staff_parsing._report_cross_staff_findings`. This closes the open question
-recorded above - it was left open pending exactly this kind of external confirmation,
-not resolved by guessing.
+correctly proposed inserting `keySignature_3` into all three silent staves (0, 1, 3) -
+no crash, valid MusicXML written (this part is still true regardless of the ground-truth
+mixup above - it's a direct observation of the proposal firing correctly, not a
+ground-truth comparison). ~~exactly matching the confirmed ground truth~~ - see the
+correction above; "matching ground truth" specifically was not actually established.
+Wired into `staff_parsing._report_cross_staff_findings`. The convention-following
+behavior itself is still a reasonable, low-risk rule on the strength of the convention
+being near-universal, just not corpus-verified the way this section originally claimed.
 
 ### A second motivating case for cross-staff repair, from a design discussion: shared
 motifs, not just shared attributes - built, this session
@@ -1278,7 +1292,16 @@ completely open.
 
 ---
 
-## 5. Decoder rhythm/duration accuracy — Phase 0 complete: this finding is corpus noise, not decoder error (91/91)
+## 5. Decoder rhythm/duration accuracy — Phase 0's entire result RETRACTED (bad ground-truth source)
+
+**Every "ground truth" claim below is invalid - see `DECODER_RHYTHM_ACCURACY_DESIGN.md`
+§7.1 and `OSSQ_GROUND_TRUTH_ERRORS.md` for the full retraction.** In short: the
+`<page>.musicxml` files this investigation read as ground truth are `homr.main`'s own
+prior output (confirmed via `<software>homr</software>` in their own metadata and a
+garbled HOMR-generated title), not the real corpus source, which lives at each piece's
+top level instead. Every comparison in this section - Beethoven, Borodin, the
+999-measure sweep, both `deep_barline_audit.py` runs' "corpus noise" conclusions -
+compared HOMR against itself. Left below for the record, not as a real result.
 
 Full design in `DECODER_RHYTHM_ACCURACY_DESIGN.md` (new file, this session). Directly
 motivated by §4's own "net read": the dominant unrepaired Stage A finding
