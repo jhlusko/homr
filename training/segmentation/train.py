@@ -27,6 +27,7 @@ from training.segmentation.build_label import (
 )
 from training.segmentation.dense_dataset_definitions import (
     CHANNEL_NUM,
+    CLASS_CHANNEL_LIST,
     CLASS_CHANNEL_MAP,
 )
 from training.segmentation.dense_dataset_definitions import (
@@ -159,6 +160,14 @@ class D2DenseDataset(SegmentationBaseDataset):
         return mask_remap
 
 
+# CVC-MUSCIMA's own "symbol" layer marks any musical symbol, not specifically noteheads -
+# this dataset has always used it as weak notehead supervision, so remap to whichever
+# channel value NOTEHEADS_ALL currently occupies rather than a hardcoded literal that
+# silently drifts (and pointed at the wrong channel entirely) whenever CLASS_CHANNEL_LIST
+# changes, as it did when bar lines were split out of the stems channel.
+_NOTEHEAD_CHANNEL_VALUE = CLASS_CHANNEL_LIST.index(DEF.NOTEHEADS_ALL) + 1
+
+
 class CvcMuscimaDataset(SegmentationBaseDataset):
 
     def _get_staff_mask(self, image_name: str) -> str:
@@ -171,7 +180,7 @@ class CvcMuscimaDataset(SegmentationBaseDataset):
         mask = np.array(Image.open(self._get_staff_mask(path))).astype(np.uint8)
         mask = make_lines_stronger(mask, (3, 3))
         symbol = np.array(Image.open(self._get_symbol_mask(path))).astype(np.uint8)
-        mask[symbol == 1] = 2
+        mask[symbol == 1] = _NOTEHEAD_CHANNEL_VALUE
         return mask
 
     def _prepare_image(self, image: NDArray) -> NDArray:

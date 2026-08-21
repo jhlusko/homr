@@ -122,10 +122,16 @@ class Symbols:
 
 DENSE_DATASET_DEFINITIONS = Symbols()
 
+# Bar lines get their own channel, split out from stems - previously merged into one
+# "stems_rest" class and only separated downstream by a width/height heuristic
+# (homr/bar_line_detection.py) on the assumption that thin vertical strokes wide enough
+# to span the staff are bar lines. check_barline_positions found this check to be the
+# single largest source of cross-staff disagreement in a systematic benchmark
+# (ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §4); a dedicated learned class is the direct fix
+# if the heuristic (not decoder duration drift) turns out to be the bottleneck.
 CLASS_CHANNEL_LIST = [
-    DENSE_DATASET_DEFINITIONS.STEM
-    + DENSE_DATASET_DEFINITIONS.BARLINE_BETWEEN
-    + DENSE_DATASET_DEFINITIONS.BARLINE_END,
+    DENSE_DATASET_DEFINITIONS.STEM,
+    DENSE_DATASET_DEFINITIONS.ALL_BARLINES,
     DENSE_DATASET_DEFINITIONS.NOTEHEADS_ALL,
     DENSE_DATASET_DEFINITIONS.ALL_CLEFS
     + DENSE_DATASET_DEFINITIONS.ALL_KEYS

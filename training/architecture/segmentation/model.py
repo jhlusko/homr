@@ -6,6 +6,7 @@ import torch
 from torch.optim import lr_scheduler
 
 from homr.simple_logging import eprint
+from training.segmentation.dense_dataset_definitions import CHANNEL_NUM
 
 
 class CamVidModel(pl.LightningModule):
@@ -151,5 +152,7 @@ class CamVidModel(pl.LightningModule):
 
 def create_segnet(skip_weights_download: bool = False) -> CamVidModel:
     return CamVidModel(
-        encoder_name="resnet18", out_classes=6, skip_weights_download=skip_weights_download
+        encoder_name="resnet18",
+        out_classes=CHANNEL_NUM,
+        skip_weights_download=skip_weights_download,
     )
