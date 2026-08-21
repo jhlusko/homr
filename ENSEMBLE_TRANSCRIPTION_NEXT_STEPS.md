@@ -1292,16 +1292,36 @@ completely open.
 
 ---
 
-## 5. Decoder rhythm/duration accuracy — Phase 0's entire result RETRACTED (bad ground-truth source)
+## 5. Decoder rhythm/duration accuracy — corrected: one confirmed decode error found, redo is genuinely mixed
 
-**Every "ground truth" claim below is invalid - see `DECODER_RHYTHM_ACCURACY_DESIGN.md`
-§7.1 and `OSSQ_GROUND_TRUTH_ERRORS.md` for the full retraction.** In short: the
-`<page>.musicxml` files this investigation read as ground truth are `homr.main`'s own
-prior output (confirmed via `<software>homr</software>` in their own metadata and a
-garbled HOMR-generated title), not the real corpus source, which lives at each piece's
-top level instead. Every comparison in this section - Beethoven, Borodin, the
-999-measure sweep, both `deep_barline_audit.py` runs' "corpus noise" conclusions -
-compared HOMR against itself. Left below for the record, not as a real result.
+**The original Phase 0 result below was fully retracted, then redone correctly - see
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1 for the complete account.** Short version: the
+`<page>.musicxml` files first read as ground truth were `homr.main`'s own prior output
+(confirmed via `<software>homr</software>` in their own metadata), not the real corpus
+source, which lives at each piece's top level (`sq<id>.musicxml`) instead. Every
+comparison in this section as originally written - Beethoven, Borodin, the 999-measure
+sweep, both `deep_barline_audit.py` runs - compared HOMR against itself and is
+superseded.
+
+**Redone correctly** using the real ground truth plus the corpus's own
+`metadata/scanned/systemwise/*.yaml` (`measure_start`/`measure_end` - the exact
+page-local-to-absolute mapping needed, already provided, not self-derived):
+
+- **Beethoven Grosse Fuge Op.133, real measure 327, viola: a genuine confirmed decode
+  error.** Ground truth's `quarter-eighth-quarter-eighth` matches the other three
+  parts exactly; HOMR's fresh decode turns the eighth into a dotted quarter - one
+  wrong note, the exact `+1/4`-whole-note excess this whole thread started from. This
+  is the first genuine confirmed decode error of the entire investigation, and gives
+  Phase 1 a real target at last.
+- **Moeran String Quartet, real measure 190: messier.** All four parts' fresh decode
+  differs substantially from real ground truth here - not just the one staff flagged
+  as diverging from the "majority." The majority itself doesn't match ground truth
+  either, at the adjacent unflagged measure. Staves agreeing with each other is not
+  evidence they're correct - a real, important caveat for how much to trust Stage A's
+  whole cross-staff-agreement premise on a hard passage (`ff`, dense chords, trills).
+
+Not corpus-wide - two pages, redone properly this time, not a full sweep. That would
+need the same corrected methodology applied broadly, not attempted here.
 
 Full design in `DECODER_RHYTHM_ACCURACY_DESIGN.md` (new file, this session). Directly
 motivated by §4's own "net read": the dominant unrepaired Stage A finding

@@ -29,11 +29,19 @@ the model, or is simply an artifact of near-deterministic decoding producing sim
 output across two runs, is genuinely unknown and unaddressed by anything in this
 document.
 
-A correct redo would need the whole-score ground truth files, plus a way to map each
-page-local measure number to its absolute position in the whole score (not a trivial
-offset - would need counting measures across every preceding page, or a corpus-provided
-mapping if one exists in the derived `musicxml/`/`lmxe/` formats). Not attempted here.
-Left as the actual next step if this thread is worth continuing.
+**Update: the redo happened, and it found the opposite of a corpus defect.**
+`metadata/scanned/systemwise/sq<id>:<page>:<system>.yaml` gives the corpus's own
+`measure_start`/`measure_end` per page/system - the exact mapping needed, already
+provided, not something to reconstruct. Redone correctly for the Beethoven case
+specifically (real whole-score ground truth + this mapping + a fresh `homr.main` run):
+**the viola's measure is not a ground-truth error at all.** Real ground truth agrees
+with the other three parts exactly (`quarter-eighth-quarter-eighth`); HOMR's own fresh
+decode is what turns the eighth into a dotted quarter. This page contributes zero
+entries to this document - it's a confirmed HOMR decode error instead, documented in
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1. The 999-measure sweep and every other entry
+in this document remain unverified against real ground truth (not redone) - could be
+real corpus defects, could be more of the same mistake this document was originally
+built on. Not known either way without redoing each one the same corrected way.
 
 The rest of this document is kept for the historical record of what was (incorrectly)
 found and how the error was investigated - not as a source of real findings.

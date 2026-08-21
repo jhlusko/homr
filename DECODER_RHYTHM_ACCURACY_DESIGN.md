@@ -173,9 +173,58 @@ ground truth. None of it is evidence about the corpus. Whether the underlying pa
 artifact of near-deterministic decoding producing similar output across two runs of the
 same model is genuinely unknown - unaddressed by anything below. Left below for the
 historical record of the error and how it was found, not as a source of real
-conclusions. A correct redo needs the whole-score ground truth files and a way to map
-page-local measure numbers to their absolute position in the whole score - not
-attempted here.
+conclusions.
+
+### The correct redo, done properly: a real confirmed decode error, found at last
+
+The mapping problem flagged above turned out to already be solved by the corpus itself:
+`metadata/scanned/systemwise/sq<id>:<page>:<system>.yaml` gives `measure_start`/
+`measure_end` for every system on every page - the exact page-local-to-absolute mapping
+needed, corpus-provided rather than self-derived. Combined with the real whole-score
+ground truth (`scores/<composer>/<piece>/sq<id>.musicxml`) and a *fresh* `homr.main`
+run's own output (the per-page `.musicxml` is legitimate to read for what it actually
+is - HOMR's current decode - just not as "ground truth"), this gives a correct,
+three-way comparison.
+
+**Beethoven Grosse Fuge Op.133, real measure 327 (page 13's first system, page-local
+measure 8), viola:** real ground truth is `C4(quarter) B4(eighth) A4(quarter) D4(eighth)`
+- the same quarter-eighth-quarter-eighth pattern as the other three parts (confirmed:
+all four parts' real ground truth agrees at 3/4 here). HOMR's fresh decode of the viola
+is `C4(quarter) B4(**dotted quarter**) A4(quarter) D4(eighth)` - everything else
+matches exactly, but the second note's duration is wrong, turned from an eighth into a
+dotted quarter, adding exactly the `1/4`-whole-note excess this whole thread started
+from. **This is a genuine, confirmed HOMR decode error** - not a corpus defect (the
+earlier "ground truth confirms it" and "ground truth is wrong" readings were both
+built on the contaminated file and are superseded by this), not a labeling artifact,
+a real duration misread on one note, verified against the real corpus source.
+
+This single, small, precisely-located error is exactly Type 1 from §4's taxonomy (one
+mis-decoded note, constant additive offset) - the failure type Phase 1's beam-search
+reranking is specifically aimed at, and now has a genuine confirmed example to measure
+against, rather than an assumption.
+
+**Moeran String Quartet in A minor, real measure 190 (page 34's third system,
+page-local measure 9), all four parts:** checked the same way, and the picture is much
+messier. HOMR's fresh decode of *all four parts* differs substantially from real ground
+truth here - not just the one staff `propose_majority_position_corrections` flagged as
+diverging from the "majority." Even the majority itself (the three mutually-agreeing
+staves) does not match real ground truth at the adjacent, unflagged measure 189/8
+either (ground truth: 8 discrete eighth-note events for the cello; HOMR: a single half
+note). **Staves agreeing with each other is not evidence they are correct** - the
+model can make similar, mutually-consistent errors across staves independently, and
+this system (marked `ff`, dense chords, trills, likely genuinely hard) may be beyond
+reliable decode accuracy across the board, not carrying one isolated flaw. This is a
+different, arguably more concerning failure mode than a clean Type 1 error, and not one
+Phase 1's reranking (built around trusting a clean majority) would fix - reranking
+against a majority that is itself wrong just picks a different wrong answer.
+
+**Net read, corrected**: a real, confirmed decode error exists (Beethoven), giving
+Phase 1 a genuine target at last - but it is not necessarily representative. The Moeran
+case is a reminder that cross-staff *agreement* is a much weaker signal of correctness
+than this whole track has been assuming; a corpus-wide redo (same corrected
+methodology: whole-score ground truth + `measure_start` alignment from the corpus's own
+metadata) would be needed to know how common each failure shape actually is, not
+attempted here given the scope of what's already been redone.
 
 Before attributing every flagged disagreement to a *decoding* error, rule out training
 data itself being part of the story: sample some number of already-flagged
