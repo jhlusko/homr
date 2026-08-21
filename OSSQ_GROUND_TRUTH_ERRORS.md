@@ -96,10 +96,11 @@ consistent.
 
 - **Borodin Quartet No. 2, p.24, measure 6 (internal numbering), violin II**: a
   different and arguably more concerning failure mode. HOMR's decode disagreed with the
-  ground truth by a constant `1/8` whole note, and the ground truth's *total* duration
-  for this measure agreed exactly with the other three parts (`3/4` each) once
-  normalized for each part's own `<divisions>` value - which first read as "the
-  encoding is internally consistent, so this must be a genuine HOMR decode error,"
+  ground truth (originally described as "a constant `1/8` whole note" offset, which
+  turned out itself to be wrong - see the correction below), and the ground truth's
+  *total* duration for this measure agreed exactly with the other three parts (`3/4`
+  each) once normalized for each part's own `<divisions>` value - which first read as
+  "the encoding is internally consistent, so this must be a genuine HOMR decode error,"
   probably an implicit (unmarked) triplet HOMR's decoder had no context to resolve.
   **That reading didn't survive comparing the actual note content against the scan.**
   The encoded ground truth is a quarter rest, four 16th notes, and a closing quarter -
@@ -112,6 +113,15 @@ consistent.
   substitution that preserves the correct total. That is a real limitation of the
   method: the true error count in this corpus is likely higher than 999, and finding
   the rest would need a check that compares actual note content, not just totals.
+
+  **Correction**: the "constant `1/8` offset" description was itself wrong - it came
+  from checking only the first divergent measure, not the whole system.
+  `deep_barline_audit.py` (built to avoid exactly this mistake at scale) confirmed
+  `propose_majority_position_corrections` does not actually fire on this measure at
+  all: the offset across the system's five barlines is `-3/8, -3/4, -9/8, -9/8, -9/8`,
+  not constant. This doesn't change the ground-truth verdict above (the encoded content
+  is still wrong, confirmed against the scan directly), but it does mean this measure
+  was never a clean, isolated single-measure divergence to begin with.
 
 Net effect: of the two cases checked against their scans, zero are confirmed HOMR
 decode errors. Finding one - to actually validate the Phase 1/2 remedies in

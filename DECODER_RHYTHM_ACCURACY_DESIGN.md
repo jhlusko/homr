@@ -195,24 +195,37 @@ decoded divergence be checked directly against it, no whole-score lookup needed.
   case has been confirmed against its actual scan so far; the other 998 are flagged by
   the invariant alone.
 - **Borodin Quartet No. 2 p.24, system 1, staff 1, measure 6 (first measure of that
-  system)**: HOMR's decode showed a constant `1/8`-whole-note offset for this staff
-  against a 3-staff majority. Checking ground truth required first noticing each part
-  uses its *own* `<divisions>` value (12 for P1/P2, 2 for P3/P4 in this file) - raw
-  `<duration>` units are not comparable across parts without normalizing by each part's
-  own divisions first. Once normalized, **all four parts' ground truth *totals* agree
-  exactly** (`3/4` each) - which first read as "no irregularity, no internal
-  inconsistency, so this must be a genuine decode error," most likely an implicit
-  (unmarked) triplet HOMR's per-staff decoder had no context to resolve. **That reading
-  does not survive comparing the actual note content against the scan.** The encoded
-  ground truth for this measure is a quarter rest, four 16th notes, and a closing
-  quarter - five discrete events. The scan shows six plain eighth notes beamed 3+3
-  under one slur, no rest, no closing quarter. These are different rhythms that happen
-  to sum to the same total - there is no triplet ambiguity to explain here, the
-  encoding simply does not match the page. **This is a second, structurally different
-  ground-truth error** - a content substitution that a duration-only check (like
-  `ossq_measure_length_audit.py`, §7.1's corpus-wide follow-up) cannot detect, since the
-  wrong content still totals correctly. The "implicit triplet" explanation was wrong,
-  not just incomplete.
+  system)**: HOMR's decode disagreed with the majority at this measure, first read
+  (imprecisely - see below) as "a constant `1/8`-whole-note offset." Checking ground
+  truth required first noticing each part uses its *own* `<divisions>` value (12 for
+  P1/P2, 2 for P3/P4 in this file) - raw `<duration>` units are not comparable across
+  parts without normalizing by each part's own divisions first. Once normalized, **all
+  four parts' ground truth *totals* agree exactly** (`3/4` each) - which first read as
+  "no irregularity, no internal inconsistency, so this must be a genuine decode error,"
+  most likely an implicit (unmarked) triplet HOMR's per-staff decoder had no context to
+  resolve. **That reading does not survive comparing the actual note content against
+  the scan.** The encoded ground truth for this measure is a quarter rest, four 16th
+  notes, and a closing quarter - five discrete events. The scan shows six plain eighth
+  notes beamed 3+3 under one slur, no rest, no closing quarter. These are different
+  rhythms that happen to sum to the same total - there is no triplet ambiguity to
+  explain here, the encoding simply does not match the page. **This is a second,
+  structurally different ground-truth error** - a content substitution that a
+  duration-only check (like `ossq_measure_length_audit.py`, §7.1's corpus-wide
+  follow-up) cannot detect, since the wrong content still totals correctly. The
+  "implicit triplet" explanation was wrong, not just incomplete.
+
+  **A third correction, found while building `deep_barline_audit.py` (below):** the
+  "constant `1/8` offset" claim itself was never actually checked past the first
+  divergent measure - `propose_majority_position_corrections`, run properly across the
+  whole system, does *not* fire on this measure at all, because the offset is not
+  constant (`-3/8, -3/4, -9/8, -9/8, -9/8` across the system's five barlines, only the
+  last three matching). This is Type 3 (chaotic disagreement, §4's taxonomy), not Type 1
+  - a genuinely different failure shape than originally described, on top of the
+  ground truth being wrong. The lesson generalizes past this one page: checking only
+  the first flagged measure in isolation, without verifying the offset actually stays
+  constant across the rest of the system, produces exactly this kind of
+  overconfident-and-wrong read - `deep_barline_audit.py` exists specifically to avoid
+  repeating it at scale.
 
 **Read on these two, revised twice now**: both cases initially looked like clean
 explanations of HOMR's behavior - a real source irregularity in one case, an implicit
