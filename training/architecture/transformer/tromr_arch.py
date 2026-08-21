@@ -126,6 +126,31 @@ class TrOMR(nn.Module):
                 trainable.append(name)
         return trainable
 
+    def unfreeze_decoder_for_profile_context(self) -> list[str]:
+        """The natural next experiment after `freeze_core_for_profile_context`'s
+        frozen-core probe found real signal (phase20, ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md
+        §3: 10/10 epochs positive, mean delta +0.0615): let the decoder adapt to the
+        signal instead of only the embedding that feeds it.
+
+        Deliberately narrower than a full-model fine-tune: the visual encoder never sees
+        profile context at all (it only processes staff image crops), so unfreezing it
+        widens risk - a much bigger, harder-to-attribute change - without being the
+        variable this experiment is actually testing. Freezes the encoder explicitly
+        (rather than leaving it at whatever state a caller left it in) and unfreezes
+        every decoder parameter, profile context included.
+
+        Returns the names of the parameters left trainable, so a run can record what it
+        actually trained rather than what it intended to.
+        """
+        if self.decoder.profile_context is None:
+            raise ValueError("no profile context to train - set config.enable_profile_context")
+        self.freeze_encoder()
+        trainable = []
+        for name, param in self.decoder.named_parameters():
+            param.requires_grad = True
+            trainable.append(f"decoder.{name}")
+        return trainable
+
     def unfreeze_lift_decoder(self) -> None:
         for param in self.decoder.net.lift_emb.parameters():
             param.requires_grad = True

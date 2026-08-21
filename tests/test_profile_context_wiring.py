@@ -165,5 +165,25 @@ class TestFreezeCoreForProfileContext(unittest.TestCase):
             TrOMR(_config(enable_profile_context=False)).freeze_core_for_profile_context()
 
 
+@unittest.skipUnless(_FULL_STACK, "needs the full training stack (timm/torchvision)")
+class TestUnfreezeDecoderForProfileContext(unittest.TestCase):
+    def test_the_whole_decoder_is_trainable_and_the_encoder_is_frozen(self) -> None:
+        model = TrOMR(_config(enable_profile_context=True))
+
+        trainable = model.unfreeze_decoder_for_profile_context()
+
+        self.assertTrue(trainable)
+        self.assertTrue(all(name.startswith("decoder.") for name in trainable))
+        self.assertTrue(any("to_logits_rhythm" in n for n in trainable))
+        self.assertTrue(any("profile_context" in n for n in trainable))
+        frozen = [n for n, p in model.named_parameters() if not p.requires_grad]
+        self.assertTrue(frozen)
+        self.assertTrue(all(n.startswith("encoder.") for n in frozen))
+
+    def test_unfreezing_without_the_module_is_refused(self) -> None:
+        with self.assertRaises(ValueError):
+            TrOMR(_config(enable_profile_context=False)).unfreeze_decoder_for_profile_context()
+
+
 if __name__ == "__main__":
     unittest.main()
