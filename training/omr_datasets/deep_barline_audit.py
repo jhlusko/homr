@@ -1,4 +1,19 @@
 """
+RETRACTED - do not use as-is. `ground_truth_path()` below resolves to
+`<image>.with_suffix(".musicxml")`, which is the *exact* path `homr.main` writes its own
+decode output to. Every "ground truth" this script checked against was actually HOMR's
+own prior output (confirmed via that file's own `<encoding><software>homr</software>
+</encoding>` block and a garbled HOMR-generated title), not real ground truth - which
+lives at each piece's own top level instead (`scores/<composer>/<piece>/sq<id>.musicxml`).
+This produced a fully invalid "91/91 corpus noise" result in this exact form once
+already; see `OSSQ_GROUND_TRUTH_ERRORS.md`'s retraction and
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1 for the full account. Fixing this needs
+`ground_truth_path()` to resolve to the whole-score file instead, plus a way to map a
+page-local absolute measure number to its position in the whole score (not attempted
+here) before this script's comparisons mean anything again.
+
+Original docstring, describing what the (currently broken) comparison was meant to do:
+
 Overnight Phase 0 follow-up: for each sample page, run HOMR's own pipeline in-process
 (not via subprocess+regex scraping) to get exact per-system barline counts on every
 system - agreeing or not - so a majority_position_correction proposal's measure_index
