@@ -1144,14 +1144,31 @@ expects 7 classes; that wiring ships together with a retrained + re-exported mod
 that, per the above, addresses staff-anchoring quality at best, not the dominant Stage A
 finding directly. Left for explicit user sign-off.
 
+**`propose_majority_position_corrections` (built after this benchmark, closing part of
+the gap below):** the barline spot check's finding - divergences show either a constant
+additive offset or constant ratio between staves, never occasional non-proportional
+jumps - is exactly the kind of clean, majority-corroborated signal the rest of this
+module already knows how to act on, just with one difference: there is no single
+low-ambiguity token to correct here the way a key/time-signature or articulation value
+is. So this proposal *localizes* (which staff, which measure, how large an offset) and
+deliberately stops there - no `apply_*` counterpart, the same "propose, never guess"
+discipline extended to a case where guessing the actual content edit is not defensible.
+Requires a genuine 3+ staff majority (no tie) and a constant offset from the first
+divergent barline onward; a non-constant offset (a messier disagreement) or a
+constant-*ratio* case (a different meter reading entirely, seen on one of the 5
+spot-checked pages) declines to propose, for the same reason. Validated against a real
+flagged page (Beethoven Op.133 p.13): correctly fired on two genuine constant-offset
+divergences and declined the ratio case. 5 new tests, `tests/test_cross_staff_repair.py`.
+
 **Net read on Stage C's precondition**: Stage A is working and catching real, frequent
 disagreement (71.4% of pages). Stage B now covers a much larger share of that
-(14.6%, better than first measured) but the dominant Stage A finding
-(`barline_position_mismatch`, and probably `measure_duration_mismatch` for the same
-underlying reason) has no Stage B repair at all - these are genuine decoder duration
-errors, not "silent staff" or "clear majority" patterns Stage B's conservative rules are
-built to fix safely. That gap is real, but it argues for improving decoder rhythm
-accuracy or extending Stage B's repair vocabulary before reaching for Stage C's learned
+(14.6% before the position-localization addition above; not yet re-benchmarked with it)
+but the dominant Stage A finding (`barline_position_mismatch`, and probably
+`measure_duration_mismatch` for the same underlying reason) still has no *content*
+repair, only localization - these are genuine decoder duration errors, not "silent
+staff" or "clear majority" patterns Stage B's conservative rules can safely fix outright.
+That gap is real, but it argues for improving decoder rhythm accuracy or extending Stage
+B's repair vocabulary before reaching for Stage C's learned
 adapter, not for Stage C being obviously warranted yet.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
