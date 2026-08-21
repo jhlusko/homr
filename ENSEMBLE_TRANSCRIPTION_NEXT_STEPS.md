@@ -616,15 +616,18 @@ this run deliberately did not attempt.
 
 ---
 
-## 4. Cross-staff consistency checks and repair — Stage A complete, Stage B narrow
+## 4. Cross-staff consistency checks and repair — Stage A complete, Stage B measured
 
 Full spec in `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §12; reproduced here. Staged deliberately
 from least to most invasive — **do not start Stage C before Stages A and B are built and
 benchmarked**, per §12.3's own explicit precondition. Stage A is now fully built (all
-8 of §12.1's originally-named checks, plus the shared-motif addition); Stage B has a
-working, real-page-validated repair proposal for exactly one pair of checks (key/time
-signature) and nothing yet for the other seven - still not the "built and benchmarked"
-bar §12.3 asks for before Stage C.
+8 of §12.1's originally-named checks, plus the shared-motif addition); Stage B covers
+key/time signature (majority vote + carry-forward) and motif-corroborated articulation.
+A systematic 200-page benchmark (below, just above Stage C) is the "built and
+benchmarked" evidence §12.3 asks for: Stage A fires on 71.4% of pages, Stage B proposes
+a fix on 14.6% - real coverage, but the dominant Stage A finding
+(`barline_position_mismatch`) still has no repair, since it's a decoder duration-drift
+signal rather than a "silent staff"/"clear majority" pattern Stage B's rules target.
 
 ### Stage A: deterministic consistency analysis — all 8 of 8 §12.1 checks built, plus
 a 9th from outside the original list
@@ -1050,6 +1053,106 @@ output, or whether a larger sample would find one. Left open rather than conclud
 the next real step here is either a larger real-page sample, or lowering
 `min_motif_length` below 4 to see whether shorter shared runs surface a case the
 current threshold is filtering out.
+
+### Systematic 200-page benchmark — the "built and benchmarked" evidence §12.3 asks for
+
+Ran Stage A + Stage B (log-only, no MusicXML mutation) across a random 200-page sample
+via a standalone script (`benchmark_stage_ab.py`, not checked into this repo - classifies
+every `eprint` line into finding/proposal kinds by regex and aggregates counts).
+
+**Robustness:** 199/200 pages processed without crashing. The one failure
+(`sq7383977:0120.png`) is not a bug - `python -m homr.main` correctly raises
+`"No noteheads found"` on what is a blank/non-music page (0 staff line fragments, 0
+noteheads from the segnet). Effectively 100% robustness on real musical content.
+
+**Stage A fires broadly - 71.4% of pages (142/199) have at least one finding:**
+
+| finding | count |
+|---|---|
+| barline_position_mismatch | 306 |
+| measure_duration_mismatch | 122 |
+| motif_articulation_mismatch | 122 |
+| key_signature_mismatch | 44 |
+| measure_count_mismatch | 29 |
+| time_signature_mismatch | 12 |
+| page_staff_count_mismatch | 9 |
+
+(`clef_profile_mismatch`, `dangling_slur`, `part_order_mismatch`, `profile_layout_deviation`
+did not fire on this sample - the first and last need a `--score-profile`, which this run
+didn't pass; the other two appear to be genuinely rare here.)
+
+**Stage B proposals, corrected: 14.6% of pages (29/199) get at least one proposal.**
+The first pass of this benchmark undercounted this badly (reported 5.5%/11 pages) because
+its regex classifier predated `propose_carry_forward_key_signature` and had no pattern for
+it - those proposals fired but were silently dropped from the count. Rerunning with the
+pattern added:
+
+| proposal | count |
+|---|---|
+| carry_forward_key_signature | 102 |
+| tier1_key_time_signature | 8 |
+| motif_articulation_correction | 4 |
+
+`carry_forward_key_signature` alone accounts for the large majority of Stage B activity -
+confirms the read from the 19-page sample above: most `key_signature_mismatch` findings
+(44 of them) are the "one staff states it, the rest are silent" pattern, not genuine
+disagreements, and tier 1's majority-vote rule was only ever going to catch a small
+minority (8) of them.
+
+**Spot-check: what's actually driving `barline_position_mismatch` (the single largest
+finding, ~2.5x the next)?** Pulled the full disagreement detail (not just the finding
+count) for 5 flagged pages by rerunning `homr.main` directly and inspecting the reported
+per-staff cumulative barline positions. Every case shows the same shape: staves that
+*do* agree match their barline sequence **exactly**, and the diverging staff's sequence
+differs either by a constant additive offset (e.g. `{0: [3/4, 3/2, 9/4, ...], 3: [7/8,
+13/8, 19/8, ...]}` - every value off by exactly 1/8, meaning one early note decoded with
+an extra 1/8 duration) or a constant ratio (e.g. `{0: [3/4, 3/2, ...], 3: [1/2, 1, ...]}`
+- every value at exactly 2/3 scale, meaning that staff decoded a different meter/
+subdivision throughout). Both signatures are exactly what the check's own docstring
+predicts from **decoder-side** duration drift - one mis-decoded note or a systematic
+meter misread cascading through every later cumulative position - not what a vision/crop
+error would look like (occasional, non-proportional jumps). One page (the Moeran sample)
+showed near-total disagreement across most staves in most systems - a harder case,
+possibly a genuinely difficult piece for the current decoder, not diagnostic of this
+particular mechanism.
+
+**This settles the barline-detection-head question the user raised**: `check_barline_
+positions`/`_cumulative_barline_positions` (`homr/cross_staff_consistency.py`) computes
+entirely from decoded `EncodedSymbol` sequences - cumulative note/rest duration up to
+each decoded barline token - and never consults any vision-detected bar-line pixel
+geometry at all. A dedicated bar-line segmentation class cannot move this specific
+finding's count, confirmed both by reading the check's implementation and empirically by
+the spot check above; the actual lever for `barline_position_mismatch` is decoder rhythm/
+duration accuracy, not detection.
+
+That said, `bar_line_boxes` (currently derived by thresholding the `stems_rest` segnet
+channel + geometric filtering, `homr/bar_line_detection.py`) do feed `detect_staff()`
+as anchors alongside `staff_fragments`/`clefs_keys`, which determines the staff geometry
+cropped for the decoder - so bar-line detection quality is not *irrelevant* to decode
+accuracy, just not the direct cause of this particular Stage A signal. A dedicated class
+was prepared anyway (commit `b324c7b`, training-side only: `CLASS_CHANNEL_LIST` splits
+`ALL_BARLINES` out of the combined stem+barline channel in
+`training/segmentation/dense_dataset_definitions.py`, `create_segnet`'s `out_classes` now
+derives from `CHANNEL_NUM` instead of a stale hardcoded `6`, and a latent bug this split
+would have caused - `CvcMuscimaDataset` hardcoding notehead's class value as a literal
+`2`, which the split silently repoints at the new barline channel - is fixed alongside
+it). The live inference pipeline (`homr/segmentation/inference_segnet.py`, `homr/
+model.py`, `homr/main.py`) is deliberately untouched, since it reads the currently
+deployed 6-class ONNX model and would misinterpret every channel the moment the code
+expects 7 classes; that wiring ships together with a retrained + re-exported model.
+**Launching that retrain is not decided here** - it's real GPU cost/time for a benefit
+that, per the above, addresses staff-anchoring quality at best, not the dominant Stage A
+finding directly. Left for explicit user sign-off.
+
+**Net read on Stage C's precondition**: Stage A is working and catching real, frequent
+disagreement (71.4% of pages). Stage B now covers a much larger share of that
+(14.6%, better than first measured) but the dominant Stage A finding
+(`barline_position_mismatch`, and probably `measure_duration_mismatch` for the same
+underlying reason) has no Stage B repair at all - these are genuine decoder duration
+errors, not "silent staff" or "clear majority" patterns Stage B's conservative rules are
+built to fix safely. That gap is real, but it argues for improving decoder rhythm
+accuracy or extending Stage B's repair vocabulary before reaching for Stage C's learned
+adapter, not for Stage C being obviously warranted yet.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
