@@ -1126,7 +1126,7 @@ worth pursuing at the scale Stage C offers (live, joint per-page cross-staff
 context) rather than concluding the case for Stage C is weakened. See §7.4 below
 for the design decision this motivated.
 
-### 7.4 Phase 3 (already designed elsewhere, referenced not duplicated): Stage C
+### 7.4 Phase 3: Stage C - started 2026-08-22, decoded-content-conditioned
 
 `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §12.3 / `ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md` §4's
 Stage C already specifies giving the decoder real, learned cross-staff context (a
@@ -1135,7 +1135,73 @@ existing shared decoder). Phases 0-2 here are deliberately smaller and cheaper
 interventions to try first, per §12.3's own precondition (Stage A and B "built and
 benchmarked" before Stage C) and this document's own cheapest-first principle (§6) -
 not a replacement for Stage C, and not a reason to skip it if 0-2 do not close enough of
-the gap.
+the gap. `phase23`'s result (§7.3 above) is exactly that "0-2 didn't close enough of
+the gap" outcome, in the positive sense: real signal left to capture.
+
+**Design decision (§4's own "not decided here" fork, resolved now): decoded-content-
+conditioned, not visual-only.** §4 named two options - (a) a visual-only first pass
+(pooled encoder features only, isolating whether cross-staff signal helps at all), or
+(b) start directly with the richer version conditioned on each staff's actual decoded
+content (a proper two-pass decode, replacing Phase 1's discrete reranking with a
+learned second decode). Two independent pieces of evidence, both from *this* codebase's
+own measurements, point the same way:
+
+1. **Phase 1** (§7.2) reranked purely on *decoded content* (cumulative barline
+   positions from the rhythm head's own output) - never touched raw visual features -
+   and got a real, validated 20.8% reduction in cross-staff findings with a 38/40
+   ground-truth match rate. Decoded content, not visual similarity, is what carried
+   the signal there.
+2. **`phase23`** (this section) trained a loss whose *target* is ground-truth decoded
+   content (each sibling part's own duration curve), not anything visual, and got a
+   real, repeatable +0.0742 mean delta.
+
+Both of this project's own successful cross-staff interventions so far are keyed on
+decoded content. Starting Stage C with the visual-only version would mean building
+the *less*-evidenced variant first and only asking "does content help" as a second,
+later step - when the answer to that question is already yes, twice over, from this
+project's own data. Building the decoded-content-conditioned version directly asks
+the actually-open question: does a *learned, jointly-trained* version of this same
+signal do better than Phase 1's discrete reranking and phase23's loss-only shaping,
+which is the real remaining uncertainty Stage C exists to resolve.
+
+**Architecture, adapted from §4's spec to condition on decoded content**:
+
+```text
+greedy_i = existing shared decoder, first pass (staff i's own cheap greedy decode)
+h_i = pooled hidden state from that first-pass decode (ScoreDecoder.forward's own
+      "hidden" output, already exposed for this purpose - see §7.3's structured-heads
+      wiring, which reads the same key)
+C_1..C_N = StaffContextTransformer(h_1..h_N, staff order, mask, optional ScoreProfile)
+E'_i = decoder input_i + gate * projection(C_i)
+decode each staff a second time with E'_i
+```
+
+`N` variable, masked (a system can have 1-8+ staves); the shared decoder's weights
+are reused unchanged for both passes; the context gate is zero-initialized, the same
+discipline `ProfileContextEmbedding` uses - a raw learned scalar multiplied directly
+(`ProfileContextEmbedding`'s own convention, `training/architecture/transformer/
+profile_context.py`), not a sigmoid: `sigmoid(0) = 0.5`, not zero, so a sigmoid gate
+would need initializing at `-inf` to reproduce the exact baseline at init, which is
+impractical - a raw zero-initialized scalar is what actually guarantees "bit-identical
+at initialization," and is what's implemented below.
+
+**Built so far** (`training/architecture/transformer/staff_context.py`): the
+`StaffContextTransformer` module itself - a small self-attention block over a masked,
+variable-length set of per-staff summary vectors, order-aware (learned positional
+embedding over staff index within the system), zero-init gated residual output. Unit
+tested in isolation (no training script, no data pipeline yet - see "not yet built"
+below): confirms a single real staff (no siblings) still runs correctly (self-
+attention degenerates to attending only to itself), masking correctly excludes padded
+staff slots from attention, the zero-init gate reproduces its input exactly at init,
+and the module is differentiable end to end.
+
+**Not yet built**: the first-pass-decode → pooled-hidden-state → StaffContextTransformer
+→ second-pass-decode pipeline itself (needs a batching-by-system data loader, unlike
+every mechanism in this document so far, all of which train on i.i.d. shuffled single
+staves), the training script, and any live-pipeline wiring. This is a substantially
+bigger build than §7.3's mechanisms and is being paced accordingly rather than rushed -
+picking up from the module already built and tested here is the next session's
+concrete starting point.
 
 ## 8. Why not several tempting shortcuts
 
