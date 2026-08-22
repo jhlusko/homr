@@ -93,6 +93,41 @@ class TestExtractGroundTruthWindow(unittest.TestCase):
             self.assertIsNotNone(clef)
             self.assertEqual(clef.text, "F")  # movement 1's own clef
 
+    def test_merges_carried_attributes_with_a_partial_redeclaration(self) -> None:
+        # Real corpus bug found via phase23: a window's first kept measure can already
+        # redeclare *one* attribute (here, a time change) without redeclaring divisions,
+        # since MusicXML only restates a child when it changes. The old "skip carrying
+        # forward if <attributes> exists at all" logic left divisions at its implicit
+        # default of 1 whenever this happened - this must merge in only the missing
+        # child (divisions), not skip carrying forward entirely, and must not duplicate
+        # or override the time change that's already there.
+        score = """<score-partwise>
+  <part-list><score-part id="P1"><part-name>Violin</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>24</divisions>
+      <time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>24</duration></note>
+    </measure>
+    <measure number="2">
+      <attributes><time><beats>3</beats><beat-type>4</beat-type></time></attributes>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>24</duration></note>
+    </measure>
+  </part>
+</score-partwise>"""
+        with tempfile.TemporaryDirectory() as tmp:
+            gt_path = Path(tmp) / "sq1.musicxml"
+            gt_path.write_text(score, encoding="utf-8")
+            out_path = Path(tmp) / "out.musicxml"
+
+            extract_ground_truth_window(gt_path, 0, 2, 2, out_path)
+
+            tree = ET.parse(out_path)
+            first_measure = tree.getroot().find(".//part").find("measure")
+            attrs = first_measure.find("attributes")
+            self.assertEqual(attrs.find("divisions").text, "24")
+            self.assertEqual(attrs.find("time/beats").text, "3")  # not overridden
+
     def test_no_measure_in_range_returns_false_and_writes_nothing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             gt_path = self._write_score(tmp)

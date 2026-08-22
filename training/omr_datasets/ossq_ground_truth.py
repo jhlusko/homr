@@ -281,13 +281,26 @@ def extract_ground_truth_window(
         # only (a movement's own first measure always redeclares them, so searching
         # past the movement's own start would risk carrying the wrong movement's
         # attributes forward instead).
+        #
+        # Tracked per *child element* (divisions/key/time/clef), not "does <attributes>
+        # exist at all" - MusicXML only restates a child when it changes, so a measure
+        # can carry a real <attributes> with a <time> change but no <divisions> (or vice
+        # versa). Skipping the whole carry-forward step whenever *any* <attributes>
+        # element already exists silently leaves divisions at kern_to_symbol_duration's
+        # (and measure_length_by_part's) implicit default of 1 for every part whose
+        # window happens to open on an attribute change that isn't the one it needs -
+        # found the hard way: system_measure_curve computed measure lengths inflated by
+        # exactly the piece's real (uncarried) divisions value for any part whose window
+        # opened this way, on real corpus data, before phase23 could even finish epoch 1.
         bounds = _movement_boundaries(measures)
         movement_start_idx = bounds[movement_index] if movement_index < len(bounds) else 0
-        carried_attrs: ET.Element | None = None
+        carried_children: dict[str, ET.Element] = {}
         for m in measures[movement_start_idx:lo]:
             attrs = m.find("attributes")
-            if attrs is not None:
-                carried_attrs = attrs
+            if attrs is None:
+                continue
+            for child in attrs:
+                carried_children[child.tag] = child
 
         keep = set(range(lo, hi + 1))
         for i, m in enumerate(list(measures)):
@@ -296,10 +309,16 @@ def extract_ground_truth_window(
             else:
                 any_kept = True
         remaining = part.findall("measure")
-        if remaining and carried_attrs is not None:
+        if remaining and carried_children:
             first = remaining[0]
-            if first.find("attributes") is None:
-                first.insert(0, carried_attrs)
+            first_attrs = first.find("attributes")
+            if first_attrs is None:
+                first_attrs = ET.Element("attributes")
+                first.insert(0, first_attrs)
+            present_tags = {child.tag for child in first_attrs}
+            for tag, child in carried_children.items():
+                if tag not in present_tags:
+                    first_attrs.append(child)
     if not any_kept:
         return False
     out_path.parent.mkdir(parents=True, exist_ok=True)
