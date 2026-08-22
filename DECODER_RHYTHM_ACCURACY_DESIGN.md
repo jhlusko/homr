@@ -1239,7 +1239,22 @@ default `min_staves=2` filter), 5 epochs, batch size 8 systems - launched under 
 same "phase23 positive → go ahead and start Stage C" standing authorization already
 given for this build. Each system batch costs roughly 2x a single-pass batch (two
 full decodes instead of one), so this run is expected to take proportionally longer
-than phase22/23's own per-epoch time; results not yet in as of this writing.
+than phase22/23's own per-epoch time.
+
+**phase24 epoch 1 (preliminary - one epoch, not yet a trend)**: valid loss with staff
+context 1.6417 vs without 2.3318, delta **+0.6901**. Far larger than phase22's +0.0513
+or phase23's +0.0742. Plausible on its own terms - phase22/23 only shaped the loss or
+conditioned on a summary statistic, where Stage C gives the decoder the sibling
+staves' actual live decoded hidden state - but exactly the kind of clean single-number
+result phase21 (§8) warns against trusting without more epochs and the real Stage
+A/B benchmark, not proxy loss alone. Treating this as encouraging, not conclusive,
+until several more epochs confirm it holds rather than reflecting early-training
+noise or the frozen-core probe finding a degenerate shortcut. (Operational note: the
+`tee` piping this run's stdout to `phase24/train.log` opened before the training
+script's own first-epoch `mkdir` created that directory, so it silently stopped
+writing to disk after one error - the authoritative source for this run is
+`phase24/history.json`, written correctly every epoch by the script itself, not the
+missing log file.)
 
 ## 8. Why not several tempting shortcuts
 

@@ -1876,3 +1876,58 @@ did not survive contact with the bigger question it was meant to answer):
 Not started - no code, no experiment run. The design doc itself flags its main open
 risk: whether the systematic-misread failure type is fixable by anything smaller than
 Stage C's cross-staff context at all.
+
+## 6. IMSLP corpus expansion beyond OLiMPiC's own 200 manually-annotated scores — download complete, automated detection built, review tooling built
+
+OLiMPiC's own "scanned" variant only has manually-annotated system boxes for 200 of
+the OpenScore Lieder corpus's 1,356 scores (100 dev + 100 test) - see the paper
+(arXiv:2403.13763) §3: even that used Inkscape's `load-workbench`/`save-workbench`
+tool by hand, purpose-built for a small fixed benchmark, not a scalable ingestion
+method. `scores.yaml`'s per-score `imslp` field (populated for all 1,356 scores,
+discovered this session, superseding an earlier per-*set* matching approach that
+would have needed fuzzy matching) made the remaining ~277 un-downloaded scores a
+plain download list, no matching required.
+
+**IMSLP download: complete.** Real login (MediaWiki two-step `action=login`), from
+this session's local WSL machine specifically (a genuinely Canadian ISP, matching the
+user's own IMSLP membership and citizenship - the legitimacy chain reasoned through
+earlier this session), via a real, visible, non-headless Playwright browser, clicking
+IMSLP's own standard public-domain disclaimer. One browser crash mid-run (~item 129)
+was caught and recovered by killing and restarting the script, which re-scans its own
+download folder and skips completed items rather than re-fetching them. Final count:
+355 PDFs on the local machine (over the original 277-item gap list plus the
+pre-existing 121-score `olimpic-probe` sample), a handful of genuine per-item
+failures (wrong file type at the end of a redirect chain, one corrupt PDF), left
+as-is rather than retried since retrying doesn't fix a wrong-file-type pick.
+
+**Automated system-box detection built** (`training/omr_datasets/
+detect_imslp_systems.py`): reuses homr's own already-trained, already-validated
+staff/grand-staff detector (`homr.main.detect_staffs_in_image` - the same function
+homr's normal OMR pipeline runs on every image) rather than building or training a
+new detector, and rather than manually annotating more scores the way the paper did.
+A `MultiStaff` group of 2+ staves is a piano grand staff; taking only those as system
+boxes matches what OLiMPiC's own human annotators drew too (their published boxes
+cover only the piano - see `olimpic_repair.py`'s docstring, median 41% of the
+inter-system gap), so recovering the voice+lyrics region above each box is left to
+the *existing*, already-built `olimpic_repair.py --systems ... --out ... --pngs ...`
+repair step, unchanged, run as an unmodified second pass over this script's output.
+One real bug found and fixed while testing on freshly-downloaded scans: a page with
+no notation at all (a title page, a blank leaf) raised inside homr's own pipeline
+("No staffs found") and aborted the *whole score's* detection, not just that page -
+now caught and skipped per-page.
+
+**Review website built** (`training/omr_datasets/review_server.py`): a local,
+stdlib-only Python HTTP server (no new dependency - a short-lived personal review
+tool doesn't need a framework) serving a per-score canvas editor over the detected
+boxes: drag a box's body to move it or a corner to resize it, drag empty space to
+draw a new one, click to select, delete, "save & next" persists the page's boxes to
+a separate `--verified` directory in the same `imslp_systems/*.yaml` schema the rest
+of this project's tooling already reads - the raw detections are never overwritten,
+so a review session can always be re-run from the same automated output. Verified
+end to end against real detected boxes (index page, per-page editor, image serving,
+save-and-reload) before scaling up.
+
+**Not yet done**: running detection across the full ~355-score set (tested so far on
+a handful of real scores while the larger PDF set was still transferring to the GPU
+box) and actually reviewing/correcting the results through the website. Next step
+once the transfer finishes.
