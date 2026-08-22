@@ -19,6 +19,7 @@ from training.architecture.transformer.custom_x_transformer import (
     TokenEmbedding,
 )
 from training.architecture.transformer.profile_context import ProfileContextEmbedding
+from training.architecture.transformer.staff_context import StaffContextTransformer
 from training.architecture.transformer.structured_heads import StructuredNotationHeads
 
 
@@ -401,6 +402,16 @@ class ScoreDecoder(nn.Module):
         self.profile_context = (
             ProfileContextEmbedding(dim=config.decoder_dim)
             if getattr(config, "enable_profile_context", False)
+            else None
+        )
+
+        # §4/§7.4 Stage C: learned cross-staff coherence. Same off-by-default and
+        # zero-init-gate reasoning as profile_context above - a checkpoint trained
+        # without it keeps loading and behaving exactly as before, and enabling it is
+        # itself still a no-op until training moves the gate (train_staff_context.py).
+        self.staff_context = (
+            StaffContextTransformer(dim=config.decoder_dim)
+            if getattr(config, "enable_staff_context", False)
             else None
         )
 

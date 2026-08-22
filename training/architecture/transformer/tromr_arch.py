@@ -126,6 +126,28 @@ class TrOMR(nn.Module):
                 trainable.append(name)
         return trainable
 
+    def freeze_core_for_staff_context(self) -> list[str]:
+        """Train only §4/§7.4's cross-staff `StaffContextTransformer`; freeze everything
+        the checkpoint provided - the same frozen-core probe shape as
+        `freeze_core_for_profile_context`, for the same reason: attributability.
+        `StaffContextTransformer`'s gate starts at zero, so this asks the same narrow
+        question profile_context's probe did - can *some* assignment of the module,
+        backpropagated through the frozen network, move the model's own existing loss -
+        before committing to letting the core itself adapt to cross-staff signal.
+
+        Returns the names of the parameters left trainable, so a run can record what it
+        actually trained rather than what it intended to.
+        """
+        if self.decoder.staff_context is None:
+            raise ValueError("no staff context to train - set config.enable_staff_context")
+        trainable = []
+        for name, param in self.named_parameters():
+            train = name.startswith("decoder.staff_context.")
+            param.requires_grad = train
+            if train:
+                trainable.append(name)
+        return trainable
+
     def unfreeze_decoder_for_profile_context(self) -> list[str]:
         """The natural next experiment after `freeze_core_for_profile_context`'s
         frozen-core probe found real signal (phase20, ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md

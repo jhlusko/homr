@@ -137,6 +137,13 @@ class Config:
         # before committing to that larger build. 0.0 (off) preserves the existing
         # loss exactly, same discipline as duration_adherence_weight above.
         self.cross_staff_coherence_weight = 0.0
+        # §4/§7.4 Stage C: the learned cross-staff adapter itself (StaffContextTransformer),
+        # as opposed to cross_staff_coherence_weight's cheaper loss-only alternative above.
+        # Off by default, same reasoning as enable_profile_context: a checkpoint trained
+        # without it must keep loading and behaving exactly as before, and its own gate is
+        # zero-initialized, so enabling it is itself still a no-op until training moves the
+        # gate (train_staff_context.py).
+        self.enable_staff_context = False
         self.encoder_structure = "convnext"
         self.encoder_depth = 8
         self.backbone_layers = [3, 4, 6, 3]
