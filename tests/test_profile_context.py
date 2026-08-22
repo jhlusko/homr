@@ -129,6 +129,42 @@ class TestBucketing(unittest.TestCase):
 
         self.assertFalse(torch.equal(violin, cello))
 
+    def test_an_unrecognised_time_signature_does_not_crash(self) -> None:
+        module = ProfileContextEmbedding(dim=8)
+        with torch.no_grad():
+            module.gate.fill_(1.0)
+
+        vector = module.embed_one(
+            _context(expected_time_signature="17/64"), device=torch.device("cpu")
+        )
+
+        self.assertEqual(vector.shape, (8,))
+
+    def test_an_unspecified_time_signature_does_not_crash(self) -> None:
+        # The default "" sentinel - the common case for any sample this hasn't been
+        # wired up for yet.
+        module = ProfileContextEmbedding(dim=8)
+        with torch.no_grad():
+            module.gate.fill_(1.0)
+
+        vector = module.embed_one(_context(), device=torch.device("cpu"))
+
+        self.assertEqual(vector.shape, (8,))
+
+    def test_two_different_time_signatures_produce_different_vectors(self) -> None:
+        module = ProfileContextEmbedding(dim=8)
+        with torch.no_grad():
+            module.gate.fill_(1.0)
+
+        four_four = module.embed_one(
+            _context(expected_time_signature="4/4"), device=torch.device("cpu")
+        )
+        three_four = module.embed_one(
+            _context(expected_time_signature="3/4"), device=torch.device("cpu")
+        )
+
+        self.assertFalse(torch.equal(four_four, three_four))
+
 
 def _stack_batch_fields(*field_dicts: dict) -> dict:
     """Mimics what HuggingFace Trainer's default collator (and, in the real training
@@ -183,6 +219,16 @@ class TestContextToBatchFields(unittest.TestCase):
         self.assertEqual(len(fields["profile_clef_indices"]), MAX_CLEF_SLOTS)
         self.assertEqual(fields["profile_clef_count"], MAX_CLEF_SLOTS)
 
+    def test_an_unspecified_time_signature_buckets_to_zero(self) -> None:
+        fields = context_to_batch_fields(_context())
+
+        self.assertEqual(fields["profile_time_signature_index"], 0)
+
+    def test_a_recognised_time_signature_buckets_to_a_nonzero_index(self) -> None:
+        fields = context_to_batch_fields(_context(expected_time_signature="4/4"))
+
+        self.assertNotEqual(fields["profile_time_signature_index"], 0)
+
 
 class TestBatchAndListAgree(unittest.TestCase):
     """`forward_from_batch` (the training-facing, vectorized entry point) and
@@ -228,6 +274,9 @@ class TestBatchAndListAgree(unittest.TestCase):
                 _context(part_ordinal=3, transposition_semitones=-2, likely_clefs=()),
             ]
         )
+
+    def test_a_context_with_a_time_signature_matches(self) -> None:
+        self._assert_batch_matches_list([_context(expected_time_signature="6/8")])
 
 
 class TestFromScorePart(unittest.TestCase):

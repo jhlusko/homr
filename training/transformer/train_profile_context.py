@@ -77,6 +77,7 @@ def train_epoch(
 ) -> dict[str, Any]:
     set_probe_mode(model)
     total = 0.0
+    total_duration_adherence = 0.0
     count = 0
     for raw in batches:  # type: ignore[attr-defined]
         batch = {k: v.to(device) if hasattr(v, "to") else v for k, v in raw.items()}
@@ -88,11 +89,31 @@ def train_epoch(
         optimizer.step()
 
         total += float(loss.item())
+        # §7.3's duration-adherence loss - visible separately even though it's folded
+        # into "loss" above, so a run with the weight turned on can actually see
+        # whether this term is moving, not just the combined total. .get(...) rather
+        # than a bare index: this script's own tests exercise a lightweight fake model
+        # whose outputs predate this key, and a real model with duration_adherence_
+        # weight left at its 0.0 default still returns it (a zero tensor - see
+        # calDurationAdherenceLoss's own docstring), so only a caller with neither of
+        # those needs the fallback.
+        duration_adherence = outputs.get("loss_duration_adherence")
+        if duration_adherence is not None:
+            total_duration_adherence += float(duration_adherence.item())
         count += 1
 
     mean = total / max(count, 1)
-    print(f"epoch {epoch}: mean loss {mean:.4f} over {count} batch(es)")
-    return {"epoch": epoch, "loss": mean, "batches": count}
+    mean_duration_adherence = total_duration_adherence / max(count, 1)
+    print(
+        f"epoch {epoch}: mean loss {mean:.4f} "
+        f"(duration_adherence {mean_duration_adherence:.4f}) over {count} batch(es)"
+    )
+    return {
+        "epoch": epoch,
+        "loss": mean,
+        "loss_duration_adherence": mean_duration_adherence,
+        "batches": count,
+    }
 
 
 @torch.no_grad()
@@ -166,6 +187,16 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--duration-adherence-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's ground-truth-supervised "
+            "measure-duration adherence loss weight - 0.0 (default) leaves the "
+            "existing objective untouched, exactly as before this flag existed."
+        ),
+    )
     args = parser.parse_args()
 
     from homr.transformer.configs import Config
@@ -173,6 +204,7 @@ def main() -> None:
 
     config = Config()
     config.enable_profile_context = True
+    config.duration_adherence_weight = args.duration_adherence_weight
 
     model = TrOMR(config)
     load_pinned(model, args.checkpoint)

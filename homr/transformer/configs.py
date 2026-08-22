@@ -118,6 +118,17 @@ class Config:
         # zero-initialized (training.architecture.transformer.profile_context), so
         # turning this on is itself still a no-op until training moves the gate.
         self.enable_profile_context = False
+        # DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's ground-truth-supervised measure-
+        # duration adherence loss: penalizes the rhythm head's own *expected* (softmax-
+        # weighted) cumulative duration for diverging from the ground-truth cumulative
+        # duration at each true barline position - a differentiable analogue of Stage
+        # A's `check_measure_durations`/`_cumulative_barline_positions`, targeting the
+        # single largest Stage A finding (`barline_position_mismatch`) directly at
+        # training time. 0.0 (off) preserves the existing loss exactly - the same
+        # "zero means no effect, safe to land ahead of being trained" discipline
+        # `profile_context`'s own gate uses, expressed as a loss weight instead of a
+        # module gate since this changes the *objective* itself, not a decoder input.
+        self.duration_adherence_weight = 0.0
         self.encoder_structure = "convnext"
         self.encoder_depth = 8
         self.backbone_layers = [3, 4, 6, 3]

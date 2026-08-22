@@ -1248,15 +1248,34 @@ above for why). The remaining ~70% either lack a clean 3+ staff majority, show a
 non-constant offset, or show a constant-ratio (different-meter) pattern - all cases this
 rule correctly declines rather than guesses at.
 
-**Net read on Stage C's precondition**: Stage A is working and catching real, frequent
-disagreement (71.4% of pages). Stage B now covers a much larger share of that (44.2%,
-up from the first benchmark's undercounted 5.5%) - genuine, measured progress - but the
-dominant Stage A finding still only gets localization, not a content fix, for the same
-reason it never will without guessing: these are genuine decoder duration errors, not
-"silent staff" or "clear majority" patterns Stage B's conservative rules can safely fix
+**Net read on Stage C's precondition, updated 2026-08-21 - the gap below is now
+substantially closed, by the exact route this section itself pointed to.** Stage A is
+working and catching real, frequent disagreement (71.4% of pages). Stage B now covers
+a much larger share of that (44.2%, up from the first benchmark's undercounted 5.5%) -
+genuine, measured progress - but the paragraph below originally said the dominant
+Stage A finding "still only gets localization, not a content fix," arguing for
+"improving decoder rhythm accuracy... before reaching for Stage C's learned adapter."
+**That is exactly what §5's Phase 1 (decode-time cross-staff-consistency reranking) now
+does.** Built, live-wired (`homr/staff_parsing.py`'s `parse_staffs`, on by default), and
+measured: a 200-page benchmark showed a 20.8% reduction in combined
+`barline_position_mismatch`/`measure_duration_mismatch` findings with zero regressions,
+and a ground-truth spot-check across 61 changed pages found 38 of 40 resolvable
+corrections now match real ground truth exactly (0 regressions there either). Phase 1
+does not close the whole gap - it only fires where Stage A already flags a
+≥3-staff-corroborated disagreement, and §5's own content-level breakdown still finds a
+genuine Moeran-shaped minority (~31%) where the majority itself isn't reliable enough to
+rerank against - but it is real, validated, deployed content correction for the
+majority-corroborated share of exactly the finding this paragraph used to say had none.
+**Original paragraph, kept for the history but superseded by the above:** "the dominant
+Stage A finding still only gets localization, not a content fix, for the same reason it
+never will without guessing: these are genuine decoder duration errors, not 'silent
+staff' or 'clear majority' patterns Stage B's conservative rules can safely fix
 outright. That gap is real, but it argues for improving decoder rhythm accuracy or
 extending Stage B's repair vocabulary further before reaching for Stage C's learned
-adapter, not for Stage C being obviously warranted yet.
+adapter, not for Stage C being obviously warranted yet." The conclusion (Stage C not
+obviously warranted yet) still stands, on firmer footing than before - the smaller,
+cheaper intervention this section named as the alternative has now actually been tried
+and shown to work, not just proposed.
 
 ### Stage C: learned variable-staff context adapter (not started, blocked on A+B being measured)
 
@@ -1275,6 +1294,51 @@ information is supported; no token alignment across parts is required. First ver
 uses one summary per physical staff — do not build a richer version (exchanging
 system-position features or decoded measure summaries) before this one is measured.
 
+**Refinement, 2026-08-21 (user design discussion): should this run as a second pass,
+conditioned on each staff's actual *decoded* content, rather than only pooled visual
+encoder output?** As written above, `h_i` comes from the shared visual encoder alone -
+computed before anything has been decoded, so the cross-staff context every staff
+receives is purely "what the neighboring staves' images look like," never "what the
+neighboring staves actually contain musically" (rhythm/pitch/duration). The user's
+proposal: decode every staff once (a first pass), build cross-staff context from that
+*decoded* content instead of (or in addition to) pooled image features, then redecode
+each staff with that richer signal - the same "decode, then use cross-staff
+information to improve the result" shape Phase 1's reranking already uses, but with a
+proper learned second decode instead of discrete reranking among a handful of forked
+candidates.
+
+**This is a real, well-motivated refinement, and one the original design already
+anticipated and deliberately deferred, not overlooked**: the line directly above -
+"do not build a richer version (exchanging system-position features or decoded
+measure summaries) before this one is measured" - names almost exactly this second-pass
+idea as a *later* elaboration, on the reasoning that the simpler visual-only version
+should be measured first before adding the complexity of conditioning on decoded
+content. That ordering argument still has real weight (isolate whether cross-staff
+context helps at all before asking whether richer content-aware context helps more) -
+but it was written before Phase 1 existed. Phase 1's own result (a 200-page benchmark
+showing a 20.8% reduction in cross-staff findings from reranking on *decoded content
+alone*, then a 61-page ground-truth spot-check confirming 38 of 40 resolvable
+corrections exactly matched truth) is now direct, measured evidence that decoded
+content - not just visual similarity - is a strong cross-staff signal in this specific
+domain. That evidence didn't exist when Stage C's "measure the simple version first"
+ordering was decided, and arguably weakens the case for starting with the visual-only
+version: we already know a decoded-content signal works well post-hoc (Phase 1); Stage
+C's open question is really whether a *learned, jointly-trained* version of roughly
+that same signal (rather than discrete post-hoc reranking) works better still - which
+argues for starting the architecture closer to what's already validated, not further
+from it.
+
+**Not decided here - a real design choice with an argument on each side, worth
+resolving explicitly before Stage C's first line of code, not silently defaulting to
+the older ordering:** (a) build the visual-only first pass as originally specified,
+to isolate cross-staff context's value in the cleanest possible ablation, accepting
+that Phase 1 has already somewhat pre-answered "does cross-staff signal help" and this
+version mostly asks "does image-level context specifically help"; or (b) start directly
+with the second-pass, decoded-content-conditioned version, on the reasoning that it is
+now the better-motivated starting point given Phase 1's result, at the cost of a
+messier first ablation (a richer architecture and a two-pass training/inference
+procedure, harder to isolate which part of any improvement is doing the work).
+
 **Why not a fixed four-staff decoder** (§12.4, settled): would make the first benchmark
 easier but blocks or complicates piano, Lieder, trios, orchestral reductions, missing
 staves, divisi, and partial crops — a masked variable-length set of staff summaries gives
@@ -1292,7 +1356,232 @@ completely open.
 
 ---
 
-## 5. Decoder rhythm/duration accuracy — final: real decoder divergence confirmed, ~20% Beethoven-shaped (Phase 1's target), ~65% Moeran-shaped (broadly poor decode, Phase 1 alone won't fix)
+## 5. Decoder rhythm/duration accuracy — corrected 2026-08-21 for a second ground-truth bug (movement splicing); Beethoven-shaped is now the plurality (34/75, ~45%), reversing the prior ~20%/~65% read
+
+**Second correction, layered on top of the `<page>.musicxml` bug below**: user inspection
+of the corpus-review webpage (§5's own review tool, `corpus_review.html`) found the
+rendered "ground truth" images were visibly wrong - traced end to end on one example
+(Wolf, *String Quartet*, sq8823783, page 22, absolute measure 318). Root cause: OSSQ-OMR's
+ground-truth `.musicxml` files concatenate every movement of a piece into one file, and
+each movement **restarts** `<measure number="...">` at 1 (string quartets routinely have
+3-4 movements). Every script in this investigation that matched ground-truth measures by
+`m.get("number") == str(target)` - `deep_barline_audit_v2.py`, `content_verify_agrees.py`,
+`build_review_assets.py` - treated that number as unique across the whole file. It isn't:
+the same number string recurs once per movement, so a naive match either silently picks
+whichever movement's measure happens to come first, or (if keeping every match, as
+`build_review_assets.py` did) splices two unrelated movements' measures together into one
+rendered image - exactly what produced the visibly-wrong ground truth image and the
+uniform `0.0` content-overlap score on *every* part (not just the flagged one) for that
+entry.
+
+The corpus's own `measure_start`/`measure_end` alignment metadata resets the same way at
+movement boundaries (confirmed by inspecting the full page sequence for the Wolf piece:
+a system's metadata decreasing relative to the previous system's lines up exactly with a
+`<measure number="1">` reset in the ground truth file) - so `measure_start` is
+movement-local, not a piece-wide running count; a naive "flat index = measure_start - 1"
+fix would only have worked by coincidence for movement 1.
+
+**Fix** (`homr/training/omr_datasets/ossq_ground_truth.py`): `movement_index_for_system`
+counts resets in the corpus's own metadata sequence (scanned/synthetic only - `unaligned`
+excluded here, since one piece was found to carry a spurious duplicate-numbered page in
+`unaligned` that would otherwise cause a false reset) to find which movement a page/system
+belongs to; `resolve_flat_measure_range` then matches by number *only within that
+movement's own slice*, where numbers are actually unique. All 8 pre-existing unit tests
+still pass. Verified against two independent cases: the Wolf page 22 system 2 case
+(movement 0, resolves to the expected flat measures 316-320) and a second system on the
+same piece landing in movement 1 (resolves to the expected flat measures 406-414).
+
+**Effect on the corpus-wide numbers** (rerun of `deep_barline_audit_v2.py`, identical
+200-page `benchmark_sample.txt`):
+
+```
+total majority_position_correction proposals: 91
+  ground truth disagrees (known corpus defect by the invariant): 1   (unchanged)
+  ground truth agrees (candidate: real decode error): 75             (was 87)
+  no ground truth / no measure-mapping metadata available: 15        (was 3)
+```
+
+All 12 changed verdicts flipped `agrees → no mapping available`, never the other
+direction. Checked one flip directly (Andrée, *String Quartet in A major*, sq7313978,
+page 30 system 4): the piece genuinely has 4 movements (measure-flat boundaries at
+0/170/322/560), and this specific system's alignment metadata exists *only* in the
+unreliable `unaligned` folder - with no aligned entry to place it in the reset sequence,
+guessing its movement risked exactly the Wolf-style splicing bug this fix exists to
+prevent, so it now conservatively reports "no mapping" instead of a number that might be
+comparing the wrong movement. This is the same discipline `measure_start_for_system`
+already applies to non-numeric placeholders (`"X2"` etc.) - treat corpus ambiguity as "no
+mapping," never guess.
+
+**The 87-entry content-level breakdown below (17 Beethoven-shaped / 57 Moeran-shaped / 13
+inconclusive) was stale** - built from `content_verify_agrees.py`, which had the exact
+same number-matching bug. Rerun against the corrected 75-entry set
+(`content_verify_agrees_v3_full.json`):
+
+```
+total agree-entries checked: 75
+  Beethoven-shaped (majority overlap >=0.8, flagged staff <0.8): 34  (~45%, was 17/87 ~20%)
+  Moeran-shaped (majority overlap <0.8 too): 23                     (~31%, was 57/87 ~65%)
+  inconclusive/no data: 18                                          (~24%, was 13/87 ~15%)
+```
+
+**This did not just shrink the same proportions - it reversed which shape dominates.**
+Beethoven-shaped went from roughly a fifth of the failure family to nearly half, and
+Moeran-shaped dropped from roughly two-thirds to under a third. The mechanism makes
+sense in hindsight: the movement-splicing bug's characteristic failure mode was
+mixing two unrelated movements' measures into one comparison, which - like the Wolf
+example that surfaced this whole fix - produces near-`0.0` overlap on *every* part,
+indistinguishable from a genuinely Moeran-shaped "whole system diverges" result. A
+meaningful share of the old 57 Moeran-shaped entries were very likely spliced-garbage
+comparisons wearing a Moeran-shaped costume, not real evidence the model decodes badly
+there. **Revised conclusion: Phase 1's beam-search reranking now has a substantially
+larger, better-justified target than previously thought** - the Beethoven-shaped
+plurality (34 of 75) is exactly the "one clean wrong note against a reliable majority"
+signature it's designed to fix. The Moeran-shaped minority (23, ~31%) and inconclusive
+share (18, ~24%) are real and still worth naming as a gap Phase 1 alone won't close, but
+they are no longer the dominant story.
+
+The `corpus_review.html` review webpage was **not** regenerated for this fix (explicit
+user instruction - tracing 1-2 examples end to end was judged sufficient rather than
+rebuilding all assets); its ground-truth renderings for multi-movement pieces may still
+show the pre-fix splicing artifact until it is rebuilt.
+
+### Phase 1 started 2026-08-21: decode-time cross-staff-consistency reranking, built and validated, 20-page result already positive (31→16 findings)
+
+User instruction: "go ahead with Phase 1" - the natural next step once the corrected
+numbers above gave it a substantially better-justified target (~45% Beethoven-shaped,
+up from ~20%). Full build detail and live-model validation:
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.2.
+
+Built in a deliberately narrower, cheaper shape than textbook fixed-width beam search -
+real multi-hypothesis beam search would need per-step KV-cache batching this codebase
+has never used (`decoder_inference.py` is batch=1 throughout), a much larger and
+riskier build for the same stated goal. Instead: at each staff's *narrowest-margin*
+rhythm decisions, fork a full alternate decode via the already-validated
+`generate_from_prefix` mechanism, then keep whichever candidate - greedy or a fork -
+best matches the other staves' majority cumulative barline positions.
+
+New code: `homr/transformer/decoder_inference.py` (`generate_with_rhythm_margins`,
+`rhythm_alternative`), `homr/cross_staff_rerank.py` (`rhythm_candidates_for_staff`,
+`rerank_staff_candidates`), 6 passing unit tests, and `benchmark_phase1_rerank.py` (the
+before/after benchmark itself). All validated against the live model, not mocked - see
+the design doc for the four specific checks run.
+
+**Result, 20-page sample: 31 → 16 combined `barline_position_mismatch`/
+`measure_duration_mismatch` findings (~48% reduction), 11 systems improved.** A real,
+clearly positive signal, confirmed on a page already traced end to end earlier in this
+investigation (the reduction there, 3→2, matched a specific identifiable fix, not an
+aggregate artifact).
+
+**Full 200-page run complete: 428 → 339 findings (20.8% reduction), 81 of 899 systems
+improved, zero pages made worse.** The 20.8% real number is meaningfully lower than the
+20-page sample's 48% (that sample happened to concentrate more fixable cases by
+chance), but it's real, substantial, and - importantly - reranking never once increased
+a page's finding count across all 198 successfully-processed pages (2 of 200 hit an
+unrelated, pre-existing crash already seen elsewhere in this investigation, caught and
+skipped).
+
+**Ground-truth spot-check done, and it's a clean, decisive result: 6 of 6 resolvable
+corrected measures now match real ground truth exactly - zero regressions, zero cases
+where reranking picked a wrong-but-self-consistent answer.** Sample: 15 pages drawn
+from the 61 that had a changed system, checked with a new script
+(`phase1_ground_truth_spotcheck.py`) that resolves each corrected measure's real
+ground-truth duration via the fixed, movement-aware `ossq_ground_truth.py` machinery
+and compares it against both the greedy and the reranked decode for that exact measure.
+10 proposals had a resolvable ground-truth mapping; 4 didn't (the same known corpus-
+metadata gaps this investigation has hit before) and are correctly excluded rather than
+guessed at. Of the 10: **6 flipped from greedy-wrong to reranked-matches-truth exactly;
+the other 4 weren't among the "changed" staves that specific run of reranking actually
+touched** (i.e. not counterexamples - just proposals whose staff wasn't the one
+reranking altered on that pass). Found and fixed two real bugs in the spot-check script
+itself before trusting this result: divisions needing to be walked from the movement's
+start (not seeded fresh at the target measure), and a whole-note-vs-quarter-note unit
+mismatch between the decoder's own duration convention and `measure_length_by_part`'s -
+both of the same *class* of bug this investigation has hit more than once now
+(normalize before comparing, never compare raw units across two different sources).
+
+**n=6 is small - this is a real, clean, unanimous positive signal, not yet a large-
+sample statistical claim.** But unanimous-and-zero-counterexample at any sample size is
+meaningfully different from "coin flip," and it directly answers this section's own
+open caution (a self-consistent majority is not proof of correctness, per the Moeran
+case) with actual evidence rather than leaving it as an assumption.
+
+**Wired into the live pipeline, 2026-08-21** (user instruction: "please wire it"):
+`homr/staff_parsing.py`'s `parse_staffs` now reranks for real, on by default. Gated
+two-pass, not unconditional - every staff's greedy decode costs the same as before,
+but a system only pays for the expensive forking+reranking pass once Stage A's own
+checks already show a finding on its greedy decode (the exact population the benchmark
+and spot-check measured, never a broader unvalidated "always fork everything"
+behavior). Full detail, including the live end-to-end validation on both a flagged and
+a clean page: `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.2's own wiring section. Full test
+suite still 1041/1044 (same 3 pre-existing unrelated failures, no regression).
+
+**Spot-check extended to all 61 changed pages, 2026-08-21: the 6/6 rate holds at
+scale.** 49 resolvable entries: **38 IMPROVED, 2 NEITHER_MATCHES_TRUTH, 0 REGRESSED**
+(9 more had no ground-truth mapping, correctly excluded rather than guessed at). Checked
+both non-matching cases by hand: in each, the *greedy* decode was already wrong too
+(e.g. greedy `17/32` vs. truth `1/2`, reranked `9/16` vs. truth `1/2` - neither correct,
+but reranking didn't break a right answer, it landed on a different wrong one for what
+looks like a genuinely messy passage). Zero regressions across the entire sample - this
+is a strong, real result, not a small-n coincidence.
+
+Found and fixed a real bug while extending the sample, worth remembering: wiring Phase 1
+into `parse_staffs` changed its internal call path (it now calls
+`Staff2Score.predict_greedy_with_margins`, not `predict()`, and reranks by default) -
+which broke the existing offline analysis scripts, since they monkeypatch
+`Staff2Score.predict` to capture context. Every one of the first 61-page relaunch's
+pages crashed with `IndexError` because the monkeypatch was no longer intercepting
+anything. Fixed by passing `enable_phase1_rerank=False` explicitly in both analysis
+scripts' `parse_staffs(...)` calls - restores the old call path (so the monkeypatch
+fires again) and prevents the live pipeline's own default reranking from confounding
+external analysis that's supposed to be doing its own independent reranking.
+**General lesson: wiring a feature into a live call path can silently break offline
+tooling built against the pre-wiring version of that same path - worth an explicit
+check whenever a "measure this" script and a "do this live" wiring share a code path.**
+
+### Phase 2 started 2026-08-21: time-signature conditioning + a ground-truth-supervised duration loss, training run launched
+
+User instructions: "please prepare the training run," then "let's think more about the
+loss... cross staff coherence? what other ideas..." then "yes, do both." Full detail:
+`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.3.
+
+Two mechanisms built and validated, now training together in one run:
+
+1. **Explicit time-signature conditioning** (the §7.3 refinement from the earlier
+   design discussion) - `ProfileContext`/`ProfileContextEmbedding` extended with an
+   `expected_time_signature` field; real values sourced from ground-truth MusicXML per
+   training sample (`score_profile_time_signature.py`, reusing today's movement-aware
+   `ossq_ground_truth.py` machinery) and wired into the DataLoader automatically.
+2. **Ground-truth-supervised measure-duration adherence loss** - a new, differentiable
+   analogue of Stage A's own `check_measure_durations` check, penalizing the rhythm
+   head's predicted expected cumulative duration for diverging from ground truth at
+   each true barline. Gated by a weight defaulting to `0.0` (no effect until turned on).
+   A real bug (new fixed lookup tables registered the wrong way, tripping the
+   checkpoint-loader's mismatch check) found and fixed before it would even smoke-test.
+
+**Also documented, not built**: a loss-design brainstorm ranking further candidates -
+most notably a **cross-staff coherence loss** (batch sibling staves together at
+training time and penalize divergence from their *ground-truth* durations - cheaper
+than Stage C's full learned adapter, and a useful signal for whether Stage C's premise
+is worth its cost before building it) - plus a key-signature/accidental consistency
+loss and structural well-formedness losses, ranked lowest priority.
+
+Validated: 13 new tests (8 for the time-signature sourcing, 5 for the duration loss),
+full suite 1060/1060 non-deselected (same 3 pre-existing unrelated failures throughout
+this investigation), and a real smoke test confirming the whole chain works end to end.
+
+**`phase22` training run launched**: same pinned checkpoint and same 105,305/4,912
+train/valid split `phase20`/`phase21` used, same hyperparameters, both new mechanisms
+active together. Not complete at time of writing - this section will be updated with
+the result once it finishes.
+
+---
+
+*Everything below this line describes the state as of the `<page>.musicxml` correction
+(the first ground-truth bug, superseded numbers now further corrected above) and is kept
+for its still-valid qualitative content (the confirmed Beethoven/Moeran examples, the
+Phase 0-3 staging) - only the corpus-wide counts changed.*
+
+## 5. (prior) Decoder rhythm/duration accuracy — final: real decoder divergence confirmed, ~20% Beethoven-shaped (Phase 1's target), ~65% Moeran-shaped (broadly poor decode, Phase 1 alone won't fix)
 
 **The original Phase 0 result below was fully retracted, then redone correctly - see
 `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.1 for the complete account.** Short version: the

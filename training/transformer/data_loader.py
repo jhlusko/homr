@@ -1,5 +1,6 @@
 import os
 import random
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,7 @@ from training.architecture.transformer.profile_context import (
     context_to_batch_fields,
 )
 from training.omr_datasets.score_profile_pairing import profile_and_part_for_sample
+from training.omr_datasets.score_profile_time_signature import time_signature_for_sample
 from training.transformer.image_utils import (
     distort_image,
     ndarray_to_tensor,
@@ -136,7 +138,16 @@ class DataLoader:
         if resolved is None:
             return None
         profile, part = resolved
-        return ProfileContext.from_score_part(part, part_ordinal=profile.parts.index(part))
+        context = ProfileContext.from_score_part(part, part_ordinal=profile.parts.index(part))
+        # DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's refinement: the real ground-truth
+        # time signature in effect at this sample's own measure range, not just the
+        # part-level fields from_score_part already carries - "" (unknown) when it
+        # can't be resolved (a non-aligned page/system, an ambiguous multi-movement
+        # case) leaves the context exactly as from_score_part built it.
+        time_signature = time_signature_for_sample(self.dataset_root, stem)
+        if time_signature:
+            context = replace(context, expected_time_signature=time_signature)
+        return context
 
 
 def _filter_valid_samples(samples: list[str]) -> list[str]:

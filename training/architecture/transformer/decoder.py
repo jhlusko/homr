@@ -5,7 +5,11 @@ import torch.nn.functional as F
 from torch import nn
 
 from homr.transformer.configs import Config
-from homr.transformer.vocabulary import EncodedSymbol, has_rhythm_symbol_a_position
+from homr.transformer.vocabulary import (
+    EncodedSymbol,
+    has_rhythm_symbol_a_position,
+    kern_to_symbol_duration,
+)
 from training.architecture.transformer.custom_x_transformer import (
     AbsolutePositionalEmbedding,
     AttentionLayers,
@@ -273,6 +277,7 @@ _PROFILE_BATCH_FIELDS = (
     "profile_clef_indices",
     "profile_clef_count",
     "profile_transposition_index",
+    "profile_time_signature_index",
 )
 
 
@@ -300,6 +305,40 @@ class ScoreDecoder(nn.Module):
             if has_rhythm_symbol_a_position(rhythm_symbol):
                 note_mask[index] = 1
         self.note_mask = nn.Parameter(note_mask)
+
+        # DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's ground-truth-supervised duration-
+        # adherence loss (calDurationAdherenceLoss below): a fixed, non-trainable
+        # per-token lookup of each rhythm token's real duration (whole-note units,
+        # `kern_to_symbol_duration` - the exact same parser `EncodedSymbol.get_duration`
+        # itself calls). Tokens that don't start with "note"/"rest" (barline, clef,
+        # keySignature, and critically "chord" - the literal marker a chord's later
+        # simultaneous notes carry instead of their own note_/rest_ token, see
+        # `SymbolChord.get_duration`) correctly get 0 here with no special-casing:
+        # summing this vector position-by-position across a sequence already gives the
+        # right additive total, since a chord's non-first notes never contribute a
+        # second real duration value at the same musical instant.
+        duration_vec = torch.zeros(config.num_rhythm_tokens)
+        for index, rhythm_symbol in enumerate(config.rhythm_vocab.keys()):
+            if rhythm_symbol.startswith(("note", "rest")):
+                kern = rhythm_symbol.split("_")[1]
+                duration_vec[index] = float(kern_to_symbol_duration(kern).fraction)
+        # A non-persistent buffer, not an nn.Parameter like note_mask above: this is a
+        # fixed, deterministic lookup table with nothing to learn or load - a
+        # persistent (state_dict-included) registration would make every existing
+        # pinned checkpoint (saved before this field existed) look like it's "missing"
+        # a real parameter to load_checkpoint's mismatch check, when there is nothing
+        # to load in the first place.
+        self.register_buffer("rhythm_duration", duration_vec, persistent=False)
+
+        # Same "barline" definition `SymbolChord.is_barline` already uses elsewhere in
+        # this codebase (cross_staff_consistency.py's own cumulative-position checks
+        # rely on it too) - a repeat barline closes a measure exactly as an ordinary
+        # one does.
+        barline_mask = torch.zeros(config.num_rhythm_tokens)
+        for index, rhythm_symbol in enumerate(config.rhythm_vocab.keys()):
+            if "barline" in rhythm_symbol or "repeat" in rhythm_symbol:
+                barline_mask[index] = 1
+        self.register_buffer("rhythm_is_barline", barline_mask, persistent=False)
 
         # Output-only heads over the shared hidden state. They add dictionary keys to
         # forward's result and nothing else - the existing losses and the positional
@@ -547,6 +586,17 @@ class ScoreDecoder(nn.Module):
         loss_consist = beta * self.calConsistencyLoss(
             rhythmsp, pitchsp, liftsp, positionsp, articulationsp, slursp, mask
         )
+        # Must run on the still-raw (unmasked) rhythmso - _mask_padding_tokens below
+        # replaces padding with ignore_index, which would index out of bounds into
+        # rhythm_duration/rhythm_is_barline. 0.0 weight (the default) is exactly the
+        # existing loss, bit-for-bit - see calDurationAdherenceLoss's own docstring.
+        duration_adherence_weight = getattr(self.config, "duration_adherence_weight", 0.0)
+        loss_duration_adherence = (
+            duration_adherence_weight
+            * self.calDurationAdherenceLoss(rhythmsp, rhythmso, mask)
+            if duration_adherence_weight
+            else torch.zeros((), device=rhythmsp.device)
+        )
         rhythmso = self._mask_padding_tokens(rhythmso, mask)
         pitchso = self._mask_padding_tokens(pitchso, mask)
         liftso = self._mask_padding_tokens(liftso, mask)
@@ -567,6 +617,7 @@ class ScoreDecoder(nn.Module):
             + loss_slurs
             + loss_position
             + loss_consist
+            + loss_duration_adherence
         )
 
         return {
@@ -574,6 +625,7 @@ class ScoreDecoder(nn.Module):
             "loss_pitch": loss_pitch,
             "loss_lift": loss_lift,
             "loss_consist": loss_consist,
+            "loss_duration_adherence": loss_duration_adherence,
             "loss_position": loss_position,
             "loss_articulations": loss_articulations,
             "loss_slurs": loss_slurs,
@@ -634,6 +686,40 @@ class ScoreDecoder(nn.Module):
         loss = (loss * mask).sum() / mask.sum()
 
         return loss
+
+    def calDurationAdherenceLoss(
+        self, rhythmsp: torch.Tensor, rhythmso_raw: torch.Tensor, mask: torch.Tensor
+    ) -> torch.Tensor:
+        """DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's refinement: a differentiable
+        analogue of Stage A's `check_measure_durations`/`_cumulative_barline_positions`
+        (`homr/cross_staff_consistency.py`), penalizing the rhythm head's own predicted
+        *expected* cumulative duration for diverging from the ground-truth cumulative
+        duration at each true barline position - training-time pressure toward getting
+        measure lengths right, not just post-hoc detection of when they're wrong.
+
+        Deliberately compares *cumulative* position at each barline checkpoint, not
+        each individual measure's own length in isolation - the same choice
+        `_cumulative_barline_positions` itself makes (see its own docstring): if every
+        checkpoint's running total matches, every measure between checkpoints must
+        also be right, and this needs no per-measure segmentation logic to compute.
+
+        `rhythmso_raw` must be the *unmasked* ground-truth rhythm labels (i.e. `rhythms
+        [:, 1:]` before `_mask_padding_tokens` replaces padding with `ignore_index`) -
+        the padding-index value would otherwise index out of `rhythm_duration`/
+        `rhythm_is_barline`'s bounds. `mask` (the same padding mask every other loss
+        here already uses) is applied separately, exactly as `calConsistencyLoss` does.
+        """
+        true_duration = self.rhythm_duration[rhythmso_raw] * mask
+        probs = torch.softmax(rhythmsp, dim=2)
+        predicted_duration = (probs * self.rhythm_duration).sum(dim=2) * mask
+
+        true_cumulative = torch.cumsum(true_duration, dim=1)
+        predicted_cumulative = torch.cumsum(predicted_duration, dim=1)
+
+        is_barline = self.rhythm_is_barline[rhythmso_raw] * mask
+        diff = torch.abs(predicted_cumulative - true_cumulative) * is_barline
+        denom = is_barline.sum().clamp(min=1)
+        return diff.sum() / denom
 
     def cross_entropy(
         self,

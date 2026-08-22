@@ -151,6 +151,161 @@ class ScoreDecoder:
 
         return symbols
 
+    def generate_with_rhythm_margins(
+        self,
+        start_tokens: NDArray,
+        nonote_tokens: NDArray,
+        **kwargs: Any,
+    ) -> tuple[list[EncodedSymbol], list[tuple[int, float]]]:
+        """Identical greedy decode to `generate()`, plus bookkeeping `generate()` itself
+        never needed: at every step, the rhythm head's second-best token id and the
+        logit margin between the chosen (top-1) and runner-up (top-2) rhythm token.
+
+        This is the raw material Phase 1's cross-staff-consistency reranking
+        (`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.2,
+        `ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md` §5) needs to find which rhythm decisions
+        were a narrow, close call - a small margin at step `i` means the model's second
+        choice at that step was nearly as likely as what it actually picked, exactly the
+        "one mis-decoded note, could easily have gone the other way" case reranking
+        targets. A large margin means the model was confident, and forking there is very
+        unlikely to help while still costing a full re-decode - `rerank_staff_candidates`
+        (`homr/cross_staff_rerank.py`) uses this to pick which steps are worth the cost
+        of actually branching on via `rhythm_alternative`, rather than forking at every
+        step.
+
+        Returns `(symbols, margins)` where `margins[i]` is `(alt_rhythm_token_id,
+        margin)` for the step that produced `symbols[i]` - aligned 1:1, not a separate
+        indexing scheme. Changes no decoding decision from `generate()` - the chosen
+        token at every step is still the same top-1 argmax; this only records what the
+        alternative would have been and how close it was.
+        """
+        num_dims = len(start_tokens.shape)
+
+        if num_dims == 1:
+            start_tokens = start_tokens[None, :]
+
+        out_rhythm = start_tokens
+        out_pitch = nonote_tokens
+        out_lift = nonote_tokens
+        out_articulations = nonote_tokens
+        out_slurs = nonote_tokens
+        cache, kv_input_names, kv_output_names = self.init_cache()
+        output_names = self.output_names + kv_output_names
+        context = kwargs["context"]
+        context_reduced = kwargs["context"][:, :1]
+
+        symbols: list[EncodedSymbol] = []
+        margins: list[tuple[int, float]] = []
+
+        for step in range(self.max_seq_len):
+            x_lift = out_lift[:, -1:]
+            x_pitch = out_pitch[:, -1:]
+            x_rhythm = out_rhythm[:, -1:]
+            x_articulations = out_articulations[:, -1:]
+            x_slurs = out_slurs[:, -1:]
+
+            context_input = context if step == 0 else context_reduced
+
+            self.io_binding.bind_cpu_input("rhythms", x_rhythm)
+            self.io_binding.bind_cpu_input("pitchs", x_pitch)
+            self.io_binding.bind_cpu_input("lifts", x_lift)
+            self.io_binding.bind_cpu_input("articulations", x_articulations)
+            self.io_binding.bind_cpu_input("slurs", x_slurs)
+            self.io_binding.bind_cpu_input("context", context_input)
+            self.io_binding.bind_cpu_input("cache_len", np.array([step], dtype=np.int64))
+            for name, cache_val in zip(kv_input_names, cache, strict=True):
+                self.io_binding.bind_ortvalue_input(name, cache_val)
+
+            for name in output_names:
+                self.io_binding.bind_output(name, "cuda" if self.use_gpu else "cpu", self.device_id)
+
+            self.net.run_with_iobinding(iobinding=self.io_binding)
+
+            outputs = self.io_binding.get_outputs()
+            cache = outputs[7:]
+
+            rhythmsp = outputs[0].numpy()
+            pitchsp = outputs[1].numpy()
+            liftsp = outputs[2].numpy()
+            positionsp = outputs[3].numpy()
+            articulationsp = outputs[4].numpy()
+            slursp = outputs[5].numpy()
+            attention = outputs[6].numpy()
+
+            rhythm_logits = rhythmsp[:, -1, :].reshape(-1)
+            top2_idx = np.argsort(rhythm_logits)[-2:]
+            alt_token_id = int(top2_idx[0])
+            top_token_id = int(top2_idx[1])
+            margin = float(rhythm_logits[top_token_id] - rhythm_logits[alt_token_id])
+
+            rhythm_sample = np.array([[top_token_id]])
+            pitch_sample = np.array([[pitchsp[:, -1, :].argmax()]])
+            lift_sample = np.array([[liftsp[:, -1, :].argmax()]])
+            articulation_sample = np.array([[articulationsp[:, -1, :].argmax()]])
+            slur_sample = np.array([[slursp[:, -1, :].argmax()]])
+            position_sample = np.array([[positionsp[:, -1, :].argmax()]])
+
+            if rhythm_sample[0][0] == self.eos_token:
+                break
+
+            symbols.append(
+                EncodedSymbol(
+                    rhythm=detokenize(rhythm_sample, self.inv_rhythm_vocab)[0],
+                    pitch=detokenize(pitch_sample, self.inv_pitch_vocab)[0],
+                    lift=detokenize(lift_sample, self.inv_lift_vocab)[0],
+                    articulation=detokenize(articulation_sample, self.inv_articulation_vocab)[0],
+                    slur=detokenize(slur_sample, self.inv_slur_vocab)[0],
+                    position=detokenize(position_sample, self.inv_position_vocab)[0],
+                    coordinates=attention,
+                )
+            )
+            margins.append((alt_token_id, margin))
+
+            out_lift = np.concatenate((out_lift, lift_sample), axis=-1)
+            out_pitch = np.concatenate((out_pitch, pitch_sample), axis=-1)
+            out_rhythm = np.concatenate((out_rhythm, rhythm_sample), axis=-1)
+            out_articulations = np.concatenate((out_articulations, articulation_sample), axis=-1)
+            out_slurs = np.concatenate((out_slurs, slur_sample), axis=-1)
+
+        return symbols, margins
+
+    def rhythm_alternative(
+        self,
+        symbols: list[EncodedSymbol],
+        fork_step: int,
+        alt_rhythm_token_id: int,
+        **kwargs: Any,
+    ) -> list[EncodedSymbol]:
+        """Builds the full alternate decode produced by swapping the rhythm token at
+        `fork_step` (0-indexed into `symbols`, `generate_with_rhythm_margins`'s output)
+        for `alt_rhythm_token_id`, then regenerating everything after it - on top of
+        `generate_from_prefix`, already validated against the live model for exactly
+        this teacher-forced-prefix-then-continue mechanism (see its own docstring).
+        Every other field at `fork_step` (pitch/lift/articulation/slur/position) is left
+        as originally decoded; only the rhythm token is corrected, matching how the
+        model actually consumes these fields (each is its own autoregressive input
+        stream, only tied together through the shared forward pass, not through one
+        field's history influencing another's within the same step).
+        """
+        bos = EncodedSymbol(
+            rhythm=self.inv_rhythm_vocab[1],
+            pitch=self.inv_pitch_vocab[0],
+            lift=self.inv_lift_vocab[0],
+            articulation=self.inv_articulation_vocab[0],
+            slur=self.inv_slur_vocab[0],
+        )
+        corrected = EncodedSymbol(
+            rhythm=self.inv_rhythm_vocab[alt_rhythm_token_id],
+            pitch=symbols[fork_step].pitch,
+            lift=symbols[fork_step].lift,
+            articulation=symbols[fork_step].articulation,
+            slur=symbols[fork_step].slur,
+            position=symbols[fork_step].position,
+        )
+        prefix = [bos, *symbols[:fork_step], corrected]
+        continuation = self.generate_from_prefix(prefix, **kwargs)
+        return [*symbols[:fork_step], corrected, *continuation]
+
     def generate_from_prefix(
         self, prefix: list[EncodedSymbol], **kwargs: Any
     ) -> list[EncodedSymbol]:

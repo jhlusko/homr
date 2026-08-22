@@ -33,7 +33,7 @@ from homr.cross_staff_consistency import _cumulative_barline_positions, staves_b
 from homr.main import ProcessingConfig, detect_staffs_in_image
 from homr.staff_parsing import _plan_systems, parse_staffs
 from homr.transformer.configs import Config as TransformerConfig
-from ossq_ground_truth import measure_start_for_system, real_ground_truth_path
+from ossq_ground_truth import real_ground_truth_path, resolve_flat_measure_range
 import xml.etree.ElementTree as ET
 
 
@@ -134,24 +134,35 @@ def verify_entry(entry: dict, homr_page_local_starts: dict) -> dict:
     if len(gt_parts) != len(homr_parts):
         return {**entry, "content_check": None}
 
+    movement_index = entry.get("movement_index")
+    if movement_index is None:
+        return {**entry, "content_check": None}
+
     per_part_overlap = {}
     for i in range(len(gt_parts)):
-        gt_target = str(entry["absolute_measure_number"])
         homr_target = str(page_local_measure)
         gt_all = gt_parts[i].findall("measure")
         homr_all = homr_parts[i].findall("measure")
+
+        # Ground truth measures are matched by *position* within the correct movement
+        # (resolve_flat_measure_range), not by <measure number="..."> alone: multi-
+        # movement pieces restart numbering at each movement, so the same number string
+        # recurs once per movement and a naive whole-file match silently picks whichever
+        # movement's measure happens to come first (or splices several together).
+        flat_range = resolve_flat_measure_range(
+            gt_path, movement_index, i, entry["absolute_measure_number"], entry["absolute_measure_number"]
+        )
+        gt_target_measure = gt_all[flat_range[0]] if flat_range is not None else None
 
         # Seed divisions by walking every measure up to (and including) the target -
         # <divisions> is often only declared once, in measure 1, and inherited from
         # there, so looking at the target measure alone would default to 1 and get
         # every duration comparison wrong the same way the original bug did.
         gt_divisions: dict = {"current": 1}
-        gt_target_measure = None
-        for m in gt_all:
-            note_seq(m, gt_divisions)  # walk for the side effect of updating divisions
-            if m.get("number") == gt_target:
-                gt_target_measure = m
-                break
+        if gt_target_measure is not None:
+            target_idx = flat_range[0]
+            for m in gt_all[: target_idx + 1]:
+                note_seq(m, gt_divisions)  # walk for the side effect of updating divisions
         homr_divisions: dict = {"current": 1}
         homr_target_measure = None
         for m in homr_all:

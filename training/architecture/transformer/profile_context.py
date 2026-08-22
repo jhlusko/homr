@@ -1,7 +1,8 @@
 """
 §7.2/§7.3's score-profile context embedding (design §7, `ENSEMBLE_TRANSCRIPTION_NEXT_
 STEPS.md` §3): instrument-family, part-ordinal, staff-within-part-ordinal, expected-
-staff-count, likely-clef-set, and transposition, combined into one additive vector for
+staff-count, likely-clef-set, transposition, and (DECODER_RHYTHM_ACCURACY_DESIGN.md
+§7.3's refinement) expected time signature, combined into one additive vector for
 `ScoreTransformerWrapper`'s decoder input - plus an explicit missing-context case,
 since a caller (or a training sample) with no profile at all is the common case, not
 the exception, and needs its own learnable representation rather than silence.
@@ -44,6 +45,18 @@ INSTRUMENT_FAMILIES = (
     "drum.timpani", "pluck.guitar",
 )
 CLEFS = ("G2", "F4", "C1", "C2", "C3", "C4", "C5", "TAB5")
+#: DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's refinement: an explicit conditioning input
+#: (not the model's own decoded output - `expected_time_signature` is what the caller
+#: believes the answer should be, sourced either from an external hint or a majority
+#: vote across a first decode pass of the other staves in the same system, neither
+#: wired in yet) for the "settles into a self-consistent wrong subdivision" failure
+#: type reranking can't catch. Full "numerator/denominator" strings, not just the
+#: denominator the model's own `timeSignature/<denominator>` rhythm token carries -
+#: this is an input feature, not constrained to match the output vocabulary, and the
+#: numerator is exactly the part a self-consistent wrong subdivision gets wrong.
+TIME_SIGNATURES = (
+    "4/4", "3/4", "2/4", "6/8", "9/8", "12/8", "2/2", "3/8", "5/4", "6/4",
+)
 
 MAX_PART_ORDINAL = 8  # clipped, not truncated - a 9th part still gets the 8th bucket
 MAX_STAFF_WITHIN_PART = 4
@@ -84,6 +97,13 @@ class ProfileContext:
     expected_staff_count: int
     likely_clefs: tuple[str, ...]
     transposition_semitones: int
+    #: "" (the empty-string sentinel, same convention as `instrument_family`) when
+    #: unknown. Not yet populated by `from_score_part` - `ScorePart` itself has no time
+    #: signature field yet; sourcing this (training: read it from ground truth
+    #: MusicXML per sample; inference: an explicit hint, or a majority vote across a
+    #: first decode pass of the other staves in the same system) is real, separate
+    #: work, not done here - see DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3.
+    expected_time_signature: str = ""
 
     @staticmethod
     def from_score_part(
@@ -178,6 +198,7 @@ def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, "int 
             "profile_clef_indices": torch.zeros(MAX_CLEF_SLOTS, dtype=torch.long),
             "profile_clef_count": 0,
             "profile_transposition_index": 0,
+            "profile_time_signature_index": 0,
         }
     clefs = context.likely_clefs[:MAX_CLEF_SLOTS]
     clef_indices = [_bucket_index(clef, CLEFS) for clef in clefs]
@@ -196,6 +217,9 @@ def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, "int 
             max(context.transposition_semitones, MIN_TRANSPOSITION), MAX_TRANSPOSITION
         )
         - MIN_TRANSPOSITION,
+        "profile_time_signature_index": _bucket_index(
+            context.expected_time_signature, TIME_SIGNATURES
+        ),
     }
 
 
@@ -209,6 +233,7 @@ class ProfileContextEmbedding(nn.Module):
         self.staff_count_emb = nn.Embedding(MAX_STAFF_COUNT + 1, dim)
         self.clef_emb = nn.Embedding(len(CLEFS) + 1, dim)
         self.transposition_emb = nn.Embedding(MAX_TRANSPOSITION - MIN_TRANSPOSITION + 1, dim)
+        self.time_signature_emb = nn.Embedding(len(TIME_SIGNATURES) + 1, dim)
         # The explicit "there is no profile context for this staff at all" case - a
         # dedicated, trainable vector rather than a zero one, so the model can
         # eventually distinguish "confirmed no profile" from "gate not yet open."
@@ -222,6 +247,7 @@ class ProfileContextEmbedding(nn.Module):
         nn.init.normal_(self.staff_count_emb.weight, std=0.02)
         nn.init.normal_(self.clef_emb.weight, std=0.02)
         nn.init.normal_(self.transposition_emb.weight, std=0.02)
+        nn.init.normal_(self.time_signature_emb.weight, std=0.02)
         nn.init.normal_(self.missing_emb, std=0.02)
 
     def _clef_set_vector(self, clefs: tuple[str, ...], device: torch.device) -> torch.Tensor:
@@ -261,6 +287,9 @@ class ProfileContextEmbedding(nn.Module):
             - MIN_TRANSPOSITION,
             device=device,
         )
+        time_signature_index = torch.tensor(
+            _bucket_index(context.expected_time_signature, TIME_SIGNATURES), device=device
+        )
         total = (
             self.instrument_family_emb(family_index)
             + self.part_ordinal_emb(part_ordinal_index)
@@ -268,6 +297,7 @@ class ProfileContextEmbedding(nn.Module):
             + self.staff_count_emb(staff_count_index)
             + self._clef_set_vector(context.likely_clefs, device)
             + self.transposition_emb(transposition_index)
+            + self.time_signature_emb(time_signature_index)
         )
         return self.gate * total
 
@@ -290,6 +320,7 @@ class ProfileContextEmbedding(nn.Module):
         profile_clef_indices: torch.Tensor,
         profile_clef_count: torch.Tensor,
         profile_transposition_index: torch.Tensor,
+        profile_time_signature_index: torch.Tensor,
     ) -> torch.Tensor:
         """The training-facing entry point: every argument is a batched tensor exactly
         as `context_to_batch_fields` produces per-sample and the default collator
@@ -325,6 +356,7 @@ class ProfileContextEmbedding(nn.Module):
             + self.staff_count_emb(profile_staff_count_index)
             + clef_mean
             + self.transposition_emb(profile_transposition_index)
+            + self.time_signature_emb(profile_time_signature_index)
         )
         present = profile_present.to(total.dtype).unsqueeze(-1)  # (batch, 1)
         combined = present * total + (1 - present) * self.missing_emb.unsqueeze(0)

@@ -313,6 +313,94 @@ assume a majority of staves are right, which nothing in this document's staged p
 (§7) currently provides - worth naming as a real gap rather than assuming Phase 1 alone
 closes this out.
 
+### §7.1 correction, 2026-08-21: a second ground-truth bug (movement splicing), found via the corpus-review webpage
+
+The 87/17/57/13 numbers immediately above have a real bug in how they were computed,
+independent of (and layered on top of) the `<page>.musicxml` bug this section already
+describes. User inspection of `corpus_review.html` (the review webpage built for this
+finding) turned up a visibly wrong rendered "ground truth" image, traced end to end on
+one entry (Wolf, *String Quartet*, sq8823783, page 22, absolute measure 318, viola).
+
+**Root cause**: OSSQ-OMR's ground-truth `.musicxml` files concatenate every movement of
+a piece into a single file, and each movement *restarts* `<measure number="...">` at 1
+(most string quartets have 3-4 movements). Every measure-lookup in this investigation -
+`deep_barline_audit_v2.py`'s `check_ground_truth`, `content_verify_agrees.py`'s
+`verify_entry`, `build_review_assets.py`'s `extract_gt_window` - matched ground-truth
+measures with `m.get("number") == str(target)` against the *whole* file, implicitly
+assuming that number was unique. It isn't: "measure 317" occurs once per movement. The
+Wolf example's rendered window spliced two unrelated movements' measures 317-321
+together into one image (10 measures kept where 5 were wanted), which is exactly why
+every part - not just the flagged one - showed `0.0` content overlap for that entry: the
+comparison itself was garbage, not evidence of a decode error.
+
+The corpus's own `measure_start`/`measure_end` alignment metadata resets the same way at
+movement boundaries (confirmed by inspecting the metadata sequence for the Wolf piece: a
+system's metadata decreasing relative to the previous system's lines up exactly with a
+`<measure number="1">` reset in the ground truth file) - so `measure_start` is
+movement-local, not a piece-wide running count. A naive "flat index = measure_start - 1"
+fix would only work by coincidence for a page in the first movement.
+
+**Fix**: `homr/training/omr_datasets/ossq_ground_truth.py` gained
+`movement_index_for_system` (counts resets in the corpus's own metadata sequence -
+`scanned`/`synthetic` only, deliberately excluding `unaligned`, which was found to carry
+a spurious duplicate-numbered page for this exact piece that would otherwise cause a
+false reset) and `resolve_flat_measure_range` (matches by number only within the
+identified movement's own slice, where numbers are unique). All three consumer scripts
+were updated to use it. All 8 pre-existing unit tests still pass. Verified against two
+independent cases on the Wolf piece: page 22 system 2 (movement 0, resolves to flat
+measures 316-320 as expected) and page 27 system 3 (movement 1, resolves to flat
+measures 406-414 as expected).
+
+**Corrected corpus-wide barline numbers** (`deep_barline_audit_v2.py` rerun, identical
+200-page sample):
+
+```
+total majority_position_correction proposals: 91
+  ground truth disagrees: 1                        (unchanged)
+  ground truth agrees (candidate: real decode error): 75    (was 87)
+  no ground truth / no measure-mapping metadata: 15          (was 3)
+```
+
+All 12 changed verdicts moved `agrees → no mapping`, never the reverse. Checked one
+directly (Andrée, *String Quartet in A major*, sq7313978, page 30 system 4): the piece
+genuinely has 4 movements (flat boundaries at measures 0/170/322/560), and this system's
+alignment metadata exists *only* in the unreliable `unaligned` folder - with no aligned
+entry to place it in the reset sequence, guessing its movement would risk the exact
+splicing bug this fix exists to prevent, so it now conservatively reports no mapping
+rather than a number that might reference the wrong movement's measure. Same discipline
+`measure_start_for_system` already applies to non-numeric metadata placeholders (`"X2"`
+etc.) - corpus ambiguity becomes "no mapping," never a guess.
+
+**The 87-entry content-level breakdown above (17/57/13) was stale** - `content_verify_
+agrees.py` had the identical number-matching bug. Corrected rerun against the fixed
+75-entry set (`content_verify_agrees_v3_full.json`):
+
+```
+total agree-entries checked: 75
+  Beethoven-shaped (majority overlap >=0.8, flagged staff <0.8): 34  (~45%, was 17/87 ~20%)
+  Moeran-shaped (majority overlap <0.8 too): 23                     (~31%, was 57/87 ~65%)
+  inconclusive/no data: 18                                          (~24%, was 13/87 ~15%)
+```
+
+**This reversed which shape dominates, not just the proportions.** The movement-splicing
+bug's characteristic failure mode - mixing two unrelated movements' measures into one
+comparison - produces near-`0.0` overlap on *every* part, exactly the same signature as a
+genuinely Moeran-shaped "whole system diverges" result (this is precisely what happened
+in the Wolf example that surfaced this fix). A meaningful share of the old 57
+Moeran-shaped entries were very likely spliced-garbage comparisons wearing a
+Moeran-shaped costume, not real evidence of broadly poor decode. **Revised conclusion**:
+Phase 1's beam-search reranking now has a substantially larger, better-justified target
+than previously thought - the Beethoven-shaped plurality (34 of 75, ~45%) is exactly the
+"one clean wrong note against a reliable majority" signature it targets. The
+Moeran-shaped minority (23, ~31%) and inconclusive share (18, ~24%) are still real and
+still worth naming as a gap Phase 1 alone won't close, but they are no longer the
+dominant story the way they appeared to be before this fix.
+
+`corpus_review.html` itself was **not** regenerated for this fix (explicit user
+instruction: tracing 1-2 examples end to end was sufficient without rebuilding all
+assets) - its ground-truth renderings for multi-movement pieces may still show the
+pre-fix splicing artifact until it is rebuilt.
+
 Before attributing every flagged disagreement to a *decoding* error, rule out training
 data itself being part of the story: sample some number of already-flagged
 disagreements (real pages this session's benchmark has already identified), and where a
@@ -469,6 +557,182 @@ and reranking logic itself needs building. Success criterion: rerun the 200-page
 benchmark with reranking enabled vs. disabled and compare `barline_position_mismatch`/
 `measure_duration_mismatch` counts directly.
 
+**Built 2026-08-21, in a narrower, cheaper shape than textbook fixed-width beam search
+- deliberately, not as a shortcut.** Real classical beam search (maintaining k
+hypotheses at every step) would need per-step multi-hypothesis KV-cache batching this
+codebase has never exercised (`decoder_inference.py` is batch=1 throughout) - a much
+larger, riskier build for the same stated goal. Instead: at each staff's *narrowest-
+margin* rhythm decisions specifically (not every step), branch into a full alternate
+decode via the already-validated `generate_from_prefix` mechanism, then keep whichever
+candidate - greedy or a fork - best matches the other staves' majority cumulative
+barline positions. This targets exactly §7.2's own stated criterion (a narrow local
+call, reranked against a reliable majority) without new cache-batching machinery.
+
+- `homr/transformer/decoder_inference.py`: `generate_with_rhythm_margins` (records the
+  rhythm head's runner-up token id and logit margin at every step; verified
+  bit-identical to plain `generate()` otherwise - the bookkeeping changes nothing about
+  what gets decoded) and `rhythm_alternative` (forks a full alternate decode at a given
+  step by forcing the runner-up token through `generate_from_prefix`).
+- `homr/cross_staff_rerank.py`: `rhythm_candidates_for_staff` (greedy decode plus up to
+  N forks at the N narrowest-margin steps) and `rerank_staff_candidates` (per staff,
+  keeps whichever candidate agrees most with the *other* staves' majority barline
+  positions - never picks a worse-or-equal alternative over the greedy default, and
+  requires at least 2 corroborating staves, the same bar
+  `propose_majority_position_corrections` already uses). 6 unit tests
+  (`tests/test_cross_staff_rerank.py`), all passing.
+- **Validated against the live model, not mocked** (same discipline
+  `generate_from_prefix` itself required): `generate_with_rhythm_margins` reproduces
+  `generate()`'s output bit-for-bit on a real staff; forcing the *same* token
+  `rhythm_alternative` would have chosen anyway reproduces the rest of the decode
+  bit-for-bit (mirrors tier 2's own validation exactly); forcing the real runner-up at
+  the narrowest-margin step produces a valid, genuinely different decode with no crash;
+  the full `rhythm_candidates_for_staff` → `rerank_staff_candidates` pipeline runs
+  end to end with no crash.
+- `benchmark_phase1_rerank.py`: the actual before/after benchmark the success criterion
+  above asks for. Captures each staff's encoder context via a monkeypatch on
+  `Staff2Score.predict`, then has to solve a real correctness problem before it can
+  measure anything: `parse_staffs` decodes staves *voice-major* (all of voice 0's
+  staves across every system it appears in, then voice 1's, ...), not system-major, so
+  a captured call's position in call order does not by itself say which system it
+  belongs to. Solved by mirroring `parse_staffs`' own nested loop exactly (same
+  `plan.staff_for_voice` calls, same enumeration order) rather than guessing - and
+  confirmed correct, not just plausible: run against a known page
+  (`sq8823783:0022.png`, Wolf *String Quartet*), the reconstructed "before reranking"
+  finding count (3) matched the live pipeline's own logged findings on that exact page
+  exactly. Only reranks systems with ≥3 staves and ≥1 existing Stage A finding -
+  matching `rerank_staff_candidates`' own corroboration bar and skipping the (majority
+  of) already-clean systems entirely.
+
+**Results, 20-page sample** (`phase1_sample20.txt`, the first 20 lines of the 200-page
+benchmark): **31 → 16 combined `barline_position_mismatch`/`measure_duration_mismatch`
+findings (a ~48% reduction), 11 of the checked systems improved.** A real, clearly
+positive first signal, not noise - on the single page already traced end to end earlier
+in this document (`sq8823783:0022.png`), the reduction (3→2) matched a specific,
+identifiable system fix, not an aggregate artifact.
+
+**Full 200-page run complete** (`phase1_out200.json`, 198/200 pages processed - 2 hit
+the same pre-existing, unrelated `staves_by_system` index error seen elsewhere in this
+investigation, caught and skipped, not a Phase 1 defect):
+
+```
+total systems checked: 899
+staff-level rerank attempts: 1,223
+combined barline_position_mismatch + measure_duration_mismatch findings:
+  before reranking: 428
+  after reranking:  339   (20.8% reduction)
+systems where reranking changed the finding count: 81
+pages where reranking made the finding count WORSE: 0
+```
+
+**The real number (20.8%) is meaningfully lower than the 20-page sample's 48%** - that
+sample was not representative, by chance concentrated toward more fixable cases.
+20.8% is still a real, substantial reduction, and **critically, it never regressed
+anywhere**: across all 198 successfully-processed pages, reranking never increased the
+finding count on a single one. That's an important safety property on its own - this
+mechanism does not appear to trade one class of error for another, at least by this
+measure.
+
+**What this benchmark does and does not establish, stated plainly.** It measures
+whether Stage A's own cross-staff-agreement checks stop firing after reranking - not
+whether the reranked decode is actually *closer to real ground truth*. This
+investigation has already found once, directly (the Moeran case, §7.1 above), that
+staves agreeing with each other is not proof they are correct - `rerank_staff_candidates`
+picks whichever candidate best matches the *other staves' majority*, which is exactly
+the same "trust the majority" premise Moeran already showed can itself be wrong on a
+hard passage. **Ground-truth spot-check done: 6 of 6 resolvable corrected measures now match real
+ground truth exactly.** `phase1_ground_truth_spotcheck.py`, run against 15 of the 61
+pages with a changed system: for each `majority_position_correction` proposal whose
+staff reranking actually altered, resolves the real ground-truth duration for that
+exact measure (via `ossq_ground_truth.py`'s movement-aware machinery) and compares it
+against both the greedy and reranked decode. 10 proposals had a resolvable mapping (4
+didn't - the same known corpus-metadata gaps hit before, correctly excluded rather than
+guessed at); of those 10, 6 corresponded to staves reranking actually changed, and
+**all 6 flipped from greedy-wrong to reranked-matches-truth exactly** - zero
+regressions, zero cases of reranking picking a self-consistent-but-wrong answer (the
+specific risk this check exists to catch).
+
+Two real bugs found and fixed in the spot-check script itself before trusting this
+result - both the same *class* this investigation has hit more than once now (compare
+normalized values, never raw units across two different sources): divisions need
+walking from the movement's start, not seeded fresh at the target measure (the
+±§7.1 divisions bug, recurring); and a whole-note-vs-quarter-note unit mismatch between
+`SymbolChord.get_duration()`'s convention (used by the decoder/reranking side) and
+`measure_length_by_part`'s (quarter notes) - comparing raw values across these silently
+produced nonsense-looking truth values (`48`, `1920`) until caught and fixed.
+
+**n=6 is small, but unanimous-and-zero-counterexample is a real signal, not a coin
+flip that happened to land right.** This directly answers the Moeran-case caution this
+section raised with actual evidence instead of leaving it as an open assumption.
+
+### Wired into the live pipeline, 2026-08-21
+
+User instruction: "please wire it." `homr/staff_parsing.py`'s `parse_staffs` now
+reranks for real - not log-only like Stage A/B elsewhere - on by default
+(`enable_phase1_rerank: bool = True`).
+
+**Gated two-pass, deliberately, not unconditional forking on every staff.** Every
+staff's greedy decode costs the same either way
+(`generate_with_rhythm_margins` only adds bookkeeping over a plain `generate()` call),
+but each fork is a full extra decode pass - forking every staff on every page
+unconditionally would have cost several times a normal decode even on the ~91% of
+systems the 200-page benchmark found had nothing to fix, and that unconditional cost
+was never what was actually measured. The real wiring instead: decode every staff's
+greedy result first (cheap), run Stage A's own `check_barline_positions`/
+`check_measure_durations` against the greedy decode per system, and only pay for
+forking + reranking on a system that already shows a finding there - exactly the
+population the benchmark and spot-check measured, nothing broader.
+
+New/changed code: `Staff2Score.predict_greedy_with_margins` (the cheap pass, returns
+the raw/unfiltered greedy decode plus margins plus the encoder context, so a later
+fork pass skips re-running the encoder), `parse_staff_tromr_greedy_with_margins`
+(applies the existing grandstaff/`position != "lower"` filter to a *copy* for Stage A's
+cheap pre-check, while keeping the raw sequence available for forking - forking must
+operate on the raw sequence to keep step indices aligned with the decoder's own
+numbering), `cross_staff_rerank.fork_candidates_from_margins` (the expensive half,
+split out of `rhythm_candidates_for_staff` so a caller can gate it). `parse_staffs`
+itself: decode phase (always cheap), a per-system Stage A pre-check phase, then a
+forking+reranking phase only for systems that pass that check.
+
+**Validated**: full suite still 1041/1044 (same 3 pre-existing, unrelated
+`dynamic.mark` failures this investigation has seen throughout - no regression).
+Live end-to-end runs on two real pages: the already-traced Wolf quartet page (known
+Stage A findings) completed in ~24s, reproduced the exact same post-rerank finding
+(system 2's duration disagreement resolving to the same `15/16` the earlier
+unconditional-forking test produced - confirms the gating didn't accidentally skip
+real forking work) and wrote valid MusicXML; a page with zero pre-existing findings
+(79 of 198 pages in the benchmark had none) completed in ~27s with no findings firing
+and, by construction, no forking cost paid.
+
+Disabled automatically whenever `selected_staff` restricts processing to one staff
+(same reasoning `_report_cross_staff_findings` already uses there); `enable_phase1_rerank=False`
+and `phase1_max_forks` (default 3, matching the benchmark) are available for explicit
+comparison against the pre-Phase-1 decode.
+
+**Spot-check extended to all 61 changed pages, 2026-08-21: the 6/6 rate holds at
+scale.** 49 resolvable entries: **38 IMPROVED, 2 NEITHER_MATCHES_TRUTH, 0 REGRESSED** (9
+more had no ground-truth mapping, correctly excluded). Both non-matching cases checked
+by hand: the *greedy* decode was already wrong too in each (e.g. greedy `17/32` vs.
+truth `1/2`, reranked `9/16` vs. truth `1/2` - neither correct, but reranking landed on
+a different wrong answer for a genuinely messy passage, not a case of breaking a right
+one). Zero regressions across the entire sample - a real, decisive result.
+
+**A real bug found while extending the sample, worth remembering for future wiring
+work**: wiring Phase 1 into `parse_staffs` changed its internal call path - it now
+calls `Staff2Score.predict_greedy_with_margins`, not `predict()`, and reranks
+internally by default. The existing offline analysis scripts
+(`phase1_ground_truth_spotcheck.py`, `benchmark_phase1_rerank.py`) monkeypatch
+`Staff2Score.predict` to capture encoder context; once wiring changed the real call
+path, that monkeypatch stopped intercepting anything, and every page in the first
+61-page relaunch crashed with `IndexError: list index out of range` (an empty/short
+`captured` list being indexed as if it still held one entry per staff). Fixed by
+passing `enable_phase1_rerank=False` explicitly in both scripts' `parse_staffs(...)`
+calls - restores the pre-wiring call path (the monkeypatch fires again) and also
+prevents the live pipeline's own now-default reranking from confounding analysis that's
+supposed to be running its own independent rerank logic. **General lesson: wiring a
+feature into a shared call path can silently break offline tooling built against the
+pre-wiring version of that path - worth an explicit check whenever a "measure this"
+script and a "do this live" wiring share code.**
+
 ### 7.3 Phase 2: auxiliary cumulative-position training signal (only if 7.1 is not enough)
 
 Precedented directly by the structured beam/stem/slur heads
@@ -488,6 +752,202 @@ Given phase21's result - the whole decoder absorbing an explicit signal once unf
 erasing its measured marginal value - an unfrozen follow-up here should be expected to
 carry the same risk, and should not be attempted before the frozen-core question has a
 clear answer of its own.
+
+**Refinement, 2026-08-21 (user design discussion): condition on the expected time
+signature too, not just an auxiliary position head - but via explicit embedding
+injection, not sequence self-conditioning.** The user's instinct - give the decoder
+direct knowledge of what time signature it should be in, not just an abstract
+"cumulative position" signal - is a real, well-motivated addition: time signature is
+exactly the missing structural fact Type 2's "settles into a self-consistent wrong
+subdivision" failure implies the model doesn't reliably track.
+
+**But there is already a specific, directly relevant negative result that rules out the
+naive version of this idea**: §4's tier-2 forced-prefix experiments
+(`generate_from_prefix`) found that forcing a *corrected* token into a staff's own
+decoded history - across 20 independent tests spanning pitch, rhythm/duration, key
+signature, and slur fields - changed **zero** downstream predictions. The model's
+future decisions appear driven almost entirely by the visual encoder context, not by
+what it previously generated. This means simply ensuring a correct `timeSignature`
+token sits in the sequence and hoping the model reads its own history to stay
+on-meter is very unlikely to work - we already have direct evidence against exactly
+that mechanism, for other fields, in this same architecture.
+
+**The fix: condition explicitly, the same way §3's score-profile work already does and
+already validated works.** `training/architecture/transformer/profile_context.py`'s
+`ProfileContextEmbedding` - a small `nn.Module` combining bounded fields into one
+additive vector per sequence via a zero-initialized gate, injected as one more term in
+`ScoreTransformerWrapper.forward`'s existing per-field embedding sum - is the right
+delivery mechanism, not a new one. Concretely: extend `ProfileContext` (or add a
+sibling context object) with an `expected_time_signature` field (and/or the auxiliary
+cumulative-position-in-measure value Phase 2 already proposes), reuse the identical
+zero-gate/context-dropout/`context_to_batch_fields` machinery already built and
+tested for instrument family/clef/part-ordinal, and train it the same frozen-core-probe-
+first way phase20 already validated. This is additive to Phase 2's own auxiliary head,
+not a replacement for it - the head predicts a position signal as an *output* (extra
+supervision on what the model should already be able to infer visually); this
+conditioning supplies an expected value as an *input* (a structural prior the model
+does not have to infer from the image at all). Doing both is not redundant: one adds
+pressure to the loss, the other removes an inference burden entirely.
+
+**Where does "expected time signature" actually come from, at training time vs.
+inference time? This is the real design question, not the embedding mechanics.**
+
+- **Training**: cheap and already precedented. `training/omr_datasets/
+  score_profile_extraction.py` already reads a document's real MusicXML for
+  `ScorePart` fields; the ground-truth time signature for a given training sample's
+  measure range is sitting right there in the same file, no new data source needed -
+  same shape as how `score_profile_pairing.py` already resolves a sample's real
+  `(ScoreProfile, ScorePart)`.
+- **Inference: no ground truth exists, so the value has to come from somewhere else.**
+  Two real options, not mutually exclusive: (a) an explicit hint the caller supplies
+  (extend `ScoreProfile`/`ScorePart` with an optional time-signature field, the same
+  "priors, not constraints" spirit §7.1 already established for instrument
+  range/clefs) - simple, but only available when a caller actually knows and states it;
+  (b) **majority vote across a first decode pass of the *other* staves in the same
+  system** - decode every staff once (already happening regardless), read off each
+  staff's own decoded `timeSignature` token, majority-vote across staves the same way
+  `propose_carry_forward_key_signature` already does for key signatures, then use that
+  as the conditioning input for a second decode pass. Option (b) needs no new external
+  metadata at all and is exactly a lightweight, non-learned precursor to Stage C's own
+  cross-staff idea - a smaller, faster thing to build and measure before committing to
+  Stage C's full learned adapter, and its result (does time-signature cross-staff
+  conditioning actually move Type 2 failures) is itself relevant evidence for how much
+  Stage C's larger investment is likely to pay off.
+
+**Why this is more tractable to start than Stage C's refinement below**: §3's
+zero-gate injection point, embedding module, batch-collation path, and
+frozen-core-probe methodology already exist, are tested, and are already proven to
+produce a real, held-out, reproducible effect (phase20's +0.0615 nat mean delta, 10/10
+epochs positive). Extending that mechanism with one more field is a bounded,
+well-precedented engineering task; Stage C's refinement below needs new architecture
+built from nothing.
+
+**Started 2026-08-21**: `ProfileContext`/`ProfileContextEmbedding` extended with an
+`expected_time_signature` field (`TIME_SIGNATURES` - 10 common full "numerator/
+denominator" signatures, bounded-vocabulary bucketed same as `CLEFS`), following the
+exact pattern every existing field already uses: `_bucket_index`, a dedicated
+`nn.Embedding`, included in both `embed_one` and `forward_from_batch`'s sums,
+`context_to_batch_fields`'s dict, and `decoder.py`'s `_PROFILE_BATCH_FIELDS` (found and
+fixed along the way - `forward_from_batch`'s signature grew a required parameter, and
+`ScoreDecoder._pop_profile_context_emb` pops an explicit tuple of field names that
+needed the new key added too, or it would `TypeError` the moment `enable_profile_context`
+was ever turned on). Default `""` (unspecified) is backward compatible everywhere
+nothing populates it yet.
+
+**Validated, not just written**: 6 new unit tests (`TestBucketing`,
+`TestContextToBatchFields`, `TestBatchAndListAgree` - unrecognised/unspecified/two-
+different-signatures, all 3 existing categories this field needed covering) - 30/30
+passing (up from 24). Full suite: 1047/1047 non-deselected (same 3 pre-existing,
+unrelated `dynamic.mark` failures throughout this investigation) - no regression from
+either file's change. The 8 real-model wiring tests (`test_profile_context_wiring.py`,
+which download real `convnext_tiny` weights and run an actual forward pass) all still
+pass too, including the zero-init identity checks - confirms the new field doesn't
+disturb the zero-gate discipline end to end, not just in isolated unit tests.
+
+**Training-side sourcing built and wired, 2026-08-21 (user instruction: "please
+prepare the training run").** `training/omr_datasets/score_profile_time_signature.py`:
+`time_signature_for_sample(dataset_root, stem)` resolves the real ground-truth time
+signature in effect at an OSSQ training sample's actual measure range, reusing
+`ossq_ground_truth.py`'s movement-aware resolution built earlier this session (same
+"walk forward, carry the last declared value" pattern already needed for `<divisions>`
+- time signatures are also only re-stated on change) rather than a second, less-tested
+lookup. `""` (unknown) whenever any step of the chain can't be resolved - the same
+known corpus-metadata gaps this investigation has hit before, never a guess. 8 new
+tests (temp-directory fixture, mirroring `test_ossq_ground_truth.py`'s own convention),
+including one that specifically checks the "carry forward from an earlier declared
+signature, not the opening one" case. Wired into `training/transformer/data_loader.py`'s
+`_resolve_profile_context` - every OSSQ training sample's `ProfileContext` now carries
+its real expected time signature automatically, no separate opt-in needed. Inference-
+side sourcing (the majority-vote second pass, or an explicit caller hint) remains not
+built - out of scope for a training run, which only needs the training side.
+
+**Loss brainstorm, same session (user: "let's think more about the loss"):** current
+loss is not literally "just cross-entropy" - it's six parallel per-token cross-entropy
+losses (rhythm/pitch/lift/articulations/slurs/position) plus one existing auxiliary
+term, `calConsistencyLoss`, an L1 penalty forcing all six heads to softly agree on
+which positions are notes vs. rests/barlines (via softmax-probability-weighted
+indicators, not hard argmax comparison - the precedent this session's new loss below
+follows). Candidate additional loss terms discussed and ranked:
+
+1. **Ground-truth-supervised measure-duration adherence loss (built this session,
+   see below)** - the most direct, cheapest to build, targeting `barline_position_
+   mismatch` (the single largest Stage A finding) head-on.
+2. **Cross-staff coherence loss - a real, cheaper alternative to Stage C worth trying
+   first.** Ground truth for sibling staves is available at *training* time even though
+   each staff decodes independently at inference. Batch several staves of the same
+   system together (the OSSQ stem convention `<score>_<page>_<system>_<part>` already
+   has everything needed to group them) and penalize each staff's expected cumulative
+   duration for diverging from its siblings' *ground-truth* durations at shared measure
+   boundaries - no architecture change, no inference-time coupling, just a training
+   signal that teaches the model to prefer duration decisions that stay coherent with
+   what a system's siblings actually contain. Framed as a cheap experiment to run
+   *before* committing to Stage C's full learned adapter: if this closes a meaningful
+   share of the gap, Stage C's marginal value shrinks; if it doesn't, that's real
+   evidence the model needs live cross-staff activations, strengthening the case for
+   Stage C specifically. **Not built yet** - needs a real data-pipeline change (batching
+   by system instead of i.i.d. random staff crops), a bigger lift than item 1.
+3. **Key-signature/accidental consistency loss** - targets a specific, already-
+   documented null result: §4's tier-2 forced-prefix experiments found that correcting
+   a key-signature token in a staff's own history changed *zero* downstream pitch/
+   accidental predictions across 20 tests, suggesting the model relies almost entirely
+   on visual context for accidentals and may be ignoring its own declared key signature
+   entirely. A loss penalizing a decoded accidental for contradicting the currently-
+   declared key signature (without an explicit accidental token justifying the
+   exception) would directly test and push against that finding. Not built.
+4. **Structural well-formedness losses** (dangling slurs, unmatched beams/tuplets) -
+   differentiable analogues of `check_dangling_slurs` and similar Stage A checks.
+   Lower priority: these findings are much rarer in the 200-page benchmark than
+   duration mismatches, and harder to make cleanly differentiable (closer to a
+   discrete state-machine parity constraint than a soft expectation). Not built.
+
+**Item 1 built and validated this session**: `calDurationAdherenceLoss`
+(`training/architecture/transformer/decoder.py`), gated by `config.
+duration_adherence_weight` (default `0.0` - preserves the existing loss exactly, the
+same "zero means no effect" discipline `profile_context`'s own gate uses, expressed as
+a loss weight instead of a module gate since this changes the training objective
+itself). Mechanism: a fixed, non-trainable per-token duration lookup
+(`rhythm_duration`, whole-note units, built once from `kern_to_symbol_duration` - the
+same parser `EncodedSymbol.get_duration` itself calls) and a barline-token lookup
+(`rhythm_is_barline`, the identical "barline" or "repeat" substring test
+`SymbolChord.is_barline` already uses elsewhere in this codebase). At each *true*
+(ground-truth) barline position, compares the model's own predicted *expected*
+cumulative duration (softmax-weighted over the rhythm vocabulary, the same trick
+`calConsistencyLoss` already established) against the ground-truth cumulative duration
+at that same point - a differentiable analogue of `check_measure_durations`/
+`_cumulative_barline_positions`, deliberately comparing *cumulative* position at each
+checkpoint rather than segmenting into individual measures (if every checkpoint
+matches, every measure between checkpoints must too - no segment-sum logic needed).
+A chord's non-first notes need no special handling: they carry the vocabulary's own
+literal `"chord"` placeholder token (0 duration) instead of a real `note_/rest_` token,
+so summing independent per-position durations is already musically correct without any
+chord-grouping logic.
+
+**A real bug found and fixed before this could even smoke-test**: the new
+`rhythm_duration`/`rhythm_is_barline` lookups were first registered as `nn.Parameter`
+(matching `note_mask`'s own existing style) - which put them in the module's
+`state_dict()`, and `load_checkpoint`'s mismatch check correctly flagged them as
+"missing" from every pinned checkpoint saved before this field existed (there is
+nothing to load for a fixed, deterministic table). Fixed by using
+`register_buffer(..., persistent=False)` instead - excluded from `state_dict()`
+entirely, since there is genuinely nothing to load or learn.
+
+**Validated**: 5 new unit tests (`tests/test_duration_adherence_loss.py`) against a
+tiny, hand-built 4-token vocabulary - a perfect prediction has ~zero loss, a confidently
+wrong prediction produces the exact hand-computed drift (0.125), padded positions don't
+affect it, a sequence with no barlines returns zero (not a division-by-zero), and the
+loss is differentiable end to end. Full suite: 1060/1060 non-deselected (same 3
+pre-existing unrelated failures throughout this investigation). A real smoke test
+(200-example sample, 1 epoch, `--duration-adherence-weight 1.0`) confirmed the whole
+chain end to end: checkpoint loads cleanly (326 base + 9 new profile-context tensors,
+up from 8 - the new time-signature embedding), and the loss computes a real, nonzero,
+training-active value (0.46).
+
+**`phase22`: the training run - launched 2026-08-21, using both new mechanisms
+together.** Same pinned checkpoint (`pytorch_model_426-...pth`, 326 params) and same
+105,305 train / 4,912 valid split `phase20`/`phase21` used, for direct comparability;
+same hyperparameters (10 epochs, batch size 8, lr 1e-3); `--duration-adherence-weight
+1.0` newly added. Not complete at time of writing - this section will be updated with
+the with/without-profile ablation result once it finishes.
 
 ### 7.4 Phase 3 (already designed elsewhere, referenced not duplicated): Stage C
 

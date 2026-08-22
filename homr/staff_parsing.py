@@ -7,6 +7,8 @@ import numpy as np
 from homr import constants
 from homr.cross_staff_consistency import (
     analyze_system,
+    check_barline_positions,
+    check_measure_durations,
     check_page_staff_counts,
     check_part_order,
     staves_by_system,
@@ -17,6 +19,7 @@ from homr.cross_staff_repair import (
     propose_motif_articulation_corrections,
     propose_repairs,
 )
+from homr.cross_staff_rerank import fork_candidates_from_margins, rerank_staff_candidates
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
@@ -24,7 +27,7 @@ from homr.score_profile import ScoreProfile
 from homr.score_profile_layout import propose_part_assignment, staff_to_part_by_system
 from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
-from homr.staff_parsing_tromr import parse_staff_tromr
+from homr.staff_parsing_tromr import parse_staff_tromr, parse_staff_tromr_greedy_with_margins
 from homr.staff_regions import StaffRegions
 from homr.system_grouping import (
     SystemPartition,
@@ -459,6 +462,49 @@ def parse_staff_image(
     return result
 
 
+def parse_staff_image_greedy_with_margins(
+    debug: Debug, index: int, staff: Staff, image: NDArray, regions: StaffRegions, config: Config
+) -> tuple[list[EncodedSymbol], list[EncodedSymbol], list[tuple[int, float]], object, object]:
+    """Phase 1 (`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.2) counterpart to
+    `parse_staff_image`: the cheap first pass - one decode, same cost as
+    `parse_staff_image` itself - that `parse_staffs` uses to decide, per system, whether
+    the expensive forking pass is worth paying for at all. Returns
+    `(filtered_greedy, raw_greedy, margins, context, decoder)`; see
+    `parse_staff_tromr_greedy_with_margins` for what each carries and why forking needs
+    the raw (unfiltered) sequence specifically. The debug-image side effect draws from
+    `filtered_greedy`, identical to what `parse_staff_image` alone would have produced,
+    so debug output does not depend on whether this system ends up reranked."""
+    staff_image, transformed_staff = prepare_staff_image(
+        debug, index, staff, image, regions=regions
+    )
+    eprint("Running TrOmr inference on staff image", index)
+    filtered_greedy, raw_greedy, margins, context, decoder = parse_staff_tromr_greedy_with_margins(
+        staff_image=staff_image, staff=transformed_staff, config=config
+    )
+    if debug.debug:
+        result_image = staff_image.copy()
+        for i, symbol in enumerate(filtered_greedy):
+            center = symbol.coordinates
+            if center is None or symbol.rhythm.startswith("chord"):
+                continue
+            if math.isnan(center[0]) or math.isnan(center[1]):
+                continue
+            center_int = (int(center[0]), int(center[1]))
+            cv2.circle(result_image, center_int, 5, color=(0, 0, 255), thickness=2)
+            cv2.putText(
+                result_image,
+                str(i) + ": " + symbol.rhythm,
+                (center_int[0], center_int[1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.3,
+                (0, 0, 255),
+                1,
+            )
+
+        debug.write_image_with_fixed_suffix(f"_staff-{index}_output.jpg", result_image)
+    return filtered_greedy, raw_greedy, margins, context, decoder
+
+
 def parse_staffs(
     debug: Debug,
     staffs: list[MultiStaff],
@@ -466,43 +512,128 @@ def parse_staffs(
     config: Config,
     selected_staff: int = -1,
     score_profile: ScoreProfile | None = None,
+    enable_phase1_rerank: bool = True,
+    phase1_max_forks: int = 3,
 ) -> list[list[EncodedSymbol]]:
     """
     Dewarps each staff and then runs it through an algorithm which extracts
     the rhythm and pitch information.
+
+    `enable_phase1_rerank` (on by default - `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.2,
+    justified by a 200-page benchmark showing a 20.8% reduction in cross-staff Stage A
+    findings with zero regressions, then a ground-truth spot-check where every
+    resolvable corrected measure matched real ground truth exactly) reranks a system's
+    staves against cross-staff cumulative barline agreement before committing to a
+    final decode - real content correction, not the log-only diagnostics Stage A/B
+    report elsewhere.
+
+    Two-pass and gated *by design*, not by accident: every staff's greedy decode costs
+    the same either way (`generate_with_rhythm_margins` only adds bookkeeping over a
+    plain decode), but forking an alternate candidate is a full extra decode pass each -
+    paying that for every staff on every page would cost several times a normal decode
+    even on the majority of systems the 200-page benchmark found had nothing to fix.
+    So: decode every staff's greedy result first (cheap), check Stage A's own
+    `check_barline_positions`/`check_measure_durations` against the greedy decode per
+    system, and only pay for forking + reranking on a system that already shows a
+    finding there - exactly the population the benchmark and spot-check actually
+    measured, not a broader, unvalidated "always fork everything" behavior.
+
+    Disabled automatically whenever `selected_staff` restricts processing to one staff
+    (that debug mode leaves most systems missing most voices, the same reason
+    `_report_cross_staff_findings` is skipped there too) - set to `False` explicitly to
+    compare against the pre-Phase-1 decode for any other reason.
     """
     plan = _plan_systems(staffs)
     # For simplicity we call every staff in a multi staff a voice,
     # even if it's part of a grand staff.
     number_of_voices = plan.voices
+    do_rerank = enable_phase1_rerank and selected_staff < 0
     i = 0
-    voices = []
     regions = StaffRegions(plan.systems)
-    for voice in range(number_of_voices):
+
+    def systems_for_voice(voice: int) -> list[int]:
         # A system can be missing this voice: detection came up a staff short and the
-        # spacing said which one. That voice simply has no music from that system, which
-        # is a gap in one part rather than the whole system's music going missing.
-        staffs_for_voice = [
-            staff
-            for system in range(len(plan.systems))
-            if (staff := plan.staff_for_voice(system, voice)) is not None
+        # spacing said which one. That voice simply has no music from that system,
+        # which is a gap in one part rather than the whole system's music going missing.
+        return [
+            system for system in range(len(plan.systems)) if plan.staff_for_voice(system, voice) is not None
         ]
-        result_for_voice = []
-        for staff_index, staff in enumerate(staffs_for_voice):
+
+    decoded: dict[tuple[int, int], list[EncodedSymbol]] = {}
+    # Only populated when do_rerank: the raw materials a system's staves need for the
+    # (possibly skipped) expensive forking pass.
+    raw_by_system: dict[int, dict[int, tuple]] = {}
+
+    for voice in range(number_of_voices):
+        for staff_index, system in enumerate(systems_for_voice(voice)):
+            staff = plan.staff_for_voice(system, voice)
+            assert staff is not None  # systems_for_voice already filtered on this
             if selected_staff >= 0 and staff_index != selected_staff:
                 eprint("Ignoring staff due to selected_staff argument", i)
                 i += 1
                 continue
-            result_staff = parse_staff_image(debug, i, staff, image, regions, config)
-            if len(result_staff) == 0:
-                eprint("Skipping empty staff", i)
-                i += 1
-                continue
-            result_staff.append(EncodedSymbol("newline"))
-            result_for_voice.extend(result_staff)
+            if do_rerank:
+                filtered, raw, margins, context, decoder = parse_staff_image_greedy_with_margins(
+                    debug, i, staff, image, regions, config
+                )
+                decoded[(voice, system)] = filtered
+                raw_by_system.setdefault(system, {})[voice] = (staff, raw, margins, context, decoder)
+            else:
+                decoded[(voice, system)] = parse_staff_image(debug, i, staff, image, regions, config)
             i += 1
 
+    if do_rerank:
+        # staff_index within a system = rank among present voices, ascending - the
+        # same convention staves_by_system/analyze_system already use, so a system's
+        # greedy (pre-fork) decode lines up correctly against Stage A's own indexing
+        # for this cheap pre-check.
+        for system_index, voice_raw in raw_by_system.items():
+            present_voices = sorted(voice_raw)
+            greedy_staves = [decoded[(voice, system_index)] for voice in present_voices]
+            has_finding = bool(
+                check_barline_positions(greedy_staves) or check_measure_durations(greedy_staves)
+            )
+            if len(present_voices) < 3 or not has_finding:
+                continue  # nothing Stage A already flags here - not worth forking
+
+            candidates_by_staff = {}
+            for staff_index, voice in enumerate(present_voices):
+                staff, raw_greedy, margins, context, decoder = voice_raw[voice]
+                forks = fork_candidates_from_margins(
+                    decoder,
+                    raw_greedy,
+                    margins,
+                    max_forks=phase1_max_forks,
+                    seq_len=config.max_seq_len,
+                    eos_token=config.eos_token,
+                    context=context,
+                )
+                # Forking operated on the *raw* (unfiltered) sequence to keep step
+                # indices aligned with the model's own numbering - apply the same
+                # grandstaff/lower filter parse_staff_tromr already applies to a plain
+                # decode, to every candidate, so reranking compares like with like.
+                candidates_by_staff[staff_index] = [
+                    candidate if staff.is_grandstaff else [r for r in candidate if r.position != "lower"]
+                    for candidate in forks
+                ]
+
+            reranked = rerank_staff_candidates(candidates_by_staff)
+            for staff_index, voice in enumerate(present_voices):
+                decoded[(voice, system_index)] = reranked[staff_index]
+
+    voices = []
+    for voice in range(number_of_voices):
+        result_for_voice = []
+        for staff_index, system in enumerate(systems_for_voice(voice)):
+            if selected_staff >= 0 and staff_index != selected_staff:
+                continue
+            result_staff = decoded.get((voice, system))
+            if not result_staff:
+                eprint("Skipping empty staff")
+                continue
+            result_for_voice.extend([*result_staff, EncodedSymbol("newline")])
         voices.append(remove_duplicated_symbols(result_for_voice))
+
     if selected_staff < 0:
         # Only meaningful for a normal run: selected_staff restricts processing to one
         # staff, so most voices are deliberately absent from most systems rather than
