@@ -1571,8 +1571,92 @@ this investigation), and a real smoke test confirming the whole chain works end 
 
 **`phase22` training run launched**: same pinned checkpoint and same 105,305/4,912
 train/valid split `phase20`/`phase21` used, same hyperparameters, both new mechanisms
-active together. Not complete at time of writing - this section will be updated with
-the result once it finishes.
+active together.
+
+**Two-stage performance stall, found and fixed before the result below could be
+trusted.** The first launch attempt sat at 0% GPU utilization with 4 DataLoader
+workers pinned near 100% CPU for 13+ minutes with no epoch-1 output. Root cause:
+`time_signature_for_sample`'s original implementation re-parsed the entire
+whole-score ground-truth MusicXML (up to 6.5MB observed) via a bare `ET.parse` and
+rescanned every systemwise metadata file in the piece, on *every training sample*,
+with zero caching - measured at ~2000ms per successful lookup. A first fix
+(`@lru_cache` on the parse and the systemwise-entries lookup) improved warm-cache
+lookups to ~600ms, but a relaunch still stalled at 0% GPU with per-worker memory
+climbing into multiple GB: a shuffled dataset means each worker accumulates many
+large parsed trees before the cache helps, and the underlying whole-score-file
+lookup is too expensive per sample regardless of caching.
+
+The real fix was corpus-wide preprocessing, prompted by the user's own question
+("should we split the examples at the page level for smaller xml?"):
+`split_ground_truth_by_system.py` pre-extracts tiny, already
+movement-disambiguated per-(page, system) MusicXML fragments once, corpus-wide -
+10,400 fragments across 122 real pieces, in 6.8 minutes with 48-way parallelism
+(vs. a ~70-minute serial estimate), made possible by discovering the GPU rental
+instance actually has 128 vCPUs / 755GB RAM (`nproc`/`free -h`) against only 4
+DataLoader workers previously in use - no machine change needed, just
+underutilized capacity. `time_signature_for_sample` was rewritten to try this
+fast fragment path first, dropping the per-sample lookup to ~2-7ms. Relaunched
+with `--workers 32`: GPU utilization confirmed directly via `nvidia-smi` at
+80-89% throughout the run (one transient 0% reading between epochs 3-4 was
+checked and confirmed to be a checkpoint-write/worker-pool-recreation pause, not
+a stall - GPU was back to 84%+ on the next check).
+
+**Result: complete, 10/10 epochs positive.**
+
+| epoch | mean loss | duration_adherence | valid delta (with − without profile) |
+|---|---|---|---|
+| 1 | 2.7787 | 0.2980 | +0.0551 |
+| 2 | 2.7391 | 0.2871 | +0.0731 |
+| 3 | 2.7298 | 0.2859 | +0.0439 |
+| 4 | 2.7306 | 0.2854 | +0.0484 |
+| 5 | 2.7328 | 0.2846 | +0.0475 |
+| 6 | 2.7309 | 0.2832 | +0.0589 |
+| 7 | 2.7222 | 0.2834 | +0.0639 |
+| 8 | 2.7258 | 0.2837 | +0.0161 (outlier) |
+| 9 | 2.7201 | 0.2828 | +0.0555 |
+| 10 | 2.7218 | 0.2834 | +0.0509 |
+
+Mean delta **+0.0513**, all 10 epochs positive. Epoch 8's dip (+0.0161, driven by
+"with profile" validation loss ticking up rather than "without" moving) did not
+continue into epochs 9-10 - both recovered to the same +0.04-0.07 band every other
+epoch sat in, so it reads as training noise, not a real degradation.
+
+`duration_adherence`'s own trend (a separate, less rigorous signal - it has no
+with/without ablation of its own) fell from 0.2980 to ~0.283 over the first 5-6
+epochs, then plateaued (0.2832-0.2837 for epochs 6-10, barely moving). Consistent
+with a frozen-core setup where only 9 embedding/gate tensors are trainable: real
+early movement, then the small trainable surface saturates quickly.
+
+**Honest read: this run does not show clear evidence that time-signature
+conditioning specifically adds value beyond phase20's original profile context.**
+Phase20 (instrument family/clef/staff-count/transposition only) measured mean
+delta +0.0615 across its own 10 epochs, in the same +0.04-0.07 range phase22
+mostly sits in. Phase22's +0.0513 mean is slightly *lower*, and the two runs'
+per-epoch ranges overlap heavily - the difference is well within the noise this
+same experiment already showed epoch-to-epoch (phase20 itself ranged 0.04-0.07
+per epoch). Because time-signature conditioning and the duration-adherence loss
+were both turned on together in this one run, there is no ablation here that
+isolates either mechanism's individual contribution - a fair statement is "adding
+both together did not measurably help or hurt the existing signal," not "time-
+signature conditioning works." Isolating them (time-sig alone, duration-loss
+alone) would need a further run neither of which currently exists.
+
+**Recommendation, not yet acted on:** `phase20`'s own precedent is a caution here,
+not an invitation - `phase21` (the unfrozen follow-up to phase20) *erased* the
+frozen-core signal instead of improving on it. Given phase22's own delta is
+already no better than phase20's, repeating the unfrozen-follow-up pattern here
+looks unlikely to help and carries the same demonstrated risk. The better-
+motivated next step is probably the **cross-staff coherence loss** from the loss
+brainstorm above (batch sibling staves at training time, penalize divergence from
+their ground-truth durations) - a different, cheaper lever than further tuning
+this one, and one the brainstorm itself already flagged as informative for
+whether §4 Stage C's learned-adapter premise is worth its cost. Not started
+without the user's go-ahead.
+
+The trained artifact from this run (`profile_context_weights.pth`, 9 tensors,
+227KB - the embedding tables and gate only, not the 287MB frozen base checkpoint)
+is small enough to ship as a downloadable release asset rather than requiring a
+retrain to inspect the mechanism's effect.
 
 ---
 

@@ -946,8 +946,36 @@ training-active value (0.46).
 together.** Same pinned checkpoint (`pytorch_model_426-...pth`, 326 params) and same
 105,305 train / 4,912 valid split `phase20`/`phase21` used, for direct comparability;
 same hyperparameters (10 epochs, batch size 8, lr 1e-3); `--duration-adherence-weight
-1.0` newly added. Not complete at time of writing - this section will be updated with
-the with/without-profile ablation result once it finishes.
+1.0` newly added.
+
+Stalled twice before this could run at all - see `ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md`
+§5's own account for the full two-stage diagnosis (uncached whole-score MusicXML
+lookups, then insufficient caching alone) and the corpus-splitting fix
+(`split_ground_truth_by_system.py`, 10,400 pre-extracted fragments) that resolved it,
+confirmed via `nvidia-smi` (0% → 80-89% GPU utilization).
+
+**Complete: 10/10 epochs positive, mean validation-loss delta +0.0513** (epochs:
++0.0551, +0.0731, +0.0439, +0.0484, +0.0475, +0.0589, +0.0639, +0.0161, +0.0555,
++0.0509 - epoch 8's dip did not persist into epochs 9-10, reads as noise).
+`duration_adherence` (a separate signal, no with/without ablation of its own) fell
+from 0.298 to ~0.283 over the first several epochs then plateaued, consistent with a
+frozen-core setup where only 9 tensors are trainable.
+
+**This is not clear evidence that time-signature conditioning specifically improved
+on §7.3's original profile-context result.** `phase20` (without time-signature
+conditioning or the duration-adherence loss) measured mean delta +0.0615 over its own
+10 epochs - phase22's +0.0513 is slightly lower, and both runs' per-epoch ranges
+overlap heavily with each other's own epoch-to-epoch noise. Since both new mechanisms
+were enabled together in this one run, there is no ablation here that isolates either
+one's individual contribution - the honest claim is "both together did not measurably
+help or hurt phase20's existing signal," not "time-signature conditioning works."
+
+Given `phase21` (the unfrozen follow-up to `phase20`) *erased* the frozen-core signal
+rather than improving it, and phase22's own delta is already no better than
+phase20's, repeating that pattern here looks unlikely to help. See
+`ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md` §5 for the fuller writeup and the recommended
+next step (the cross-staff coherence loss from §7.3's own brainstorm, not yet
+started).
 
 ### 7.4 Phase 3 (already designed elsewhere, referenced not duplicated): Stage C
 
