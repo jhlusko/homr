@@ -652,13 +652,32 @@ def build_note_chord(
             is_first = False
 
         if rests:
-            assert group_duration > Fraction(0)
-            if notes:
-                # There are other notes, so to avoid rest being merged into chord, we emit a backup
-                result.append(build_backup(group_duration, state))
-            # Ideally we expect len(rests) == 1, but in dataset we see cases where
-            # there are multiple rests. So here we just take the first rest
-            result.append(build_note_or_rest(rests[0], i, False, state, note_chord.tuplet_mark))
+            if group_duration <= Fraction(0):
+                # `_group_notes` unconditionally keys every grace note to Fraction(0),
+                # by design - real grace notes borrow their time from the following
+                # note during layout, so they never need a positive duration of their
+                # own. A grace *rest* (genuinely rare notation, or a decode
+                # inconsistency where the rhythm head says "note" but the pitch head
+                # disagreed - `nonote` groups with rests above) breaks that assumption:
+                # a rest that takes zero time cannot be meaningfully written as
+                # `<note><rest/></note>` plus a zero-duration backup. This used to be
+                # an unconditional assert, which took the whole page down for one
+                # malformed symbol; dropped instead, with the same warning shape
+                # `build_note_or_rest` already uses for a pitchless note, since losing
+                # one symbol from one measure is a far smaller loss than the page.
+                eprint(
+                    f"WARNING dropping {len(rests)} zero-duration rest(s) in a chord "
+                    f"(grace note, or a rest with no pitch): {rests}"
+                )
+            else:
+                if notes:
+                    # There are other notes, so to avoid rest being merged into chord, we emit a backup
+                    result.append(build_backup(group_duration, state))
+                # Ideally we expect len(rests) == 1, but in dataset we see cases where
+                # there are multiple rests. So here we just take the first rest
+                result.append(
+                    build_note_or_rest(rests[0], i, False, state, note_chord.tuplet_mark)
+                )
 
         if i != len(by_duration) - 1 and group_duration > Fraction(0):
             result.append(build_backup(group_duration, state))

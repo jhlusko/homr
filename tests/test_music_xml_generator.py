@@ -2,14 +2,17 @@
 
 import unittest
 import xml.etree.ElementTree as ET
+from fractions import Fraction
 
 from homr.music_xml_generator import (
+    ConversionState,
     SymbolChord,
     XmlGeneratorArguments,
+    build_note_chord,
     generate_xml,
     rebalance_measure_voices,
 )
-from homr.transformer.vocabulary import EncodedSymbol
+from homr.transformer.vocabulary import EncodedSymbol, nonote
 from training.transformer.training_vocabulary import (
     read_token_lines,
 )
@@ -151,6 +154,36 @@ barline . . . . ."""
                 EncodedSymbol("note_12", position="upper"),
             ],
         )
+
+    def test_a_zero_duration_rest_is_dropped_not_a_crash(self) -> None:
+        """A grace note with no real pitch (rhythm and pitch heads disagreed: the
+        rhythm says "note", the pitch field is still the "doesn't apply" sentinel)
+        groups with rests, but every grace note is unconditionally keyed to
+        Fraction(0) duration - a rest that takes zero time cannot be written as
+        `<note><rest/></note>` plus a zero-duration backup. This used to be an
+        unconditional `assert group_duration > Fraction(0)` that crashed the whole
+        page (27.9a: `music_xml_generator.py:655`) for one malformed symbol.
+        """
+        chord = SymbolChord([EncodedSymbol("note_16G", pitch=nonote)])
+
+        result = build_note_chord(chord, ConversionState(4, Fraction(1)), Fraction(0))
+
+        self.assertEqual(result, [])
+
+    def test_a_zero_duration_rest_does_not_crash_the_whole_pipeline(self) -> None:
+        measure_with_a_malformed_grace_note = """clef_G2 . . . . upper
+keySignature_0 . . . . .
+timeSignature/4 . . . . .
+note_16G . . . . upper
+note_4 C4 _ _ _ upper
+barline . . . . ."""
+        tokens = read_token_lines(measure_with_a_malformed_grace_note.splitlines())
+
+        xml = generate_xml(XmlGeneratorArguments(), [tokens], "")
+
+        measure = _first_measure(xml)
+        pitches = [_pitch(n) for n in _notes(measure)]
+        self.assertIn("C", pitches)
 
     def test_rebalance_measure_voices_assigns_stable_voices_per_staff(self) -> None:
         measure = ET.Element("measure")
