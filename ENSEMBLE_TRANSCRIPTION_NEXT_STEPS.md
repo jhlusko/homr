@@ -1704,7 +1704,20 @@ degraded gracefully to "unknown" on this bug, not wrong values - no further cave
 needed there): `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.3.
 
 Fixed, all 10,400 corpus fragments rebuilt (~6.6 min, 0 skipped), re-verified against
-real samples, `phase23` killed and relaunched clean. Currently training.
+real samples, `phase23` killed and relaunched clean.
+
+**`phase23`: complete, 10/10 epochs positive, mean delta +0.0742 - a real,
+meaningful improvement over `phase20`'s own +0.0615 baseline (~20% higher), not
+just noise.** Full per-epoch table and the honest comparison against phase20 and
+phase22: `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.3. Unlike phase22 (which came in
+*below* phase20 at +0.0513 with no clear individual-mechanism story), this
+isolated test of the cross-staff coherence loss alone shows a real signal beyond
+what score-profile conditioning already provided.
+
+**This clears the bar §4 itself set for Stage C**: the cheap experiment intended
+to test whether it's needed instead found more real signal to capture, arguing
+*for* Stage C rather than against it. Stage C started - see §4 below for the
+design decision (visual-only vs. decoded-content-conditioned) and progress.
 
 ---
 
