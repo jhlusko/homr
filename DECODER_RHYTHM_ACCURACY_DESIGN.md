@@ -1195,13 +1195,31 @@ attention degenerates to attending only to itself), masking correctly excludes p
 staff slots from attention, the zero-init gate reproduces its input exactly at init,
 and the module is differentiable end to end.
 
+**Batching-by-system data loader built**
+(`training/transformer/system_batch_loader.py`): every mechanism before Stage C in
+this document trains on i.i.d. shuffled single staves - `StaffContextTransformer`
+needs several of one system's own parts together, the first genuinely new data-
+loading requirement this document has had. `group_by_system` maps the OSSQ stem
+convention (`<score>_<page>_<system>_<part>`, the same one `score_profile_time_
+signature.py`/`cross_staff_coherence.py` already parse) to which corpus-list indices
+belong to the same system; `SystemBatchDataset` reuses the *existing* per-sample
+`DataLoader.__getitem__` unchanged for each part, then pads/stacks them along a new
+staff dimension to `MAX_STAVES_PER_SYSTEM`, with a mask - no second, parallel
+per-sample loading path, no need to handle variable-length sequences again (every
+field is already padded to a fixed `max_seq_len` by the existing tokenizer, which the
+current i.i.d. batching already depends on). Systems with fewer than 2 real parts are
+excluded by default - nothing for a cross-staff module to learn from a system with no
+real siblings. 7 tests (grouping, non-OSSQ exclusion, stacking, masking, the
+below-minimum exclusion, an oversized-system truncation, and the combined
+group+pad convenience function), plus verified directly against 2,000 real training
+samples: 501 real system groups, 497 of them the expected size 4 (string quartets).
+
 **Not yet built**: the first-pass-decode → pooled-hidden-state → StaffContextTransformer
-→ second-pass-decode pipeline itself (needs a batching-by-system data loader, unlike
-every mechanism in this document so far, all of which train on i.i.d. shuffled single
-staves), the training script, and any live-pipeline wiring. This is a substantially
-bigger build than §7.3's mechanisms and is being paced accordingly rather than rushed -
-picking up from the module already built and tested here is the next session's
-concrete starting point.
+→ second-pass-decode pipeline itself, the training script, and any live-pipeline
+wiring. This is a substantially bigger build than §7.3's mechanisms and is being
+paced accordingly rather than rushed - the module and the batching loader are both
+built and tested; wiring them into an actual two-pass training loop is the next
+session's concrete starting point.
 
 ## 8. Why not several tempting shortcuts
 
