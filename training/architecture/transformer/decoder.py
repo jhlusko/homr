@@ -14,6 +14,8 @@ from training.architecture.transformer.custom_x_transformer import (
     LayerIntermediates,
     TokenEmbedding,
 )
+from training.architecture.transformer.profile_context import ProfileContextEmbedding
+from training.architecture.transformer.structured_heads import StructuredNotationHeads
 
 
 class ScoreTransformerWrapper(nn.Module):
@@ -98,8 +100,20 @@ class ScoreTransformerWrapper(nn.Module):
         cache_len: torch.Tensor | None = None,
         mask: torch.Tensor | None = None,
         return_center_of_attention: bool = False,
+        profile_context_emb: torch.Tensor | None = None,
         **kwargs: torch.Tensor,
     ) -> Any:
+        # §7.2/§7.3's score-profile conditioning: an already-computed, per-sequence
+        # additive vector (training.architecture.transformer.profile_context.
+        # ProfileContextEmbedding's output, shape (batch, dim)) - this class stays
+        # decoupled from how it was built, the same way it does not know how the
+        # rhythm/pitch/... embeddings' vocabularies were chosen. Broadcasts across every
+        # position via unsqueeze(1), since profile context does not vary within one
+        # staff's decode. `None` (the default) leaves `x` exactly as it was before this
+        # parameter existed - no caller that omits it is affected in any way.
+        profile_bias = (
+            profile_context_emb.unsqueeze(1) if profile_context_emb is not None else None
+        )
         cache = kwargs.pop("cache", None)
         if cache is None:
             x = (
@@ -110,6 +124,8 @@ class ScoreTransformerWrapper(nn.Module):
                 + self.slur_emb(slurs)
                 + self.pos_emb(rhythms)
             )
+            if profile_bias is not None:
+                x = x + profile_bias
 
             x = self.post_emb_norm(x)
 
@@ -147,6 +163,8 @@ class ScoreTransformerWrapper(nn.Module):
                 + self.slur_emb(slurs)
                 + self.pos_emb(rhythms, offset=cache_len)
             )
+            if profile_bias is not None:
+                x = x + profile_bias
 
             x = self.post_emb_norm(x)
 
@@ -242,6 +260,22 @@ class ScoreTransformerWrapper(nn.Module):
         return center_of_attention
 
 
+#: context_to_batch_fields' own keys (profile_context.py) - what DataLoader.__getitem__
+#: emits per sample and the default collator stacks into a batch. Named here, not
+#: imported from profile_context.py, since ScoreDecoder needs to pop exactly these keys
+#: out of **kwargs regardless of whether ProfileContextEmbedding is even attached.
+_PROFILE_BATCH_FIELDS = (
+    "profile_present",
+    "profile_family_index",
+    "profile_part_ordinal_index",
+    "profile_staff_within_part_index",
+    "profile_staff_count_index",
+    "profile_clef_indices",
+    "profile_clef_count",
+    "profile_transposition_index",
+)
+
+
 class ScoreDecoder(nn.Module):
     def __init__(self, transformer: ScoreTransformerWrapper, config: Config):
         super().__init__()
@@ -267,8 +301,47 @@ class ScoreDecoder(nn.Module):
                 note_mask[index] = 1
         self.note_mask = nn.Parameter(note_mask)
 
+        # Output-only heads over the shared hidden state. They add dictionary keys to
+        # forward's result and nothing else - the existing losses and the positional
+        # tuple ScoreTransformerWrapper returns are untouched, so a run without them is
+        # bit-identical to before.
+        self.structured_heads = (
+            StructuredNotationHeads(
+                dim=config.decoder_dim,
+                beam_levels=config.structured_beam_levels,
+                slur_slots=config.structured_slur_slots,
+            )
+            if getattr(config, "enable_structured_heads", False)
+            else None
+        )
+
+        # §7.2/§7.3 score-profile conditioning - same off-by-default reasoning as
+        # structured_heads above, and its own zero-initialized gate means enabling it
+        # is still a no-op until training moves the gate (profile_context.py).
+        self.profile_context = (
+            ProfileContextEmbedding(dim=config.decoder_dim)
+            if getattr(config, "enable_profile_context", False)
+            else None
+        )
+
         # Weight the actual lift tokens (so neither nonote nor null) higher
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def _pop_profile_context_emb(self, kwargs: dict[str, Any]) -> torch.Tensor | None:
+        """Pop this batch's `profile_*` index tensors (`context_to_batch_fields`'s own
+        keys, stacked by the default collator) out of `kwargs` and reduce them to one
+        additive vector - before `kwargs` propagates any further, since
+        `ScoreTransformerWrapper`'s own `**kwargs` passes through to `attn_layers`,
+        which has no idea what to do with raw profile index tensors. Popped
+        unconditionally, whether or not `self.profile_context` is attached - a
+        checkpoint with `enable_profile_context=False` must not choke on a batch that
+        happens to carry these keys (mixed-corpus training, or a caller upgraded the
+        dataloader before the config).
+        """
+        present = {key: kwargs.pop(key, None) for key in _PROFILE_BATCH_FIELDS}
+        if self.profile_context is None or any(value is None for value in present.values()):
+            return None
+        return self.profile_context.forward_from_batch(**present)
 
     @torch.no_grad()
     def generate(
@@ -381,6 +454,7 @@ class ScoreDecoder(nn.Module):
         sampling_prob: float = 1.0,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        profile_context_emb = self._pop_profile_context_emb(kwargs)
         liftsi = lifts[:, :-1]
         liftso = lifts[:, 1:]
         articulationsi = articulations[:, :-1]
@@ -412,6 +486,7 @@ class ScoreDecoder(nn.Module):
                     mask=mask,
                     cache=None,
                     return_center_of_attention=False,
+                    profile_context_emb=profile_context_emb,
                     **kwargs,
                 )
                 self.net.train()
@@ -461,6 +536,7 @@ class ScoreDecoder(nn.Module):
                 mask=mask,
                 cache=None,
                 return_center_of_attention=False,
+                profile_context_emb=profile_context_emb,
                 **kwargs,
             )
         )  # this calls ScoreTransformerWrapper.forward
@@ -503,6 +579,14 @@ class ScoreDecoder(nn.Module):
             "loss_slurs": loss_slurs,
             "loss": loss,
             "logits": (rhythmsp, pitchsp, liftsp, positionsp, articulationsp, slursp),
+            # Additive: the shared hidden state, and the structured heads' logits when
+            # they exist. The structured loss is deliberately not folded into "loss" -
+            # the frozen-core experiment needs the existing objective to stay exactly
+            # what it was.
+            "hidden": x,
+            "structured_logits": (
+                self.structured_heads(x) if self.structured_heads is not None else None
+            ),
         }
 
     def calConsistencyLoss(

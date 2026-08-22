@@ -2,6 +2,10 @@ import json
 import os
 from typing import Any
 
+from homr.transformer.structured_notation import (
+    TRAINED_BEAM_LEVELS,
+    TRAINED_SLUR_SLOTS,
+)
 from homr.transformer.vocabulary import Vocabulary
 
 workspace = os.path.join(os.path.dirname(__file__))
@@ -101,6 +105,19 @@ class Config:
         self.num_articulation_tokens = len(self.vocab.articulation)
         self.num_slur_tokens = len(self.vocab.slur)
         self.num_position_tokens = len(self.vocab.position)
+
+        # Structured notation heads (beams, stem direction, slurs). Off by default: they
+        # are output-only additions, and a checkpoint trained without them must keep
+        # loading and behaving exactly as before.
+        self.enable_structured_heads = False
+        self.structured_beam_levels = TRAINED_BEAM_LEVELS
+        self.structured_slur_slots = TRAINED_SLUR_SLOTS
+        # §7.2/§7.3 score-profile conditioning. Off by default, same reasoning as the
+        # structured heads: a checkpoint trained without it must keep loading and
+        # behaving exactly as before. Even when enabled, the embedding's own gate is
+        # zero-initialized (training.architecture.transformer.profile_context), so
+        # turning this on is itself still a no-op until training moves the gate.
+        self.enable_profile_context = False
         self.encoder_structure = "convnext"
         self.encoder_depth = 8
         self.backbone_layers = [3, 4, 6, 3]

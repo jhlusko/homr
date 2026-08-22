@@ -78,6 +78,79 @@ class TrOMR(nn.Module):
         if hasattr(self.encoder, "unfreeze_backbone"):
             self.encoder.unfreeze_backbone()
 
+    def freeze_core_for_structured_heads(self) -> list[str]:
+        """Train only the structured heads; freeze everything the checkpoint provided.
+
+        This is the first experiment's whole design: if the pretrained representation
+        already carries enough visual evidence for explicit beaming, stem direction and
+        richer slurs, heads over a frozen core will learn them. Anything else moving
+        makes the result unattributable - a gain could be the heads, or the core drifting
+        to suit them.
+
+        The existing fine-tuning path freezes most of the model and trains only the lift
+        head, which is a different objective and not reusable here.
+
+        Returns the names of the parameters left trainable, so a run can record what it
+        actually trained rather than what it intended to.
+        """
+        if self.decoder.structured_heads is None:
+            raise ValueError("no structured heads to train - set config.enable_structured_heads")
+        trainable = []
+        for name, param in self.named_parameters():
+            train = name.startswith("decoder.structured_heads.")
+            param.requires_grad = train
+            if train:
+                trainable.append(name)
+        return trainable
+
+    def freeze_core_for_profile_context(self) -> list[str]:
+        """Train only §7.3's score-profile embedding; freeze everything the checkpoint
+        provided - the same experiment shape as `freeze_core_for_structured_heads`, for
+        the same reason: attributability. `ProfileContextEmbedding`'s gate starts at
+        zero, so this asks a narrow question - can *some* assignment of the embedding
+        tables and gate, backpropagated through the frozen network, move the model's
+        own existing loss (not a new one; profile context conditions the input, it does
+        not add an output) - before committing to the more expensive question of
+        whether letting the core itself adapt to the signal does better.
+
+        Returns the names of the parameters left trainable, so a run can record what it
+        actually trained rather than what it intended to.
+        """
+        if self.decoder.profile_context is None:
+            raise ValueError("no profile context to train - set config.enable_profile_context")
+        trainable = []
+        for name, param in self.named_parameters():
+            train = name.startswith("decoder.profile_context.")
+            param.requires_grad = train
+            if train:
+                trainable.append(name)
+        return trainable
+
+    def unfreeze_decoder_for_profile_context(self) -> list[str]:
+        """The natural next experiment after `freeze_core_for_profile_context`'s
+        frozen-core probe found real signal (phase20, ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md
+        §3: 10/10 epochs positive, mean delta +0.0615): let the decoder adapt to the
+        signal instead of only the embedding that feeds it.
+
+        Deliberately narrower than a full-model fine-tune: the visual encoder never sees
+        profile context at all (it only processes staff image crops), so unfreezing it
+        widens risk - a much bigger, harder-to-attribute change - without being the
+        variable this experiment is actually testing. Freezes the encoder explicitly
+        (rather than leaving it at whatever state a caller left it in) and unfreezes
+        every decoder parameter, profile context included.
+
+        Returns the names of the parameters left trainable, so a run can record what it
+        actually trained rather than what it intended to.
+        """
+        if self.decoder.profile_context is None:
+            raise ValueError("no profile context to train - set config.enable_profile_context")
+        self.freeze_encoder()
+        trainable = []
+        for name, param in self.decoder.named_parameters():
+            param.requires_grad = True
+            trainable.append(f"decoder.{name}")
+        return trainable
+
     def unfreeze_lift_decoder(self) -> None:
         for param in self.decoder.net.lift_emb.parameters():
             param.requires_grad = True
