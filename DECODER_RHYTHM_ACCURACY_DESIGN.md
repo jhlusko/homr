@@ -1241,20 +1241,35 @@ given for this build. Each system batch costs roughly 2x a single-pass batch (tw
 full decodes instead of one), so this run is expected to take proportionally longer
 than phase22/23's own per-epoch time.
 
-**phase24 epoch 1 (preliminary - one epoch, not yet a trend)**: valid loss with staff
-context 1.6417 vs without 2.3318, delta **+0.6901**. Far larger than phase22's +0.0513
-or phase23's +0.0742. Plausible on its own terms - phase22/23 only shaped the loss or
-conditioned on a summary statistic, where Stage C gives the decoder the sibling
-staves' actual live decoded hidden state - but exactly the kind of clean single-number
-result phase21 (§8) warns against trusting without more epochs and the real Stage
-A/B benchmark, not proxy loss alone. Treating this as encouraging, not conclusive,
-until several more epochs confirm it holds rather than reflecting early-training
-noise or the frozen-core probe finding a degenerate shortcut. (Operational note: the
-`tee` piping this run's stdout to `phase24/train.log` opened before the training
-script's own first-epoch `mkdir` created that directory, so it silently stopped
-writing to disk after one error - the authoritative source for this run is
-`phase24/history.json`, written correctly every epoch by the script itself, not the
-missing log file.)
+**phase24: complete, 5/5 epochs positive.** Valid-loss delta (without staff context
+minus with) per epoch: +0.6901, +0.7835, +0.6757, +0.8383, +0.8688 - not a single
+lucky measurement but five, holding the same order of magnitude throughout and, if
+anything, growing by the end rather than decaying. Far larger than phase22's +0.0513
+or phase23's +0.0742: plausible on its own terms, since those two only shaped the
+loss or conditioned on a summary statistic, where Stage C gives the decoder the
+sibling staves' actual live decoded hidden state - a materially richer signal.
+
+This is real evidence the frozen-core probe question ("can some assignment of the
+new module, backpropagated through a frozen network, move the model's own existing
+loss") has a clear yes answer, five times over - the two-pass mechanism itself
+works, is trainable, and the effect is stable, not the single clean number phase21
+(§8) warns against trusting alone. It is still not yet §9's actual success
+criterion: a validation-loss delta is a proxy, and per this document's own
+established discipline (phase21's whole cautionary point), the real measurement is
+whether staff context actually moves `benchmark_stage_ab.py`'s
+`barline_position_mismatch`/`measure_duration_mismatch` finding counts on the 200-page
+Stage A/B benchmark - which needs the two-pass decode wired into actual *inference*,
+not just training (`homr/transformer/decoder_inference.py` currently only knows a
+single greedy pass). That wiring is the natural next step, not yet started.
+
+(Operational note: the `tee` piping this run's stdout to `phase24/train.log` opened
+before the training script's own first-epoch `mkdir` created that directory, so it
+silently stopped writing to disk after one error - the authoritative source for
+this run is `phase24/history.json`, written correctly every epoch by the script
+itself, not the missing log file. A brief false alarm mid-run - one status check
+found zero `train_staff_context` processes and briefly looked like a crash - turned
+out to be a transient/race in that one check; the process (confirmed via CPU time,
+GPU utilization, and fresh dataloader-worker PIDs) never actually stopped.)
 
 ## 8. Why not several tempting shortcuts
 
