@@ -4,18 +4,21 @@ import torch
 
 from training.architecture.transformer.decoder import ScoreDecoder
 
-# A tiny, hand-built 4-token rhythm vocabulary, index-matched to a duration/barline
+# A tiny, hand-built 5-token rhythm vocabulary, index-matched to a duration/barline
 # lookup - deliberately not the real (much larger) vocabulary, so each test case's
 # expected numbers are easy to hand-verify. 0=PAD, 1=note_4 (quarter, 1/4 whole note),
-# 2=note_8 (eighth, 1/8 whole note), 3=barline (0 duration, closes a measure).
-_PAD, _NOTE_4, _NOTE_8, _BARLINE = 0, 1, 2, 3
-_DURATIONS = torch.tensor([0.0, 0.25, 0.125, 0.0])
-_IS_BARLINE = torch.tensor([0.0, 0.0, 0.0, 1.0])
+# 2=note_8 (eighth, 1/8 whole note), 3=barline (0 duration, closes a measure), 4=chord
+# (the marker `staff_merging.create_chord_over_two_staffs` inserts before a chord's
+# non-first member - the member itself still carries its own real note_/rest_ token).
+_PAD, _NOTE_4, _NOTE_8, _BARLINE, _CHORD = 0, 1, 2, 3, 4
+_DURATIONS = torch.tensor([0.0, 0.25, 0.125, 0.0, 0.0])
+_IS_BARLINE = torch.tensor([0.0, 0.0, 0.0, 1.0, 0.0])
+_IS_CHORD_MARKER = torch.tensor([0.0, 0.0, 0.0, 0.0, 1.0])
 
 _LARGE = 50.0  # a logit scale large enough that softmax is ~1.0 on the chosen index
 
 
-def _one_hot_logits(token_ids: list[int], vocab_size: int = 4) -> torch.Tensor:
+def _one_hot_logits(token_ids: list[int], vocab_size: int = 5) -> torch.Tensor:
     """(1, seq, vocab_size) logits that softmax to (approximately) a one-hot
     distribution on each position's given token id - a stand-in for "the model
     confidently predicts exactly this," so this loss's expected value is easy to
@@ -34,8 +37,10 @@ class _FakeDecoder:
     def __init__(self) -> None:
         self.rhythm_duration = _DURATIONS
         self.rhythm_is_barline = _IS_BARLINE
+        self.rhythm_is_chord_marker = _IS_CHORD_MARKER
 
     calDurationAdherenceLoss = ScoreDecoder.calDurationAdherenceLoss
+    _not_chord_continuation = ScoreDecoder._not_chord_continuation
 
 
 class TestDurationAdherenceLoss(unittest.TestCase):
@@ -77,6 +82,21 @@ class TestDurationAdherenceLoss(unittest.TestCase):
         rhythmso = torch.tensor([padded_true])
         rhythmsp = _one_hot_logits(padded_predicted)
         mask = torch.tensor([[1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]])
+
+        loss = self.decoder.calDurationAdherenceLoss(rhythmsp, rhythmso, mask)
+
+        self.assertAlmostEqual(loss.item(), 0.0, places=3)
+
+    def test_a_two_note_chord_is_not_double_counted(self) -> None:
+        # note_4, chord, note_4, barline: a two-note simultaneous quarter-note chord -
+        # true measure length is one quarter (0.25), not two (0.5), since the second
+        # note_4 sounds at the same instant as the first, not after it. A model that
+        # confidently predicts exactly this sequence must score ~zero loss; before the
+        # chord-continuation fix, the second note_4 was wrongly added a second time.
+        tokens = [_NOTE_4, _CHORD, _NOTE_4, _BARLINE]
+        rhythmso = torch.tensor([tokens])
+        rhythmsp = _one_hot_logits(tokens)
+        mask = torch.ones(1, len(tokens))
 
         loss = self.decoder.calDurationAdherenceLoss(rhythmsp, rhythmso, mask)
 

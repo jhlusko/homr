@@ -129,6 +129,14 @@ class Config:
         # `profile_context`'s own gate uses, expressed as a loss weight instead of a
         # module gate since this changes the *objective* itself, not a decoder input.
         self.duration_adherence_weight = 0.0
+        # DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's loss brainstorm item 2: penalizes
+        # the rhythm head's own predicted cumulative duration for diverging from its
+        # *system's* ground truth (the median across every sibling part, not just this
+        # staff's own label) at each of this staff's own barlines - a cheaper training-
+        # time alternative to §4 Stage C's learned cross-staff adapter, worth measuring
+        # before committing to that larger build. 0.0 (off) preserves the existing
+        # loss exactly, same discipline as duration_adherence_weight above.
+        self.cross_staff_coherence_weight = 0.0
         self.encoder_structure = "convnext"
         self.encoder_depth = 8
         self.backbone_layers = [3, 4, 6, 3]

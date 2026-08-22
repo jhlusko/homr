@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 
 from homr.simple_logging import eprint
 from homr.staff_parsing import add_image_into_tr_omr_canvas
@@ -14,6 +15,10 @@ from training.architecture.transformer.profile_context import (
     ProfileContext,
     apply_context_dropout,
     context_to_batch_fields,
+)
+from training.omr_datasets.cross_staff_coherence import (
+    MAX_COHERENCE_MEASURES,
+    system_measure_curve,
 )
 from training.omr_datasets.score_profile_pairing import profile_and_part_for_sample
 from training.omr_datasets.score_profile_time_signature import time_signature_for_sample
@@ -104,6 +109,9 @@ class DataLoader:
             context = self._resolve_profile_context(entry["tokens"])
             if not self.is_validation:
                 context = apply_context_dropout(context, random)
+            coherence_curve, coherence_curve_len, coherence_present = (
+                self._resolve_coherence_curve(entry["tokens"])
+            )
 
         if self.is_validation:
             random.setstate(state)
@@ -129,7 +137,30 @@ class DataLoader:
         }
         if self.dataset_root is not None:
             result.update(context_to_batch_fields(context))
+            result["coherence_curve"] = torch.tensor(coherence_curve, dtype=torch.float32)
+            result["coherence_curve_len"] = coherence_curve_len
+            result["coherence_present"] = coherence_present
         return result
+
+    def _resolve_coherence_curve(self, tokens_path: str) -> tuple[list[float], int, float]:
+        """`(padded_curve, valid_length, present_flag)` for this sample's system -
+        §7.3's cross-staff coherence loss. `present_flag` is `0.0`/`1.0`, not a bare
+        `bool`, since it collates the same plain-numeric way every other profile-
+        context flag here does (`context_to_batch_fields`'s own `profile_present`).
+
+        `padded_curve` is always a fixed-length `torch.Tensor`, never a plain Python
+        list - `context_to_batch_fields`'s own docstring names exactly why a per-sample
+        list here would silently zip into several `(batch,)` tensors instead of one
+        `(batch, MAX_COHERENCE_MEASURES)` tensor under PyTorch's default collate.
+        """
+        assert self.dataset_root is not None  # only called when it is set
+        stem = Path(tokens_path).stem
+        curve = system_measure_curve(self.dataset_root, stem)
+        if not curve:
+            return [0.0] * MAX_COHERENCE_MEASURES, 0, 0.0
+        truncated = curve[:MAX_COHERENCE_MEASURES]
+        padded = truncated + [0.0] * (MAX_COHERENCE_MEASURES - len(truncated))
+        return padded, len(truncated), 1.0
 
     def _resolve_profile_context(self, tokens_path: str) -> "ProfileContext | None":
         assert self.dataset_root is not None  # only called when it is set

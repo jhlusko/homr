@@ -78,6 +78,7 @@ def train_epoch(
     set_probe_mode(model)
     total = 0.0
     total_duration_adherence = 0.0
+    total_cross_staff_coherence = 0.0
     count = 0
     for raw in batches:  # type: ignore[attr-defined]
         batch = {k: v.to(device) if hasattr(v, "to") else v for k, v in raw.items()}
@@ -100,18 +101,25 @@ def train_epoch(
         duration_adherence = outputs.get("loss_duration_adherence")
         if duration_adherence is not None:
             total_duration_adherence += float(duration_adherence.item())
+        # Same reasoning as duration_adherence above, for §7.3's loss brainstorm item 2.
+        cross_staff_coherence = outputs.get("loss_cross_staff_coherence")
+        if cross_staff_coherence is not None:
+            total_cross_staff_coherence += float(cross_staff_coherence.item())
         count += 1
 
     mean = total / max(count, 1)
     mean_duration_adherence = total_duration_adherence / max(count, 1)
+    mean_cross_staff_coherence = total_cross_staff_coherence / max(count, 1)
     print(
         f"epoch {epoch}: mean loss {mean:.4f} "
-        f"(duration_adherence {mean_duration_adherence:.4f}) over {count} batch(es)"
+        f"(duration_adherence {mean_duration_adherence:.4f}, "
+        f"cross_staff_coherence {mean_cross_staff_coherence:.4f}) over {count} batch(es)"
     )
     return {
         "epoch": epoch,
         "loss": mean,
         "loss_duration_adherence": mean_duration_adherence,
+        "loss_cross_staff_coherence": mean_cross_staff_coherence,
         "batches": count,
     }
 
@@ -197,6 +205,17 @@ def main() -> None:
             "existing objective untouched, exactly as before this flag existed."
         ),
     )
+    parser.add_argument(
+        "--cross-staff-coherence-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's loss brainstorm item 2: "
+            "penalizes a staff's predicted cumulative duration for diverging from "
+            "its system's ground truth (its siblings' median), not just its own "
+            "label - 0.0 (default) leaves the existing objective untouched."
+        ),
+    )
     args = parser.parse_args()
 
     from homr.transformer.configs import Config
@@ -205,6 +224,7 @@ def main() -> None:
     config = Config()
     config.enable_profile_context = True
     config.duration_adherence_weight = args.duration_adherence_weight
+    config.cross_staff_coherence_weight = args.cross_staff_coherence_weight
 
     model = TrOMR(config)
     load_pinned(model, args.checkpoint)

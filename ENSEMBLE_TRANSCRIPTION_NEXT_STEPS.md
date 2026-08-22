@@ -1656,7 +1656,41 @@ without the user's go-ahead.
 The trained artifact from this run (`profile_context_weights.pth`, 9 tensors,
 227KB - the embedding tables and gate only, not the 287MB frozen base checkpoint)
 is small enough to ship as a downloadable release asset rather than requiring a
-retrain to inspect the mechanism's effect.
+retrain to inspect the mechanism's effect. **Published**:
+https://github.com/jhlusko/homr/releases/tag/phase22-profile-context-weights.
+
+**Caveat added 2026-08-22, after this result was already reported and released: the
+duration-adherence loss active throughout `phase22` (`--duration-adherence-weight
+1.0`) had a real chord-duration bug** - it double-counted any measure containing a
+simultaneous multi-note chord (verified directly: a real two-note quarter-note chord
+summed to 0.5 instead of the correct 0.25). Full detail, the fix, and what it does and
+doesn't change about the result above: `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.3. Short
+version: the primary with/without-profile-context delta applies the same bug
+symmetrically to both arms of that comparison, so it's not obviously invalidated; the
+`duration_adherence` trend itself (already flagged above as a separate, less rigorous
+signal) is more directly affected. `phase22`'s published weights were not retrained
+against the fix.
+
+**Cross-staff coherence loss built next, 2026-08-22** (user: "Start on the cross-staff
+coherence loss"): `calCrossStaffCoherenceLoss`, gated by `config.
+cross_staff_coherence_weight` (default `0.0`). Turned out not to need the
+data-pipeline batching change the brainstorm above assumed - the system-wide
+ground-truth target curve is precomputed offline per sample
+(`training/omr_datasets/cross_staff_coherence.py`, reusing §7.3's fragment-splitting
+infrastructure), so ordinary i.i.d. shuffled batching works unchanged. Takes the
+median across sibling parts at each measure index (the same robustness idiom
+`check_measure_durations`/`propose_majority_position_corrections` already use), not
+any single part's value - real ground-truth parts do sometimes disagree on a
+measure's length (`ossq_measure_length_audit.py`'s own corpus audit). 11 new tests,
+plus the chord-double-count fix above found and fixed while building it, plus 2
+regression tests for that. Full suite 1090/1093 non-deselected (same 3 pre-existing
+unrelated failures), a real smoke test (168 real examples) confirmed the whole chain
+end to end with a real nonzero training-active loss value.
+
+**Not yet run as a real training experiment.** Full detail: `DECODER_RHYTHM_ACCURACY_
+DESIGN.md` §7.3. Natural next step: launch it on its own (not bundled with
+time-signature conditioning, so its contribution can be isolated, unlike phase22) -
+not started without the user's go-ahead.
 
 ---
 

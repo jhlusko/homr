@@ -311,12 +311,29 @@ class ScoreDecoder(nn.Module):
         # per-token lookup of each rhythm token's real duration (whole-note units,
         # `kern_to_symbol_duration` - the exact same parser `EncodedSymbol.get_duration`
         # itself calls). Tokens that don't start with "note"/"rest" (barline, clef,
-        # keySignature, and critically "chord" - the literal marker a chord's later
-        # simultaneous notes carry instead of their own note_/rest_ token, see
-        # `SymbolChord.get_duration`) correctly get 0 here with no special-casing:
-        # summing this vector position-by-position across a sequence already gives the
-        # right additive total, since a chord's non-first notes never contribute a
-        # second real duration value at the same musical instant.
+        # keySignature, "chord") correctly get 0 here.
+        #
+        # "chord" itself is a bare marker (0 duration, correct) - but a chord's *later*
+        # members are NOT the "chord" token, they carry their own real note_/rest_
+        # token immediately after it (`training/omr_datasets/staff_merging.py`'s
+        # `create_chord_over_two_staffs`: `if not is_first: result.append(chord
+        # marker); result.append(symbol)` - the marker is inserted *before* each
+        # non-first member, never replacing it). An earlier version of this comment
+        # claimed summing this vector position-by-position was already correct because
+        # of that; it was wrong, and so was the loss below until this fix - confirmed
+        # directly: a real two-note simultaneous quarter-note chord (`note_4, chord,
+        # note_4`) sums to 0.5 here, double the true 0.25, because both real note
+        # tokens contribute independently. `rhythm_is_chord_continuation` below is
+        # what corrects this: it flags exactly the positions that immediately follow a
+        # "chord" marker, so both loss methods can zero those positions out of the
+        # cumulative sum instead of double-counting them - the same *grouping*
+        # `homr.music_xml_generator.group_into_chords`/`SymbolChord.get_duration`
+        # already do elsewhere in this codebase, simplified to "count the first member,
+        # not the minimum across members" (equivalent for correctly-notated chords,
+        # whose simultaneous members always share one duration by definition - the
+        # minimum only differs from the first for a decode already wrong in a way this
+        # loss cannot represent anyway) rather than a second recurrent-grouping
+        # implementation inside a batched, differentiable loss.
         duration_vec = torch.zeros(config.num_rhythm_tokens)
         for index, rhythm_symbol in enumerate(config.rhythm_vocab.keys()):
             if rhythm_symbol.startswith(("note", "rest")):
@@ -339,6 +356,15 @@ class ScoreDecoder(nn.Module):
             if "barline" in rhythm_symbol or "repeat" in rhythm_symbol:
                 barline_mask[index] = 1
         self.register_buffer("rhythm_is_barline", barline_mask, persistent=False)
+
+        # Marks the single literal "chord" token itself (see the long comment on
+        # `rhythm_duration` above) - both duration losses shift this by one position to
+        # find which positions are a chord's non-first members, not this token.
+        chord_marker_mask = torch.zeros(config.num_rhythm_tokens)
+        for index, rhythm_symbol in enumerate(config.rhythm_vocab.keys()):
+            if rhythm_symbol == "chord":
+                chord_marker_mask[index] = 1
+        self.register_buffer("rhythm_is_chord_marker", chord_marker_mask, persistent=False)
 
         # Output-only heads over the shared hidden state. They add dictionary keys to
         # forward's result and nothing else - the existing losses and the positional
@@ -491,6 +517,9 @@ class ScoreDecoder(nn.Module):
         positions: torch.Tensor,
         mask: torch.Tensor,
         sampling_prob: float = 1.0,
+        coherence_curve: torch.Tensor | None = None,
+        coherence_curve_len: torch.Tensor | None = None,
+        coherence_present: torch.Tensor | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         profile_context_emb = self._pop_profile_context_emb(kwargs)
@@ -597,6 +626,17 @@ class ScoreDecoder(nn.Module):
             if duration_adherence_weight
             else torch.zeros((), device=rhythmsp.device)
         )
+        # Same "must run on the still-raw rhythmso" reasoning as duration_adherence
+        # above - this loss also indexes rhythm_is_barline by rhythmso_raw.
+        cross_staff_coherence_weight = getattr(self.config, "cross_staff_coherence_weight", 0.0)
+        loss_cross_staff_coherence = (
+            cross_staff_coherence_weight
+            * self.calCrossStaffCoherenceLoss(
+                rhythmsp, rhythmso, mask, coherence_curve, coherence_curve_len, coherence_present
+            )
+            if cross_staff_coherence_weight and coherence_curve is not None
+            else torch.zeros((), device=rhythmsp.device)
+        )
         rhythmso = self._mask_padding_tokens(rhythmso, mask)
         pitchso = self._mask_padding_tokens(pitchso, mask)
         liftso = self._mask_padding_tokens(liftso, mask)
@@ -618,6 +658,7 @@ class ScoreDecoder(nn.Module):
             + loss_position
             + loss_consist
             + loss_duration_adherence
+            + loss_cross_staff_coherence
         )
 
         return {
@@ -626,6 +667,7 @@ class ScoreDecoder(nn.Module):
             "loss_lift": loss_lift,
             "loss_consist": loss_consist,
             "loss_duration_adherence": loss_duration_adherence,
+            "loss_cross_staff_coherence": loss_cross_staff_coherence,
             "loss_position": loss_position,
             "loss_articulations": loss_articulations,
             "loss_slurs": loss_slurs,
@@ -709,9 +751,10 @@ class ScoreDecoder(nn.Module):
         `rhythm_is_barline`'s bounds. `mask` (the same padding mask every other loss
         here already uses) is applied separately, exactly as `calConsistencyLoss` does.
         """
-        true_duration = self.rhythm_duration[rhythmso_raw] * mask
+        not_continuation = self._not_chord_continuation(rhythmso_raw)
+        true_duration = self.rhythm_duration[rhythmso_raw] * mask * not_continuation
         probs = torch.softmax(rhythmsp, dim=2)
-        predicted_duration = (probs * self.rhythm_duration).sum(dim=2) * mask
+        predicted_duration = (probs * self.rhythm_duration).sum(dim=2) * mask * not_continuation
 
         true_cumulative = torch.cumsum(true_duration, dim=1)
         predicted_cumulative = torch.cumsum(predicted_duration, dim=1)
@@ -719,6 +762,68 @@ class ScoreDecoder(nn.Module):
         is_barline = self.rhythm_is_barline[rhythmso_raw] * mask
         diff = torch.abs(predicted_cumulative - true_cumulative) * is_barline
         denom = is_barline.sum().clamp(min=1)
+        return diff.sum() / denom
+
+    def _not_chord_continuation(self, rhythmso_raw: torch.Tensor) -> torch.Tensor:
+        """`1.0` everywhere except a position immediately following a "chord" marker
+        token - see the long comment on `rhythm_duration`'s construction above for why
+        that position must not contribute its own duration a second time. Computed
+        from `rhythmso_raw` (ground truth), the same source `is_barline` is keyed to,
+        so both the true and predicted duration sums are masked at identical positions."""
+        is_chord_marker = self.rhythm_is_chord_marker[rhythmso_raw]
+        is_continuation = torch.zeros_like(is_chord_marker)
+        is_continuation[:, 1:] = is_chord_marker[:, :-1]
+        return 1.0 - is_continuation
+
+    def calCrossStaffCoherenceLoss(
+        self,
+        rhythmsp: torch.Tensor,
+        rhythmso_raw: torch.Tensor,
+        mask: torch.Tensor,
+        coherence_curve: torch.Tensor,
+        coherence_curve_len: torch.Tensor,
+        coherence_present: torch.Tensor,
+    ) -> torch.Tensor:
+        """DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's loss brainstorm item 2: like
+        `calDurationAdherenceLoss`, but the target at each barline is this staff's
+        *system's* ground truth (the median across every sibling part,
+        `training.omr_datasets.cross_staff_coherence.system_measure_curve`) rather than
+        this staff's own label - a real, cheaper alternative to §4 Stage C's learned
+        adapter worth trying first: no architecture change, no inference-time coupling,
+        just a training signal that teaches the model to prefer duration decisions
+        that stay coherent with what a system's siblings actually contain.
+
+        `coherence_curve` is `(batch, MAX_COHERENCE_MEASURES)`, this sample's own
+        system's whole-note cumulative-duration curve, padded/truncated to that fixed
+        width by the data loader; `coherence_curve_len` `(batch,)` is how many of those
+        entries are real (the rest is padding, never indexed past this); `coherence_
+        present` `(batch,)` is 0 for a sample whose system curve could not be resolved
+        at all (an unresolvable score, an unaligned page/system - the same "unknown is
+        never a guess" discipline `time_signature_for_sample` uses) - such a sample
+        contributes nothing here, not a fabricated zero target.
+
+        `rhythmso_raw` must be the same still-*unmasked* ground-truth rhythm labels
+        `calDurationAdherenceLoss` requires, for the same reason (indexing
+        `rhythm_is_barline`).
+        """
+        not_continuation = self._not_chord_continuation(rhythmso_raw)
+        probs = torch.softmax(rhythmsp, dim=2)
+        predicted_duration = (probs * self.rhythm_duration).sum(dim=2) * mask * not_continuation
+        predicted_cumulative = torch.cumsum(predicted_duration, dim=1)
+
+        is_barline = self.rhythm_is_barline[rhythmso_raw] * mask
+        # How many of *this sample's own* barlines have been crossed by each position -
+        # the 1st barline crossed should match the system curve's 0th measure entry.
+        barline_count = torch.cumsum(is_barline, dim=1)
+        curve_index = (barline_count - 1).clamp(min=0).long()
+        max_index = (coherence_curve_len - 1).clamp(min=0).view(-1, 1)
+        curve_index = torch.minimum(curve_index, max_index.expand_as(curve_index))
+        target = torch.gather(coherence_curve, 1, curve_index)
+
+        in_range = (barline_count <= coherence_curve_len.view(-1, 1).clamp(min=0)).float()
+        valid = is_barline * in_range * coherence_present.view(-1, 1)
+        diff = torch.abs(predicted_cumulative - target) * valid
+        denom = valid.sum().clamp(min=1)
         return diff.sum() / denom
 
     def cross_entropy(

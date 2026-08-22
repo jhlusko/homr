@@ -872,20 +872,18 @@ follows). Candidate additional loss terms discussed and ranked:
 1. **Ground-truth-supervised measure-duration adherence loss (built this session,
    see below)** - the most direct, cheapest to build, targeting `barline_position_
    mismatch` (the single largest Stage A finding) head-on.
-2. **Cross-staff coherence loss - a real, cheaper alternative to Stage C worth trying
-   first.** Ground truth for sibling staves is available at *training* time even though
-   each staff decodes independently at inference. Batch several staves of the same
-   system together (the OSSQ stem convention `<score>_<page>_<system>_<part>` already
-   has everything needed to group them) and penalize each staff's expected cumulative
-   duration for diverging from its siblings' *ground-truth* durations at shared measure
-   boundaries - no architecture change, no inference-time coupling, just a training
-   signal that teaches the model to prefer duration decisions that stay coherent with
-   what a system's siblings actually contain. Framed as a cheap experiment to run
-   *before* committing to Stage C's full learned adapter: if this closes a meaningful
-   share of the gap, Stage C's marginal value shrinks; if it doesn't, that's real
-   evidence the model needs live cross-staff activations, strengthening the case for
-   Stage C specifically. **Not built yet** - needs a real data-pipeline change (batching
-   by system instead of i.i.d. random staff crops), a bigger lift than item 1.
+2. **Cross-staff coherence loss (built this session, see below) - a real, cheaper
+   alternative to Stage C worth trying first.** Ground truth for sibling staves is
+   available at *training* time even though each staff decodes independently at
+   inference: penalize each staff's expected cumulative duration for diverging from
+   its siblings' *ground-truth* durations at shared measure boundaries - no
+   architecture change, no inference-time coupling, just a training signal that
+   teaches the model to prefer duration decisions that stay coherent with what a
+   system's siblings actually contain. Framed as a cheap experiment to run *before*
+   committing to Stage C's full learned adapter: if this closes a meaningful share of
+   the gap, Stage C's marginal value shrinks; if it doesn't, that's real evidence the
+   model needs live cross-staff activations, strengthening the case for Stage C
+   specifically.
 3. **Key-signature/accidental consistency loss** - targets a specific, already-
    documented null result: §4's tier-2 forced-prefix experiments found that correcting
    a key-signature token in a staff's own history changed *zero* downstream pitch/
@@ -974,8 +972,91 @@ Given `phase21` (the unfrozen follow-up to `phase20`) *erased* the frozen-core s
 rather than improving it, and phase22's own delta is already no better than
 phase20's, repeating that pattern here looks unlikely to help. See
 `ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md` §5 for the fuller writeup and the recommended
-next step (the cross-staff coherence loss from §7.3's own brainstorm, not yet
-started).
+next step (the cross-staff coherence loss from §7.3's own brainstorm, built next -
+see below).
+
+**Caveat found afterward, while building item 2 (2026-08-22): `calDurationAdherenceLoss`
+had a real chord-duration bug throughout `phase22`.** It summed each token's own
+`rhythm_duration` independently, which double-counts any measure containing a
+simultaneous multi-note chord: a chord's non-first members are NOT the literal
+`"chord"` marker token (that part of the original comment was wrong) - they carry
+their own real `note_/rest_` token right after the marker
+(`training/omr_datasets/staff_merging.py`'s `create_chord_over_two_staffs`), so both
+the true and predicted cumulative-duration sums counted them a second time. Verified
+directly: a real two-note simultaneous quarter-note chord summed to 0.5 instead of the
+correct 0.25.
+
+This was live and contributing real gradient throughout `phase22`
+(`--duration-adherence-weight 1.0`) for every chord-bearing measure. **What it likely
+does and doesn't change about phase22's already-reported result**: the primary
+measurement (the with/without-profile-context validation-loss ablation) applies the
+same objective, bug included, to both arms of the comparison - the *relative* delta
+between them is not obviously invalidated by a bug present in both. What it does
+undermine is `duration_adherence`'s own reported trend (already flagged as a separate,
+"less rigorous" signal above) and any *future* run that weights this loss more
+heavily to actually shape decode behavior, where the bias directly rewards
+overshooting a chord-bearing measure's true length.
+
+**Fixed** (`training/architecture/transformer/decoder.py`): a new
+`rhythm_is_chord_marker` buffer (analogous to `rhythm_is_barline`) plus
+`_not_chord_continuation`, which zeroes out any position immediately following a
+`"chord"` marker in both `calDurationAdherenceLoss` and `calCrossStaffCoherenceLoss` -
+counting only a chord's first member, not every member (equivalent to
+`homr.music_xml_generator.group_into_chords`/`SymbolChord.get_duration`'s own
+minimum-across-members grouping for any correctly-notated chord, whose simultaneous
+members share one duration by definition; a second recurrent min-grouping
+implementation inside a batched differentiable loss was judged not worth it for that
+equivalence). 2 new regression tests (one per loss) confirm a two-note chord no longer
+double-counts. Full suite still the same 1090/1093 non-deselected (same 3 pre-existing
+unrelated failures throughout this investigation, +2 from these new tests over the
+1088 recorded above). **`phase22`'s own trained weights were not retrained after this
+fix** - the release published from that run reflects the buggy loss; a rerun would be
+needed to get weights trained against the corrected objective.
+
+**Item 2 built and validated 2026-08-22**: `calCrossStaffCoherenceLoss`
+(`training/architecture/transformer/decoder.py`), gated by `config.
+cross_staff_coherence_weight` (default `0.0`, same discipline as item 1). Same shape
+as `calDurationAdherenceLoss` - penalizes the rhythm head's predicted cumulative
+duration at each of a staff's own barlines - but the *target* is this staff's
+*system's* ground truth (the median across every sibling part at that measure index),
+not this staff's own label.
+
+**Simpler than the brainstorm originally proposed, and deliberately so.** The
+brainstorm assumed this needed a real data-pipeline change (batching several staves of
+one system together, since the loss "needs" siblings present in the same batch).
+Building it found that's unnecessary: the system-wide target curve is precomputed
+*offline*, per sample, straight from ground truth
+(`training/omr_datasets/cross_staff_coherence.py`'s `system_measure_curve`, reusing
+§7.3's fragment-splitting infrastructure - a system's pre-split fragment already
+carries every sibling part, already movement-disambiguated). Each sample carries its
+own fixed-size `(MAX_COHERENCE_MEASURES=32)` curve, its valid length, and a presence
+flag into the batch (`training/transformer/data_loader.py`); ordinary i.i.d. shuffled
+batching works exactly as before, no custom sampler needed.
+
+Takes the **median** across sibling parts at each measure index, not any single
+part's value - `ossq_measure_length_audit.py`'s own corpus audit found real cases
+where ground-truth parts genuinely disagree on a measure's length (a labeling defect,
+not a legitimate irregularity); the median is the same robustness idiom
+`check_measure_durations`/`propose_majority_position_corrections` already use for the
+equivalent problem elsewhere in this codebase.
+
+**Validated**: 5 new tests for the ground-truth curve (`tests/
+test_cross_staff_coherence.py`, hand-built MusicXML fixtures, including one
+confirming the median ignores a single defective part), 6 new tests for the loss
+itself (`tests/test_cross_staff_coherence_loss.py`, including the chord-double-count
+regression above and an out-of-range-barline case). A real smoke test (168-example
+sample from a piece with real pre-split fragments, 1 epoch,
+`--cross-staff-coherence-weight 1.0`) confirmed the whole chain end to end: a real,
+nonzero, training-active loss value, distinct from `duration_adherence` (left at its
+`0.0` default for this smoke test). Full suite 1090/1093 non-deselected (same 3
+pre-existing unrelated failures).
+
+**Not yet run as a real training experiment** - built and validated, matching item 1's
+own "prepared, training run pending" state before `phase22`. The natural next step,
+mirroring `phase22`'s own shape, would launch this on its own (not bundled with
+time-signature conditioning this time, so its own contribution can actually be
+isolated) before deciding whether it meaningfully closes the gap §4's Stage C would
+otherwise need to.
 
 ### 7.4 Phase 3 (already designed elsewhere, referenced not duplicated): Stage C
 
