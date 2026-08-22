@@ -105,6 +105,7 @@ class ScoreTransformerWrapper(nn.Module):
         mask: torch.Tensor | None = None,
         return_center_of_attention: bool = False,
         profile_context_emb: torch.Tensor | None = None,
+        staff_context_emb: torch.Tensor | None = None,
         **kwargs: torch.Tensor,
     ) -> Any:
         # §7.2/§7.3's score-profile conditioning: an already-computed, per-sequence
@@ -118,6 +119,16 @@ class ScoreTransformerWrapper(nn.Module):
         profile_bias = (
             profile_context_emb.unsqueeze(1) if profile_context_emb is not None else None
         )
+        # §4/§7.4 Stage C: the same shape and broadcast rule as profile_bias above, but
+        # a genuinely separate signal (this staff's own learned cross-staff context,
+        # StaffContextTransformer's gated output for this staff, computed from a first
+        # decode pass) - kept as its own parameter rather than folded into
+        # profile_context_emb so the two conditioning sources stay independently
+        # ablatable, not conflated into one. `None` leaves `x` exactly as it was
+        # before this parameter existed.
+        staff_bias = (
+            staff_context_emb.unsqueeze(1) if staff_context_emb is not None else None
+        )
         cache = kwargs.pop("cache", None)
         if cache is None:
             x = (
@@ -130,6 +141,8 @@ class ScoreTransformerWrapper(nn.Module):
             )
             if profile_bias is not None:
                 x = x + profile_bias
+            if staff_bias is not None:
+                x = x + staff_bias
 
             x = self.post_emb_norm(x)
 
@@ -169,6 +182,8 @@ class ScoreTransformerWrapper(nn.Module):
             )
             if profile_bias is not None:
                 x = x + profile_bias
+            if staff_bias is not None:
+                x = x + staff_bias
 
             x = self.post_emb_norm(x)
 
