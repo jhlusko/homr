@@ -1214,12 +1214,32 @@ below-minimum exclusion, an oversized-system truncation, and the combined
 group+pad convenience function), plus verified directly against 2,000 real training
 samples: 501 real system groups, 497 of them the expected size 4 (string quartets).
 
-**Not yet built**: the first-pass-decode → pooled-hidden-state → StaffContextTransformer
-→ second-pass-decode pipeline itself, the training script, and any live-pipeline
-wiring. This is a substantially bigger build than §7.3's mechanisms and is being
-paced accordingly rather than rushed - the module and the batching loader are both
-built and tested; wiring them into an actual two-pass training loop is the next
-session's concrete starting point.
+**Module attached to `ScoreDecoder`** (2026-08-22): `self.decoder.staff_context`,
+gated by `config.enable_staff_context` (off by default, same checkpoint-compatibility
+reasoning as `profile_context`), plus `TrOMR.freeze_core_for_staff_context()`
+mirroring `freeze_core_for_profile_context`'s own frozen-core probe shape. 5 more
+tests on the real `ScoreDecoder`/`TrOMR` (module attaches only when enabled, disabled
+is bit-identical to before this existed, the frozen-core probe leaves only
+`decoder.staff_context.*` trainable).
+
+**Two-pass training script built and running** (`training/transformer/
+train_staff_context.py`, 2026-08-22): implements exactly the pipeline above - first
+pass (no_grad, teacher-forced, sampling_prob=1.0) → masked-mean-pool `"hidden"` per
+staff over its own real tokens → `StaffContextTransformer` (masked by `staff_mask`,
+not the per-token mask) → second pass with `staff_context_emb` set → trained against
+the model's own existing `loss`, same frozen-core probe shape `train_profile_context.py`
+used for §7.3. 14 unit tests against a lightweight fake model (zero-gate reproduces
+the first pass exactly, moving the gate changes the second pass, only the new
+module's weights move under `freeze_core_for_staff_context`). Smoke-tested against
+the real checkpoint on a 400-sample subset (100 systems, all batches ran clean) before
+being trusted on real data. `phase24` (`/workspace/b0/phase24`, tmux session
+`staffcontext`): the same production `phase9`/`phase4` train/valid split phase22/23
+used (105,305/4,912 staves → 10,695/1,237 systems after system-grouping and the
+default `min_staves=2` filter), 5 epochs, batch size 8 systems - launched under the
+same "phase23 positive → go ahead and start Stage C" standing authorization already
+given for this build. Each system batch costs roughly 2x a single-pass batch (two
+full decodes instead of one), so this run is expected to take proportionally longer
+than phase22/23's own per-epoch time; results not yet in as of this writing.
 
 ## 8. Why not several tempting shortcuts
 
