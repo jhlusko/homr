@@ -1687,10 +1687,24 @@ regression tests for that. Full suite 1090/1093 non-deselected (same 3 pre-exist
 unrelated failures), a real smoke test (168 real examples) confirmed the whole chain
 end to end with a real nonzero training-active loss value.
 
-**Not yet run as a real training experiment.** Full detail: `DECODER_RHYTHM_ACCURACY_
-DESIGN.md` §7.3. Natural next step: launch it on its own (not bundled with
-time-signature conditioning, so its contribution can be isolated, unlike phase22) -
-not started without the user's go-ahead.
+**`phase23` launched** (user: "go ahead") to test it in isolation - not bundled with
+time-signature conditioning, so its own contribution can be isolated, unlike phase22.
+
+**A second real bug found on launch, this time in shared corpus infrastructure, not
+this session's own new code**: `phase23`'s first epoch reported `cross_staff_coherence`
+~400x `duration_adherence`'s typical magnitude. Traced to a carry-forward bug in
+`ossq_ground_truth.py`'s `extract_ground_truth_window` (used by every fragment-based
+lookup since §7.3's time-signature work) - it skipped carrying forward missing
+attributes (divisions, specifically) whenever a window's first measure already
+redeclared *some other* attribute (like a time change), silently defaulting divisions
+to 1 and inflating every duration computed from it. Confirmed on real data: a real
+fragment's measure length of 90.0 whole notes instead of the correct ~0.75. Full
+detail, the fix, and the asymmetric-impact analysis (phase22's time-signature sourcing
+degraded gracefully to "unknown" on this bug, not wrong values - no further caveat
+needed there): `DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.3.
+
+Fixed, all 10,400 corpus fragments rebuilt (~6.6 min, 0 skipped), re-verified against
+real samples, `phase23` killed and relaunched clean. Currently training.
 
 ---
 

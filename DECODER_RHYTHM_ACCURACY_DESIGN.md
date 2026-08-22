@@ -1051,12 +1051,43 @@ nonzero, training-active loss value, distinct from `duration_adherence` (left at
 `0.0` default for this smoke test). Full suite 1090/1093 non-deselected (same 3
 pre-existing unrelated failures).
 
-**Not yet run as a real training experiment** - built and validated, matching item 1's
-own "prepared, training run pending" state before `phase22`. The natural next step,
-mirroring `phase22`'s own shape, would launch this on its own (not bundled with
-time-signature conditioning this time, so its own contribution can actually be
-isolated) before deciding whether it meaningfully closes the gap §4's Stage C would
-otherwise need to.
+**A second real bug found launching the training run itself (`phase23`), this time in
+shared fragment-generation infrastructure, not this loss's own code.** `phase23`'s
+first epoch reported `cross_staff_coherence` around 120 - roughly 400x
+`duration_adherence`'s typical magnitude in the same kind of run. Traced to
+`ossq_ground_truth.py`'s `extract_ground_truth_window`: its attribute carry-forward
+skipped entirely whenever a window's first kept measure already had *any*
+`<attributes>` element, but MusicXML only restates a child (divisions/key/time/clef)
+when it changes - a measure can carry a real `<time>` change with no `<divisions>`
+redeclaration. When that happened, `divisions` silently defaulted to 1 for the rest
+of that part's window, inflating every duration computed from it by the piece's real
+(uncarried) divisions value. Verified directly against one real fragment (Wolf,
+sq8823783, page 43): 2 of 4 parts opened their window on exactly this pattern,
+producing measure lengths of 90.0 and 18.375 whole notes instead of the correct ~0.75.
+
+**Confirmed asymmetric blast radius.** `time_signature_for_sample` (used by `phase22`,
+already published) only reads `<time>` and falls back to `""` ("unknown") when
+nothing is found in the searched measure - it degraded to reduced coverage on this
+bug, not wrong values. `system_measure_curve` reads `<divisions>` specifically with no
+equivalent safe fallback, so it produced genuinely wrong values, not just missing
+ones, until this fix. `phase22`'s already-published result needs no further caveat
+beyond what's already recorded above.
+
+**Fixed**: carry-forward now tracked per attribute *child*, merging only whichever
+children a window's first measure is missing, rather than skipping the whole step
+whenever any `<attributes>` element is already present. All 10,400 corpus fragments
+rebuilt with the fix (same 122 pieces, 0 skipped, ~6.6 minutes) - re-verified against
+20 real corpus samples: every one now produces a sane per-measure duration (0.5-1.0
+whole notes), none of the earlier 12-90 outliers. 1 new regression test. `phase23`
+(which had been training on the corrupted fragments) was killed and relaunched
+clean.
+
+Not yet run as a real training experiment before this point - now launched (again),
+matching item 1's own "prepared, training run pending" state before `phase22`. The
+natural next step, mirroring `phase22`'s own shape, was to launch this on its own
+(not bundled with time-signature conditioning this time, so its own contribution can
+actually be isolated) before deciding whether it meaningfully closes the gap §4's
+Stage C would otherwise need to.
 
 ### 7.4 Phase 3 (already designed elsewhere, referenced not duplicated): Stage C
 
