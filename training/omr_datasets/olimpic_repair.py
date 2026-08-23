@@ -113,9 +113,14 @@ def trim_to_gutter(page: np.ndarray, box: Box, ceiling: int) -> Box:
     the extended crop as a sliver of cut-off staff at the top edge. The page itself knows
     where the overhang ends - it is where the ink stops - so this reads that instead.
 
-    Falls back to the box it was given when no clear band exists, which happens when the
-    voice staff sits directly under the overhang. A crop with a sliver is worth more than
-    no crop at all, and 27.39's whole point is that these images have been unusable.
+    Falls back to the geometric ceiling itself when no clear band exists (dense running
+    text/ties/slurs can leave no full-width blank row anywhere in the search window - a
+    real, not rare, case on denser IMSLP engravings than OLiMPiC's own scans: half the
+    systems on one real test page had no clean band at all). Originally fell back to the
+    box unchanged - zero recovery - reasoning that "a crop with a sliver is worth more
+    than no crop at all"; but zero recovery is worse than a sliver, not better, and the
+    geometric ceiling is exactly the same safe bound `extend_upward` already uses without
+    a page image at all, so falling back to it here costs nothing extra.
     """
     strip = page[max(0, ceiling) : box.top, box.left : box.left + box.width]
     if strip.size == 0:
@@ -130,7 +135,8 @@ def trim_to_gutter(page: np.ndarray, box: Box, ceiling: int) -> Box:
         if run >= GUTTER_ROWS:
             top = max(0, ceiling) + offset - run + 1
             return Box(box.left, top, box.width, box.bottom - top)
-    return box
+    top = max(0, ceiling)
+    return Box(box.left, top, box.width, box.bottom - top)
 
 
 def coverage(boxes: list[Box]) -> float:

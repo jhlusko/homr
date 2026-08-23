@@ -171,13 +171,17 @@ class TestTrimToGutter(unittest.TestCase):
 
         self.assertEqual(trim_to_gutter(page, box, ceiling=600).bottom, box.bottom)
 
-    def test_solid_ink_all_the_way_down_keeps_the_original_box(self) -> None:
-        # No clear band exists, so there is nothing to trim to and the box is left alone
-        # rather than cut to an invented row.
+    def test_solid_ink_all_the_way_down_falls_back_to_the_geometric_ceiling(self) -> None:
+        # No clear band exists anywhere in the search window - falls back to the same
+        # safe bound extend_upward already uses without a page image, not to zero
+        # recovery (leaving the box unchanged would mean no lyrics recovered at all).
         page = _page_with_ink([(600, 1100)])
         box = Box(left=60, top=1100, width=1800, height=400)
 
-        self.assertEqual(trim_to_gutter(page, box, ceiling=600), box)
+        trimmed = trim_to_gutter(page, box, ceiling=600)
+
+        self.assertEqual(trimmed.top, 600)
+        self.assertEqual(trimmed.bottom, box.bottom)
 
     def test_extending_with_a_page_trims_where_geometry_would_not(self) -> None:
         page = _page_with_ink([(500, 700)])
