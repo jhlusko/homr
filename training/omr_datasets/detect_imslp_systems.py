@@ -7,8 +7,11 @@ already-validated staff/grand-staff detector instead of hand-annotating.
 
 Per page: rasterize (matching `homr.pdf_utils.render_pdf_to_image`'s own scale/autocrop,
 but one PNG per page rather than one vstacked image - `imslp_systems/*.yaml`'s schema is
-per-page), then run `homr.main.detect_staffs_in_image` - the same staff-and-grand-staff
-detector homr's normal OMR pipeline runs on every image. A `MultiStaff` with 2+ staves is
+per-page), correct any page-wide skew in place (`homr.deskew.deskew_page_file` - real
+scans are rarely perfectly level, and every box downstream of this script is a plain
+axis-aligned rectangle, so a tilted page makes every one of them a poor fit), then run
+`homr.main.detect_staffs_in_image` - the same staff-and-grand-staff detector homr's
+normal OMR pipeline runs on every image. A `MultiStaff` with 2+ staves is
 a piano grand staff; that box is what OLiMPiC's own human annotators drew too (27.39
 found their published boxes cover only the piano, median 41% of the inter-system gap -
 see `olimpic_repair.py`'s docstring), so this keeps to that same convention rather than
@@ -33,6 +36,7 @@ import pypdfium2 as pdfium
 import yaml
 
 from homr.autocrop import autocrop
+from homr.deskew import deskew_page_file
 from homr.main import ProcessingConfig, detect_staffs_in_image
 
 #: A grand staff (piano); a lone staff (the voice line) is not treated as a system box
@@ -112,6 +116,15 @@ def detect_score(pdf_path: Path, pngs_root: Path) -> dict:
     page_paths = rasterize_pages(pdf_path, pngs_root / score_id)
     pages = {}
     for page_number, page_path in enumerate(page_paths, start=1):
+        try:
+            angle = deskew_page_file(str(page_path))
+            if angle:
+                print(f"  {page_path.name}: corrected {angle:+.2f} degree skew")
+        except Exception:  # noqa: BLE001
+            # Same reasoning as the detection try/except below - a page this pipeline
+            # can't even estimate a skew angle for (no staffs/noteheads at all) is left
+            # as rasterized and handed to detection unchanged, not aborted here.
+            pass
         try:
             width, height, systems = detect_systems_on_page(page_path)
         except Exception:  # noqa: BLE001
