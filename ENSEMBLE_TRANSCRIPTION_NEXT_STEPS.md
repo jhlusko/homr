@@ -2010,6 +2010,52 @@ on this box, so anything saved in that window is likely unrecoverable. The right
 move would have been checking for content first; noted here as a standing reminder
 for any future destructive cleanup near that directory.
 
+**A second, more serious bug found the same way (user correctly pushed back on
+count-only measurement)**: "sure it got the right number, but the bounding boxes
+could be way off - we should care about % overlap." Right call - adding IoU to the
+same 121-score benchmark found a real, separate, and much larger bug: median IoU
+against ground truth was **0.0%** even on exact-count-match pages. Root cause:
+`detect_staffs_in_image` runs detection on `homr.resize.resize_image`'s own
+fixed-1920px-wide copy of the page (needed by the segnet model, unrelated to this
+script's own purpose), but every box this script wrote out was in *that* resized
+coordinate space - never rescaled back to the real saved PNG's own pixel dimensions,
+which is what the yaml, `olimpic_repair.py`, and the review website all actually use.
+Every detected box across the whole corpus was silently in the wrong coordinate
+space. Fixed by rescaling each box by the real/preprocessed size ratio before
+returning it; re-ran the same benchmark: **median IoU jumped to 54.3%** (mean 53.9%,
+tight quartiles 52.0%-56.4%) on exact-count-match pages, at full 121-score/788-page
+scale - not noise, a real, load-bearing fix.
+
+**The remaining ~54% IoU turned out not to be a detection-quality problem either**,
+once inspected on real numbers rather than trusted as a single aggregate: a detected
+box's `left`/`width` matched ground truth within single-digit pixels (out of ~1800),
+while `top`/`height` differed by ~180-210px in a way that made the detected box's
+*bottom* edge match ground truth almost exactly - i.e. the detected box fully
+*contains* the narrower ground-truth box, extending upward to include the
+voice/lyrics region OLiMPiC's own piano-only convention (27.39) deliberately
+excludes. Added `ground_truth_coverage` (intersection / area(ground truth), not
+IoU's `/union`) to measure that directly instead of guessing from one example:
+**mean 99.8%, median 100.0%** coverage on exact-count-match pages (20-score/209-page
+sample) - confirms detected boxes essentially always fully contain what a human
+annotated, and the ~54% IoU figure was measuring "box is bigger by design" (the
+outcome this whole corpus-expansion effort actually wants), not misplacement.
+
+**Also switched `detect_imslp_systems.py`'s own box construction** from the naive
+"any 2+-staff brace group is a system" filter (which measurably merged/undercounted
+systems on real pages) to `_plan_systems`'s real geometric grouping, already used
+and validated in the benchmark script itself (90.6% exact system-count match).
+
+**Currently re-running the full 355-score detection** with every fix now combined
+(deskew, `_plan_systems`, and the coordinate-scale fix) after deleting the prior,
+pre-fix detection output to force a clean rebuild rather than mixing old and
+corrected pages. **Operational mistake made and owned during this rebuild**:
+`imslp_verified/` (where the review website saves human corrections) was deleted as
+part of clearing prior output, without first checking whether it held any real saved
+corrections from the review session already in progress - no backup exists on this
+box, so anything saved in that window is likely unrecoverable. The right move would
+have been checking for content first; noted here as a standing reminder for any
+future destructive cleanup near that directory.
+
 **Not yet done**: the full re-detection and repair rerun finishing, the review server
 restarting against the corrected output, and actually reviewing/correcting the
 detected boxes through the website - the last of those a human task, not a next
