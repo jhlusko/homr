@@ -1367,14 +1367,33 @@ and a plausible, well-grounded explanation for why a mechanism that measurably
 improved teacher-forced validation loss makes real greedy-decoded output worse.
 
 **Consequence**: `enable_staff_context` stays off by default (already true) and
-should not be turned on for real use as currently trained. The natural fix, not
-yet attempted: retrain with the first pass genuinely greedy/autoregressive
-(scheduled sampling, `sampling_prob < 1.0`, or an explicit non-teacher-forced
-first decode) so `StaffContextTransformer` learns from the same distribution of
-hidden states it will actually see in production, rather than from ground-truth-
-conditioned ones. Until that retraining happens and is itself benchmarked the
-same way, Stage C is a built, wired, and now *disproven-as-trained* mechanism -
-real, valuable negative knowledge, not a dead end for the underlying idea.
+should not be turned on for real use as currently trained.
+
+**The obvious-looking fix does not work, checked before attempting it rather than
+after**: lowering `two_pass_forward`'s first-pass `sampling_prob` below 1.0 would
+*not* actually change anything. `set_probe_mode` calls `model.eval()` on the whole
+frozen core (deliberately - dropout on a frozen network trains and scores it
+under different conditions otherwise), and `ScoreDecoder.forward`'s scheduled-
+sampling branch is gated on `if self.training and sampling_prob < 1.0` - in eval
+mode `self.training` is `False`, so that branch never runs regardless of
+`sampling_prob`'s value. A naive edit here would silently do nothing while
+looking like a fix.
+
+The real fix needs a genuine step-by-step autoregressive greedy decode for the
+first pass - reusing `ScoreTransformerWrapper.forward`'s own incremental KV-cache
+branch (`training/architecture/transformer/decoder.py`, the same mechanism
+`training/onnx/convert.py`'s `DecoderWrapper` already drives for ONNX export), but
+called directly in PyTorch, one token at a time, in training. That is comparable
+in scope to `homr/transformer/decoder_inference.py`'s own `ScoreDecoder.generate()`
+(~500 lines: BOS/EOS handling, per-field autoregressive streams, growing the
+cache correctly, batched masking across a variable number of staves per system) -
+a real, non-trivial build with real risk of subtle bugs, not a quick tweak.
+Deliberately not attempted in this same sitting, at the tail of an already long
+session, without room to verify each piece carefully - the same "paced
+appropriately, don't rush" discipline this document has applied to every other
+Stage C build step. This is the concrete starting point for whoever picks this
+back up: build a training-time greedy first-pass decode, retrain, and benchmark
+the same way (`benchmark_stage_ab.py`, on vs. off) before trusting the result.
 
 ## 8. Why not several tempting shortcuts
 
