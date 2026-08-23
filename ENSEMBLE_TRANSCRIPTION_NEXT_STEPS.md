@@ -1967,5 +1967,50 @@ all, before or after repair - the raw staff detector never found it in the
 first place. That is exactly the gap the review tool's own "draw a new box on
 empty space" affordance exists for, not something the repair step can fix.
 
-**Not yet done**: actually reviewing/correcting the detected boxes through the
-website - a human task, not a next automated step.
+**A real detection-recall number, not an anecdote** (`training/omr_datasets/
+benchmark_system_detection.py`, 2026-08-23): the user's own concern - "we rely on
+detecting staves in homr; with bounding boxes this bad, I'm concerned" - deserved a
+measured answer, not reassurance. Ran the raw system-count detector (`detect_staffs_
+in_image` + `_plan_systems`) against OLiMPiC's own 121-score human-annotated ground
+truth (`imslp_systems/imslp_pngs`, predating this session, independent of anything
+this session's own detection work produced): **788 real pages, 90.6% exact system-
+count match (714/788), 0/788 pages with nothing detected at all**. Undercounting:
+52 pages off by 1-3 systems (38 by exactly 1). A smaller number of pages
+significantly *over*count (some by 5, 8, even 13) - a real, open, unexplained
+residual worth investigating further if it recurs, not yet understood from this
+data alone (possibly ground truth deliberately excluding partial edge systems the
+detector still finds; possibly a genuine over-segmentation bug on those specific
+pages). This number is for the *raw* detector only, independent of the repair-step
+bug found and fixed below - a missing/extra system is a different failure mode
+than a badly-sized box on a system that was found.
+
+**Skew found to be a second, separate real problem, and fixed the same way**: the
+user's own manual annotation surfaced pages tilted enough to make axis-aligned boxes
+a poor fit. Rather than teach every box-consuming piece of code (the OLiMPiC schema,
+`olimpic_repair.py`'s row-scan, the review UI's canvas math) to handle rotated boxes,
+`homr/deskew.py` corrects the whole page once, up front: homr's own `AngledBoundingBox`
+already normalizes every detected shape's rotation to a `-45..45` "degrees off
+horizontal" convention (used per-fragment for staff lines, clefs, stems) - just never
+assembled into one page-wide estimate before. Takes the median across a page's own
+staff-line fragments, rotates the whole image if it's large enough to matter (a
+threshold of 0.3°), expanding the canvas rather than cropping corners. The sign
+relationship between that convention and `cv2.getRotationMatrix2D`'s own (which the
+correction calls directly) turned out to be each other's exact inverse - found via a
+real synthetic-tilt test, not assumed from reasoning about OpenCV's conventions alone,
+which would have applied the correction backwards. Wired into `detect_imslp_systems.py`
+as a per-page step before detection runs.
+
+**Currently re-running the full 355-score detection with deskewing included**, after
+deleting the prior (pre-deskew) detection output to force a clean rebuild rather than
+mixing skewed and corrected pages. **Operational mistake made and owned during this
+rebuild**: `imslp_verified/` (where the review website saves human corrections) was
+deleted as part of clearing prior output, without first checking whether it held any
+real saved corrections from the review session already in progress - no backup exists
+on this box, so anything saved in that window is likely unrecoverable. The right
+move would have been checking for content first; noted here as a standing reminder
+for any future destructive cleanup near that directory.
+
+**Not yet done**: the full re-detection and repair rerun finishing, the review server
+restarting against the corrected output, and actually reviewing/correcting the
+detected boxes through the website - the last of those a human task, not a next
+automated step.
