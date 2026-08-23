@@ -6,10 +6,15 @@ already used, applied to the one genuinely new mechanism here: this run is a tru
 *two-pass decode* per system, not a single forward pass conditioned on precomputed
 fields. For each system batch:
 
-  1. First pass: decode every staff independently (teacher-forced, no cross-staff
-     information at all) and keep the shared decoder's own pooled hidden state per
-     staff (`ScoreDecoder.forward`'s `"hidden"` output, masked-mean-pooled over the
-     sequence dimension).
+  1. First pass: decode every staff independently and keep the shared decoder's own
+     pooled hidden state per staff (`mixed_first_pass_hidden`, masked-mean-pooled
+     over the sequence dimension). `--sampling-prob` (default 0.5) controls how much
+     of this pass is teacher-forced vs. the model's own greedy prediction, mixed
+     position-by-position - see `mixed_first_pass_hidden`'s docstring for why a fully
+     teacher-forced first pass (the original `sampling_prob=1.0` version of this
+     mechanism) turned out to make DECODER_RHYTHM_ACCURACY_DESIGN.md §7.4's real
+     Stage A/B benchmark measurably worse, not better, and why this fixes it without
+     needing genuine step-by-step autoregressive decoding.
   2. `StaffContextTransformer` attends across a system's own staves' pooled vectors
      (masking out padded staff slots via `staff_mask`), producing a per-staff context
      vector - zero at initialization, per its own zero-init gate.
@@ -23,12 +28,11 @@ the same narrow question `train_profile_context.py` asked of its own module - ca
 the model's own existing loss - before committing to unfreezing the decoder to let it
 adapt to cross-staff signal as well.
 
-`evaluate`'s with/without ablation reuses the *same* first-pass hidden state either
-way: "without" is exactly the first pass's own loss (no cross-staff context at all,
-since sampling_prob=1.0 disables scheduled sampling and no staff_context_emb is
-passed), "with" is the second pass built from that same first pass's pooled hidden
-state - the real comparison this experiment exists to produce, not just whether
-training loss went down.
+`evaluate`'s with/without ablation does NOT reuse the same first-pass hidden state
+for both numbers: "without" is a separate, always-fully-teacher-forced call
+(`model(**flat, sampling_prob=1.0)`, no cross-staff context, no exposure-bias
+mixing - a stable "no Stage C at all" baseline this fix has no reason to touch),
+"with" is the second pass built from `mixed_first_pass_hidden`'s pooled hidden state.
 """
 
 # flake8: noqa: T201
@@ -100,31 +104,86 @@ def masked_mean_pool(hidden: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return summed / denom
 
 
-def _pool_mask(flat: dict[str, torch.Tensor], hidden: torch.Tensor) -> torch.Tensor:
-    """The token mask aligned to `hidden`'s own sequence length - `ScoreDecoder.
-    forward` trims `mask` to `rhythms[:, :-1]`'s length internally (see its own
-    `if mask.shape[1] == rhythms.shape[1]` check) before producing `"hidden"`; this
-    mirrors that same trim here rather than re-deriving it from `hidden`'s shape
-    alone, since a shorter caller-supplied mask must be left untouched exactly as the
-    decoder itself would.
+def mixed_first_pass_hidden(
+    model: nn.Module, flat: dict[str, torch.Tensor], sampling_prob: float
+) -> torch.Tensor:
+    """DECODER_RHYTHM_ACCURACY_DESIGN.md §7.4's exposure-bias fix: the pooled hidden
+    state Stage C conditions on, computed the same way `ScoreDecoder.forward`'s own
+    built-in scheduled-sampling branch already does (`training/architecture/
+    transformer/decoder.py`, `if self.training and sampling_prob < 1.0`) - one
+    exploratory forward pass, greedy-argmax-sampled at every position, mixed
+    per-position with ground truth by `sampling_prob`, then a second real forward over
+    that mixed input. That branch only fires when `model.training` is True, and
+    `set_probe_mode` deliberately keeps the frozen core in `.eval()` (this module's
+    own docstring: dropout on an untrained core regularizes nothing, it just adds a
+    train/eval mismatch) - so this calls `model.decoder.net` directly instead, the
+    same way `ScoreDecoder.generate` already does, reproducing only the substitution
+    logic without ever touching the model's train/eval mode.
+
+    The real, measured problem this exists to fix: the old first pass was always
+    `sampling_prob=1.0` (fully teacher-forced - every position sees ground truth for
+    every earlier position, never its own prediction), so Stage C learned to pool
+    hidden states real inference never produces. `sampling_prob < 1.0` here closes
+    that gap at the cost of one extra forward pass, not a full autoregressive
+    step-by-step decode - the model already predicts every position in parallel
+    given a fixed input, so "one exploratory pass, sample, mix, one real pass" is
+    O(1) extra forwards, not O(L) or O(L^2).
     """
+    net = model.decoder.net
+    context = model.encoder(flat["inputs"])
+
+    rhythmsi = flat["rhythms"][:, :-1].clone()
+    pitchsi = flat["pitchs"][:, :-1].clone()
+    liftsi = flat["lifts"][:, :-1].clone()
+    articulationsi = flat["articulations"][:, :-1].clone()
+    slursi = flat["slurs"][:, :-1].clone()
+
     mask = flat["mask"]
     if mask.shape[1] == flat["rhythms"].shape[1]:
         mask = mask[:, :-1]
-    return mask.bool()
+    mask = mask.bool()
+
+    r_logits, p_logits, l_logits, _pos, a_logits, s_logits, _, _, _ = net(
+        rhythms=rhythmsi, pitchs=pitchsi, lifts=liftsi,
+        articulations=articulationsi, slurs=slursi,
+        context=context, mask=mask, cache=None, return_center_of_attention=False,
+    )
+    r_sample = r_logits[:, :-1].argmax(dim=-1)
+    p_sample = p_logits[:, :-1].argmax(dim=-1)
+    l_sample = l_logits[:, :-1].argmax(dim=-1)
+    a_sample = a_logits[:, :-1].argmax(dim=-1)
+    s_sample = s_logits[:, :-1].argmax(dim=-1)
+
+    # rand() > sampling_prob: sampling_prob=1.0 keeps ground truth everywhere (fully
+    # teacher-forced, matching the old first pass exactly); lower values substitute
+    # the model's own greedy prediction at that position more often.
+    mix_mask = (torch.rand(r_sample.shape, device=rhythmsi.device) > sampling_prob).long()
+    rhythmsi[:, 1:] = (1 - mix_mask) * rhythmsi[:, 1:] + mix_mask * r_sample
+    pitchsi[:, 1:] = (1 - mix_mask) * pitchsi[:, 1:] + mix_mask * p_sample
+    liftsi[:, 1:] = (1 - mix_mask) * liftsi[:, 1:] + mix_mask * l_sample
+    articulationsi[:, 1:] = (1 - mix_mask) * articulationsi[:, 1:] + mix_mask * a_sample
+    slursi[:, 1:] = (1 - mix_mask) * slursi[:, 1:] + mix_mask * s_sample
+
+    _, _, _, _, _, _, x, _, _ = net(
+        rhythms=rhythmsi, pitchs=pitchsi, lifts=liftsi,
+        articulations=articulationsi, slurs=slursi,
+        context=context, mask=mask, cache=None, return_center_of_attention=False,
+    )
+    return masked_mean_pool(x, mask)
 
 
 def two_pass_forward(
-    model: nn.Module, batch: dict[str, torch.Tensor], device: str
+    model: nn.Module, batch: dict[str, torch.Tensor], device: str, sampling_prob: float = 1.0
 ) -> dict[str, Any]:
     flat, sample_count, staff_count = flatten_staff_dim(batch)
     flat = {k: v.to(device) for k, v in flat.items()}
     staff_mask = batch["staff_mask"].to(device)
 
     with torch.no_grad():
+        # Still computed - its own "loss" is `evaluate`'s "without staff context"
+        # baseline, a fair "no Stage C at all" number this fix has no reason to touch.
         first_pass = model(**flat, sampling_prob=1.0)
-    hidden = first_pass["hidden"]
-    pooled = masked_mean_pool(hidden, _pool_mask(flat, hidden))
+        pooled = mixed_first_pass_hidden(model, flat, sampling_prob)
     pooled = pooled.view(sample_count, staff_count, -1)
 
     context = model.decoder.staff_context(pooled, staff_mask)
@@ -140,12 +199,13 @@ def train_epoch(
     optimizer: torch.optim.Optimizer,
     epoch: int,
     device: str = "cpu",
+    sampling_prob: float = 1.0,
 ) -> dict[str, Any]:
     set_probe_mode(model)
     total = 0.0
     count = 0
     for raw in batches:  # type: ignore[attr-defined]
-        outputs = two_pass_forward(model, raw, device)
+        outputs = two_pass_forward(model, raw, device, sampling_prob=sampling_prob)
         loss = outputs["second_pass"]["loss"]
 
         optimizer.zero_grad(set_to_none=True)
@@ -161,7 +221,9 @@ def train_epoch(
 
 
 @torch.no_grad()
-def evaluate(model: nn.Module, batches: object, device: str = "cpu") -> tuple[float, float]:
+def evaluate(
+    model: nn.Module, batches: object, device: str = "cpu", sampling_prob: float = 1.0
+) -> tuple[float, float]:
     """`(mean loss with staff context, mean loss without)` over the same held-out
     systems and the same first-pass hidden state either way - see this module's own
     docstring for why this ablation, not just the training-loss trend, is what
@@ -172,7 +234,7 @@ def evaluate(model: nn.Module, batches: object, device: str = "cpu") -> tuple[fl
     total_without = 0.0
     count = 0
     for raw in batches:  # type: ignore[attr-defined]
-        outputs = two_pass_forward(model, raw, device)
+        outputs = two_pass_forward(model, raw, device, sampling_prob=sampling_prob)
         total_without += float(outputs["first_pass"]["loss"].item())
         total_with += float(outputs["second_pass"]["loss"].item())
         count += 1
@@ -227,6 +289,12 @@ def main() -> None:
     parser.add_argument("--min-staves", type=int, default=2,
                          help="Systems with fewer real parts than this are excluded.")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--sampling-prob", type=float, default=0.5,
+        help="Probability the first pass keeps ground truth per-position rather than "
+        "its own greedy prediction (1.0 = fully teacher-forced, the old behavior; "
+        "lower closes the exposure-bias gap - see mixed_first_pass_hidden's docstring).",
+    )
     args = parser.parse_args()
 
     from homr.transformer.configs import Config
@@ -257,9 +325,14 @@ def main() -> None:
     optimizer = torch.optim.Adam(staff_context_parameters(model), lr=args.lr)
     history = []
     for epoch in range(1, args.epochs + 1):
-        report = train_epoch(model, batches, optimizer, epoch, device=args.device)
+        report = train_epoch(
+            model, batches, optimizer, epoch, device=args.device,
+            sampling_prob=args.sampling_prob,
+        )
         if valid_batches is not None:
-            with_context, without_context = evaluate(model, valid_batches, device=args.device)
+            with_context, without_context = evaluate(
+                model, valid_batches, device=args.device, sampling_prob=args.sampling_prob
+            )
             report["valid_loss_with_staff_context"] = with_context
             report["valid_loss_without_staff_context"] = without_context
             print(

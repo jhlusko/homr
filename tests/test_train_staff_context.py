@@ -7,6 +7,7 @@ from training.transformer.train_staff_context import (
     evaluate,
     flatten_staff_dim,
     masked_mean_pool,
+    mixed_first_pass_hidden,
     set_probe_mode,
     staff_context_parameters,
     train_epoch,
@@ -27,31 +28,83 @@ class _FakeStaffContext(nn.Module):
         return self.gate * self.linear(staff_hidden) * mask.unsqueeze(-1).float()
 
 
+class _FakeNet(nn.Module):
+    """Stand-in for `ScoreTransformerWrapper`: shares one `nn.Embedding` +
+    `core` Linear so `_FakeModel.forward` (still the old teacher-forced-only path)
+    and `mixed_first_pass_hidden` (which calls this directly, exactly like the real
+    `model.decoder.net`) compute the same thing given the same rhythms. `context` is
+    accepted, unused - the real net's `x` shape follows the query (rhythms) length,
+    not context's, and this fake only needs to be shape-consistent, not semantically
+    faithful to cross-attention.
+    """
+
+    def __init__(self, embed: nn.Embedding, core: nn.Linear, to_vocab: nn.Linear) -> None:
+        super().__init__()
+        self.embed = embed
+        self.core = core
+        self.to_vocab = to_vocab
+
+    def forward(
+        self,
+        rhythms: torch.Tensor,
+        pitchs: torch.Tensor,
+        lifts: torch.Tensor,
+        articulations: torch.Tensor,
+        slurs: torch.Tensor,
+        context: torch.Tensor | None = None,
+        mask: torch.Tensor | None = None,
+        cache: object = None,
+        return_center_of_attention: bool = False,
+        **kwargs: object,
+    ) -> tuple:
+        x = self.core(self.embed(rhythms))
+        logits = self.to_vocab(x)
+        return (logits, logits, logits, logits, logits, logits, x, None, None)
+
+
+class _FakeEncoder(nn.Module):
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return inputs
+
+
 class _FakeDecoder(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.staff_context = _FakeStaffContext()
         self.core = nn.Linear(4, 4)
+        self.embed = nn.Embedding(5, 4)
+        self.to_vocab = nn.Linear(4, 5)
+        self.net = _FakeNet(self.embed, self.core, self.to_vocab)
 
 
 class _FakeModel(nn.Module):
     """A stand-in with the shape `two_pass_forward` depends on: a `"hidden"` output
     trimmed the same way the real decoder trims `mask` to `rhythms[:, :-1]`'s length,
-    and a `staff_context_emb` kwarg that additively biases it before the loss."""
+    a `staff_context_emb` kwarg that additively biases it before the loss, and an
+    `encoder`/`decoder.net` pair `mixed_first_pass_hidden` calls directly - built from
+    the same `embed`/`core` the old teacher-forced-only forward below uses, so
+    `test_zero_gate_makes_the_two_passes_identical` still holds regardless of how the
+    (now genuinely different) first pass computes its pooled hidden state.
+    """
 
     def __init__(self) -> None:
         super().__init__()
         self.decoder = _FakeDecoder()
+        self.encoder = _FakeEncoder()
 
     def forward(
         self,
-        hidden_in: torch.Tensor,
+        inputs: torch.Tensor,
         rhythms: torch.Tensor,
+        pitchs: torch.Tensor,
+        lifts: torch.Tensor,
+        articulations: torch.Tensor,
+        slurs: torch.Tensor,
         mask: torch.Tensor,
         sampling_prob: float = 1.0,
         staff_context_emb: torch.Tensor | None = None,
     ) -> dict:
-        hidden = self.decoder.core(hidden_in[:, :-1])
+        hidden = self.decoder.core(self.decoder.embed(rhythms))[:, :-1]
         if staff_context_emb is not None:
             hidden = hidden + staff_context_emb.unsqueeze(1)
         loss = (hidden**2).mean()
@@ -62,9 +115,14 @@ def _batch(staff_count: int = 3, real_staves: int = 2, seq_len: int = 5) -> dict
     staff_mask = torch.tensor(
         [[True] * real_staves + [False] * (staff_count - real_staves)]
     )
+    token_field = torch.zeros(1, staff_count, seq_len, dtype=torch.long)
     return {
-        "hidden_in": torch.randn(1, staff_count, seq_len, 4),
-        "rhythms": torch.zeros(1, staff_count, seq_len, dtype=torch.long),
+        "inputs": torch.randn(1, staff_count, seq_len, 4),
+        "rhythms": token_field.clone(),
+        "pitchs": token_field.clone(),
+        "lifts": token_field.clone(),
+        "articulations": token_field.clone(),
+        "slurs": token_field.clone(),
         "mask": torch.ones(1, staff_count, seq_len, dtype=torch.bool),
         "staff_mask": staff_mask,
     }
@@ -78,7 +136,7 @@ class TestFlattenStaffDim(unittest.TestCase):
 
         self.assertEqual(sample_count, 1)
         self.assertEqual(staff_count, 3)
-        self.assertEqual(flat["hidden_in"].shape[0], 3)
+        self.assertEqual(flat["inputs"].shape[0], 3)
         self.assertNotIn("staff_mask", flat)
 
 
@@ -175,6 +233,51 @@ class TestTwoPassForward(unittest.TestCase):
         self.assertFalse(
             torch.equal(outputs["first_pass"]["loss"], outputs["second_pass"]["loss"])
         )
+
+
+class TestMixedFirstPassHidden(unittest.TestCase):
+    def test_sampling_prob_one_is_fully_teacher_forced_deterministically(self) -> None:
+        # rand() > 1.0 is never true, so mix_mask is always 0 regardless of the draw -
+        # two calls with different global RNG state must still agree exactly.
+        model = _FakeModel()
+        model.eval()
+        flat, _, _ = flatten_staff_dim(_batch())
+
+        torch.manual_seed(0)
+        first = mixed_first_pass_hidden(model, flat, sampling_prob=1.0)
+        torch.manual_seed(123)
+        second = mixed_first_pass_hidden(model, flat, sampling_prob=1.0)
+
+        self.assertTrue(torch.equal(first, second))
+
+    def test_lower_sampling_prob_changes_the_pooled_hidden_state(self) -> None:
+        # This is the actual exposure-bias fix: sampling_prob < 1.0 must substitute
+        # the model's own greedy prediction into the first pass's input somewhere,
+        # not silently reproduce the fully teacher-forced result.
+        model = _FakeModel()
+        model.eval()
+        # Force the fake net's greedy prediction off of token 0 (ground truth's own
+        # value in every `_batch()` position) deterministically, so the test does not
+        # depend on a random init happening to already predict 0 by chance.
+        with torch.no_grad():
+            model.decoder.to_vocab.bias.zero_()
+            model.decoder.to_vocab.bias[1] = 10.0
+        flat, _, _ = flatten_staff_dim(_batch())
+
+        fully_teacher_forced = mixed_first_pass_hidden(model, flat, sampling_prob=1.0)
+        fully_substituted = mixed_first_pass_hidden(model, flat, sampling_prob=0.0)
+
+        self.assertFalse(torch.allclose(fully_teacher_forced, fully_substituted))
+
+    def test_does_not_mutate_the_caller_s_batch(self) -> None:
+        model = _FakeModel()
+        model.eval()
+        flat, _, _ = flatten_staff_dim(_batch())
+        original_rhythms = flat["rhythms"].clone()
+
+        mixed_first_pass_hidden(model, flat, sampling_prob=0.0)
+
+        self.assertTrue(torch.equal(flat["rhythms"], original_rhythms))
 
 
 class TestTrainEpoch(unittest.TestCase):
