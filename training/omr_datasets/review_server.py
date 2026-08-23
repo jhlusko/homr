@@ -124,17 +124,21 @@ a {{ color: #9cc0ff; }}
   <button id="next">next page &rarr;</button>
   <button id="del">delete selected box</button>
   <button id="reset">reset to detected</button>
-  <button class="primary" id="save">save &amp; next</button>
+  <button class="primary" id="save">save this page &amp; next</button>
   <span id="status"></span>
 </div>
 <div id="canvas-wrap"><canvas id="c"></canvas></div>
 <p style="opacity:0.7; max-width:640px">
 Drag a box's body to move it, a corner to resize it. Drag on empty space to draw a
 new box. Click a box to select it (yellow), then "delete selected box" to remove it.
-"Save &amp; next" writes this page's boxes and advances.
+"Save this page &amp; next" saves only the page you're looking at, then advances -
+prev/next page never saves for you, so a page you edit but don't explicitly save is
+left as detected. On the last page of a score it moves on to the next score in the
+list instead.
 </p>
 <script>
 const scoreId = {score_id_json};
+const nextScoreId = {next_score_id_json};
 const pages = {pages_json};
 let pageIndex = 0;
 let boxes = [];
@@ -263,11 +267,15 @@ document.getElementById('save').onclick = async () => {{
     return;
   }}
   p.status = 'confirmed';
+  p.systems = normalized;  // keep in-memory state in sync - prev/next re-reads this
   if (pageIndex < pages.length - 1) {{
     pageIndex++;
     loadPage();
+  }} else if (nextScoreId) {{
+    document.getElementById('status').textContent = 'saved. moving to next score...';
+    setTimeout(() => {{ window.location.href = '/score/' + nextScoreId; }}, 500);
   }} else {{
-    document.getElementById('status').textContent = 'saved. last page of this score - back to list...';
+    document.getElementById('status').textContent = 'saved. last score - back to list...';
     setTimeout(() => {{ window.location.href = '/'; }}, 700);
   }}
 }};
@@ -366,11 +374,18 @@ class Handler(BaseHTTPRequestHandler):
         if not pages:
             self._send_html(f"no detected pages for {score_id}", status=404)
             return
+        all_ids = self.state.score_ids()
+        next_score_id = None
+        if score_id in all_ids:
+            position = all_ids.index(score_id)
+            if position + 1 < len(all_ids):
+                next_score_id = all_ids[position + 1]
         self._send_html(
             REVIEW_TEMPLATE.format(
                 score_id=score_id,
                 score_id_json=json.dumps(score_id),
                 pages_json=json.dumps(pages),
+                next_score_id_json=json.dumps(next_score_id),
             )
         )
 
