@@ -258,9 +258,18 @@ document.getElementById('save').onclick = async () => {{
     method: 'POST', headers: {{'Content-Type': 'application/json'}},
     body: JSON.stringify({{systems: normalized, status: 'confirmed'}}),
   }});
-  document.getElementById('status').textContent = res.ok ? 'saved.' : 'save failed.';
+  if (!res.ok) {{
+    document.getElementById('status').textContent = 'save failed.';
+    return;
+  }}
   p.status = 'confirmed';
-  if (pageIndex < pages.length - 1) {{ pageIndex++; loadPage(); }}
+  if (pageIndex < pages.length - 1) {{
+    pageIndex++;
+    loadPage();
+  }} else {{
+    document.getElementById('status').textContent = 'saved. last page of this score - back to list...';
+    setTimeout(() => {{ window.location.href = '/'; }}, 700);
+  }}
 }};
 
 loadPage();
