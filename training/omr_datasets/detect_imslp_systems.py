@@ -11,17 +11,22 @@ per-page), correct any page-wide skew in place (`homr.deskew.deskew_page_file` -
 scans are rarely perfectly level, and every box downstream of this script is a plain
 axis-aligned rectangle, so a tilted page makes every one of them a poor fit), then run
 `homr.main.detect_staffs_in_image` - the same staff-and-grand-staff detector homr's
-normal OMR pipeline runs on every image. A `MultiStaff` with 2+ staves is
-a piano grand staff; that box is what OLiMPiC's own human annotators drew too (27.39
-found their published boxes cover only the piano, median 41% of the inter-system gap -
-see `olimpic_repair.py`'s docstring), so this keeps to that same convention rather than
-inventing a wider one, and leaves recovering the voice+lyrics region to the *existing*
-`olimpic_repair.py --systems ... --out ... --pngs ...` repair step, unchanged, run as a
-second pass over this script's own output.
+normal OMR pipeline runs on every image - followed by `homr.staff_parsing._plan_systems`,
+the *real* system-boundary logic homr's own live pipeline trusts (geometric spacing,
+corroborated but not dictated by the brace/bracket detector), not a naive "any 2+-staff
+brace group is a system" filter this module used at first. That first version's naive
+filter genuinely merged and undercounted systems on real IMSLP pages (found by rendering
+raw vs. repaired boxes side by side, not by trusting the count alone) - `_plan_systems`
+measurably does not, per `benchmark_system_detection.py`'s own 90.6%-exact-match result
+against OLiMPiC's 121-score ground truth.
 
-Single-staff `MultiStaff` groups (the voice line's own staff, still individually
-detected) are not used as system boxes here - the repair step recovers that space
-geometrically, without needing the voice staff's own detection to be reliable.
+Each `_plan_systems` system's *own* box (the union of whatever staves it actually
+contains - usually the piano pair, sometimes the whole voice+piano row if the page's own
+geometry merged them) is what gets written here - not filtered back down to "2+ staves
+only" the way the naive version did, since `_plan_systems` already decided what belongs
+together. `olimpic_repair.py`'s upward extension still runs as a second pass afterward
+and still helps on the common piano-only case; it is a no-op (nothing left to recover)
+on the rarer case where `_plan_systems` already returned the whole system.
 """
 
 # flake8: noqa: T201
@@ -38,10 +43,7 @@ import yaml
 from homr.autocrop import autocrop
 from homr.deskew import deskew_page_file
 from homr.main import ProcessingConfig, detect_staffs_in_image
-
-#: A grand staff (piano); a lone staff (the voice line) is not treated as a system box
-#: here - see this module's own docstring for why.
-MIN_STAVES_FOR_SYSTEM_BOX = 2
+from homr.staff_parsing import _plan_systems
 
 DEFAULT_CONFIG = ProcessingConfig(
     enable_debug=False,
@@ -91,23 +93,44 @@ def rasterize_pages(pdf_path: Path, out_dir: Path, dpi: int = 300) -> list[Path]
 
 def detect_systems_on_page(page_path: Path) -> tuple[int, int, list[DetectedSystem]]:
     """`(width, height, system boxes)` for one page image - boxes sorted top to bottom,
-    grand-staff groups only (see `MIN_STAVES_FOR_SYSTEM_BOX`)."""
+    one per `_plan_systems`-determined system (see this module's own docstring for why
+    that, not a bare staff-count filter on the brace/bracket detector's raw output).
+
+    `detect_staffs_in_image` runs detection on `homr.resize.resize_image`'s own fixed-
+    1920px-wide copy of the page (needed by the model, nothing to do with this module),
+    not the file actually saved to disk - a real, serious bug found via the box-overlap
+    benchmark reading close to 0% IoU against ground truth even on pages with an
+    otherwise-correct system count: every box this function returned was in that resized
+    coordinate space, silently mismatched against the real page image every downstream
+    consumer (the yaml, the repair step, the review website) actually shows. Every box
+    is rescaled back to the real saved file's own pixel dimensions before returning.
+    """
     multi_staffs, preprocessed, _debug, _title_future, _n_staffs = detect_staffs_in_image(
         str(page_path), DEFAULT_CONFIG
     )
-    height, width = preprocessed.shape[:2]
+    preprocessed_height, preprocessed_width = preprocessed.shape[:2]
+    saved_image = cv2.imread(str(page_path))
+    saved_height, saved_width = saved_image.shape[:2]
+    scale_x = saved_width / preprocessed_width
+    scale_y = saved_height / preprocessed_height
+
+    plan = _plan_systems(multi_staffs)
     systems = []
-    for group in multi_staffs:
-        if len(group.staffs) < MIN_STAVES_FOR_SYSTEM_BOX:
-            continue
+    for group in plan.systems:
         xs = [s.min_x for s in group.staffs] + [s.max_x for s in group.staffs]
         ys = [s.min_y for s in group.staffs] + [s.max_y for s in group.staffs]
-        left, top = int(min(xs)), int(min(ys))
+        left, top = min(xs), min(ys)
+        right, bottom = max(xs), max(ys)
         systems.append(
-            DetectedSystem(left, top, int(max(xs)) - left, int(max(ys)) - top)
+            DetectedSystem(
+                left=int(round(left * scale_x)),
+                top=int(round(top * scale_y)),
+                width=int(round((right - left) * scale_x)),
+                height=int(round((bottom - top) * scale_y)),
+            )
         )
     systems.sort(key=lambda box: box.top)
-    return width, height, systems
+    return saved_width, saved_height, systems
 
 
 def detect_score(pdf_path: Path, pngs_root: Path) -> dict:
