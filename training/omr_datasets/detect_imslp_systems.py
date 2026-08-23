@@ -40,9 +40,11 @@ import numpy as np
 import pypdfium2 as pdfium
 import yaml
 
+from homr import constants
 from homr.autocrop import autocrop
 from homr.deskew import deskew_page_file
 from homr.main import ProcessingConfig, detect_staffs_in_image
+from homr.model import MultiStaff
 from homr.staff_parsing import _plan_systems
 
 DEFAULT_CONFIG = ProcessingConfig(
@@ -91,6 +93,40 @@ def rasterize_pages(pdf_path: Path, out_dir: Path, dpi: int = 300) -> list[Path]
     return paths
 
 
+#: General safety margin (in staff unit sizes) on every edge, on top of the ledger-line
+#: margin below - `Staff.min_x`/`max_x` are where the line-detector happened to place its
+#: first/last grid point, not necessarily where a barline, clef, or key signature
+#: actually ends; found from real review feedback (boxes cutting off barlines) after the
+#: ledger-line-specific fix above still left the plain edges too tight.
+GENERAL_PADDING_UNITS = 1.0
+
+
+def _group_bounds(group: MultiStaff) -> tuple[float, float, float, float]:
+    """`(left, top, right, bottom)` for one `_plan_systems` system group, in the
+    detector's own (pre-rescale) coordinate space.
+
+    `Staff.min_y`/`max_y` bound only the 5 staff lines themselves, not a note's ledger
+    lines above/below them - `homr.model.Staff.is_on_staff_zone` already has to solve
+    exactly this same problem (deciding whether a symbol still "belongs" to a staff
+    despite sitting off the lines) via the same `max_number_of_ledger_lines *
+    average_unit_size` margin, reused here rather than inventing a second ledger-line
+    tolerance. Found from real review feedback: boxes were consistently cutting off
+    notes with ledger lines below the staff. `GENERAL_PADDING_UNITS` above adds a
+    smaller margin on all four edges for content (barlines especially) that sits right
+    at a staff's own detected horizontal extent.
+    """
+    xs = []
+    ys = []
+    for s in group.staffs:
+        padding = GENERAL_PADDING_UNITS * s.average_unit_size
+        ledger_margin = constants.max_number_of_ledger_lines * s.average_unit_size
+        xs.append(s.min_x - padding)
+        xs.append(s.max_x + padding)
+        ys.append(s.min_y - ledger_margin - padding)
+        ys.append(s.max_y + ledger_margin + padding)
+    return min(xs), min(ys), max(xs), max(ys)
+
+
 def detect_systems_on_page(page_path: Path) -> tuple[int, int, list[DetectedSystem]]:
     """`(width, height, system boxes)` for one page image - boxes sorted top to bottom,
     one per `_plan_systems`-determined system (see this module's own docstring for why
@@ -117,10 +153,7 @@ def detect_systems_on_page(page_path: Path) -> tuple[int, int, list[DetectedSyst
     plan = _plan_systems(multi_staffs)
     systems = []
     for group in plan.systems:
-        xs = [s.min_x for s in group.staffs] + [s.max_x for s in group.staffs]
-        ys = [s.min_y for s in group.staffs] + [s.max_y for s in group.staffs]
-        left, top = min(xs), min(ys)
-        right, bottom = max(xs), max(ys)
+        left, top, right, bottom = _group_bounds(group)
         systems.append(
             DetectedSystem(
                 left=int(round(left * scale_x)),
