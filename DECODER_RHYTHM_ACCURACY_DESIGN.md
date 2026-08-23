@@ -1325,13 +1325,56 @@ simplified, and re-quantized through the project's own existing onnx pipeline,
 confirmed working end-to-end on a real 4-staff string quartet page via the actual
 CLI, valid MusicXML written.
 
-The real 200-page Stage A/B benchmark (`benchmark_stage_ab.py`, patched to accept
-pass-through `homr.main` args) is running now, on vs. off, using the exact same
-`benchmark_sample.txt` phase20/phase22/Phase-1-rerank's own historical numbers
-came from - the actual apples-to-apples comparison this section has been building
-toward. Running overnight alongside the IMSLP corpus re-detection rebuild, all
-three sharing the one GPU - slower than any one alone, but time was available and
-none of the three block each other. Result not in yet as of this writing.
+**The real 200-page Stage A/B benchmark result is in, and it is negative - Stage C
+makes every finding category worse, not better.** Same `benchmark_sample.txt`
+phase20/phase22/Phase-1-rerank's own historical numbers came from, run twice
+(`--enable-staff-context` off vs. on, `benchmark_stage_ab.py` patched to accept
+pass-through `homr.main` args), 199/200 pages OK both times (the same one page
+crashed both runs, unrelated to Stage C):
+
+| | baseline (off) | Stage C (on) | delta |
+|---|---:|---:|---:|
+| pages with ≥1 finding | 66.8% | 86.4% | **+29.3%** |
+| pages with ≥1 proposal | 35.2% | 57.8% | **+64.2%** |
+| barline_position_mismatch | 240 | 467 | **+94.6%** |
+| measure_count_mismatch | 27 | 73 | **+170.4%** |
+| measure_duration_mismatch | 105 | 160 | **+52.4%** |
+| time_signature_mismatch | 13 | 16 | +23.1% |
+| key_signature_mismatch | 44 | 51 | +15.9% |
+| motif_articulation_mismatch | 126 | 129 | +2.4% |
+| page_staff_count_mismatch | 9 | 9 | +0.0% |
+
+Every category moved the wrong way; none improved. This is exactly the kind of
+result phase21 (§8) exists to warn about: a clean training-time signal (5/5
+epochs, growing validation-loss delta, a real smoke-tested content correction on
+one page) that does not survive the real measurement. The earlier per-page smoke
+tests were real and not fabricated - they just were not the right test.
+
+**Most likely root cause, found by reading `train_staff_context.py`'s own two-pass
+mechanism against `ScoreTransformerWrapper.forward`'s actual branching, not
+assumed**: `two_pass_forward` always calls with `sampling_prob=1.0`, and
+`forward`'s own scheduled-sampling branch is gated on `self.training and
+sampling_prob < 1.0` - `1.0` never satisfies that, so it is skipped every time,
+in *both* of `two_pass_forward`'s passes. That means the "first pass" hidden
+states `StaffContextTransformer` was trained to pool and attend over are always
+computed from **teacher-forced ground-truth tokens**, never from a genuine
+autoregressive greedy decode. Real inference's first pass (both in
+`homr/staff_context_decode.py` and the `parse_staffs` wiring) has no ground truth
+at all - a real, compounding, error-prone greedy decode. `StaffContextTransformer`
+therefore learned to condition on a first pass systematically cleaner than
+anything it is ever actually given at inference time - textbook exposure bias,
+and a plausible, well-grounded explanation for why a mechanism that measurably
+improved teacher-forced validation loss makes real greedy-decoded output worse.
+
+**Consequence**: `enable_staff_context` stays off by default (already true) and
+should not be turned on for real use as currently trained. The natural fix, not
+yet attempted: retrain with the first pass genuinely greedy/autoregressive
+(scheduled sampling, `sampling_prob < 1.0`, or an explicit non-teacher-forced
+first decode) so `StaffContextTransformer` learns from the same distribution of
+hidden states it will actually see in production, rather than from ground-truth-
+conditioned ones. Until that retraining happens and is itself benchmarked the
+same way, Stage C is a built, wired, and now *disproven-as-trained* mechanism -
+real, valuable negative knowledge, not a dead end for the underlying idea.
 
 ## 8. Why not several tempting shortcuts
 
