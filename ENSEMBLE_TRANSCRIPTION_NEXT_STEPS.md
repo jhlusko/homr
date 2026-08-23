@@ -1941,6 +1941,31 @@ system's box grew from ~250px to 667px tall on a real page).
 forwarding (`ssh -p 19374 -L 8791:localhost:8791 root@175.155.64.164`, then
 `http://localhost:8791`) rather than exposing it publicly, since these are
 personal IMSLP scans. All 353 scores listed with per-score page-review progress.
+Two real review-server bugs found and fixed once actually used: a doubled
+score-id prefix in the image URL (every image 404'd), and broken new-box drag
+logic that corrupted the box list with a stray null entry (crashed the canvas
+on any attempt to draw a new box).
+
+**A real detection-process bug found and fixed by looking at real output, not
+just counts**: rendering raw vs. repaired boxes side by side on an actual page
+showed `olimpic_repair.py`'s `trim_to_gutter` giving literally zero voice/lyrics
+recovery for half the systems on one test page (top completely unchanged) -
+traced to its own documented fallback ("falls back to the box it was given when
+no clear band exists"), which fires whenever no perfectly blank full-width
+8-row band exists anywhere in the search window. That is common on denser IMSLP
+engravings than OLiMPiC's own scans (a stem, slur, or dot can sit somewhere
+across the width for the whole gap), not a rare edge case. Fixed to fall back to
+the geometric ceiling instead of the unmodified box - the same safe bound
+`extend_upward` already trusts without a page image at all - and re-ran the
+repair over all 353 documents: coverage went from 74% before repair to 94%
+after (OLiMPiC's own reference range for a whole system is ~80-90%; the piano
+alone is ~41%). Confirmed visually on the same test page: every system now
+gets real recovery, not zero.
+
+Separately (not the same bug): one system on that same test page has no box at
+all, before or after repair - the raw staff detector never found it in the
+first place. That is exactly the gap the review tool's own "draw a new box on
+empty space" affordance exists for, not something the repair step can fix.
 
 **Not yet done**: actually reviewing/correcting the detected boxes through the
 website - a human task, not a next automated step.
