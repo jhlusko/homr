@@ -211,11 +211,12 @@ canvas.addEventListener('mousemove', e => {{
   const s = scale();
   const dx = (x - drag.startX) / s, dy = (y - drag.startY) / s;
   if (drag.mode === 'new') {{
+    if (drag.newIndex === undefined) {{
+      drag.newIndex = boxes.length;
+      boxes.push({{left: 0, top: 0, width: 0, height: 0}});
+    }}
     const left = Math.min(drag.startX, x) / s, top = Math.min(drag.startY, y) / s;
     const width = Math.abs(x - drag.startX) / s, height = Math.abs(y - drag.startY) / s;
-    boxes[boxes.length] = boxes[boxes.length] && drag.newIndex !== undefined
-      ? boxes[drag.newIndex] : null;
-    if (drag.newIndex === undefined) {{ drag.newIndex = boxes.length; boxes.push({{}}); }}
     boxes[drag.newIndex] = {{left, top, width, height}};
     selected = drag.newIndex;
   }} else if (drag.mode === 'move') {{
@@ -298,6 +299,9 @@ class Handler(BaseHTTPRequestHandler):
             self._score_page(path.removeprefix("/score/"))
         elif path.startswith("/image/"):
             self._image(path.removeprefix("/image/"))
+        elif path == "/favicon.ico":
+            self.send_response(204)
+            self.end_headers()
         else:
             self._send_html("not found", status=404)
 
