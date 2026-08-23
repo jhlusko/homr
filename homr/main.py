@@ -198,6 +198,12 @@ class ProcessingConfig:
     # ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md §3/§4. None is the ordinary, fully-supported
     # case: every check that does not need a profile still runs.
     score_profile: ScoreProfile | None = None
+    # §4/§7.4 Stage C (--enable-staff-context/--staff-context-weights). Off by default,
+    # same reasoning as enable_phase1_rerank's own default-on-ness is the opposite way
+    # around here: this has not yet been measured against the real Stage A/B benchmark
+    # the way Phase 1 has, so it stays opt-in until it is.
+    enable_staff_context: bool = False
+    staff_context_weights: str | None = None
 
 
 def process_image(
@@ -243,6 +249,8 @@ def process_image(
             selected_staff=config.selected_staff,
             config=transformer_config,
             score_profile=config.score_profile,
+            enable_staff_context=config.enable_staff_context,
+            staff_context_weights=config.staff_context_weights,
         )
 
         if not config.read_staff_positions:
@@ -459,6 +467,21 @@ def main() -> None:
         + "(design §7). Optional: layout and cross-staff checks that do not need it "
         + "still run without one.",
     )
+    parser.add_argument(
+        "--enable-staff-context",
+        action="store_true",
+        help="§4/§7.4 Stage C: decode every system's staves twice, the second time "
+        + "conditioned on a trained cross-staff context vector. Off by default - not "
+        + "yet measured against the real Stage A/B benchmark. Requires "
+        + "--staff-context-weights.",
+    )
+    parser.add_argument(
+        "--staff-context-weights",
+        type=str,
+        help="Path to a train_staff_context.py-produced checkpoint (e.g. this "
+        + "project's own phase24-staff-context-weights release), required when "
+        + "--enable-staff-context is set.",
+    )
 
     args = parser.parse_args()
 
@@ -497,6 +520,8 @@ def main() -> None:
         coreml_encoder,
         not args.no_title,
         score_profile,
+        args.enable_staff_context,
+        args.staff_context_weights,
     )
 
     xml_generator_args = XmlGeneratorArguments(
