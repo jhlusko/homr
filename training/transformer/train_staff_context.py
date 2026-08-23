@@ -39,6 +39,7 @@ mixing - a stable "no Stage C at all" baseline this fix has no reason to touch),
 
 import argparse
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -200,10 +201,16 @@ def train_epoch(
     epoch: int,
     device: str = "cpu",
     sampling_prob: float = 1.0,
+    progress_every: int = 0,
 ) -> dict[str, Any]:
     set_probe_mode(model)
     total = 0.0
     count = 0
+    # `len(batches)` needs a Sized loader (a plain DataLoader has one; some test
+    # doubles pass a bare list or generator, which don't) - the print degrades to
+    # "batch N" with no "/total" or ETA rather than crashing when it's unavailable.
+    total_batches = len(batches) if hasattr(batches, "__len__") else None  # type: ignore[arg-type]
+    start = time.monotonic()
     for raw in batches:  # type: ignore[attr-defined]
         outputs = two_pass_forward(model, raw, device, sampling_prob=sampling_prob)
         loss = outputs["second_pass"]["loss"]
@@ -214,6 +221,20 @@ def train_epoch(
 
         total += float(loss.item())
         count += 1
+
+        if progress_every and count % progress_every == 0:
+            elapsed = time.monotonic() - start
+            rate = count / elapsed if elapsed > 0 else 0.0
+            of_total = f"/{total_batches}" if total_batches else ""
+            eta = (
+                f", eta {(total_batches - count) / rate:.0f}s"
+                if total_batches and rate > 0
+                else ""
+            )
+            print(
+                f"  epoch {epoch}: batch {count}{of_total} "
+                f"(mean loss so far {total / count:.4f}, {rate:.2f} batch/s{eta})"
+            )
 
     mean = total / max(count, 1)
     print(f"epoch {epoch}: mean loss {mean:.4f} over {count} system batch(es)")
@@ -295,6 +316,10 @@ def main() -> None:
         "its own greedy prediction (1.0 = fully teacher-forced, the old behavior; "
         "lower closes the exposure-bias gap - see mixed_first_pass_hidden's docstring).",
     )
+    parser.add_argument(
+        "--progress-every", type=int, default=50,
+        help="Print a mid-epoch progress line every N batches (0 disables it).",
+    )
     args = parser.parse_args()
 
     from homr.transformer.configs import Config
@@ -327,7 +352,7 @@ def main() -> None:
     for epoch in range(1, args.epochs + 1):
         report = train_epoch(
             model, batches, optimizer, epoch, device=args.device,
-            sampling_prob=args.sampling_prob,
+            sampling_prob=args.sampling_prob, progress_every=args.progress_every,
         )
         if valid_batches is not None:
             with_context, without_context = evaluate(

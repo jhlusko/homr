@@ -115,6 +115,10 @@ button.primary {{ background: #2456a8; border-color: #2456a8; }}
 canvas {{ border: 1px solid #555; cursor: crosshair; }}
 #status {{ opacity: 0.8; }}
 a {{ color: #9cc0ff; }}
+.spinner {{ display: inline-block; width: 1em; height: 1em; border-radius: 50%;
+  border: 2px solid #666; border-top-color: #eee; vertical-align: middle;
+  animation: spin 0.7s linear infinite; }}
+@keyframes spin {{ to {{ transform: rotate(360deg); }} }}
 </style></head>
 <body>
 <p><a href="/">&larr; all scores</a></p>
@@ -125,6 +129,7 @@ a {{ color: #9cc0ff; }}
   <button id="del">delete selected box</button>
   <button id="reset">reset to detected</button>
   <button class="primary" id="save">save this page &amp; next</button>
+  <span id="spinner" class="spinner" style="display:none"></span>
   <span id="status"></span>
 </div>
 <div id="canvas-wrap"><canvas id="c"></canvas></div>
@@ -139,6 +144,8 @@ list instead.
 <script>
 const scoreId = {score_id_json};
 const nextScoreId = {next_score_id_json};
+const scorePosition = {score_position_json};
+const scoreTotal = {score_total_json};
 const pages = {pages_json};
 let pageIndex = 0;
 let boxes = [];
@@ -155,7 +162,8 @@ function currentPage() {{ return pages[pageIndex]; }}
 function loadPage() {{
   const p = currentPage();
   document.getElementById('pageLabel').textContent =
-    'page ' + p.number + '  (' + (pageIndex + 1) + '/' + pages.length + ')  [' + p.status + ']';
+    'score ' + scorePosition + '/' + scoreTotal + '  page ' + p.number + '  (' +
+    (pageIndex + 1) + '/' + pages.length + ')  [' + p.status + ']';
   document.getElementById('status').textContent = '';
   boxes = p.systems.map(s => ({{...s}}));
   selected = null;
@@ -251,6 +259,8 @@ document.getElementById('next').onclick = () => {{
 }};
 
 document.getElementById('save').onclick = async () => {{
+  const saveButton = document.getElementById('save');
+  const spinner = document.getElementById('spinner');
   const p = currentPage();
   const normalized = boxes
     .filter(b => b.width > 2 && b.height > 2)
@@ -258,19 +268,39 @@ document.getElementById('save').onclick = async () => {{
       left: Math.round(b.left), top: Math.round(b.top),
       width: Math.round(b.width), height: Math.round(b.height),
     }}));
-  const res = await fetch('/api/score/' + scoreId + '/page/' + p.number, {{
-    method: 'POST', headers: {{'Content-Type': 'application/json'}},
-    body: JSON.stringify({{systems: normalized, status: 'confirmed'}}),
-  }});
+  saveButton.disabled = true;
+  spinner.style.display = 'inline-block';
+  document.getElementById('status').textContent = 'saving...';
+  let res;
+  try {{
+    res = await fetch('/api/score/' + scoreId + '/page/' + p.number, {{
+      method: 'POST', headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{systems: normalized, status: 'confirmed'}}),
+    }});
+  }} catch (e) {{
+    spinner.style.display = 'none';
+    saveButton.disabled = false;
+    document.getElementById('status').textContent = 'save failed: ' + e;
+    return;
+  }}
   if (!res.ok) {{
+    spinner.style.display = 'none';
+    saveButton.disabled = false;
     document.getElementById('status').textContent = 'save failed.';
     return;
   }}
   p.status = 'confirmed';
   p.systems = normalized;  // keep in-memory state in sync - prev/next re-reads this
+  // The spinner stays visible through the page/score transition below - loadPage's
+  // own image fetch (or the navigation itself) is the rest of what "saving" is
+  // waiting on from the user's point of view, not just the POST above.
   if (pageIndex < pages.length - 1) {{
     pageIndex++;
     loadPage();
+    img.addEventListener('load', () => {{
+      spinner.style.display = 'none';
+      saveButton.disabled = false;
+    }}, {{once: true}});
   }} else if (nextScoreId) {{
     document.getElementById('status').textContent = 'saved. moving to next score...';
     setTimeout(() => {{ window.location.href = '/score/' + nextScoreId; }}, 500);
@@ -376,8 +406,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         all_ids = self.state.score_ids()
         next_score_id = None
+        score_position = None
         if score_id in all_ids:
             position = all_ids.index(score_id)
+            score_position = position + 1
             if position + 1 < len(all_ids):
                 next_score_id = all_ids[position + 1]
         self._send_html(
@@ -386,6 +418,8 @@ class Handler(BaseHTTPRequestHandler):
                 score_id_json=json.dumps(score_id),
                 pages_json=json.dumps(pages),
                 next_score_id_json=json.dumps(next_score_id),
+                score_position_json=json.dumps(score_position),
+                score_total_json=json.dumps(len(all_ids)),
             )
         )
 

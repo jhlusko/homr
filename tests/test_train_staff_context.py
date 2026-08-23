@@ -1,3 +1,5 @@
+import contextlib
+import io
 import unittest
 
 import torch
@@ -309,6 +311,32 @@ class TestTrainEpoch(unittest.TestCase):
         self.assertEqual(report["epoch"], 3)
         self.assertEqual(report["batches"], 2)
         self.assertIn("loss", report)
+
+    def test_progress_every_prints_a_mid_epoch_line_with_the_batch_total(self) -> None:
+        model = _FakeModel()
+        optimizer = torch.optim.SGD(staff_context_parameters(model), lr=0.01)
+
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            train_epoch(
+                model, [_batch(), _batch()], optimizer, epoch=1, device="cpu",
+                progress_every=1,
+            )
+
+        lines = [line for line in out.getvalue().splitlines() if "batch 1" in line]
+        self.assertTrue(lines, out.getvalue())
+        self.assertIn("/2", lines[0])
+
+    def test_progress_every_zero_disables_mid_epoch_printing(self) -> None:
+        model = _FakeModel()
+        optimizer = torch.optim.SGD(staff_context_parameters(model), lr=0.01)
+
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            train_epoch(
+                model, [_batch(), _batch()], optimizer, epoch=1, device="cpu",
+                progress_every=0,
+            )
+
+        self.assertNotIn("batch 1", out.getvalue())
 
 
 class TestEvaluate(unittest.TestCase):
