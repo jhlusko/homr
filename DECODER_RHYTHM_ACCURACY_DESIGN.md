@@ -1379,21 +1379,43 @@ mode `self.training` is `False`, so that branch never runs regardless of
 `sampling_prob`'s value. A naive edit here would silently do nothing while
 looking like a fix.
 
-The real fix needs a genuine step-by-step autoregressive greedy decode for the
-first pass - reusing `ScoreTransformerWrapper.forward`'s own incremental KV-cache
-branch (`training/architecture/transformer/decoder.py`, the same mechanism
-`training/onnx/convert.py`'s `DecoderWrapper` already drives for ONNX export), but
-called directly in PyTorch, one token at a time, in training. That is comparable
-in scope to `homr/transformer/decoder_inference.py`'s own `ScoreDecoder.generate()`
-(~500 lines: BOS/EOS handling, per-field autoregressive streams, growing the
-cache correctly, batched masking across a variable number of staves per system) -
-a real, non-trivial build with real risk of subtle bugs, not a quick tweak.
-Deliberately not attempted in this same sitting, at the tail of an already long
-session, without room to verify each piece carefully - the same "paced
-appropriately, don't rush" discipline this document has applied to every other
-Stage C build step. This is the concrete starting point for whoever picks this
-back up: build a training-time greedy first-pass decode, retrain, and benchmark
-the same way (`benchmark_stage_ab.py`, on vs. off) before trusting the result.
+**Fixed, without a full autoregressive rebuild**: a genuine step-by-step
+KV-cached decode was the first plan considered - reusing `ScoreTransformerWrapper.
+forward`'s incremental cache branch the way `training/onnx/convert.py`'s
+`DecoderWrapper` already drives it for ONNX export, called one token at a time in
+training. Comparable in scope to `homr/transformer/decoder_inference.py`'s own
+`ScoreDecoder.generate()` (~500 lines), and real, non-trivial new engineering.
+
+Re-reading `ScoreDecoder.forward` before building that found something cheaper
+already sitting there: its own scheduled-sampling branch (`if self.training and
+sampling_prob < 1.0`, lines ~570 above) already implements the standard one-extra-
+forward-pass approximation - not step-by-step generation, one exploratory
+teacher-forced-shaped forward, greedy-argmax-sampled at every position, mixed
+per-position with ground truth by `sampling_prob`, then one real forward over the
+mixed input. O(1) extra forwards, no KV-cache management, no BOS/EOS-per-field
+bookkeeping. It only needs `self.training=True` to fire, which `set_probe_mode`'s
+`.eval()` call defeats - so `training/transformer/train_staff_context.py`'s
+`mixed_first_pass_hidden` reproduces the same substitution logic by calling
+`model.decoder.net` directly (the same way `ScoreDecoder.generate` already does),
+never touching train/eval mode at all. `two_pass_forward` now uses this (default
+`--sampling-prob 0.5`) for the pooled hidden state Stage C conditions on; the old
+fully-teacher-forced `first_pass = model(**flat, sampling_prob=1.0)` call is kept,
+now used only for `evaluate`'s "without Stage C at all" baseline.
+
+Verified: 17 unit tests in `tests/test_train_staff_context.py` (including new
+`TestMixedFirstPassHidden` cases proving `sampling_prob<1.0` actually substitutes
+predictions, `sampling_prob=1.0` is bit-identical to the old fully-teacher-forced
+behavior regardless of RNG state, and the batch is never mutated in place), plus a
+real one-epoch smoke run against the actual checkpoint/model/data (not just the
+test fakes) before committing - `training.transformer.train_staff_context` end to
+end, 100 real training systems + 25 real validation systems, no crash, sane losses.
+
+Still to do before trusting this in production: retrain `staff_context_weights.pth`
+with this fixed first pass, then re-run the same real Stage A/B comparison
+(`benchmark_stage_ab.py`, on vs. off) that caught the original regression - unit
+tests and a smoke run establish the mechanism is wired correctly, not that the
+retrained weights actually help. `enable_staff_context` stays off by default until
+that benchmark is re-run and shows an improvement, not a regression.
 
 ## 8. Why not several tempting shortcuts
 
