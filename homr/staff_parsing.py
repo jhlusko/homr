@@ -1,10 +1,14 @@
 import math
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
 
 from homr import constants
+
+if TYPE_CHECKING:
+    from training.architecture.transformer.staff_context import StaffContextTransformer
 from homr.cross_staff_consistency import (
     analyze_system,
     check_barline_positions,
@@ -463,7 +467,13 @@ def parse_staff_image(
 
 
 def parse_staff_image_greedy_with_margins(
-    debug: Debug, index: int, staff: Staff, image: NDArray, regions: StaffRegions, config: Config
+    debug: Debug,
+    index: int,
+    staff: Staff,
+    image: NDArray,
+    regions: StaffRegions,
+    config: Config,
+    staff_context_emb: NDArray | None = None,
 ) -> tuple[
     list[EncodedSymbol], list[EncodedSymbol], list[tuple[int, float]], object, object, NDArray
 ]:
@@ -475,14 +485,20 @@ def parse_staff_image_greedy_with_margins(
     `parse_staff_tromr_greedy_with_margins` for what each carries and why forking needs
     the raw (unfiltered) sequence specifically. The debug-image side effect draws from
     `filtered_greedy`, identical to what `parse_staff_image` alone would have produced,
-    so debug output does not depend on whether this system ends up reranked."""
+    so debug output does not depend on whether this system ends up reranked.
+
+    `staff_context_emb`, given, makes this call §4/§7.4 Stage C's *second* pass instead
+    of the first - see `parse_staff_tromr_greedy_with_margins`."""
     staff_image, transformed_staff = prepare_staff_image(
         debug, index, staff, image, regions=regions
     )
     eprint("Running TrOmr inference on staff image", index)
     filtered_greedy, raw_greedy, margins, context, decoder, hidden_states = (
         parse_staff_tromr_greedy_with_margins(
-            staff_image=staff_image, staff=transformed_staff, config=config
+            staff_image=staff_image,
+            staff=transformed_staff,
+            config=config,
+            staff_context_emb=staff_context_emb,
         )
     )
     if debug.debug:
@@ -509,6 +525,22 @@ def parse_staff_image_greedy_with_margins(
     return filtered_greedy, raw_greedy, margins, context, decoder, hidden_states
 
 
+#: §4/§7.4 Stage C: loaded once per weights path, not once per `parse_staffs` call -
+#: the same reasoning `homr.staff_parsing_tromr`'s own `inference` global caching uses
+#: for the encoder/decoder, just keyed by path since (unlike the ONNX models) more
+#: than one trained StaffContextTransformer checkpoint could plausibly be compared in
+#: one process.
+_staff_context_cache: dict[str, "StaffContextTransformer"] = {}
+
+
+def _get_staff_context_module(weights_path: str, dim: int) -> "StaffContextTransformer":
+    if weights_path not in _staff_context_cache:
+        from homr.staff_context_decode import load_staff_context
+
+        _staff_context_cache[weights_path] = load_staff_context(weights_path, dim)
+    return _staff_context_cache[weights_path]
+
+
 def parse_staffs(
     debug: Debug,
     staffs: list[MultiStaff],
@@ -518,6 +550,8 @@ def parse_staffs(
     score_profile: ScoreProfile | None = None,
     enable_phase1_rerank: bool = True,
     phase1_max_forks: int = 3,
+    enable_staff_context: bool = False,
+    staff_context_weights: str | None = None,
 ) -> list[list[EncodedSymbol]]:
     """
     Dewarps each staff and then runs it through an algorithm which extracts
@@ -542,6 +576,20 @@ def parse_staffs(
     finding there - exactly the population the benchmark and spot-check actually
     measured, not a broader, unvalidated "always fork everything" behavior.
 
+    `enable_staff_context` (§4/§7.4 Stage C, off by default - not yet benchmarked the
+    way `enable_phase1_rerank` has been) reuses the same per-system raw greedy decode
+    and hidden states Phase 1 already collects: pools each present voice's hidden
+    states, runs the trained `StaffContextTransformer` (`staff_context_weights`,
+    required when this is on - e.g. this project's own `phase24-staff-context-weights`
+    release) across the system's voices, then decodes every voice a second time with
+    its own context vector. Applied independently of Phase 1 - it runs on the *original*
+    raw greedy decode's hidden states regardless of whether Phase 1's rerank changed
+    that system's result, and its own second-pass decode is what `decoded` ends up
+    holding for that system if both are enabled (last write wins; the two mechanisms
+    were built and tested separately, not as a combined pipeline). Systems with fewer
+    than 2 present voices are skipped - the module's own reasoning for why a lone staff
+    has nothing to attend across.
+
     Disabled automatically whenever `selected_staff` restricts processing to one staff
     (that debug mode leaves most systems missing most voices, the same reason
     `_report_cross_staff_findings` is skipped there too) - set to `False` explicitly to
@@ -551,7 +599,7 @@ def parse_staffs(
     # For simplicity we call every staff in a multi staff a voice,
     # even if it's part of a grand staff.
     number_of_voices = plan.voices
-    do_rerank = enable_phase1_rerank and selected_staff < 0
+    do_rerank = (enable_phase1_rerank or enable_staff_context) and selected_staff < 0
     i = 0
     regions = StaffRegions(plan.systems)
 
@@ -588,7 +636,7 @@ def parse_staffs(
                 decoded[(voice, system)] = parse_staff_image(debug, i, staff, image, regions, config)
             i += 1
 
-    if do_rerank:
+    if enable_phase1_rerank and do_rerank:
         # staff_index within a system = rank among present voices, ascending - the
         # same convention staves_by_system/analyze_system already use, so a system's
         # greedy (pre-fork) decode lines up correctly against Stage A's own indexing
@@ -626,6 +674,38 @@ def parse_staffs(
             reranked = rerank_staff_candidates(candidates_by_staff)
             for staff_index, voice in enumerate(present_voices):
                 decoded[(voice, system_index)] = reranked[staff_index]
+
+    if enable_staff_context and do_rerank:
+        if not staff_context_weights:
+            raise ValueError("enable_staff_context requires staff_context_weights")
+        import torch
+
+        from homr.staff_context_decode import pool_hidden
+
+        staff_context_module = _get_staff_context_module(staff_context_weights, config.decoder_dim)
+        for system_index, voice_raw in raw_by_system.items():
+            present_voices = sorted(voice_raw)
+            if len(present_voices) < 2:
+                continue  # nothing for cross-staff attention to attend across
+
+            pooled = np.stack([pool_hidden(voice_raw[voice][5]) for voice in present_voices])
+            with torch.no_grad():
+                mask = torch.ones(1, len(present_voices), dtype=torch.bool)
+                context_vec = staff_context_module(
+                    torch.from_numpy(pooled).float().unsqueeze(0), mask
+                )
+            context_np = context_vec.squeeze(0).numpy()
+            fp16 = getattr(voice_raw[present_voices[0]][4], "fp16", False)
+            context_np = context_np.astype(np.float16 if fp16 else np.float32)
+
+            for slot, voice in enumerate(present_voices):
+                staff = voice_raw[voice][0]
+                filtered2, *_rest = parse_staff_image_greedy_with_margins(
+                    debug, i, staff, image, regions, config,
+                    staff_context_emb=context_np[slot : slot + 1],
+                )
+                decoded[(voice, system_index)] = filtered2
+                i += 1
 
     voices = []
     for voice in range(number_of_voices):
