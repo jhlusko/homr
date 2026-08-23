@@ -2056,7 +2056,10 @@ box, so anything saved in that window is likely unrecoverable. The right move wo
 have been checking for content first; noted here as a standing reminder for any
 future destructive cleanup near that directory.
 
-**Not yet done**: the full re-detection and repair rerun finishing, the review server
-restarting against the corrected output, and actually reviewing/correcting the
-detected boxes through the website - the last of those a human task, not a next
-automated step.
+**Full rebuild complete, overnight 2026-08-23.** 354/355 scores re-detected with
+every fix combined (deskew, `_plan_systems`, the coordinate-scale fix); repair
+rerun (2,802 pages, coverage 75%→94%, matching the earlier sample); review server
+restarted against the fully corrected output, 354 scores live.
+
+**Not yet done**: actually reviewing/correcting the detected boxes through the
+website - a human task, not a next automated step.
