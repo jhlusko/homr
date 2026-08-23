@@ -1308,12 +1308,30 @@ quartet system (`sq7313978_0001_0001`):
   sibling staves - a real, tangible cross-staff correction from a barely-trained
   gate, not just a lower validation-loss number.
 
-**Not yet wired into `parse_staffs`'s live pipeline** (`homr/staff_parsing.py`) -
-built and tested standalone first, the same discipline every other Stage C piece
-used. Wiring it in behind its own opt-in flag (mirroring `enable_phase1_rerank`),
-and then actually running the real 200-page Stage A/B benchmark with it on vs.
-off, are the two remaining steps before this is a measured result rather than a
-promising one.
+**Both remaining steps done, 2026-08-23 overnight:** wired into `parse_staffs`
+behind `enable_staff_context` (off by default, mirrors `enable_phase1_rerank`),
+then CLI-wired into `homr/main.py` (`--enable-staff-context`/
+`--staff-context-weights`) since `benchmark_stage_ab.py` drives `homr.main` as a
+subprocess per page. Validated two ways before trusting it: with phase24's own
+trained gate (still tiny, 0.00235) output on a real page came back bit-identical
+to disabled - a real, plausible "not enough signal yet" result; forcing an
+artificially large gate (1.0) on a copy of the same weights made both voices'
+output change dramatically, proving the context vector genuinely reaches the
+second decode rather than silently no-oping. Also found and fixed a real gap
+while wiring the CLI: the production fp16 GPU decoder ONNX was stale (pre-dated
+`staff_context_emb`), so `--enable-staff-context` crashed immediately against the
+real CLI even though the earlier CPU/fp32 safety check had passed - re-exported,
+simplified, and re-quantized through the project's own existing onnx pipeline,
+confirmed working end-to-end on a real 4-staff string quartet page via the actual
+CLI, valid MusicXML written.
+
+The real 200-page Stage A/B benchmark (`benchmark_stage_ab.py`, patched to accept
+pass-through `homr.main` args) is running now, on vs. off, using the exact same
+`benchmark_sample.txt` phase20/phase22/Phase-1-rerank's own historical numbers
+came from - the actual apples-to-apples comparison this section has been building
+toward. Running overnight alongside the IMSLP corpus re-detection rebuild, all
+three sharing the one GPU - slower than any one alone, but time was available and
+none of the three block each other. Result not in yet as of this writing.
 
 ## 8. Why not several tempting shortcuts
 
