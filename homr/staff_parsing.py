@@ -464,12 +464,14 @@ def parse_staff_image(
 
 def parse_staff_image_greedy_with_margins(
     debug: Debug, index: int, staff: Staff, image: NDArray, regions: StaffRegions, config: Config
-) -> tuple[list[EncodedSymbol], list[EncodedSymbol], list[tuple[int, float]], object, object]:
+) -> tuple[
+    list[EncodedSymbol], list[EncodedSymbol], list[tuple[int, float]], object, object, NDArray
+]:
     """Phase 1 (`DECODER_RHYTHM_ACCURACY_DESIGN.md` §7.2) counterpart to
     `parse_staff_image`: the cheap first pass - one decode, same cost as
     `parse_staff_image` itself - that `parse_staffs` uses to decide, per system, whether
     the expensive forking pass is worth paying for at all. Returns
-    `(filtered_greedy, raw_greedy, margins, context, decoder)`; see
+    `(filtered_greedy, raw_greedy, margins, context, decoder, hidden_states)`; see
     `parse_staff_tromr_greedy_with_margins` for what each carries and why forking needs
     the raw (unfiltered) sequence specifically. The debug-image side effect draws from
     `filtered_greedy`, identical to what `parse_staff_image` alone would have produced,
@@ -478,8 +480,10 @@ def parse_staff_image_greedy_with_margins(
         debug, index, staff, image, regions=regions
     )
     eprint("Running TrOmr inference on staff image", index)
-    filtered_greedy, raw_greedy, margins, context, decoder = parse_staff_tromr_greedy_with_margins(
-        staff_image=staff_image, staff=transformed_staff, config=config
+    filtered_greedy, raw_greedy, margins, context, decoder, hidden_states = (
+        parse_staff_tromr_greedy_with_margins(
+            staff_image=staff_image, staff=transformed_staff, config=config
+        )
     )
     if debug.debug:
         result_image = staff_image.copy()
@@ -502,7 +506,7 @@ def parse_staff_image_greedy_with_margins(
             )
 
         debug.write_image_with_fixed_suffix(f"_staff-{index}_output.jpg", result_image)
-    return filtered_greedy, raw_greedy, margins, context, decoder
+    return filtered_greedy, raw_greedy, margins, context, decoder, hidden_states
 
 
 def parse_staffs(
@@ -573,11 +577,13 @@ def parse_staffs(
                 i += 1
                 continue
             if do_rerank:
-                filtered, raw, margins, context, decoder = parse_staff_image_greedy_with_margins(
-                    debug, i, staff, image, regions, config
+                filtered, raw, margins, context, decoder, hidden_states = (
+                    parse_staff_image_greedy_with_margins(debug, i, staff, image, regions, config)
                 )
                 decoded[(voice, system)] = filtered
-                raw_by_system.setdefault(system, {})[voice] = (staff, raw, margins, context, decoder)
+                raw_by_system.setdefault(system, {})[voice] = (
+                    staff, raw, margins, context, decoder, hidden_states,
+                )
             else:
                 decoded[(voice, system)] = parse_staff_image(debug, i, staff, image, regions, config)
             i += 1
@@ -598,7 +604,7 @@ def parse_staffs(
 
             candidates_by_staff = {}
             for staff_index, voice in enumerate(present_voices):
-                staff, raw_greedy, margins, context, decoder = voice_raw[voice]
+                staff, raw_greedy, margins, context, decoder, _hidden_states = voice_raw[voice]
                 forks = fork_candidates_from_margins(
                     decoder,
                     raw_greedy,

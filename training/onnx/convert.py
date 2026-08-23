@@ -29,6 +29,7 @@ class DecoderWrapper(torch.nn.Module):
         slurs: torch.Tensor,
         context: torch.Tensor,
         cache_len: torch.Tensor,
+        staff_context_emb: torch.Tensor,
         *cache: torch.Tensor,
     ) -> tuple[
         torch.Tensor,
@@ -38,8 +39,13 @@ class DecoderWrapper(torch.nn.Module):
         torch.Tensor,
         torch.Tensor,
         torch.Tensor,
+        torch.Tensor,
         tuple[torch.Tensor, ...],
     ]:
+        # §4/§7.4 Stage C: an all-zero staff_context_emb (every existing caller, until
+        # a caller actually runs the two-pass decode) reproduces the pre-Stage-C graph
+        # exactly - ScoreTransformerWrapper's own zero-bias-is-a-no-op guarantee
+        # (test_staff_context_wiring.py), not a new behavior introduced here.
         (
             out_rhythms,
             out_pitchs,
@@ -47,7 +53,7 @@ class DecoderWrapper(torch.nn.Module):
             out_positions,
             out_articulations,
             out_slurs,
-            _x,
+            x,
             attention,
             *cache,
         ) = self.model(
@@ -61,6 +67,7 @@ class DecoderWrapper(torch.nn.Module):
             mask=None,
             cache=cache,
             return_center_of_attention=True,
+            staff_context_emb=staff_context_emb,
         )
         return (
             out_rhythms,
@@ -70,6 +77,7 @@ class DecoderWrapper(torch.nn.Module):
             out_articulations,
             out_slurs,
             attention,
+            x,
             *cache,
         )
 
@@ -156,12 +164,17 @@ def convert_decoder(overwrite: bool) -> str | None:
     cache_len = torch.tensor([cache_length]).long()
     cache = kv_cache
     context = torch.randn((1, 1280, config.encoder_dim)).float()
+    # §4/§7.4 Stage C: an all-zero vector here traces the exact same no-op path
+    # ScoreTransformerWrapper's own zero-bias guarantee already covers - every
+    # existing caller keeps passing zeros until one actually runs the two-pass
+    # decode with a real StaffContextTransformer output.
+    staff_context_emb = torch.zeros((1, config.decoder_dim)).float()
 
     dynamic_axes["context"] = {1: "cache_exists"}
 
     torch.onnx.export(
         wrapped_model,
-        (rhythms, pitchs, lifts, articulations, slurs, context, cache_len, *cache),
+        (rhythms, pitchs, lifts, articulations, slurs, context, cache_len, staff_context_emb, *cache),
         path_out,
         input_names=[
             "rhythms",
@@ -171,6 +184,7 @@ def convert_decoder(overwrite: bool) -> str | None:
             "slurs",
             "context",
             "cache_len",
+            "staff_context_emb",
             *kv_input_names,
         ],
         output_names=[
@@ -181,6 +195,7 @@ def convert_decoder(overwrite: bool) -> str | None:
             "out_articulations",
             "out_slurs",
             "attention",
+            "hidden",
             *kv_output_names,
         ],
         dynamic_axes=dynamic_axes,

@@ -79,7 +79,9 @@ def rhythm_candidates_for_staff(
     a cheap check (as `parse_staffs` does) should call `generate_with_rhythm_margins`
     and `fork_candidates_from_margins` directly instead.
     """
-    greedy, margins = decoder.generate_with_rhythm_margins(start_tokens, nonote_tokens, **kwargs)
+    greedy, margins, _hidden = decoder.generate_with_rhythm_margins(
+        start_tokens, nonote_tokens, **kwargs
+    )
     return fork_candidates_from_margins(decoder, greedy, margins, max_forks=max_forks, **kwargs)
 
 

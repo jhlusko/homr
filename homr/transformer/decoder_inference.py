@@ -45,7 +45,16 @@ class ScoreDecoder:
             "out_articulations",
             "out_slurs",
             "attention",
+            "hidden",
         ]
+        # §4/§7.4 Stage C: every call binds this ONNX input (added by
+        # training/onnx/convert.py's DecoderWrapper) - a zero vector reproduces the
+        # exact pre-Stage-C graph (ScoreTransformerWrapper's own zero-bias-is-a-no-op
+        # guarantee), which is what every method below still does unless a caller
+        # explicitly passes a real one via `staff_context_emb=`.
+        self._zero_staff_context_emb = np.zeros(
+            (1, config.decoder_dim), dtype=np.float16 if fp16 else np.float32
+        )
 
     def generate(
         self,
@@ -69,6 +78,7 @@ class ScoreDecoder:
         output_names = self.output_names + kv_output_names
         context = kwargs["context"]
         context_reduced = kwargs["context"][:, :1]
+        staff_context_emb = kwargs.get("staff_context_emb", self._zero_staff_context_emb)
 
         symbols: list[EncodedSymbol] = []
 
@@ -92,6 +102,7 @@ class ScoreDecoder:
             self.io_binding.bind_cpu_input("slurs", x_slurs)
             self.io_binding.bind_cpu_input("context", context)
             self.io_binding.bind_cpu_input("cache_len", np.array([step], dtype=np.int64))
+            self.io_binding.bind_cpu_input("staff_context_emb", staff_context_emb)
             for name, cache_val in zip(kv_input_names, cache, strict=True):
                 self.io_binding.bind_ortvalue_input(name, cache_val)
 
@@ -104,7 +115,7 @@ class ScoreDecoder:
 
             # Get outputs
             outputs = self.io_binding.get_outputs()
-            cache = outputs[7:]
+            cache = outputs[8:]
 
             # Greedy decoding: pick the highest logit directly for each output
             rhythmsp = outputs[0].numpy()
@@ -156,7 +167,7 @@ class ScoreDecoder:
         start_tokens: NDArray,
         nonote_tokens: NDArray,
         **kwargs: Any,
-    ) -> tuple[list[EncodedSymbol], list[tuple[int, float]]]:
+    ) -> tuple[list[EncodedSymbol], list[tuple[int, float]], NDArray]:
         """Identical greedy decode to `generate()`, plus bookkeeping `generate()` itself
         never needed: at every step, the rhythm head's second-best token id and the
         logit margin between the chosen (top-1) and runner-up (top-2) rhythm token.
@@ -173,11 +184,17 @@ class ScoreDecoder:
         of actually branching on via `rhythm_alternative`, rather than forking at every
         step.
 
-        Returns `(symbols, margins)` where `margins[i]` is `(alt_rhythm_token_id,
-        margin)` for the step that produced `symbols[i]` - aligned 1:1, not a separate
-        indexing scheme. Changes no decoding decision from `generate()` - the chosen
-        token at every step is still the same top-1 argmax; this only records what the
-        alternative would have been and how close it was.
+        Returns `(symbols, margins, hidden_states)` where `margins[i]` is
+        `(alt_rhythm_token_id, margin)` for the step that produced `symbols[i]` -
+        aligned 1:1, not a separate indexing scheme. Changes no decoding decision from
+        `generate()` - the chosen token at every step is still the same top-1 argmax;
+        this only records what the alternative would have been and how close it was.
+
+        `hidden_states` is `(steps, decoder_dim)`, one row per step in `symbols` (the
+        BOS step is not included) - §4/§7.4 Stage C's own first-pass input, the same
+        `"hidden"`/`x` key `ScoreDecoder.forward`'s training-time counterpart already
+        exposes for the same purpose, collected here since inference has no single
+        forward call over the whole sequence to read it from afterward.
         """
         num_dims = len(start_tokens.shape)
 
@@ -193,9 +210,11 @@ class ScoreDecoder:
         output_names = self.output_names + kv_output_names
         context = kwargs["context"]
         context_reduced = kwargs["context"][:, :1]
+        staff_context_emb = kwargs.get("staff_context_emb", self._zero_staff_context_emb)
 
         symbols: list[EncodedSymbol] = []
         margins: list[tuple[int, float]] = []
+        hidden_states: list[NDArray] = []
 
         for step in range(self.max_seq_len):
             x_lift = out_lift[:, -1:]
@@ -213,6 +232,7 @@ class ScoreDecoder:
             self.io_binding.bind_cpu_input("slurs", x_slurs)
             self.io_binding.bind_cpu_input("context", context_input)
             self.io_binding.bind_cpu_input("cache_len", np.array([step], dtype=np.int64))
+            self.io_binding.bind_cpu_input("staff_context_emb", staff_context_emb)
             for name, cache_val in zip(kv_input_names, cache, strict=True):
                 self.io_binding.bind_ortvalue_input(name, cache_val)
 
@@ -222,7 +242,7 @@ class ScoreDecoder:
             self.net.run_with_iobinding(iobinding=self.io_binding)
 
             outputs = self.io_binding.get_outputs()
-            cache = outputs[7:]
+            cache = outputs[8:]
 
             rhythmsp = outputs[0].numpy()
             pitchsp = outputs[1].numpy()
@@ -231,6 +251,7 @@ class ScoreDecoder:
             articulationsp = outputs[4].numpy()
             slursp = outputs[5].numpy()
             attention = outputs[6].numpy()
+            hidden = outputs[7].numpy()
 
             rhythm_logits = rhythmsp[:, -1, :].reshape(-1)
             top2_idx = np.argsort(rhythm_logits)[-2:]
@@ -260,6 +281,7 @@ class ScoreDecoder:
                 )
             )
             margins.append((alt_token_id, margin))
+            hidden_states.append(hidden[:, -1, :])
 
             out_lift = np.concatenate((out_lift, lift_sample), axis=-1)
             out_pitch = np.concatenate((out_pitch, pitch_sample), axis=-1)
@@ -267,7 +289,12 @@ class ScoreDecoder:
             out_articulations = np.concatenate((out_articulations, articulation_sample), axis=-1)
             out_slurs = np.concatenate((out_slurs, slur_sample), axis=-1)
 
-        return symbols, margins
+        stacked_hidden = (
+            np.concatenate(hidden_states, axis=0)
+            if hidden_states
+            else np.zeros((0, self.config.decoder_dim), dtype=np.float32)
+        )
+        return symbols, margins, stacked_hidden
 
     def rhythm_alternative(
         self,
@@ -382,6 +409,7 @@ class ScoreDecoder:
             self.io_binding.bind_cpu_input("slurs", x_slurs)
             self.io_binding.bind_cpu_input("context", context_input)
             self.io_binding.bind_cpu_input("cache_len", np.array([step], dtype=np.int64))
+            self.io_binding.bind_cpu_input("staff_context_emb", self._zero_staff_context_emb)
             for name, cache_val in zip(kv_input_names, cache, strict=True):
                 self.io_binding.bind_ortvalue_input(name, cache_val)
 
@@ -391,7 +419,7 @@ class ScoreDecoder:
             self.net.run_with_iobinding(iobinding=self.io_binding)
 
             outputs = self.io_binding.get_outputs()
-            cache = outputs[7:]
+            cache = outputs[8:]
 
             rhythmsp = outputs[0].numpy()
             pitchsp = outputs[1].numpy()

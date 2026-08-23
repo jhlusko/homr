@@ -63,8 +63,8 @@ class Staff2Score:
         return out
 
     def predict_greedy_with_margins(
-        self, image: NDArray
-    ) -> tuple[list[EncodedSymbol], list[tuple[int, float]], NDArray]:
+        self, image: NDArray, staff_context_emb: NDArray | None = None
+    ) -> tuple[list[EncodedSymbol], list[tuple[int, float]], NDArray, NDArray]:
         """The cheap half of Phase 1 candidate generation - costs exactly what
         `predict()` costs (one decode pass; `generate_with_rhythm_margins` adds only
         bookkeeping, no extra model calls), unlike forking alternates which each need a
@@ -72,8 +72,15 @@ class Staff2Score:
         decoder's own step numbering `fork_candidates_from_margins`/`rhythm_alternative`
         need to stay aligned with - `predict_best`'s grandstaff/`position != "lower"`
         filter must be applied by the caller, after any forking, not before), its
-        per-step rhythm margins, and the encoder context (so a caller that decides
-        forking is worth it doesn't need to re-run the encoder).
+        per-step rhythm margins, the encoder context (so a caller that decides forking
+        is worth it doesn't need to re-run the encoder), and the per-step hidden state
+        (`ScoreDecoder.generate_with_rhythm_margins`'s own `hidden_states` - §4/§7.4
+        Stage C's first-pass input, unused by Phase 1's own reranking).
+
+        `staff_context_emb`, given, is threaded straight to the decoder (§4/§7.4 Stage
+        C's second pass); omitted (the default), the decoder falls back to its own
+        zero vector - reproducing today's single-pass decode exactly, the same
+        guarantee every other Stage C call site relies on.
         """
         x = _transform(image=image)
 
@@ -86,16 +93,18 @@ class Staff2Score:
         if context.dtype != context_dtype:
             context = context.astype(context_dtype)
 
-        greedy, margins = self.decoder.generate_with_rhythm_margins(
+        extra = {} if staff_context_emb is None else {"staff_context_emb": staff_context_emb}
+        greedy, margins, hidden_states = self.decoder.generate_with_rhythm_margins(
             start_token,
             nonote_token,
             seq_len=self.config.max_seq_len,
             eos_token=self.config.eos_token,
             context=context,
+            **extra,
         )
         eprint(f"Inference Time Tromr: {perf_counter()-t0}")
 
-        return greedy, margins, context
+        return greedy, margins, context, hidden_states
 
     def predict_candidates(self, image: NDArray, max_forks: int = 3) -> list[list[EncodedSymbol]]:
         """
