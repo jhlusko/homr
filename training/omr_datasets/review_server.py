@@ -156,7 +156,7 @@ function loadPage() {{
   boxes = p.systems.map(s => ({{...s}}));
   selected = null;
   img.onload = draw;
-  img.src = '/image/' + scoreId + '/' + p.image;
+  img.src = '/image/' + p.image;  // p.image already carries the score_id prefix
 }}
 
 function scale() {{ return canvas.width / img.naturalWidth || 1; }}
