@@ -40,6 +40,30 @@ def iou(a: DetectedSystem, b: dict) -> float:
     return intersection / union if union > 0 else 0.0
 
 
+def ground_truth_coverage(a: DetectedSystem, b: dict) -> float:
+    """What share of the *ground-truth* box's own area the detected box actually
+    covers - `intersection / area(b)`, not `/union` (IoU's own denominator). Distinct
+    from IoU on purpose: ground truth here is OLiMPiC's own piano-only convention
+    (27.39/`olimpic_repair.py`'s own finding - published boxes bound only the piano,
+    not the voice+lyrics above it), and `_plan_systems` sometimes correctly identifies
+    the *whole* system (voice included) as one unit. A detected box that fully contains
+    a narrower ground-truth box scores low on IoU (its own denominator grows with the
+    detected box's extra, wanted area) but should score high here - this is "did we at
+    least capture everything the annotation captured," independent of whether we also,
+    correctly, captured more.
+    """
+    ax1, ay1, ax2, ay2 = a.left, a.top, a.left + a.width, a.top + a.height
+    bx1 = b["left"]
+    by1 = b["top"]
+    bx2 = bx1 + b["width"]
+    by2 = by1 + b["height"]
+    ix1, iy1 = max(ax1, bx1), max(ay1, by1)
+    ix2, iy2 = min(ax2, bx2), min(ay2, by2)
+    intersection = max(0, ix2 - ix1) * max(0, iy2 - iy1)
+    area_b = b["width"] * b["height"]
+    return intersection / area_b if area_b > 0 else 0.0
+
+
 def paired_ious(detected: list[DetectedSystem], ground_truth: list[dict]) -> list[float]:
     """Pairs each list top-to-bottom (both are already sorted that way by construction -
     `detect_systems_on_page`'s own contract, and ground truth is drawn in reading order)
@@ -49,6 +73,11 @@ def paired_ious(detected: list[DetectedSystem], ground_truth: list[dict]) -> lis
     this is the more complete one.
     """
     return [iou(d, gt) for d, gt in zip(detected, ground_truth, strict=False)]
+
+
+def paired_coverage(detected: list[DetectedSystem], ground_truth: list[dict]) -> list[float]:
+    """Same pairing as `paired_ious`, reporting `ground_truth_coverage` instead."""
+    return [ground_truth_coverage(d, gt) for d, gt in zip(detected, ground_truth, strict=False)]
 
 
 def main() -> None:
@@ -68,6 +97,8 @@ def main() -> None:
     exact = 0
     all_ious: list[float] = []
     exact_count_ious: list[float] = []
+    all_coverage: list[float] = []
+    exact_count_coverage: list[float] = []
 
     for score_index, path in enumerate(score_paths, start=1):
         score_id = path.stem
@@ -94,8 +125,11 @@ def main() -> None:
 
             page_ious = paired_ious(detected, gt_systems)
             all_ious.extend(page_ious)
+            page_coverage = paired_coverage(detected, gt_systems)
+            all_coverage.extend(page_coverage)
             if delta == 0:
                 exact_count_ious.extend(page_ious)
+                exact_count_coverage.extend(page_coverage)
 
         print(f"[{score_index}/{len(score_paths)}] {score_id} done")
 
@@ -125,6 +159,25 @@ def main() -> None:
             f"  quartiles: {statistics.quantiles(exact_count_ious, n=4)[0]:.1%} / "
             f"{statistics.quantiles(exact_count_ious, n=4)[2]:.1%}"
         )
+
+    print()
+    print(
+        f"ground-truth coverage (share of GT box area actually covered - see "
+        f"ground_truth_coverage's own docstring for why this differs from IoU), "
+        f"exact-count-match pages only ({len(exact_count_coverage)} pair(s)):"
+    )
+    if exact_count_coverage:
+        print(
+            f"  mean {statistics.mean(exact_count_coverage):.1%}, "
+            f"median {statistics.median(exact_count_coverage):.1%}"
+        )
+        print(
+            f"  quartiles: {statistics.quantiles(exact_count_coverage, n=4)[0]:.1%} / "
+            f"{statistics.quantiles(exact_count_coverage, n=4)[2]:.1%}"
+        )
+    print(f"ground-truth coverage, all pairable systems ({len(all_coverage)} pair(s)):")
+    if all_coverage:
+        print(f"  mean {statistics.mean(all_coverage):.1%}, median {statistics.median(all_coverage):.1%}")
 
 
 if __name__ == "__main__":
