@@ -1271,6 +1271,50 @@ found zero `train_staff_context` processes and briefly looked like a crash - tur
 out to be a transient/race in that one check; the process (confirmed via CPU time,
 GPU utilization, and fresh dataloader-worker PIDs) never actually stopped.)
 
+**Inference-time two-pass decode built and wired (2026-08-22)**: `training/onnx/
+convert.py`'s `DecoderWrapper` now takes `staff_context_emb` as a new ONNX input
+(default zero - `ScoreTransformerWrapper`'s own no-op guarantee) and exposes the
+shared hidden state as a new output. `homr/transformer/decoder_inference.py`'s
+`generate`/`generate_with_rhythm_margins`/`generate_from_prefix` all thread it
+through; `generate_with_rhythm_margins` now also returns per-step hidden states,
+propagated up through `staff2score.py` and the existing Phase 1 call chain
+(`staff_parsing_tromr.py`/`staff_parsing.py`) - additive only, nothing in the
+default pipeline changes behavior.
+
+**Safety check, not just a unit test**: re-exported the decoder ONNX from the same
+pinned base checkpoint and ran a real staff image through both the old and the new
+graph. The decoded symbol sequence was bit-for-bit identical (only inference
+timing differed, an artifact of comparing the old fp16/GPU path against the new
+plain fp32/CPU export) - confirms the new input/output genuinely don't change
+existing behavior, not just that `ScoreTransformerWrapper`'s own zero-bias test
+says so in isolation.
+
+`homr/staff_context_decode.py` is the actual two-pass orchestration: decode every
+staff in a system once (`parse_staff_tromr_greedy_with_margins`, no context),
+mean-pool each staff's own hidden states (inference has no padding to mask, unlike
+training's fixed-length batches), run the trained `StaffContextTransformer`
+(loaded directly in plain PyTorch - too small next to the encoder/decoder to be
+worth its own ONNX export), decode every staff again with its own context vector.
+8 unit tests against a faked first-pass decode function, plus a real end-to-end
+smoke test against `phase24`'s actual released weights on a real 4-staff string
+quartet system (`sq7313978_0001_0001`):
+
+- Gate value after only 5 frozen-core probe epochs: 0.00235 - barely off zero, as
+  expected this early.
+- 3 of 4 staves decoded bit-identically between passes (unsurprising, given how
+  small the gate still is).
+- **One staff's decoded time signature actually changed**: `timeSignature/2` in the
+  first pass, `timeSignature/4` in the second, once conditioned on its three
+  sibling staves - a real, tangible cross-staff correction from a barely-trained
+  gate, not just a lower validation-loss number.
+
+**Not yet wired into `parse_staffs`'s live pipeline** (`homr/staff_parsing.py`) -
+built and tested standalone first, the same discipline every other Stage C piece
+used. Wiring it in behind its own opt-in flag (mirroring `enable_phase1_rerank`),
+and then actually running the real 200-page Stage A/B benchmark with it on vs.
+off, are the two remaining steps before this is a measured result rather than a
+promising one.
+
 ## 8. Why not several tempting shortcuts
 
 - **Why not a post-hoc text-level duration correction, the way key/time signature and
