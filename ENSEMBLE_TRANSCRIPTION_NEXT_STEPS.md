@@ -1927,7 +1927,20 @@ so a review session can always be re-run from the same automated output. Verifie
 end to end against real detected boxes (index page, per-page editor, image serving,
 save-and-reload) before scaling up.
 
-**Not yet done**: running detection across the full ~355-score set (tested so far on
-a handful of real scores while the larger PDF set was still transferring to the GPU
-box) and actually reviewing/correcting the results through the website. Next step
-once the transfer finishes.
+**Detection run across the full set - complete.** All 355 scores processed:
+353 succeeded, 2 failed (a corrupt PDF from the download batch, and one page-level
+edge case) - both left as-is rather than retried, same reasoning as the download
+batch's own per-item failures (retrying doesn't fix a bad input). The existing
+`olimpic_repair.py --systems ... --out ... --pngs ...` step then ran unmodified
+over all 353 detected documents to recover the voice/lyrics region above each
+piano box - confirmed working on real output (box heights visibly grew, e.g. one
+system's box grew from ~250px to 667px tall on a real page).
+
+**Review website live.** `review_server.py` running on the GPU box (tmux session
+`review`, port 8791) against the repaired boxes - reachable locally via SSH port
+forwarding (`ssh -p 19374 -L 8791:localhost:8791 root@175.155.64.164`, then
+`http://localhost:8791`) rather than exposing it publicly, since these are
+personal IMSLP scans. All 353 scores listed with per-score page-review progress.
+
+**Not yet done**: actually reviewing/correcting the detected boxes through the
+website - a human task, not a next automated step.
