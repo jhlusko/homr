@@ -249,6 +249,7 @@ button {{ font: inherit; padding: 0.35rem 0.9rem; border-radius: 5px; border: 1p
   background: #333; color: #eee; cursor: pointer; }}
 button:hover {{ background: #444; }}
 button.match {{ background: #2a7a2a; border-color: #2a7a2a; }}
+button.diff-layout {{ background: #2456a8; border-color: #2456a8; }}
 button.no-match {{ background: #a8720f; border-color: #a8720f; }}
 a {{ color: #9cc0ff; }}
 #panes {{ display: flex; gap: 1rem; align-items: flex-start; }}
@@ -260,6 +261,7 @@ a {{ color: #9cc0ff; }}
 table.mismatches {{ border-collapse: collapse; margin: 0.6rem 0; font-size: 0.85rem; }}
 table.mismatches td {{ padding: 0.15rem 0.7rem; border-bottom: 1px solid #444; }}
 .judged-match {{ color: #6cc06c; }}
+.judged-different_layout {{ color: #7aa8e0; }}
 .judged-no_match {{ color: #e0a94a; }}
 </style></head>
 <body>
@@ -280,6 +282,10 @@ table.mismatches td {{ padding: 0.15rem 0.7rem; border-bottom: 1px solid #444; }
 <table class="mismatches" id="mismatchTable"></table>
 <div id="toolbar">
   <button class="match" id="matchBtn">match</button>
+  <button class="diff-layout" id="diffLayoutBtn"
+    title="Same piece, same starting bar, but the transcription's own line breaks
+don't correspond to the scan's - per-system bar counts aren't comparable here, but
+the source/page match itself is still confirmed correct.">different layout</button>
   <button class="no-match" id="noMatchBtn">no match</button>
   <input id="noteInput" placeholder="optional note" style="flex:1">
   <span id="status"></span>
@@ -348,6 +354,7 @@ async function submitJudgment(judgment) {{
 }}
 
 document.getElementById('matchBtn').onclick = () => submitJudgment('match');
+document.getElementById('diffLayoutBtn').onclick = () => submitJudgment('different_layout');
 document.getElementById('noMatchBtn').onclick = () => submitJudgment('no_match');
 
 render();
