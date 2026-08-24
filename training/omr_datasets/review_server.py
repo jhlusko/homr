@@ -42,11 +42,42 @@ class ReviewState:
     earlier one) has already verified - recomputed per request rather than cached, so
     edits made through the API are reflected immediately without a restart."""
 
-    def __init__(self, pngs_dir: Path, systems_dir: Path, verified_dir: Path) -> None:
+    def __init__(
+        self,
+        pngs_dir: Path,
+        systems_dir: Path,
+        verified_dir: Path,
+        targeted_candidates_path: Path | None = None,
+        ground_truth_renders_dir: Path | None = None,
+    ) -> None:
         self.pngs_dir = pngs_dir
         self.systems_dir = systems_dir
         self.verified_dir = verified_dir
         self.verified_dir.mkdir(parents=True, exist_ok=True)
+        self.targeted_candidates_path = targeted_candidates_path
+        self.ground_truth_renders_dir = ground_truth_renders_dir
+
+    def targeted_candidates(self) -> list[dict]:
+        """`targeted_review_candidates.py`'s own output - specific pages worth a
+        second look (a bar-count mismatch on a score whose other pages otherwise
+        agree with its matched Lieder ground truth), not every page of every score.
+        """
+        if not self.targeted_candidates_path or not self.targeted_candidates_path.exists():
+            return []
+        return json.loads(self.targeted_candidates_path.read_text(encoding="utf-8"))
+
+    def ground_truth_pages(self, score_id: str) -> list[str]:
+        """Rendered ground-truth page filenames (`render_lieder_ground_truth.py`'s
+        own output) for one score, in page order - the *whole* piece, not just the
+        one flagged page, so a human can tell whether the flagged scan page exists
+        anywhere in the matched transcription at all, not just whether that one
+        page matches."""
+        if not self.ground_truth_renders_dir:
+            return []
+        score_dir = self.ground_truth_renders_dir / score_id
+        if not score_dir.exists():
+            return []
+        return sorted(p.name for p in score_dir.glob("page*.png"))
 
     def score_ids(self) -> list[str]:
         return sorted(p.stem for p in self.systems_dir.glob("*.yaml"))
@@ -95,10 +126,60 @@ a:hover {{ text-decoration: underline; }}
 </style></head>
 <body>
 <h1>IMSLP automated system-box review</h1>
+<p><a href="/targeted">targeted review candidates</a> - specific pages a bar-count
+check flagged, instead of browsing every score below.</p>
 <table>
 <tr><th>Score</th><th>Progress</th></tr>
 {rows}
 </table>
+</body></html>
+"""
+
+TARGETED_TEMPLATE = """<!doctype html>
+<html><head><meta charset="utf-8"><title>Targeted review candidates</title>
+<style>
+body {{ font-family: system-ui, sans-serif; margin: 2rem; background: #faf9f6; color: #222; }}
+h1 {{ font-size: 1.3rem; }}
+table {{ border-collapse: collapse; width: 100%; max-width: 900px; }}
+td, th {{ text-align: left; padding: 0.35rem 0.8rem; border-bottom: 1px solid #ddd; }}
+a {{ color: #2456a8; text-decoration: none; }}
+a:hover {{ text-decoration: underline; }}
+.edge {{ color: #a8720f; font-weight: 600; }}
+</style></head>
+<body>
+<h1>Targeted review candidates ({count})</h1>
+<p><a href="/">&larr; all scores</a></p>
+<p style="opacity:0.7; max-width:640px">
+Pages where a bar-count check against the score's matched Lieder transcription
+disagreed, on a score whose *other* pages otherwise agree - a specific, targeted
+signal that this page (not the whole score) is worth a second look, rather than a
+blanket re-check of every low-scoring score.
+</p>
+<table>
+<tr><th>Score / page</th><th>Detected vs. ground truth</th><th>Position</th><th></th></tr>
+{rows}
+</table>
+</body></html>
+"""
+
+GROUND_TRUTH_TEMPLATE = """<!doctype html>
+<html><head><meta charset="utf-8"><title>Ground truth: {score_id}</title>
+<style>
+body {{ font-family: system-ui, sans-serif; margin: 2rem; background: #faf9f6; color: #222; }}
+h1 {{ font-size: 1.3rem; }}
+a {{ color: #2456a8; }}
+img {{ display: block; max-width: 100%; margin: 0 0 1.5rem 0; border: 1px solid #ccc; }}
+</style></head>
+<body>
+<h1>Ground truth render: {score_id}</h1>
+<p><a href="/targeted">&larr; targeted review candidates</a> ·
+<a href="/score/{score_id}">the scanned score</a></p>
+<p style="opacity:0.7; max-width:640px">
+Rendered from the matched Lieder transcription's own MuseScore source - the whole
+piece, every page, so you can tell whether the flagged scan page exists anywhere in
+here at all, not just whether that one page matches.
+</p>
+{images}
 </body></html>
 """
 
@@ -148,6 +229,16 @@ const scorePosition = {score_position_json};
 const scoreTotal = {score_total_json};
 const pages = {pages_json};
 let pageIndex = 0;
+{{
+  // A /targeted link opens straight to the flagged page (?page=<page number>),
+  // not always page 1 - find it by page.number, not array index, since a score's
+  // own page numbering can start above 1 (cover pages the detector already skips).
+  const requestedPage = new URLSearchParams(window.location.search).get('page');
+  if (requestedPage !== null) {{
+    const found = pages.findIndex(p => String(p.number) === requestedPage);
+    if (found >= 0) pageIndex = found;
+  }}
+}}
 let boxes = [];
 let selected = null;
 let drag = null; // {{mode: 'move'|'resize-tl'|... |'new', boxIndex, startX, startY, orig}}
@@ -173,14 +264,21 @@ function loadPage() {{
 
 function scale() {{ return canvas.width / img.naturalWidth || 1; }}
 
+function boxColor(i) {{
+  // Golden-angle hue step - stays visually distinct box to box even for a page with
+  // many systems, unlike an even N-way split which repeats/clusters as N grows.
+  const hue = (i * 137.508) % 360;
+  return `hsl(${{hue}}, 75%, 60%)`;
+}}
+
 function draw() {{
   const s = Math.min(1000 / img.naturalWidth, 1);
   canvas.width = Math.round(img.naturalWidth * s);
   canvas.height = Math.round(img.naturalHeight * s);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   boxes.forEach((b, i) => {{
-    ctx.strokeStyle = i === selected ? '#ffd23f' : '#3ddc84';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = i === selected ? '#ffd23f' : boxColor(i);
+    ctx.lineWidth = i === selected ? 3 : 2;
     ctx.strokeRect(b.left * s, b.top * s, b.width * s, b.height * s);
   }});
 }}
@@ -342,10 +440,16 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path == "/":
             self._index()
+        elif path == "/targeted":
+            self._targeted()
         elif path.startswith("/score/"):
             self._score_page(path.removeprefix("/score/"))
         elif path.startswith("/image/"):
             self._image(path.removeprefix("/image/"))
+        elif path.startswith("/ground_truth_image/"):
+            self._ground_truth_image(path.removeprefix("/ground_truth_image/"))
+        elif path.startswith("/ground_truth/"):
+            self._ground_truth_page(path.removeprefix("/ground_truth/"))
         elif path == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
@@ -376,6 +480,37 @@ class Handler(BaseHTTPRequestHandler):
                 f'<td class="{css}">{confirmed}/{total} pages</td></tr>'
             )
         self._send_html(INDEX_TEMPLATE.format(rows="\n".join(rows) or "<tr><td>none found</td></tr>"))
+
+    def _targeted(self) -> None:
+        candidates = self.state.targeted_candidates()
+        candidates.sort(key=lambda c: (c["score_id"], c["page_index"], c["system_index"]))
+        rows = []
+        for c in candidates:
+            match = re.search(r"-p(\d+)\.png$", c["page_image"])
+            page_number = int(match.group(1)) if match else None
+            position = (
+                "first page" if c["is_first_page"]
+                else "last page" if c["is_last_page"]
+                else ""
+            )
+            css = ' class="edge"' if position else ""
+            has_render = bool(self.state.ground_truth_pages(c["score_id"]))
+            ground_truth_link = (
+                f'<a href="/ground_truth/{c["score_id"]}">ground truth</a>' if has_render else ""
+            )
+            rows.append(
+                f'<tr><td><a href="/score/{c["score_id"]}?page={page_number}">'
+                f'{c["score_id"]} p{page_number} (system {c["system_index"]})</a></td>'
+                f'<td>{c["detected"]} vs {c["ground_truth"]}</td>'
+                f"<td{css}>{position}</td>"
+                f"<td>{ground_truth_link}</td></tr>"
+            )
+        self._send_html(
+            TARGETED_TEMPLATE.format(
+                count=len(candidates),
+                rows="\n".join(rows) or "<tr><td>none found</td></tr>",
+            )
+        )
 
     def _score_page(self, raw_id: str) -> None:
         score_id = _safe_score_id(raw_id)
@@ -439,6 +574,41 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _ground_truth_page(self, raw_id: str) -> None:
+        score_id = _safe_score_id(raw_id)
+        if score_id is None:
+            self._send_html("bad score id", status=400)
+            return
+        page_names = self.state.ground_truth_pages(score_id)
+        if not page_names:
+            self._send_html(
+                f"no ground-truth render for {score_id} - run render_lieder_ground_truth.py "
+                "for it first",
+                status=404,
+            )
+            return
+        images = "\n".join(
+            f'<img src="/ground_truth_image/{score_id}/{name}" alt="{name}">'
+            for name in page_names
+        )
+        self._send_html(GROUND_TRUTH_TEMPLATE.format(score_id=score_id, images=images))
+
+    def _ground_truth_image(self, raw_path: str) -> None:
+        rel = unquote(raw_path)
+        if ".." in rel.split("/") or not self.state.ground_truth_renders_dir:
+            self._send_html("bad path", status=400)
+            return
+        full = self.state.ground_truth_renders_dir / rel
+        if not full.is_file():
+            self._send_html("not found", status=404)
+            return
+        data = full.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
@@ -450,10 +620,21 @@ def main() -> None:
     parser.add_argument(
         "--verified", type=Path, required=True, help="Where confirmed/edited boxes are saved."
     )
+    parser.add_argument(
+        "--targeted-candidates", type=Path,
+        help="targeted_review_candidates.py's --out file - powers the /targeted page.",
+    )
+    parser.add_argument(
+        "--ground-truth-renders", type=Path,
+        help="render_lieder_ground_truth.py's --out dir - powers the /ground_truth/<id> page.",
+    )
     parser.add_argument("--port", type=int, default=8791)
     args = parser.parse_args()
 
-    Handler.state = ReviewState(args.pngs, args.systems, args.verified)
+    Handler.state = ReviewState(
+        args.pngs, args.systems, args.verified,
+        args.targeted_candidates, args.ground_truth_renders,
+    )
     server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     print(f"reviewing {len(Handler.state.score_ids())} score(s) at http://localhost:{args.port}/")
     server.serve_forever()
