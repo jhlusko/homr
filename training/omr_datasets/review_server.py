@@ -256,6 +256,11 @@ a {{ color: #9cc0ff; }}
 .pane {{ flex: 1; min-width: 0; }}
 .pane img {{ max-width: 100%; border: 1px solid #555; }}
 .pane h3 {{ font-size: 0.9rem; margin: 0 0 0.4rem 0; opacity: 0.85; }}
+.img-wrap {{ position: relative; min-height: 200px; }}
+.pane-spinner {{ display: none; width: 2.5em; height: 2.5em; border-radius: 50%;
+  border: 4px solid #555; border-top-color: #eee; animation: spin 0.8s linear infinite;
+  position: absolute; top: 1.5rem; left: 50%; margin-left: -1.25em; }}
+@keyframes spin {{ to {{ transform: rotate(360deg); }} }}
 #status {{ opacity: 0.85; }}
 #noteInput {{ padding: 0.35rem; }}
 table.mismatches {{ border-collapse: collapse; margin: 0.6rem 0; font-size: 0.85rem; }}
@@ -276,7 +281,12 @@ table.mismatches td {{ padding: 0.15rem 0.7rem; border-bottom: 1px solid #444; }
   <button id="gtNext">ground truth page &rarr;</button>
 </div>
 <div id="panes">
-  <div class="pane"><h3 id="scanLabel"></h3><img id="scanImg"></div>
+  <div class="pane"><h3 id="scanLabel"></h3>
+    <div class="img-wrap">
+      <div id="scanSpinner" class="pane-spinner"></div>
+      <img id="scanImg" style="display:none">
+    </div>
+  </div>
   <div class="pane"><h3 id="gtLabel"></h3><img id="gtImg"></div>
 </div>
 <table class="mismatches" id="mismatchTable"></table>
@@ -304,7 +314,16 @@ function render() {{
     (index + 1) + '/' + items.length + '  ' + item.score_id +
     '  <span class="' + judgedClass + '">' + (item.judgment || 'unreviewed') + '</span>';
   document.getElementById('scanLabel').textContent = 'scan: ' + item.page_image;
-  document.getElementById('scanImg').src = '/image/' + item.page_image;
+  const scanImg = document.getElementById('scanImg');
+  const scanSpinner = document.getElementById('scanSpinner');
+  scanImg.style.display = 'none';
+  scanImg.src = '';
+  scanSpinner.style.display = 'block';
+  scanImg.onload = () => {{
+    scanSpinner.style.display = 'none';
+    scanImg.style.display = '';
+  }};
+  scanImg.src = '/image/' + item.page_image;
 
   gtPageOffset = item.confirmed_gt_page ? item.confirmed_gt_page - 1 - item.page_index : 0;
   updateGtImage();
