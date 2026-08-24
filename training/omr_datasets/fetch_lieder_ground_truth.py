@@ -46,7 +46,11 @@ LIEDER_RAW_BASE = "https://raw.githubusercontent.com/OpenScore/Lieder/main/"
 LIEDER_MSCX_URL_TEMPLATE = (
     "https://raw.githubusercontent.com/OpenScore/Lieder/main/scores/{path}/lc{key}.mscx"
 )
+LIEDER_MXL_URL_TEMPLATE = (
+    "https://raw.githubusercontent.com/OpenScore/Lieder/main/scores/{path}/lc{key}.mxl"
+)
 MSCX_FILENAME_RE = re.compile(r"lc(\d+)\.mscx$")
+MXL_FILENAME_RE = re.compile(r"lc(\d+)\.mxl$")
 
 
 def load_lieder_scores(cache_path: Path | None) -> dict:
@@ -78,6 +82,41 @@ def load_lieder_file_tree(cache_path: Path | None) -> dict[str, str]:
         if match:
             by_key[match.group(1)] = entry["path"]
     return by_key
+
+
+def load_lieder_mxl_tree(cache_path: Path | None) -> dict[str, str]:
+    """Same as `load_lieder_file_tree`, but indexing each piece's `.mxl` (real,
+    exported MusicXML - has lyrics/dynamics content, unlike `.mscx`, which is
+    MuseScore's own native format) instead of its `.mscx`. Kept as its own cache
+    file (not merged into `load_lieder_file_tree`'s) since the two are fetched and
+    used by different callers - not every caller needs both."""
+    if cache_path and cache_path.exists():
+        data = json.loads(cache_path.read_text(encoding="utf-8"))
+    else:
+        with urllib.request.urlopen(LIEDER_TREE_URL) as resp:  # noqa: S310
+            data = json.loads(resp.read())
+        if cache_path:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(data), encoding="utf-8")
+    by_key = {}
+    for entry in data.get("tree", []):
+        match = MXL_FILENAME_RE.search(entry["path"])
+        if match:
+            by_key[match.group(1)] = entry["path"]
+    return by_key
+
+
+def fetch_mxl(entry: dict, key: str, file_tree: dict[str, str] | None = None) -> bytes:
+    """Same fallback reasoning as `fetch_mscx` - prefer the live repo tree over
+    `scores.yaml`'s own possibly-stale `path`. Returns the raw `.mxl` (a zip
+    archive), not the unzipped MusicXML inside it - see
+    `musicxml_text_ground_truth.py`'s own `unzip_mxl` for that."""
+    if file_tree and key in file_tree:
+        url = LIEDER_RAW_BASE + urllib.parse.quote(file_tree[key])
+    else:
+        url = LIEDER_MXL_URL_TEMPLATE.format(path=urllib.parse.quote(entry["path"]), key=key)
+    with urllib.request.urlopen(url) as resp:  # noqa: S310
+        return resp.read()
 
 
 def match_single_piece_scores(
