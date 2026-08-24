@@ -2,7 +2,11 @@ import unittest
 from dataclasses import dataclass
 
 from homr import constants
-from training.omr_datasets.detect_imslp_systems import GENERAL_PADDING_UNITS, _group_bounds
+from training.omr_datasets.detect_imslp_systems import (
+    GENERAL_PADDING_UNITS,
+    _group_bounds,
+    _staff_bounds,
+)
 
 
 @dataclass
@@ -56,6 +60,31 @@ class TestGroupBounds(unittest.TestCase):
         self.assertGreater(right, staff.max_x)
         self.assertLess(top, staff.min_y)
         self.assertGreater(bottom, staff.max_y)
+
+
+class TestStaffBounds(unittest.TestCase):
+    def test_matches_a_single_staff_group_s_own_bounds(self) -> None:
+        staff = _FakeStaff(min_x=10, max_x=110, min_y=100, max_y=140, average_unit_size=4)
+
+        self.assertEqual(_staff_bounds(staff), _group_bounds(_FakeGroup([staff])))
+
+    def test_group_bounds_is_the_union_of_each_staff_s_own_bounds(self) -> None:
+        # A regression guard for the _staff_bounds refactor: _group_bounds must
+        # still be exactly the union of its staffs' own individual bounds, not
+        # something subtly different now that the per-staff computation is shared.
+        voice = _FakeStaff(min_x=20, max_x=100, min_y=50, max_y=90, average_unit_size=3)
+        piano = _FakeStaff(min_x=10, max_x=110, min_y=200, max_y=260, average_unit_size=5)
+
+        group_left, group_top, group_right, group_bottom = _group_bounds(
+            _FakeGroup([voice, piano])
+        )
+        v_left, v_top, v_right, v_bottom = _staff_bounds(voice)
+        p_left, p_top, p_right, p_bottom = _staff_bounds(piano)
+
+        self.assertEqual(group_left, min(v_left, p_left))
+        self.assertEqual(group_top, min(v_top, p_top))
+        self.assertEqual(group_right, max(v_right, p_right))
+        self.assertEqual(group_bottom, max(v_bottom, p_bottom))
 
 
 if __name__ == "__main__":

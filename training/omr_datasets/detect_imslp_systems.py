@@ -61,11 +61,30 @@ DEFAULT_CONFIG = ProcessingConfig(
 
 
 @dataclass(frozen=True)
+class DetectedBox:
+    left: int
+    top: int
+    width: int
+    height: int
+
+    def to_dict(self) -> dict[str, int]:
+        return {"left": self.left, "top": self.top, "width": self.width, "height": self.height}
+
+
+@dataclass(frozen=True)
 class DetectedSystem:
     left: int
     top: int
     width: int
     height: int
+    #: Each staff's own box within this system, top to bottom - e.g. voice above
+    #: piano - needed to crop a single staff/voice out of a system for training
+    #: pairs (homr's own training examples are per staff, not per whole system;
+    #: not saved until this was actually needed, since every consumer before this
+    #: only ever wanted the system's own union box). A sibling of `boundingBox` in
+    #: the saved yaml, not nested inside it - `boundingBox` stays exactly the
+    #: plain `{left,top,width,height}` shape every existing consumer expects.
+    staff_boxes: list[DetectedBox]
 
     def to_dict(self) -> dict[str, int]:
         return {"left": self.left, "top": self.top, "width": self.width, "height": self.height}
@@ -101,9 +120,27 @@ def rasterize_pages(pdf_path: Path, out_dir: Path, dpi: int = 300) -> list[Path]
 GENERAL_PADDING_UNITS = 1.0
 
 
+def _staff_bounds(staff: object) -> tuple[float, float, float, float]:
+    """`(left, top, right, bottom)` for one individual staff, with the same
+    ledger-line + general padding `_group_bounds` applies to a whole system - see
+    its own docstring for why. Used both to build a system's own union box (the
+    union of every staff's bounds) and, separately, to crop one staff/voice out of
+    a system on its own (needed for training pairs - homr's own training examples
+    are per staff, not per whole multi-staff system).
+    """
+    padding = GENERAL_PADDING_UNITS * staff.average_unit_size
+    ledger_margin = constants.max_number_of_ledger_lines * staff.average_unit_size
+    left = staff.min_x - padding
+    right = staff.max_x + padding
+    top = staff.min_y - ledger_margin - padding
+    bottom = staff.max_y + ledger_margin + padding
+    return left, top, right, bottom
+
+
 def _group_bounds(group: MultiStaff) -> tuple[float, float, float, float]:
     """`(left, top, right, bottom)` for one `_plan_systems` system group, in the
-    detector's own (pre-rescale) coordinate space.
+    detector's own (pre-rescale) coordinate space - the union of every staff's own
+    `_staff_bounds`.
 
     `Staff.min_y`/`max_y` bound only the 5 staff lines themselves, not a note's ledger
     lines above/below them - `homr.model.Staff.is_on_staff_zone` already has to solve
@@ -118,12 +155,11 @@ def _group_bounds(group: MultiStaff) -> tuple[float, float, float, float]:
     xs = []
     ys = []
     for s in group.staffs:
-        padding = GENERAL_PADDING_UNITS * s.average_unit_size
-        ledger_margin = constants.max_number_of_ledger_lines * s.average_unit_size
-        xs.append(s.min_x - padding)
-        xs.append(s.max_x + padding)
-        ys.append(s.min_y - ledger_margin - padding)
-        ys.append(s.max_y + ledger_margin + padding)
+        left, top, right, bottom = _staff_bounds(s)
+        xs.append(left)
+        xs.append(right)
+        ys.append(top)
+        ys.append(bottom)
     return min(xs), min(ys), max(xs), max(ys)
 
 
@@ -154,12 +190,24 @@ def detect_systems_on_page(page_path: Path) -> tuple[int, int, list[DetectedSyst
     systems = []
     for group in plan.systems:
         left, top, right, bottom = _group_bounds(group)
+        staff_boxes = []
+        for s in group.staffs:  # already top-to-bottom, MultiStaff.__init__ sorts by min_y
+            s_left, s_top, s_right, s_bottom = _staff_bounds(s)
+            staff_boxes.append(
+                DetectedBox(
+                    left=int(round(s_left * scale_x)),
+                    top=int(round(s_top * scale_y)),
+                    width=int(round((s_right - s_left) * scale_x)),
+                    height=int(round((s_bottom - s_top) * scale_y)),
+                )
+            )
         systems.append(
             DetectedSystem(
                 left=int(round(left * scale_x)),
                 top=int(round(top * scale_y)),
                 width=int(round((right - left) * scale_x)),
                 height=int(round((bottom - top) * scale_y)),
+                staff_boxes=staff_boxes,
             )
         )
     systems.sort(key=lambda box: box.top)
@@ -195,7 +243,13 @@ def detect_score(pdf_path: Path, pngs_root: Path) -> dict:
             "width": width,
             "height": height,
             "image": f"{score_id}/{page_path.name}",
-            "systems": [{"boundingBox": box.to_dict()} for box in systems],
+            "systems": [
+                {
+                    "boundingBox": box.to_dict(),
+                    "staffBoxes": [staff_box.to_dict() for staff_box in box.staff_boxes],
+                }
+                for box in systems
+            ],
         }
     return {"pages": pages}
 
