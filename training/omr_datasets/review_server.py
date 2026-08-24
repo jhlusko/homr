@@ -49,6 +49,7 @@ class ReviewState:
         verified_dir: Path,
         targeted_candidates_path: Path | None = None,
         ground_truth_renders_dir: Path | None = None,
+        match_review_path: Path | None = None,
     ) -> None:
         self.pngs_dir = pngs_dir
         self.systems_dir = systems_dir
@@ -56,6 +57,7 @@ class ReviewState:
         self.verified_dir.mkdir(parents=True, exist_ok=True)
         self.targeted_candidates_path = targeted_candidates_path
         self.ground_truth_renders_dir = ground_truth_renders_dir
+        self.match_review_path = match_review_path
 
     def targeted_candidates(self) -> list[dict]:
         """`targeted_review_candidates.py`'s own output - specific pages worth a
@@ -78,6 +80,60 @@ class ReviewState:
         if not score_dir.exists():
             return []
         return sorted(p.name for p in score_dir.glob("page*.png"))
+
+    def compare_items(self) -> list[dict]:
+        """One item per unique (score, flagged page) - several flagged systems on
+        the same page share the same "does this page even match" question, so
+        they're grouped rather than reviewed one at a time."""
+        by_key: dict[tuple[str, int], dict] = {}
+        for c in self.targeted_candidates():
+            key = (c["score_id"], c["page_index"])
+            item = by_key.setdefault(
+                key,
+                {
+                    "score_id": c["score_id"],
+                    "page_index": c["page_index"],
+                    "page_image": c["page_image"],
+                    "is_first_page": c["is_first_page"],
+                    "is_last_page": c["is_last_page"],
+                    "mismatches": [],
+                },
+            )
+            item["mismatches"].append(
+                {
+                    "system_index": c["system_index"],
+                    "detected": c["detected"],
+                    "ground_truth": c["ground_truth"],
+                }
+            )
+        items = sorted(by_key.values(), key=lambda item: (item["score_id"], item["page_index"]))
+        judgments = self.match_judgments()
+        for item in items:
+            saved = judgments.get(f"{item['score_id']}/{item['page_index']}")
+            item["judgment"] = saved["judgment"] if saved else None
+            item["confirmed_gt_page"] = saved["confirmed_gt_page"] if saved else None
+        return items
+
+    def match_judgments(self) -> dict:
+        if not self.match_review_path or not self.match_review_path.exists():
+            return {}
+        return json.loads(self.match_review_path.read_text(encoding="utf-8"))
+
+    def save_match_judgment(
+        self, score_id: str, page_index: int, judgment: str, confirmed_gt_page: int, note: str
+    ) -> None:
+        if not self.match_review_path:
+            return
+        data = self.match_judgments()
+        data[f"{score_id}/{page_index}"] = {
+            "score_id": score_id,
+            "page_index": page_index,
+            "judgment": judgment,
+            "confirmed_gt_page": confirmed_gt_page,
+            "note": note,
+        }
+        self.match_review_path.parent.mkdir(parents=True, exist_ok=True)
+        self.match_review_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def score_ids(self) -> list[str]:
         return sorted(p.stem for p in self.systems_dir.glob("*.yaml"))
@@ -148,12 +204,13 @@ a:hover {{ text-decoration: underline; }}
 </style></head>
 <body>
 <h1>Targeted review candidates ({count})</h1>
-<p><a href="/">&larr; all scores</a></p>
+<p><a href="/">&larr; all scores</a> · <a href="/compare">side-by-side comparison view</a></p>
 <p style="opacity:0.7; max-width:640px">
 Pages where a bar-count check against the score's matched Lieder transcription
 disagreed, on a score whose *other* pages otherwise agree - a specific, targeted
 signal that this page (not the whole score) is worth a second look, rather than a
-blanket re-check of every low-scoring score.
+blanket re-check of every low-scoring score. The side-by-side view is the faster
+way to go through these one at a time.
 </p>
 <table>
 <tr><th>Score / page</th><th>Detected vs. ground truth</th><th>Position</th><th></th></tr>
@@ -180,6 +237,121 @@ piece, every page, so you can tell whether the flagged scan page exists anywhere
 here at all, not just whether that one page matches.
 </p>
 {images}
+</body></html>
+"""
+
+COMPARE_TEMPLATE = """<!doctype html>
+<html><head><meta charset="utf-8"><title>Compare scan vs. ground truth</title>
+<style>
+body {{ font-family: system-ui, sans-serif; margin: 1rem; background: #1e1e1e; color: #eee; }}
+#toolbar {{ margin-bottom: 0.6rem; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }}
+button {{ font: inherit; padding: 0.35rem 0.9rem; border-radius: 5px; border: 1px solid #555;
+  background: #333; color: #eee; cursor: pointer; }}
+button:hover {{ background: #444; }}
+button.match {{ background: #2a7a2a; border-color: #2a7a2a; }}
+button.no-match {{ background: #a8720f; border-color: #a8720f; }}
+a {{ color: #9cc0ff; }}
+#panes {{ display: flex; gap: 1rem; align-items: flex-start; }}
+.pane {{ flex: 1; min-width: 0; }}
+.pane img {{ max-width: 100%; border: 1px solid #555; }}
+.pane h3 {{ font-size: 0.9rem; margin: 0 0 0.4rem 0; opacity: 0.85; }}
+#status {{ opacity: 0.85; }}
+#noteInput {{ padding: 0.35rem; }}
+table.mismatches {{ border-collapse: collapse; margin: 0.6rem 0; font-size: 0.85rem; }}
+table.mismatches td {{ padding: 0.15rem 0.7rem; border-bottom: 1px solid #444; }}
+.judged-match {{ color: #6cc06c; }}
+.judged-no_match {{ color: #e0a94a; }}
+</style></head>
+<body>
+<p><a href="/targeted">&larr; targeted review candidates</a> ({count} page(s) to compare)</p>
+<div id="toolbar">
+  <button id="prev">&larr; prev</button>
+  <span id="itemLabel"></span>
+  <button id="next">next &rarr;</button>
+  <span style="flex:1"></span>
+  <button id="gtPrev">ground truth page &larr;</button>
+  <span id="gtPageLabel"></span>
+  <button id="gtNext">ground truth page &rarr;</button>
+</div>
+<div id="panes">
+  <div class="pane"><h3 id="scanLabel"></h3><img id="scanImg"></div>
+  <div class="pane"><h3 id="gtLabel"></h3><img id="gtImg"></div>
+</div>
+<table class="mismatches" id="mismatchTable"></table>
+<div id="toolbar">
+  <button class="match" id="matchBtn">match</button>
+  <button class="no-match" id="noMatchBtn">no match</button>
+  <input id="noteInput" placeholder="optional note" style="flex:1">
+  <span id="status"></span>
+</div>
+<script>
+const items = {items_json};
+let index = 0;
+let gtPageOffset = 0;
+
+function currentItem() {{ return items[index]; }}
+
+function render() {{
+  const item = currentItem();
+  const judgedClass = item.judgment ? ' judged-' + item.judgment : '';
+  document.getElementById('itemLabel').innerHTML =
+    (index + 1) + '/' + items.length + '  ' + item.score_id +
+    '  <span class="' + judgedClass + '">' + (item.judgment || 'unreviewed') + '</span>';
+  document.getElementById('scanLabel').textContent = 'scan: ' + item.page_image;
+  document.getElementById('scanImg').src = '/image/' + item.page_image;
+
+  gtPageOffset = item.confirmed_gt_page ? item.confirmed_gt_page - 1 - item.page_index : 0;
+  updateGtImage();
+
+  document.getElementById('mismatchTable').innerHTML = item.mismatches.map(m =>
+    '<tr><td>system ' + m.system_index + '</td><td>detected ' + m.detected +
+    '</td><td>ground truth ' + m.ground_truth + '</td></tr>'
+  ).join('');
+  document.getElementById('status').textContent = '';
+  document.getElementById('noteInput').value = '';
+}}
+
+function updateGtImage() {{
+  const item = currentItem();
+  const gtIndex = item.page_index + gtPageOffset;
+  const pageNum = String(Math.max(0, gtIndex) + 1).padStart(3, '0');
+  document.getElementById('gtImg').src = '/ground_truth_image/' + item.score_id + '/page' + pageNum + '.png';
+  document.getElementById('gtLabel').textContent = 'ground truth page ' + (gtIndex + 1) +
+    (item.is_first_page ? ' (scan: first page)' : item.is_last_page ? ' (scan: last page)' : '');
+  document.getElementById('gtPageLabel').textContent = 'page ' + (gtIndex + 1);
+}}
+
+document.getElementById('prev').onclick = () => {{ if (index > 0) {{ index--; render(); }} }};
+document.getElementById('next').onclick = () => {{ if (index < items.length - 1) {{ index++; render(); }} }};
+document.getElementById('gtPrev').onclick = () => {{ gtPageOffset--; updateGtImage(); }};
+document.getElementById('gtNext').onclick = () => {{ gtPageOffset++; updateGtImage(); }};
+
+async function submitJudgment(judgment) {{
+  const item = currentItem();
+  const gtIndex = item.page_index + gtPageOffset;
+  const res = await fetch('/api/compare', {{
+    method: 'POST', headers: {{'Content-Type': 'application/json'}},
+    body: JSON.stringify({{
+      score_id: item.score_id, page_index: item.page_index, judgment,
+      confirmed_gt_page: gtIndex + 1,
+      note: document.getElementById('noteInput').value,
+    }}),
+  }});
+  if (res.ok) {{
+    item.judgment = judgment;
+    item.confirmed_gt_page = gtIndex + 1;
+    document.getElementById('status').textContent = 'saved.';
+    if (index < items.length - 1) {{ index++; render(); }}
+  }} else {{
+    document.getElementById('status').textContent = 'save failed.';
+  }}
+}}
+
+document.getElementById('matchBtn').onclick = () => submitJudgment('match');
+document.getElementById('noMatchBtn').onclick = () => submitJudgment('no_match');
+
+render();
+</script>
 </body></html>
 """
 
@@ -442,6 +614,8 @@ class Handler(BaseHTTPRequestHandler):
             self._index()
         elif path == "/targeted":
             self._targeted()
+        elif path == "/compare":
+            self._compare()
         elif path.startswith("/score/"):
             self._score_page(path.removeprefix("/score/"))
         elif path.startswith("/image/"):
@@ -457,6 +631,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html("not found", status=404)
 
     def do_POST(self) -> None:  # noqa: N802
+        if self.path == "/api/compare":
+            self._save_compare_judgment()
+            return
         match = re.match(r"^/api/score/([^/]+)/page/(\d+)$", self.path)
         if not match:
             self._send_json({"error": "not found"}, status=404)
@@ -468,6 +645,22 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         body = json.loads(self.rfile.read(length) or b"{}")
         self.state.save_page(score_id, match.group(2), body.get("systems", []), body.get("status", "edited"))
+        self._send_json({"ok": True})
+
+    def _save_compare_judgment(self) -> None:
+        length = int(self.headers.get("Content-Length", "0"))
+        body = json.loads(self.rfile.read(length) or b"{}")
+        score_id = _safe_score_id(body.get("score_id", ""))
+        if score_id is None:
+            self._send_json({"error": "bad score id"}, status=400)
+            return
+        self.state.save_match_judgment(
+            score_id,
+            int(body.get("page_index", -1)),
+            body.get("judgment", ""),
+            int(body.get("confirmed_gt_page", 0)),
+            body.get("note", ""),
+        )
         self._send_json({"ok": True})
 
     def _index(self) -> None:
@@ -511,6 +704,10 @@ class Handler(BaseHTTPRequestHandler):
                 rows="\n".join(rows) or "<tr><td>none found</td></tr>",
             )
         )
+
+    def _compare(self) -> None:
+        items = self.state.compare_items()
+        self._send_html(COMPARE_TEMPLATE.format(count=len(items), items_json=json.dumps(items)))
 
     def _score_page(self, raw_id: str) -> None:
         score_id = _safe_score_id(raw_id)
@@ -628,12 +825,16 @@ def main() -> None:
         "--ground-truth-renders", type=Path,
         help="render_lieder_ground_truth.py's --out dir - powers the /ground_truth/<id> page.",
     )
+    parser.add_argument(
+        "--match-review", type=Path,
+        help="Where /compare's match/no-match judgments are saved.",
+    )
     parser.add_argument("--port", type=int, default=8791)
     args = parser.parse_args()
 
     Handler.state = ReviewState(
         args.pngs, args.systems, args.verified,
-        args.targeted_candidates, args.ground_truth_renders,
+        args.targeted_candidates, args.ground_truth_renders, args.match_review,
     )
     server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     print(f"reviewing {len(Handler.state.score_ids())} score(s) at http://localhost:{args.port}/")
