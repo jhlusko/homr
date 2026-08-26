@@ -96,6 +96,12 @@ pick back up directly, in the priority order the evidence supports.
   - [Building the best Stage 2 model: what the artifacts actually are, and the order to do it in](#building-the-best-stage-2-model-what-the-artifacts-actually-are-and-the-order-to-do-it-in)
   - [Stage 2 renders and the review site (2026-08-25)](#stage-2-renders-and-the-review-site-2026-08-25)
   - [Packaging the corpora and models for distribution](#packaging-the-corpora-and-models-for-distribution)
+- [Structured heads in production, and the refinement UI](#structured-heads-in-production-and-the-refinement-ui)
+  - [The chain is built at both ends and missing in the middle](#the-chain-is-built-at-both-ends-and-missing-in-the-middle)
+  - [What ships as a choice, and what only ships](#what-ships-as-a-choice-and-what-only-ships)
+  - [Surfacing: threshold-gated, not always-on](#surfacing-threshold-gated-not-always-on)
+  - [Why `/v1/regenerate` is the right seam](#why-v1regenerate-is-the-right-seam)
+  - [Still unproven, and it gates everything above](#still-unproven-and-it-gates-everything-above)
 
 ## 1. The text detector's page-level precision has collapsed for five of seven classes — **CLOSED 2026-08-20, user decision**
 
@@ -4617,3 +4623,77 @@ Two decisions inside it are worth recording because the obvious alternative is w
 The manifest also excludes itself from its own digest: it is computed over a tree without
 a manifest and checked against a tree with one, so a self-inclusive digest could never be
 reproduced by the person checking it.
+
+## Structured heads in production, and the refinement UI
+
+**Decided 2026-08-25 (user): heads on in production, and their probabilities exposed as
+multiple-choice refinements.** This section records what that requires and what was
+deliberately scoped out, because the gap between "the heads work" and "the heads do
+anything for a user" is larger than the evaluation numbers suggest.
+
+### The chain is built at both ends and missing in the middle
+
+| stage | state |
+|---|---|
+| heads train, produce per-head logits | works - `exact_beam_vector` 0.9508 |
+| `music_xml_generator.build_beams` emits `<beam>` | works |
+| `generate()` runs the heads and returns them | **missing** |
+| something populates `Note.notation` at inference | **missing** |
+
+`structured_logits` is produced only by the *training* forward pass and consumed only by
+training and evaluation scripts. `generate()` - the autoregressive path inference actually
+uses - returns `symbols` and nothing else, and `Note.notation` defaults to `None`. So
+`build_beams` is currently a no-op in production: it returns early on every note.
+
+This is worth stating plainly because every measured number in this document is real and
+none of it reaches a user. The work is plumbing, not modelling.
+
+### What ships as a choice, and what only ships
+
+These are different questions, and conflating them would either hide good output or ask
+users to arbitrate noise.
+
+| head | macro F1 | written to MusicXML | offered as a choice |
+|---|---|---|---|
+| beam level 1 | 0.9562 | yes | **yes** |
+| slur spans | 0.9290 | yes | **yes** |
+| slur sides | 0.9094 | yes | **yes** |
+| beam level 3 | 0.8480 | yes | **yes** |
+| hooks | 0.8162 | yes | **yes** |
+| beam level 2 | 0.8130 | yes | **yes** |
+| ties | 0.8032 | yes | no |
+| stems | 0.7189 (micro 0.9483) | yes | no |
+| beam level 4 | 0.5972 (n=8) | yes, when applicable | no |
+| dynamics | 0.1030 | **no** | no |
+
+Beams and slurs are offered. Stems and ties are good enough to improve the output but not
+to ask a user to arbitrate - a refinement UI implies the model has an opinion worth
+choosing between, and at 0.72/0.80 that claim is weaker than the interface would suggest.
+Beam level 4 has support 8; its F1 is noise and must never be presented as a distribution.
+Dynamics at 0.1030 did not train and is not emitted at all.
+
+### Surfacing: threshold-gated, not always-on
+
+Alternatives appear only where the model is genuinely uncertain. At 0.9508 exact-beam
+accuracy, offering a choice on every note would bury the ~5% worth reviewing under 95%
+noise. The threshold is a tunable, and choosing it needs the confidence distribution on
+real pages - not yet measured, and it should not be guessed.
+
+The known cost: a confident-but-wrong prediction is never surfaced. That is the accepted
+trade, and it is the reason the threshold should be set from a measured distribution
+rather than picked.
+
+### Why `/v1/regenerate` is the right seam
+
+OTS already has `/v1/regenerate`: rebuild MusicXML from an edited token sequence, no
+image, no GPU. A refinement is exactly that shape - the user picks an alternative, the
+score is rebuilt, no re-recognition. The contract needs extending, since regenerate
+currently validates six-field string symbols and structured notation is not among those
+six fields.
+
+### Still unproven, and it gates everything above
+
+`training/onnx/convert.py` has **never been run with `enable_structured_heads=True`**.
+Production inference downloads ONNX from `liebharc/homr` releases; whether the heads
+survive `torch.export` and what the exported graph's extra outputs look like is unknown.
+Until that is answered, none of the UI work can be scheduled honestly.
