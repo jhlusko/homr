@@ -4756,10 +4756,46 @@ omitted, behaviour is exactly what it was, so the pinned-checkpoint export flow 
 inherited from is untouched. Verified two ways: unit tests against a mocked `Config`
 confirm the redirected path is actually used (3 tests), and I re-ran the exact export that
 caused the incident with `out_dir` pointed at scratch - the live cache's file listing and
-timestamps are byte-identical before and after. The re-run also confirmed the export bug
-itself is real and not an artifact of the earlier mistake: same anomalous sizes (65 KB
-encoder, 188 MB decoder) with the live files completely untouched this time. That bug -
-why the full-model export produces the wrong byte count - is still open.
+timestamps are byte-identical before and after.
+
+**Both anomalies turned out to be real, and both are now resolved or understood - neither
+was a correctness bug in the weights.** Debugged directly on the GPU instance, against
+the real checkpoint and a torch/CUDA build matched to the one that trains it, rather than
+in the local CPU venv - the instance already had every dependency installed and needed no
+resolving.
+
+- **The 65 KB encoder was never broken.** It was correct weights (the graph's
+  initializers hold exactly the expected ~51 MB, confirmed by summing `raw_data` across
+  every tensor) split into a small graph file plus a sibling `.onnx.data` file. A newer
+  torch silently upgrades the requested opset (17 -> 18) and, once upgraded, routes
+  through the torch.export/onnxscript exporter instead of the legacy TorchScript one -
+  and that exporter defaults to externalizing large initializers. `convert_decoder`
+  already pinned `dynamo=False` to avoid exactly this; `convert_encoder` did not. Fixed by
+  adding the same flag. Reproduced the anomaly byte-for-byte on the instance first (to
+  rule out an environment difference from the local venv), then re-exported with the fix
+  and got a single 50.3 MB file. Verified against torch on a real image tensor: max
+  absolute delta **8.1e-06**.
+
+- **The 188 MB decoder is not a bug - the real release is quantized, and this project has
+  never had tooling for that step.** Comparing initializers by shape: the same
+  `(512, 4096)` weight is 8,388,608 bytes in my fp32 export and exactly 2,097,152 bytes
+  (4x smaller, 1 byte/element) in the real release. The real graph's node types confirm
+  it: `DynamicQuantizeLinear` (55x), `MatMulInteger` (70x), `DequantizeLinear`, plus
+  `SkipLayerNormalization` and `MultiHeadAttention` - fused kernels from ONNX Runtime's
+  transformer optimizer. The pinned decoder went through **ORT's transformer-fusion pass
+  and dynamic int8 quantization** after export, a pipeline stage `training/onnx/convert.py`
+  has never encoded anywhere. This isn't a `dynamo=` flag away; it needs
+  `onnxruntime.transformers.optimizer` and `quantize_dynamic` run against our export,
+  matching whatever recipe produced the pinned release - a real, separate piece of work,
+  not a one-line fix.
+
+  Verified the fp32 export itself is correct on its own terms, since "correct but
+  unquantized" and "wrong" are different findings and only one of them is true here:
+  decoder ONNX vs torch on a real generation step (context, KV cache, and the
+  `staff_context_emb` input all included), max absolute delta **2.4e-06** on the rhythm
+  logits, and identical argmax. **A functionally correct, larger (unquantized) decoder is
+  available today; a byte-for-byte match to the production artifact's footprint is not,
+  and requires the quantization step above before it would be.**
 
 ### What is now the real blocker
 
