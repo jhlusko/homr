@@ -4749,9 +4749,17 @@ it was built to do; I overrode it without checking what it was protecting.
 Caught by comparing file sizes against timestamps immediately after, not by the guard,
 since I had disabled it. Recovered by fetching the two zips directly from `liebharc/homr`'s
 release and restoring the original files; nothing tracked in git was affected, since
-`*.onnx` is gitignored. Worth a real fix before this export path is used again outside a
-scratch directory - `--overwrite` protecting a path that is also a live, shared cache is a
-sharper edge than the flag name suggests.
+`*.onnx` is gitignored.
+
+**Fixed 2026-08-26.** All three `convert_*` functions now take an optional `out_dir`;
+omitted, behaviour is exactly what it was, so the pinned-checkpoint export flow this was
+inherited from is untouched. Verified two ways: unit tests against a mocked `Config`
+confirm the redirected path is actually used (3 tests), and I re-ran the exact export that
+caused the incident with `out_dir` pointed at scratch - the live cache's file listing and
+timestamps are byte-identical before and after. The re-run also confirmed the export bug
+itself is real and not an artifact of the earlier mistake: same anomalous sizes (65 KB
+encoder, 188 MB decoder) with the live files completely untouched this time. That bug -
+why the full-model export produces the wrong byte count - is still open.
 
 ### What is now the real blocker
 
