@@ -4793,9 +4793,29 @@ resolving.
   unquantized" and "wrong" are different findings and only one of them is true here:
   decoder ONNX vs torch on a real generation step (context, KV cache, and the
   `staff_context_emb` input all included), max absolute delta **2.4e-06** on the rhythm
-  logits, and identical argmax. **A functionally correct, larger (unquantized) decoder is
-  available today; a byte-for-byte match to the production artifact's footprint is not,
-  and requires the quantization step above before it would be.**
+  logits, and identical argmax.
+
+  **The quantization step itself is now built** - `quantize_decoder()`, wrapping
+  `onnxruntime.quantization.quantize_dynamic`. Run against the real export it reproduces
+  the footprint almost exactly: **47.6 MB against a real 47.3 MB**. It does *not*
+  reproduce the real graph's `SkipLayerNormalization`/`MultiHeadAttention` operator
+  fusion - ONNX Runtime's transformer optimizer, a separate step aimed at inference speed
+  rather than size, not attempted.
+
+  **Accuracy is only spot-checked on random inputs, not yet on real staff data, and that
+  distinction matters here more than usual.** 20 trials of random tokens/context against
+  the matching fp32 torch model: **1/40 argmax mismatches**, max logit delta **0.178** - a
+  real change from quantization noise, not rounding. Random inputs are close to
+  worst-case for this check: with no real signal separating classes, logits sit close
+  together, and small quantization noise flips an argmax more easily than it would
+  against a trained model's confident, well-separated real output. Whether decoding
+  decisions hold up on real pages is not yet known.
+
+  **Net position:** a functionally correct, larger (unquantized) decoder is available and
+  fully verified today. A quantized decoder that reproduces production's footprint is
+  now built and provisionally promising, but not yet validated enough to ship - it needs
+  the same real-data check every other number in this document has had before it is
+  trusted.
 
 ### What is now the real blocker
 

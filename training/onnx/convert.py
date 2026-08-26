@@ -362,3 +362,38 @@ def convert_structured_heads(
         dynamo=False,
     )
     return path_out
+
+
+def quantize_decoder(src_path: str, dst_path: str, overwrite: bool = False) -> str | None:
+    """Dynamic int8 quantization of an already-exported decoder graph.
+
+    The pinned production decoder is roughly 4x smaller than a plain fp32 export of the
+    same weights - confirmed by comparing initializer byte counts per shape (exactly 4x,
+    1 byte/element vs 4) and by its node types (`DynamicQuantizeLinear`, `MatMulInteger`,
+    `DequantizeLinear`). That is ONNX Runtime's dynamic quantization applied as a
+    post-export step; `training/onnx/convert.py` never had tooling for it before this.
+
+    This reproduces the size (47.6 MB against a real 47.3 MB) with `onnxruntime.
+    quantization.quantize_dynamic` alone. It does **not** reproduce the real graph's
+    `SkipLayerNormalization`/`MultiHeadAttention` operator fusion, which is ONNX
+    Runtime's transformer optimizer - a separate, orthogonal step aimed at inference
+    speed rather than size, not attempted here.
+
+    **Accuracy has only been spot-checked on random inputs, not on real staff data.**
+    20 trials of random tokens/context against the matching fp32 torch model gave 1/40
+    argmax mismatches (rhythm and pitch checked each trial) and a max logit delta of
+    0.178 - a real change, not float32 rounding, and expected from int8 quantization.
+    Random inputs are close to worst-case for this check: with no real signal to separate
+    classes, logits sit close together and small quantization noise flips an argmax more
+    easily than it would against a trained model's confident, well-separated real output.
+    Whether this quantized graph's decoding decisions hold up against real staff images
+    is not yet known and needs checking against real data before this ships anywhere.
+    """
+    from onnxruntime.quantization import QuantType, quantize_dynamic
+
+    if os.path.exists(dst_path) and not overwrite:
+        eprint(f"Quantized decoder already exists at {dst_path}. Use --overwrite.")
+        return None
+
+    quantize_dynamic(src_path, dst_path, weight_type=QuantType.QUInt8)
+    return dst_path
