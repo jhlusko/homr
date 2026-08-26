@@ -35,11 +35,17 @@ def _config(enable: bool) -> Config:
 def _generate(config: Config) -> list:
     decoder = get_decoder(config)
     decoder.eval()
-    start = torch.zeros((1, 1), dtype=torch.long)
-    nonote = torch.zeros((1, 1), dtype=torch.long)
+    # decoder.device is fixed to cuda whenever it is available (decoder.py:420),
+    # independent of where the caller's own tensors live - a real caller keeps the two
+    # in sync by construction, so this test has to as well or it fails only on a GPU
+    # machine, exactly as this one first did.
+    device = decoder.device
+    decoder.to(device)
+    start = torch.zeros((1, 1), dtype=torch.long, device=device)
+    nonote = torch.zeros((1, 1), dtype=torch.long, device=device)
     with torch.no_grad():
         return decoder.generate(
-            start, nonote, context=torch.randn(1, 4, config.decoder_dim)
+            start, nonote, context=torch.randn(1, 4, config.decoder_dim, device=device)
         )
 
 
