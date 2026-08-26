@@ -81,13 +81,25 @@ class DecoderWrapper(torch.nn.Module):
         )
 
 
-def convert_encoder(overwrite: bool) -> str | None:
+def convert_encoder(overwrite: bool, out_dir: str | None = None) -> str | None:
     """
     Converts the encoder to onnx
+
+    `out_dir`, when given, redirects the output away from `config.filepaths.encoder_path`
+    - which is also the live cache `download_weights` populates, keyed to the pinned
+    architecture's name regardless of whose weights were actually loaded. Exporting a
+    non-pinned checkpoint (a fork's own training run, say) without `out_dir` silently
+    overwrites that cache in place; see `ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md` for the
+    time that happened. Omitting it keeps the exact behaviour this had before, since that
+    is still correct for exporting the pinned checkpoint itself.
     """
     config = Config()
 
-    path_out = config.filepaths.encoder_path
+    path_out = (
+        os.path.join(out_dir, os.path.basename(config.filepaths.encoder_path))
+        if out_dir
+        else config.filepaths.encoder_path
+    )
 
     if os.path.exists(path_out) and not overwrite:
         eprint(
@@ -129,15 +141,22 @@ def convert_encoder(overwrite: bool) -> str | None:
     return path_out
 
 
-def convert_decoder(overwrite: bool) -> str | None:
+def convert_decoder(overwrite: bool, out_dir: str | None = None) -> str | None:
     """
     Converts the decoder to onnx.
+
+    `out_dir` redirects output away from the live weights cache - see
+    `convert_encoder`'s docstring for why that matters.
     """
     config = Config()
     model = get_score_wrapper(config, attn_flash=False)
     model.eval()
 
-    path_out = config.filepaths.decoder_path
+    path_out = (
+        os.path.join(out_dir, os.path.basename(config.filepaths.decoder_path))
+        if out_dir
+        else config.filepaths.decoder_path
+    )
 
     if os.path.exists(path_out) and not overwrite:
         eprint(
@@ -269,7 +288,9 @@ class StructuredHeadsWrapper(torch.nn.Module):
         return tuple(logits[name] for name in self.names)
 
 
-def convert_structured_heads(overwrite: bool, weights: str) -> str | None:
+def convert_structured_heads(
+    overwrite: bool, weights: str, out_dir: str | None = None
+) -> str | None:
     """Export the structured beam/stem/slur heads as their own ONNX graph.
 
     Separate from the decoder on purpose. The heads are a non-autoregressive projection
@@ -280,10 +301,16 @@ def convert_structured_heads(overwrite: bool, weights: str) -> str | None:
     enabling the heads at all.
 
     `weights` is a heads checkpoint (`heads_clef.pth`), which holds only the head
-    tensors; it is meaningless apart from the core it was trained against.
+    tensors; it is meaningless apart from the core it was trained against. `out_dir`
+    redirects output away from the live weights cache - see `convert_encoder`'s
+    docstring for why that matters.
     """
     config = Config()
-    path_out = config.filepaths.structured_heads_path
+    path_out = (
+        os.path.join(out_dir, os.path.basename(config.filepaths.structured_heads_path))
+        if out_dir
+        else config.filepaths.structured_heads_path
+    )
 
     if os.path.exists(path_out) and not overwrite:
         eprint(f"Structured heads already exist at {path_out}. Use --overwrite.")
