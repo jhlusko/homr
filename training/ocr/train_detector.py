@@ -42,11 +42,12 @@ import torch
 from torch.utils.data import DataLoader
 
 from training.architecture.segmentation.model import CamVidModel
-from training.ocr.detector_masks import CLASS_ORDER
+from training.ocr.detector_masks import CLASS_INDEX, CLASS_ORDER
 from training.ocr.detector_patches import (
     POSITIVE_RATIO,
     DetectorPatches,
     ImageBlockSampler,
+    PreExtractedPatches,
     Sample,
     class_draw_weights,
     class_page_counts,
@@ -67,12 +68,20 @@ def collate(batch: list[tuple[np.ndarray, np.ndarray]]) -> dict:
 
 
 def per_class_iou(
-    model: CamVidModel, logits: torch.Tensor, masks: torch.Tensor
+    model: CamVidModel, logits: torch.Tensor, masks: torch.Tensor,
+    ignore_index: int | None = None,
 ) -> dict[str, float]:
-    """IoU for every class the model has, whether or not it appeared in this batch."""
+    """IoU for every class the model has, whether or not it appeared in this batch.
+
+    `ignore_index` must be passed through here as well as into the loss: a mask
+    built by `scan_text_masks.py` marks unsupervised pixels with a sentinel that is
+    not a class, and scoring those pixels would count every ignored region as a
+    prediction error.
+    """
     predicted = logits.softmax(dim=1).argmax(dim=1)
     tp, fp, fn, _ = smp.metrics.get_stats(
-        predicted, masks, mode="multiclass", num_classes=NUM_CLASSES
+        predicted, masks, mode="multiclass", num_classes=NUM_CLASSES,
+        ignore_index=ignore_index,
     )
     iou = smp.metrics.iou_score(tp, fp, fn, torch.zeros_like(tp), reduction="none")
     # iou_score returns one row per image in the batch; average over the batch, per class,
@@ -88,7 +97,9 @@ def per_class_iou(
     }
 
 
-def evaluate(model: CamVidModel, loader: DataLoader, device: str) -> dict[str, float]:
+def evaluate(
+    model: CamVidModel, loader: DataLoader, device: str, ignore_index: int | None = None
+) -> dict[str, float]:
     model.eval()
     totals = collections.defaultdict(list)
     with torch.no_grad():
@@ -96,7 +107,7 @@ def evaluate(model: CamVidModel, loader: DataLoader, device: str) -> dict[str, f
             images = batch["images"].to(device)
             masks = batch["masks"].to(device)
             logits = model(images)
-            for name, value in per_class_iou(model, logits, masks).items():
+            for name, value in per_class_iou(model, logits, masks, ignore_index).items():
                 totals[name].append(value)
     return {name: sum(values) / len(values) for name, values in totals.items()}
 
@@ -121,31 +132,48 @@ def compute_class_weights(samples: list[Sample]) -> dict[str, float]:
 
 def train(args: argparse.Namespace) -> dict:
     samples = read_index(args.index)
-    class_weights = compute_class_weights(samples) if args.class_weighted_sampling else None
-    dataset = DetectorPatches(
-        samples,
-        patches_per_image=args.patches_per_image,
-        positive_ratio=args.positive_ratio,
-        seed=args.seed,
-        class_weights=class_weights,
-    )
-    # A plain `shuffle=True` scatters one image's patches randomly across the whole epoch,
-    # defeating DetectorPatches' one-slot decode cache - up to `patches_per_image` reads
-    # of the same full-resolution page per epoch instead of one. ImageBlockSampler shuffles
-    # image order but keeps one image's patches consecutive, so the cache actually hits.
-    sampler = ImageBlockSampler(len(samples), args.patches_per_image, seed=args.seed)
-    loader = DataLoader(
-        dataset, batch_size=args.batch_size, sampler=sampler, num_workers=args.workers,
-        collate_fn=collate,
-    )
+    pre_extracted = getattr(args, "pre_extracted", False)
+    if pre_extracted:
+        # The index already lists patches, not pages: every sampling decision was made
+        # when the bank was written, so there is nothing to draw here and no reason for
+        # the block sampler - a plain shuffle is cheap on patch-sized files and gives
+        # batches that mix pages rather than coming from one or two.
+        dataset = PreExtractedPatches(samples)
+        loader = DataLoader(
+            dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers,
+            collate_fn=collate,
+        )
+    else:
+        class_weights = compute_class_weights(samples) if args.class_weighted_sampling else None
+        dataset = DetectorPatches(
+            samples,
+            patches_per_image=args.patches_per_image,
+            positive_ratio=args.positive_ratio,
+            seed=args.seed,
+            class_weights=class_weights,
+        )
+        # A plain `shuffle=True` scatters one image's patches randomly across the whole
+        # epoch, defeating DetectorPatches' one-slot decode cache - up to
+        # `patches_per_image` reads of the same full-resolution page per epoch instead of
+        # one. ImageBlockSampler shuffles image order but keeps one image's patches
+        # consecutive, so the cache actually hits.
+        sampler = ImageBlockSampler(len(samples), args.patches_per_image, seed=args.seed)
+        loader = DataLoader(
+            dataset, batch_size=args.batch_size, sampler=sampler, num_workers=args.workers,
+            collate_fn=collate,
+        )
     valid_loader = None
     if args.valid_index:
         valid_samples = read_index(args.valid_index)
         # Fewer patches per image and no jitter randomness across epochs would be nicer,
         # but a fixed seed already makes every epoch's validation set the same crops -
         # good enough to compare epochs against each other, not meant as a held-out score.
-        valid_dataset = DetectorPatches(
-            valid_samples, patches_per_image=args.patches_per_image, seed=12345
+        valid_dataset = (
+            PreExtractedPatches(valid_samples)
+            if pre_extracted
+            else DetectorPatches(
+                valid_samples, patches_per_image=args.patches_per_image, seed=12345
+            )
         )
         valid_loader = DataLoader(
             valid_dataset, batch_size=args.batch_size, shuffle=False,
@@ -156,6 +184,26 @@ def train(args: argparse.Namespace) -> dict:
         arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=NUM_CLASSES,
         skip_weights_download=args.skip_pretrained,
     ).to(args.device)
+    # Read defensively: callers (including tests) build this Namespace directly
+    # rather than through argparse, so a newly added flag may simply be absent.
+    ignore_index = getattr(args, "ignore_index", None)
+    loss_classes_arg = getattr(args, "loss_classes", None)
+    if ignore_index is not None or loss_classes_arg:
+        loss_classes = None
+        if loss_classes_arg:
+            names = [n.strip() for n in loss_classes_arg.split(",") if n.strip()]
+            unknown = [n for n in names if n not in CLASS_INDEX]
+            if unknown:
+                raise SystemExit(f"unknown --loss-classes: {unknown}")
+            loss_classes = [CLASS_INDEX[n] for n in names]
+        # CamVidModel builds a plain multiclass Dice loss; rebuild it here rather than
+        # editing the shared model, so every other user of CamVidModel is unaffected.
+        model.loss_fn = smp.losses.DiceLoss(
+            smp.losses.MULTICLASS_MODE, from_logits=True,
+            classes=loss_classes, ignore_index=ignore_index,
+        )
+        print(f"loss: Dice over {loss_classes_arg or 'all classes'}"
+              f", ignore_index={ignore_index}")
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
     print(f"{len(dataset):,} patches from {len(samples):,} images, {NUM_CLASSES} classes")
@@ -182,7 +230,7 @@ def train(args: argparse.Namespace) -> dict:
             running_loss += float(loss.item())
             batches += 1
             with torch.no_grad():
-                for name, value in per_class_iou(model, logits.detach(), masks).items():
+                for name, value in per_class_iou(model, logits.detach(), masks, ignore_index).items():
                     totals[name].append(value)
 
         per_class = {name: sum(values) / len(values) for name, values in totals.items()}
@@ -196,7 +244,7 @@ def train(args: argparse.Namespace) -> dict:
         record = {"epoch": epoch, "loss": running_loss / max(1, batches), **per_class}
 
         if valid_loader is not None:
-            valid_per_class = evaluate(model, valid_loader, args.device)
+            valid_per_class = evaluate(model, valid_loader, args.device, ignore_index)
             print("  valid:")
             for name in CLASS_NAMES:
                 if name in valid_per_class:
@@ -260,6 +308,22 @@ def main() -> None:
     parser.add_argument(
         "--skip-pretrained", action="store_true",
         help="Skip downloading imagenet encoder weights (offline runs, or tests).",
+    )
+    parser.add_argument(
+        "--pre-extracted", action="store_true",
+        help="--index lists patches from extract_patch_bank.py, not full pages.",
+    )
+    parser.add_argument(
+        "--ignore-index", type=int, default=None,
+        help="Mask value meaning 'no supervision here' (scan_text_masks.py writes 255). "
+        "Excluded from both the loss and the IoU metric.",
+    )
+    parser.add_argument(
+        "--loss-classes", type=str, default=None,
+        help="Comma-separated class names to compute the loss over, e.g. 'Lyrics,Dynamic'. "
+        "Default: every class. Only meaningful together with --ignore-index, since "
+        "restricting classes without ignoring unlabelled pixels still trains them as "
+        "background.",
     )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()

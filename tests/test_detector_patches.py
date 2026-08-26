@@ -238,6 +238,53 @@ class TestDetectorPatches(unittest.TestCase):
 
         self.assertLess(hits, 20)
 
+    def test_consecutive_draws_compute_the_centres_only_once(self) -> None:
+        # The expensive part of a draw is not the decode but `box_centres_by_class`:
+        # a full-page comparison per class plus connected components on each one. It
+        # is a pure function of the mask, so eight consecutive draws from one image
+        # must cost one call, not eight - the difference between a training epoch that
+        # progresses and one that leaves the GPU idle behind pegged workers.
+        import training.ocr.detector_patches as module
+
+        with tempfile.TemporaryDirectory() as tmp:
+            samples = [_write_sample(Path(tmp), "a")]
+            dataset = DetectorPatches(samples, patches_per_image=8, positive_ratio=1.0)
+
+            calls = 0
+            real = module.box_centres_by_class
+
+            def counting(mask):
+                nonlocal calls
+                calls += 1
+                return real(mask)
+
+            module.box_centres_by_class = counting
+            try:
+                for i in range(8):
+                    dataset[i]
+            finally:
+                module.box_centres_by_class = real
+
+        self.assertEqual(calls, 1)
+
+    def test_a_new_image_recomputes_its_own_centres(self) -> None:
+        # The cache is keyed on the image, so moving to a different one must not
+        # reuse the previous page's centres - that would draw patches at coordinates
+        # belonging to another page entirely.
+        with tempfile.TemporaryDirectory() as tmp:
+            samples = [
+                _write_sample(Path(tmp), "a", boxes=[(10, 10, 30, 30)]),
+                _write_sample(Path(tmp), "b", boxes=[(400, 400, 430, 430)]),
+            ]
+            dataset = DetectorPatches(samples, patches_per_image=2, positive_ratio=1.0)
+
+            dataset[0]
+            first = dataset._cache_centres
+            dataset[2]
+            second = dataset._cache_centres
+
+        self.assertNotEqual(first, second)
+
     def test_a_missing_file_raises_rather_than_returning_something_wrong(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dataset = DetectorPatches([Sample("absent.png", "absent.mask.png")])
@@ -294,3 +341,29 @@ class TestDetectorPatches(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestReadIndexWithCommasInPaths(unittest.TestCase):
+    """OSSQ files pages by composer, so image paths contain commas."""
+
+    def test_a_composer_comma_does_not_break_the_split(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            index = Path(tmp) / "index.txt"
+            index.write_text(
+                "/d/Haydn,_Joseph/Quartet_in_F,_Op.74_No.2/p1.png,/m/sq1_p1.mask.png\n",
+                encoding="utf-8",
+            )
+
+            samples = read_index(index)
+
+        self.assertEqual(samples[0].image, "/d/Haydn,_Joseph/Quartet_in_F,_Op.74_No.2/p1.png")
+        self.assertEqual(samples[0].mask, "/m/sq1_p1.mask.png")
+
+    def test_paths_without_commas_are_unaffected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            index = Path(tmp) / "index.txt"
+            index.write_text("/d/a.png,/m/a.mask.png\n", encoding="utf-8")
+
+            samples = read_index(index)
+
+        self.assertEqual((samples[0].image, samples[0].mask), ("/d/a.png", "/m/a.mask.png"))

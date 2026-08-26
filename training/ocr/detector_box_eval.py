@@ -28,6 +28,7 @@ import torch
 from training.ocr.detector_data import Box, collect
 from training.ocr.detector_inference import load_model, predict_boxes
 from training.ocr.detector_masks import CLASS_INDEX, canonical_label
+from training.ocr.detector_patches import read_index
 
 
 @dataclass
@@ -114,7 +115,11 @@ def evaluate(
         by_image[box.image].append(box)
 
     totals: dict[str, Counts] = collections.defaultdict(Counts)
-    images = [line.split(",")[0] for line in index.read_text(encoding="utf-8").splitlines() if line.strip()]
+    # Via `read_index` rather than splitting here: OSSQ files pages by composer, so
+    # image paths contain commas ("Haydn,_Joseph/..."), and taking the first
+    # comma-separated field silently truncates the path to a directory that does not
+    # exist. One parser for the index format, in one place.
+    images = [sample.image for sample in read_index(index)]
     for page_index, image_path in enumerate(images):
         if page_index % 20 == 0:
             print(f"  page {page_index}/{len(images)}")
@@ -127,14 +132,33 @@ def evaluate(
     return totals
 
 
-def describe(totals: dict[str, Counts]) -> str:
+#: The classes this project actually needs the detector to get right (user decision,
+#: 2026-08-25). Lyrics and Dynamic are 93% of all ground-truth boxes in this corpus.
+#: MeasureNumber is derivable rather than detected; Tempo is rare enough to fix by hand
+#: (roughly once per movement); Fingering is not wanted; StaffText and Expression are
+#: wanted but explicitly expendable if giving them up buys Lyrics and Dynamic.
+PRIORITY_CLASSES = ("Lyrics", "Dynamic")
+
+
+def describe(totals: dict[str, Counts], priority: tuple[str, ...] = PRIORITY_CLASSES) -> str:
+    """Per-class rows, an all-class total, and a total over `priority` alone.
+
+    Both totals are reported because they answer different questions and disagree
+    sharply here. The all-class row is dominated by classes with a few dozen boxes and
+    weak baselines - it read 1.2% for a model scoring 86% F1 on the classes that carry
+    93% of the corpus, which made a usable model look like a catastrophe. The priority
+    row is the one tied to a decision; the all-class row stays so the cost of ignoring
+    those classes is visible rather than hidden.
+    """
     lines = [f"{'class':<14} {'precision':>10} {'recall':>10} {'f1':>10} {'gt boxes':>10}"]
     overall = Counts()
+    focus = Counts()
     for label in sorted(totals):
         counts = totals[label]
-        overall.matched += counts.matched
-        overall.predicted += counts.predicted
-        overall.ground_truth += counts.ground_truth
+        for bucket in (overall,) + ((focus,) if label in priority else ()):
+            bucket.matched += counts.matched
+            bucket.predicted += counts.predicted
+            bucket.ground_truth += counts.ground_truth
         lines.append(
             f"{label:<14} {counts.precision:>10.1%} {counts.recall:>10.1%} "
             f"{counts.f1:>10.1%} {counts.ground_truth:>10,}"
@@ -142,6 +166,10 @@ def describe(totals: dict[str, Counts]) -> str:
     lines.append(
         f"{'overall':<14} {overall.precision:>10.1%} {overall.recall:>10.1%} "
         f"{overall.f1:>10.1%} {overall.ground_truth:>10,}"
+    )
+    lines.append(
+        f"{'priority':<14} {focus.precision:>10.1%} {focus.recall:>10.1%} "
+        f"{focus.f1:>10.1%} {focus.ground_truth:>10,}   ({', '.join(priority)})"
     )
     return "\n".join(lines)
 

@@ -59,11 +59,21 @@ class Sample:
 
 
 def read_index(path: Path) -> list[Sample]:
+    """`image,mask` per line - split from the *right*.
+
+    Image paths in this corpus contain commas: OSSQ files them by composer, so a page
+    lives under `Haydn,_Joseph/String_Quartet_in_F_major,_Hob.III73,_Op.74_No.2/`. A
+    plain `split(",")` returns five fields for that line and raises, which is at least
+    loud - but splitting from the left and taking the first two would be worse, quietly
+    pairing a truncated path with a directory name. The mask side is written by
+    `scan_text_masks.py` as `<score>_<page>.mask.png`, which cannot contain a comma, so
+    the last one is always the separator.
+    """
     samples = []
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
-        image, mask = line.split(",")
+        image, mask = line.rsplit(",", 1)
         samples.append(Sample(image, mask))
     return samples
 
@@ -184,6 +194,15 @@ class DetectorPatches(Dataset):
         self._cache_index: int | None = None
         self._cache_image: np.ndarray | None = None
         self._cache_mask: np.ndarray | None = None
+        # Caching the decode alone was not enough. `box_centres_by_class` is a pure
+        # function of the mask, but it ran on every single draw: seven full-page
+        # `mask == index` comparisons plus a `connectedComponentsWithStats` per class
+        # actually present. That is far more work than the `imread` the cache above was
+        # added to avoid, and it dwarfed it - measured on the synthetic baseline, eight
+        # workers stayed pegged for nine minutes without completing a single batch while
+        # the GPU sat at 0%. Cached alongside the mask it is computed once per image, as
+        # the decode already was.
+        self._cache_centres: dict[str, list[tuple[int, int]]] | None = None
 
     def __len__(self) -> int:
         return len(self.samples) * self.patches_per_image
@@ -193,14 +212,16 @@ class DetectorPatches(Dataset):
         sample = self.samples[image_index]
         if self._cache_index == image_index:
             image, mask = self._cache_image, self._cache_mask
+            centres_by_class = self._cache_centres
         else:
             image = cv2.imread(sample.image)
             mask = cv2.imread(sample.mask, cv2.IMREAD_GRAYSCALE)
             if image is None or mask is None:
                 raise FileNotFoundError(f"cannot read {sample.image} or {sample.mask}")
+            centres_by_class = box_centres_by_class(mask)
             self._cache_index, self._cache_image, self._cache_mask = image_index, image, mask
+            self._cache_centres = centres_by_class
 
-        centres_by_class = box_centres_by_class(mask)
         positive = centres_by_class and self.rng.random() < self.positive_ratio
         if positive:
             # Pick a class among those present on this page, then a centre of that class
@@ -228,6 +249,33 @@ class DetectorPatches(Dataset):
             extract_patch(image, origin, PAD_IMAGE_VALUE),
             extract_patch(mask, origin, PAD_MASK_VALUE),
         )
+
+
+class PreExtractedPatches(Dataset):
+    """Patches already drawn to disk by `extract_patch_bank.py` - one file pair per
+    patch, read as-is.
+
+    There is deliberately no sampling here. Every decision `DetectorPatches` makes per
+    draw (positive or negative, which class, how much jitter) was made once when the
+    bank was written, so a run over a bank cannot silently draw something different
+    from the run it is being compared against. It also means no block sampler: the
+    files are patch-sized, so a plain shuffled DataLoader is cheap and gives batches
+    that mix pages instead of being drawn from one or two.
+    """
+
+    def __init__(self, samples: list[Sample]) -> None:
+        self.samples = samples
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, index: int) -> tuple[np.ndarray, np.ndarray]:
+        sample = self.samples[index]
+        image = cv2.imread(sample.image)
+        mask = cv2.imread(sample.mask, cv2.IMREAD_GRAYSCALE)
+        if image is None or mask is None:
+            raise FileNotFoundError(f"cannot read {sample.image} or {sample.mask}")
+        return image, mask
 
 
 class ImageBlockSampler(Sampler[int]):

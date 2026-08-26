@@ -30,17 +30,38 @@ def score_of(sample: Sample) -> str:
     return folder.split("_p")[0]
 
 
+def score_of_mask(sample: Sample) -> str:
+    """The score id from the *mask* filename instead of the image's folder.
+
+    `score_of` reads the image's parent directory, which works for the synthetic
+    corpus (`mbox/<score>_p<page>-s<system>/`) and the Lieder scans
+    (`imslp_pngs/<score>/`) because in both the folder *is* the score. It breaks
+    silently on OSSQ, whose pages all sit in a folder literally named `original`
+    under a deep per-work path: every page would report the same score id, the split
+    would put the whole corpus on one side, and it would still report itself as
+    score-disjoint.
+
+    Masks are always written `<score_id>_<page>.mask.png`, and no score id in any of
+    these corpora contains an underscore, so the prefix is unambiguous.
+    """
+    return Path(sample.mask).name.split("_")[0]
+
+
+#: `--score-from` choices: where to read a sample's score id from.
+SCORE_SOURCES = {"folder": score_of, "mask": score_of_mask}
+
+
 def is_valid(score_id: str, valid_fraction: float, seed: int) -> bool:
     digest = hashlib.sha256(f"{seed}:{score_id}".encode()).hexdigest()
     return (int(digest[:8], 16) / 0xFFFFFFFF) < valid_fraction
 
 
 def split(
-    samples: list[Sample], valid_fraction: float = 0.1, seed: int = 0
+    samples: list[Sample], valid_fraction: float = 0.1, seed: int = 0, score_from=score_of
 ) -> tuple[list[Sample], list[Sample]]:
     train, valid = [], []
     for sample in samples:
-        (valid if is_valid(score_of(sample), valid_fraction, seed) else train).append(sample)
+        (valid if is_valid(score_from(sample), valid_fraction, seed) else train).append(sample)
     return train, valid
 
 
@@ -56,12 +77,18 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--valid-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--score-from", choices=sorted(SCORE_SOURCES), default="folder",
+        help="Where the score id comes from: the image's folder (synthetic, Lieder) "
+             "or the mask filename prefix (OSSQ, whose pages share one folder name).",
+    )
     args = parser.parse_args()
 
+    score_from = SCORE_SOURCES[args.score_from]
     samples = read_index(args.index)
-    train, valid = split(samples, args.valid_fraction, args.seed)
-    scores = {score_of(s) for s in samples}
-    valid_scores = {score_of(s) for s in valid}
+    train, valid = split(samples, args.valid_fraction, args.seed, score_from)
+    scores = {score_from(s) for s in samples}
+    valid_scores = {score_from(s) for s in valid}
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     write_index(train, args.out_dir / "train_index.txt")

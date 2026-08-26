@@ -14,6 +14,7 @@ from training.ocr.train_detector import (
     CLASS_NAMES,
     NUM_CLASSES,
     collate,
+    evaluate,
     per_class_iou,
     train,
 )
@@ -77,6 +78,57 @@ class TestPerClassIou(unittest.TestCase):
         self.assertAlmostEqual(result["background"], 1.0, places=3)
         self.assertAlmostEqual(result["Lyrics"], 1.0, places=3)
 
+    def test_ignored_pixels_are_not_scored_as_errors(self) -> None:
+        # A scan mask marks unsupervised pixels 255. Scoring them counts every ignored
+        # region as a prediction error, which is how E1-E3's first validation numbers
+        # came out unusable while their training IoU looked fine - only `evaluate`
+        # dropped the argument.
+        lyrics_index = CLASS_NAMES.index("Lyrics")
+        masks = torch.full((1, 4, 4), 255, dtype=torch.long)
+        masks[0, 0, 0] = lyrics_index
+        logits = torch.full((1, NUM_CLASSES, 4, 4), -10.0)
+        logits[0, lyrics_index] += 20.0  # predict Lyrics everywhere, including ignored
+
+        scored = per_class_iou(self._StubModel(), logits, masks, ignore_index=255)
+
+        self.assertAlmostEqual(scored["Lyrics"], 1.0, places=3)
+
+    def test_without_the_ignore_index_those_same_pixels_ruin_the_score(self) -> None:
+        # The counterpart to the test above: it is what the bug actually did, kept so
+        # the fix cannot be silently reverted.
+        lyrics_index = CLASS_NAMES.index("Lyrics")
+        masks = torch.full((1, 4, 4), 255, dtype=torch.long)
+        masks[0, 0, 0] = lyrics_index
+        logits = torch.full((1, NUM_CLASSES, 4, 4), -10.0)
+        logits[0, lyrics_index] += 20.0
+
+        unscored = per_class_iou(self._StubModel(), logits, masks)
+
+        self.assertLess(unscored.get("Lyrics", 0.0), 0.2)
+
+    def test_evaluate_passes_the_ignore_index_through(self) -> None:
+        # per_class_iou has supported ignore_index all along; evaluate accepted the
+        # argument and dropped it on the floor. Guard the seam, not just the leaf.
+        lyrics_index = CLASS_NAMES.index("Lyrics")
+        masks = torch.full((2, 4, 4), 255, dtype=torch.long)
+        masks[:, 0, 0] = lyrics_index
+        images = torch.zeros((2, 3, 4, 4))
+        logits = torch.full((2, NUM_CLASSES, 4, 4), -10.0)
+        logits[:, lyrics_index] += 20.0
+
+        class _Model:
+            def eval(self_inner) -> None:
+                pass
+
+            def __call__(self_inner, _images):
+                return logits
+
+        loader = [{"images": images, "masks": masks}]
+
+        result = evaluate(_Model(), loader, "cpu", ignore_index=255)
+
+        self.assertAlmostEqual(result["Lyrics"], 1.0, places=3)
+
     def test_a_class_absent_from_the_batch_is_not_reported(self) -> None:
         # "No data" and "zero IoU" have to read differently, or a starved class and an
         # unlucky batch look identical.
@@ -131,6 +183,29 @@ class TestTrainEntryPoint(unittest.TestCase):
     def test_the_whole_path_runs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             report = train(self._args(Path(tmp)))
+
+        self.assertEqual(len(report["history"]), 1)
+        self.assertIn("background", report["history"][0])
+
+    def test_the_whole_path_runs_on_a_pre_extracted_bank(self) -> None:
+        # The bank path skips both the sampler and the drawing, so it is a genuinely
+        # different route through train() - and the one all four detector experiments
+        # will actually take.
+        from training.ocr.extract_patch_bank import _draw_one
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            patch_dir = directory / "patches"
+            patch_dir.mkdir()
+            written = _draw_one((0, _write_sample(directory, "page"), 4, 0.7, 0, patch_dir))
+            bank_index = directory / "bank.txt"
+            bank_index.write_text(
+                "\n".join(f"{i},{m}" for i, m in written) + "\n", encoding="utf-8"
+            )
+
+            report = train(
+                self._args(directory, index=bank_index, pre_extracted=True, batch_size=2)
+            )
 
         self.assertEqual(len(report["history"]), 1)
         self.assertIn("background", report["history"][0])
