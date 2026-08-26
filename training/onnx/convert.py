@@ -136,6 +136,16 @@ def convert_encoder(overwrite: bool, out_dir: str | None = None) -> str | None:
         do_constant_folding=True,
         input_names=["input"],
         output_names=["output"],
+        # Without this, a newer torch silently upgrades the requested opset to 18,
+        # which routes through the torch.export/onnxscript exporter instead of the
+        # legacy TorchScript one - and that exporter defaults to writing weights as a
+        # separate ".onnx.data" file once a tensor crosses its size threshold. The
+        # graph and the weights are both correct either way (verified: same tensor
+        # values, same shape), but the released artifact this project has always
+        # produced is one self-contained file, and `download_weights` expects exactly
+        # that name with nothing beside it. `dynamo=False` pins the legacy exporter so
+        # the output keeps matching what has always shipped.
+        dynamo=False,
     )
 
     return path_out
