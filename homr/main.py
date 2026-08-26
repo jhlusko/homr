@@ -366,8 +366,20 @@ def get_all_image_files_in_folder(folder: str) -> list[str]:
     return sorted(without_teasers)
 
 
+#: Where to download the pinned ONNX weights from, when they are not already present.
+#: Overridable so a fork can serve its own weights without editing this file - the
+#: redirect a fork needs would otherwise have to live in the exact commit it wants
+#: downstream deployments to pin to, which is a needless coupling.
+HOMR_WEIGHTS_BASE_URL_ENV = "HOMR_WEIGHTS_BASE_URL"
+_UPSTREAM_WEIGHTS_BASE_URL = "https://github.com/liebharc/homr/releases/download/onnx_checkpoints/"
+
+
+def weights_base_url() -> str:
+    return os.environ.get(HOMR_WEIGHTS_BASE_URL_ENV) or _UPSTREAM_WEIGHTS_BASE_URL
+
+
 def download_weights(segnet_use_gpu: bool, transformer_use_gpu: bool, coreml_encoder: bool) -> None:
-    base_url = "https://github.com/liebharc/homr/releases/download/onnx_checkpoints/"
+    base_url = weights_base_url()
     models = [segnet_path_onnx_fp16 if segnet_use_gpu else segnet_path_onnx]
     if transformer_use_gpu:
         # CUDA runs the whole transformer on the fp16 models.
