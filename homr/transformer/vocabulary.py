@@ -6,6 +6,7 @@ from fractions import Fraction
 from typing import Iterable
 
 from homr.simple_logging import eprint
+from homr.transformer.structured_decode import HeadChoice
 from homr.transformer.structured_notation import NoteNotation
 
 nonote = "."
@@ -313,6 +314,14 @@ class EncodedSymbol:
         # it did. Riding along as an attribute means the labels survive reordering and
         # copying without ever taking part in identity.
         self.notation = notation
+
+        # What each structured head was weighing for this note, when the heads ran.
+        # Separate from `notation` because they answer different questions: `notation` is
+        # what gets written into the score, while these are what a user may be offered to
+        # revise - and a head can be trusted for the first without being fit for the
+        # second (see homr/transformer/structured_decode.py). Outside identity for the
+        # same reason as `notation` and `coordinates`.
+        self.structured_choices: tuple[HeadChoice, ...] = ()
 
         self._duration: SymbolDuration | None = None
 

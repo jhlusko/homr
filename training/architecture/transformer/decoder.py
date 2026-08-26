@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from homr.transformer.configs import Config
+from homr.transformer.structured_decode import decode_note
 from homr.transformer.vocabulary import (
     EncodedSymbol,
     has_rhythm_symbol_a_position,
@@ -481,7 +482,17 @@ class ScoreDecoder(nn.Module):
             else:
                 context = context_later
 
-            rhythmsp, pitchsp, liftsp, positionsp, articulationsp, slursp, _, _, cache = self.net(
+            (
+                rhythmsp,
+                pitchsp,
+                liftsp,
+                positionsp,
+                articulationsp,
+                slursp,
+                hidden,
+                _,
+                cache,
+            ) = self.net(
                 rhythms=x_rhythm,
                 pitchs=x_pitch,
                 lifts=x_lift,
@@ -521,6 +532,21 @@ class ScoreDecoder(nn.Module):
                 slur=slur_token[0],
                 position=position_token[0],
             )
+            # The structured heads run on the same hidden state the branch logits came
+            # from, for this step's token only. Without this the heads are trained,
+            # evaluated and never used: `notation` stays None and `build_beams` returns
+            # early on every note, so scores carry MuseScore's auto-beaming instead of
+            # the predicted beams.
+            if self.structured_heads is not None:
+                head_logits = self.structured_heads(hidden[:, -1:, :])
+                prediction = decode_note(
+                    {
+                        name: tensor[0, -1, :].tolist()
+                        for name, tensor in head_logits.items()
+                    }
+                )
+                symbol.notation = prediction.notation
+                symbol.structured_choices = prediction.choices
             symbols.append(symbol)
 
             out_lift = torch.cat((out_lift, lift_sample), dim=-1)

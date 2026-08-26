@@ -62,3 +62,5 @@ _build/
 /*.org
 /*.html
 /temp
+# Local CPU-torch venv for running the torch-dependent tests off the GPU box.
+.venv-test/
