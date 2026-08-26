@@ -1,0 +1,67 @@
+"""Fine-tune on the verified Lieder scans only, with pdmx replay - no OSSQ scanned data.
+
+`train_scans.py` mixes OSSQ scanned crops (32,982), Lieder scans (3,353) and pdmx replay
+(6,400). The OSSQ scanned half of that is not trustworthy: `convert_ossq.py` pairs every
+segment's symbolic content with a crop by `(page, system)`, taking the symbols from
+`musicxml/unaligned` for *both* tracks - but that directory is keyed to the synthetic
+pagination, and the scanned pages paginate differently (24 synthetic pages against 22
+scanned ones for `sq8907120`). Measured over 900 staves across all 9 validation scores,
+**56.7% of scanned staves are paired with the wrong music**, and the per-score collapse
+rate runs from 63% to 95% - it affects every score, in proportion to how far its two
+paginations drift apart.
+
+That makes ~77% of `train_scans.py`'s mixture mislabeled, so the checkpoint it produced
+should be treated as suspect rather than as a base to build on. This run therefore warm
+starts from the *pinned* checkpoint, not from that one.
+
+The Lieder pairs are in a different position entirely: they were content-verified by
+fingerprinting against the piece's own MusicXML note stream (§7), the recovered ones
+were re-checked the same way, and a human has reviewed them through
+`stage2_pair_review_server.py`. They are small - 3,353 training pairs against OSSQ's
+32,982 - but they are known-good, and a small correct corpus is worth more than a large
+one that is more than half wrong.
+
+Replay stays for the same reason it existed before: §23 warns that adapting on new-domain
+data alone specialises the model at the expense of everything else, and the smaller the
+domain corpus the more that matters.
+"""
+
+# flake8: noqa: T201
+
+from training.omr_datasets.convert_pdmx import pdmx_train_index
+from training.transformer.train import train_transformer
+
+IMSLP_TRAIN_INDEX = "/workspace/b0/imslp_train_index.txt"
+IMSLP_VAL_INDEX = "/workspace/b0/imslp_val_index.txt"
+
+IMSLP_COUNT = 3353
+#: ~15% of the mix, matching the fraction `train_scans.py` used - deliberately the same
+#: replay ratio so this run differs from that one in *which* scan data it trains on, not
+#: in how much general data it retains.
+PDMX_REPLAY_COUNT = 600
+
+#: Last run converged by epoch 5 and its epochs 5-13 sat within +/-0.0006, so the 15-epoch
+#: default was ten epochs of nothing. Early stopping (patience 5) still applies.
+EPOCHS = 12
+
+
+def main() -> None:
+    counts = [IMSLP_COUNT, PDMX_REPLAY_COUNT]
+    total = sum(counts)
+    print(
+        f"mix: IMSLP Lieder scans {IMSLP_COUNT}, pdmx replay {PDMX_REPLAY_COUNT} "
+        f"({100 * PDMX_REPLAY_COUNT / total:.1f}%), total {total}"
+    )
+    print("OSSQ scanned deliberately excluded - see this module's docstring")
+    train_transformer(
+        warm_start=True,
+        dataset_index=[IMSLP_TRAIN_INDEX, pdmx_train_index],
+        dataset_weights=[float(c) for c in counts],
+        number_of_files=total,
+        number_of_epochs=EPOCHS,
+        validation_index=IMSLP_VAL_INDEX,
+    )
+
+
+if __name__ == "__main__":
+    main()

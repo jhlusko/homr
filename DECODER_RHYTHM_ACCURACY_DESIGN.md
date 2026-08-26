@@ -1410,12 +1410,55 @@ real one-epoch smoke run against the actual checkpoint/model/data (not just the
 test fakes) before committing - `training.transformer.train_staff_context` end to
 end, 100 real training systems + 25 real validation systems, no crash, sane losses.
 
-Still to do before trusting this in production: retrain `staff_context_weights.pth`
-with this fixed first pass, then re-run the same real Stage A/B comparison
-(`benchmark_stage_ab.py`, on vs. off) that caught the original regression - unit
-tests and a smoke run establish the mechanism is wired correctly, not that the
-retrained weights actually help. `enable_staff_context` stays off by default until
-that benchmark is re-run and shows an improvement, not a regression.
+**Update, 2026-08-24: retrained and re-benchmarked - negative result.**
+`staff_context_weights.pth` was retrained end to end with the fixed
+`mixed_first_pass_hidden` (phase25, `--sampling-prob 0.5`), and the same real
+`benchmark_stage_ab.py` Stage A/B comparison that originally caught the regression
+was re-run against it. The fix did **not** resolve the regression:
+
+| | baseline (context off) | phase24 (buggy first pass) | phase25 (fixed first pass) |
+|---|---|---|---|
+| pages with >=1 finding | 66.8% (133/199) | 86.4% | 86.9% (173/199) |
+| pages with >=1 proposal | 35.2% (70) | 57.8% | 52.3% (104) |
+| barline_position_mismatch | 240 | 467 | 467 |
+| motif_articulation_mismatch | 126 | 129 | 186 |
+| measure_duration_mismatch | 105 | 160 | 166 |
+| measure_count_mismatch | 27 | 73 | 102 |
+| key_signature_mismatch | 44 | 51 | 55 |
+| time_signature_mismatch | 13 | 16 | 11 |
+| page_staff_count_mismatch | 9 | 9 | 9 |
+
+phase25's finding rate (86.9% of pages) is essentially unchanged from phase24's
+already-regressed 86.4%, both far above baseline's 66.8%. Worse: several
+categories got *worse* than the original buggy run, not just worse than baseline -
+`motif_articulation_mismatch` (186 vs. 129 vs. 126 baseline), `measure_count_mismatch`
+(102 vs. 73 vs. 27 baseline), and `measure_duration_mismatch` (166 vs. 160 vs. 105
+baseline). `barline_position_mismatch` stayed exactly flat between phase24 and
+phase25 (467 both), each already nearly double baseline's 240 - the one category
+where the fix at least didn't make things worse, but also didn't improve them.
+
+This means the theory behind the fix - that `set_probe_mode`'s missing scheduled-
+sampling branch was *the* cause of the Stage C regression - was wrong, or at best
+incomplete. The mechanism itself is real and correctly implemented (verified by 17
+passing unit tests plus a real smoke run), but retraining with it did not change the
+model's actual behavior in a way that helps. Two honest possibilities, neither yet
+investigated: (a) the regression's real cause is elsewhere in Stage C's own training
+setup, exposure bias was a plausible-but-wrong hypothesis; or (b) `--sampling-prob
+0.5` for one retraining run isn't enough to shift a model already converged toward a
+bad local pattern - would need a harder ablation (higher sampling prob, longer
+training, or training from scratch rather than resuming from `ckpt-3400`) to tell
+those apart, none of which is currently justified without evidence the exposure-bias
+theory itself is right.
+
+`enable_staff_context` stays off by default - phase25's weights do not clear the bar
+`benchmark_stage_ab.py` was built to enforce, and per this doc's own standing rule
+that flag doesn't flip until a retrained checkpoint shows an improvement, not a
+regression. This phase's actual, current recommendation: **do not spend more GPU
+time chasing this specific fix** without first re-examining whether exposure bias is
+really the regression's cause - the benchmark now has two independent data points
+(phase24, phase25) both showing the same regression pattern despite very different
+first-pass training mechanics, which argues for a cause upstream of exposure bias
+rather than a fix that just needs more tuning.
 
 ## 8. Why not several tempting shortcuts
 

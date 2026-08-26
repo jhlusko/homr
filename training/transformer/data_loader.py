@@ -239,3 +239,40 @@ def load_dataset(
         ),
         "validation_list": validation_list,
     }
+
+
+def load_dataset_split(
+    train_samples: list[str],
+    validation_samples: list[str],
+    config: Config,
+    dataset_root: str | None = None,
+) -> dict[str, Any]:
+    """`load_dataset` for a split the caller has already decided.
+
+    `load_dataset`'s own `val_split` slices by position out of a list
+    `mix_training_sets` has already shuffled, which makes it a sample-level random
+    split - the thing `ENSEMBLE_TRANSCRIPTION_DESIGN.md` §13.5 forbids ("never
+    randomly split staff strips"; every system of one score belongs to one side).
+    Controlling that by ordering the list does not work either, because
+    `_filter_valid_samples` runs first and can drop samples, moving the boundary.
+    So a caller that has built a score-disjoint split passes both sides here and
+    keeps them intact.
+    """
+    train_list = _filter_valid_samples(train_samples)
+    validation_list = _filter_valid_samples(validation_samples)
+
+    eprint(
+        "Training with "
+        + str(len(train_list))
+        + " and validating with "
+        + str(len(validation_list))
+        + " (explicit split)"
+    )
+    return {
+        "train": DataLoader(train_list, config, is_validation=False, dataset_root=dataset_root),
+        "train_list": train_list,
+        "validation": DataLoader(
+            validation_list, config, is_validation=True, dataset_root=dataset_root
+        ),
+        "validation_list": validation_list,
+    }

@@ -558,6 +558,46 @@ def build_slurs(note: ET.Element, slurs: str, slur_number: int) -> None:
         raise ValueError("Unsupported slur " + slurs)
 
 
+#: `BeamLevelState` -> the MusicXML `<beam>` text for that level.
+#:
+#: `FLAG` and `NOT_APPLICABLE` map to nothing rather than to a value: MusicXML has no
+#: element meaning "this note is flagged" or "this level does not apply", and writing one
+#: would assert a beam connection that is not there. Absence is how both are expressed,
+#: which is also what makes the round trip safe - a flagged note reads back as flagged.
+BEAM_VALUES = {
+    "begin": "begin",
+    "continue": "continue",
+    "end": "end",
+    "forward_hook": "forward hook",
+    "backward_hook": "backward hook",
+}
+
+
+def build_beams(note: ET.Element, model_note: EncodedSymbol) -> None:
+    """Write `<beam>` per level from the note's structured beam labels.
+
+    Without this the generator emits no beam information at all, and MuseScore applies
+    its own automatic beaming on load - which §27.6 measured as rewriting the grouping of
+    1.7% of notes, its largest single pattern turning backward hooks into full beams.
+    That is exactly the information the structured beam heads exist to recover, so
+    predicting it at 95% exact-vector accuracy and then discarding it on the way out
+    would leave the capability unusable.
+
+    Levels are 1-based and correspond to rhythmic subdivisions (level 1 is the eighth-note
+    beam), which is MusicXML's own `number` attribute convention.
+
+    Notes carrying no structured labels - anything read from a checkpoint without the
+    heads, or a corpus with no sidecar - produce no `<beam>` elements, exactly as before.
+    """
+    notation = getattr(model_note, "notation", None)
+    if notation is None:
+        return
+    for level, state in enumerate(getattr(notation, "beam_levels", ()), start=1):
+        value = BEAM_VALUES.get(str(state))
+        if value is not None:
+            ET.SubElement(note, "beam", number=str(level)).text = value
+
+
 def build_note_or_rest(
     model_note: EncodedSymbol,
     rhythmic_layer: int,
@@ -614,6 +654,10 @@ def build_note_or_rest(
     slur_number = staff_num
     ET.SubElement(note, "voice").text = str(get_xml_voice(staff_num, rhythmic_layer))
     ET.SubElement(note, "staff").text = str(staff_num)
+
+    # Before articulations/slurs: those create <notations>, and MusicXML orders
+    # <beam> ahead of it.
+    build_beams(note, model_note)
 
     build_articulations(note, model_note.articulation, tuplet_mark, state)
     build_slurs(note, model_note.slur, slur_number)

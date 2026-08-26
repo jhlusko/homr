@@ -84,6 +84,7 @@ class TestStructuredHeadsWiring(unittest.TestCase):
             [
                 "beam.level.1",
                 "beam.level.2",
+                "dynamic.mark",
                 "slur.slot.1.event",
                 "slur.slot.1.side",
                 "stem.direction",
