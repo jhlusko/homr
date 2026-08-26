@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import numpy as np
@@ -6,6 +7,7 @@ import onnxruntime as ort
 from homr.onnx_providers import gpu_providers
 from homr.simple_logging import eprint
 from homr.transformer.configs import Config
+from homr.transformer.structured_decode import decode_note
 from homr.transformer.vocabulary import EncodedSymbol
 from homr.type_definitions import NDArray
 
@@ -18,6 +20,7 @@ class ScoreDecoder:
         use_gpu: bool,
         config: Config,
         ignore_index: int = -100,
+        structured_heads: ort.InferenceSession | None = None,
     ):
         super().__init__()
         self.ignore_index = ignore_index
@@ -26,6 +29,17 @@ class ScoreDecoder:
         self.io_binding = self.net.io_binding()
         self.max_seq_len = config.max_seq_len
         self.eos_token = config.eos_token
+        # Optional, and off unless the caller supplies a session - matching every other
+        # structured-head switch in this project (configs.py's enable_structured_heads,
+        # the training generate() loop): a deployment without this file behaves exactly
+        # as it did before. `hidden` is already computed by the decoder graph and was
+        # already in output_names below before this existed; it was just never read.
+        self.structured_heads = structured_heads
+        self.structured_heads_names = (
+            [output.name for output in structured_heads.get_outputs()]
+            if structured_heads is not None
+            else []
+        )
 
         self.inv_rhythm_vocab = {v: k for k, v in config.rhythm_vocab.items()}
         self.inv_pitch_vocab = {v: k for k, v in config.pitch_vocab.items()}
@@ -125,6 +139,7 @@ class ScoreDecoder:
             articulationsp = outputs[4].numpy()
             slursp = outputs[5].numpy()
             attention = outputs[6].numpy()
+            hidden = outputs[7].numpy()
 
             rhythm_sample = np.array([[rhythmsp[:, -1, :].argmax()]])
             pitch_sample = np.array([[pitchsp[:, -1, :].argmax()]])
@@ -152,6 +167,7 @@ class ScoreDecoder:
                 position=position_token[0],
                 coordinates=attention,
             )
+            self._attach_structured_notation(symbol, hidden)
             symbols.append(symbol)
 
             out_lift = np.concatenate((out_lift, lift_sample), axis=-1)
@@ -161,6 +177,27 @@ class ScoreDecoder:
             out_slurs = np.concatenate((out_slurs, slur_sample), axis=-1)
 
         return symbols
+
+    def _attach_structured_notation(self, symbol: EncodedSymbol, hidden: NDArray) -> None:
+        """Run the structured heads on this step's hidden state and attach the result.
+
+        A no-op when no heads session was supplied - the same "off unless present" rule
+        every other switch in this feature follows. `hidden` is cast to float32 because
+        the heads graph was only ever exported that way; the decoder's own precision can
+        be fp16 on the GPU EP, and feeding that straight in would silently mismatch the
+        graph's expected input dtype rather than raise something diagnosable.
+        """
+        if self.structured_heads is None:
+            return
+        last_token = hidden[:, -1:, :].astype(np.float32)
+        outputs = self.structured_heads.run(self.structured_heads_names, {"hidden": last_token})
+        logits = {
+            name: array[0, -1, :].tolist()
+            for name, array in zip(self.structured_heads_names, outputs, strict=True)
+        }
+        prediction = decode_note(logits)
+        symbol.notation = prediction.notation
+        symbol.structured_choices = prediction.choices
 
     def generate_with_rhythm_margins(
         self,
@@ -269,17 +306,17 @@ class ScoreDecoder:
             if rhythm_sample[0][0] == self.eos_token:
                 break
 
-            symbols.append(
-                EncodedSymbol(
-                    rhythm=detokenize(rhythm_sample, self.inv_rhythm_vocab)[0],
-                    pitch=detokenize(pitch_sample, self.inv_pitch_vocab)[0],
-                    lift=detokenize(lift_sample, self.inv_lift_vocab)[0],
-                    articulation=detokenize(articulation_sample, self.inv_articulation_vocab)[0],
-                    slur=detokenize(slur_sample, self.inv_slur_vocab)[0],
-                    position=detokenize(position_sample, self.inv_position_vocab)[0],
-                    coordinates=attention,
-                )
+            margin_symbol = EncodedSymbol(
+                rhythm=detokenize(rhythm_sample, self.inv_rhythm_vocab)[0],
+                pitch=detokenize(pitch_sample, self.inv_pitch_vocab)[0],
+                lift=detokenize(lift_sample, self.inv_lift_vocab)[0],
+                articulation=detokenize(articulation_sample, self.inv_articulation_vocab)[0],
+                slur=detokenize(slur_sample, self.inv_slur_vocab)[0],
+                position=detokenize(position_sample, self.inv_position_vocab)[0],
+                coordinates=attention,
             )
+            self._attach_structured_notation(margin_symbol, hidden)
+            symbols.append(margin_symbol)
             margins.append((alt_token_id, margin))
             hidden_states.append(hidden[:, -1, :])
 
@@ -428,6 +465,7 @@ class ScoreDecoder:
             articulationsp = outputs[4].numpy()
             slursp = outputs[5].numpy()
             attention = outputs[6].numpy()
+            hidden = outputs[7].numpy()
 
             # Step 0 fed prefix[0]; the next still-known token, if any, is prefix[step+1].
             next_known = prefix[step + 1] if step + 1 < len(prefix) else None
@@ -460,19 +498,23 @@ class ScoreDecoder:
                 if rhythm_sample[0][0] == self.eos_token:
                     break
 
-                symbols.append(
-                    EncodedSymbol(
-                        rhythm=detokenize(rhythm_sample, self.inv_rhythm_vocab)[0],
-                        pitch=detokenize(pitch_sample, self.inv_pitch_vocab)[0],
-                        lift=detokenize(lift_sample, self.inv_lift_vocab)[0],
-                        articulation=detokenize(
-                            articulation_sample, self.inv_articulation_vocab
-                        )[0],
-                        slur=detokenize(slur_sample, self.inv_slur_vocab)[0],
-                        position=detokenize(position_sample, self.inv_position_vocab)[0],
-                        coordinates=attention,
-                    )
+                prefix_symbol = EncodedSymbol(
+                    rhythm=detokenize(rhythm_sample, self.inv_rhythm_vocab)[0],
+                    pitch=detokenize(pitch_sample, self.inv_pitch_vocab)[0],
+                    lift=detokenize(lift_sample, self.inv_lift_vocab)[0],
+                    articulation=detokenize(
+                        articulation_sample, self.inv_articulation_vocab
+                    )[0],
+                    slur=detokenize(slur_sample, self.inv_slur_vocab)[0],
+                    position=detokenize(position_sample, self.inv_position_vocab)[0],
+                    coordinates=attention,
                 )
+                # Not attached for a teacher-forced step (the `if next_known is not
+                # None` branch above): notation would describe a token the model never
+                # actually chose, since the caller's known-correct value was fed in
+                # instead of the model's own prediction.
+                self._attach_structured_notation(prefix_symbol, hidden)
+                symbols.append(prefix_symbol)
 
             out_lift = np.concatenate((out_lift, lift_sample), axis=-1)
             out_pitch = np.concatenate((out_pitch, pitch_sample), axis=-1)
@@ -556,4 +598,13 @@ def get_decoder(config: Config) -> ScoreDecoder:
         onnx_transformer = ort.InferenceSession(config.filepaths.decoder_path)
         fp16 = False
 
-    return ScoreDecoder(onnx_transformer, fp16, use_gpu, config=config)
+    # Optional: absent by default until a deployment actually ships this file, matching
+    # the pattern download_weights already follows for the decoder/encoder themselves.
+    # A missing file is normal, not an error - most deployments will not have it yet.
+    structured_heads = None
+    if os.path.exists(config.filepaths.structured_heads_path):
+        structured_heads = ort.InferenceSession(config.filepaths.structured_heads_path)
+
+    return ScoreDecoder(
+        onnx_transformer, fp16, use_gpu, config=config, structured_heads=structured_heads
+    )
