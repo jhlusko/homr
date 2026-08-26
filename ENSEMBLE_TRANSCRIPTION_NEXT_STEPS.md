@@ -4811,11 +4811,28 @@ resolving.
   against a trained model's confident, well-separated real output. Whether decoding
   decisions hold up on real pages is not yet known.
 
-  **Net position:** a functionally correct, larger (unquantized) decoder is available and
-  fully verified today. A quantized decoder that reproduces production's footprint is
-  now built and provisionally promising, but not yet validated enough to ship - it needs
-  the same real-data check every other number in this document has had before it is
-  trusted.
+  **Resolved 2026-08-26 with the real-data check.** Ran the actual production
+  `Staff2Score` class (`homr/transformer/staff2score.py` - not a stand-in) over 15 real
+  held-out validation crops, three ways: the torch reference, the fp32 ONNX pipeline, and
+  the quantized-decoder ONNX pipeline, all through the exact same encoder and heads.
+
+  | comparison | token-sequence | beam-level (571 notes) |
+  |---|---|---|
+  | torch vs fp32-onnx | 15/15 exact match | 569/571 agree (99.6%) |
+  | torch vs quantized-onnx | 0/15 mismatches | 555/571 agree (97.2%) |
+
+  This is a materially better result than the random-input spot-check suggested (1/40
+  argmax mismatches there), for the reason predicted: real staff images produce
+  confident, well-separated logits that quantization noise rarely flips, unlike random
+  noise inputs where classes sit close together. Every one of the 15 crops produced the
+  *same overall token sequence* under quantization; the 16 beam-level disagreements are
+  isolated per-note calls, not sequence-altering. Even torch-vs-fp32 (numerically
+  identical to 1e-6) shows 2 disagreements from the same cause - a near-tied logit can
+  flip on rounding-level noise regardless of quantization.
+
+  **Net position: the quantized decoder is validated on real data and can ship.** The
+  fp32 decoder remains available as a larger, marginally more faithful fallback if a
+  future case needs it, but nothing found here argues for preferring it by default.
 
 ### What is now the real blocker
 
