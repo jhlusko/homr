@@ -126,12 +126,41 @@ python3 -m training.transformer.evaluate_structured_heads \
   --index     corpora/ossq_scanned_corrected/train/index.txt
 ```
 
-Detectors, scored against a pre-extracted patch bank:
+Detectors, scored against a patch bank. **The banks are not shipped** - the four of them
+come to 3.2 GB and are exactly reproducible, so they are a command rather than a
+download. `extract_patch_bank.py` derives each image's seed by hashing `(seed,
+image_index)` instead of advancing one shared RNG, specifically so that a worker pool -
+which claims images in a different order every run - still produces an identical bank:
+
+The masking policy is chosen when the **masks** are built, not when the bank is
+extracted - `scan_text_masks.py --background-outside`. This matters more than the flag
+placement suggests: a bank inherits whatever policy its masks were written under, and
+nothing downstream records or checks it. Scoring two models trained under different
+policies against one bank is meaningless, and no tooling stops you.
 
 ```bash
+python3 -m training.ocr.scan_text_masks \
+  --matches ground_truth/ossq_boxes/ \
+  --pngs    datasets/ossq_instrumental_text/pages/ \
+  --out     masks/ --background-outside
+
+python3 -m training.ocr.extract_patch_bank \
+  --index masks/index.txt --out bank/ --seed 0
+
 python3 -m training.ocr.eval_detector \
   --checkpoint models/detector/detector_e2.pth models/detector/detector_instr_bg.pth \
-  --index <bank>/index.txt
+  --index bank/index.txt
+```
+
+**Page-level evaluation is the one that decides anything.** It needs the box ground truth
+in `ground_truth/ossq_boxes/`, which is shipped because it is the output of an OCR pass
+over the scans and is not cheaply regenerable:
+
+```bash
+python3 -m training.ocr.detector_box_eval \
+  --weights models/detector/detector_instr_bg.pth \
+  --boxes   ground_truth/ossq_boxes/ \
+  --index   <detector_split valid_index.txt>
 ```
 
 **Read patch IoU as a training-progress signal only, never as a selection criterion.**

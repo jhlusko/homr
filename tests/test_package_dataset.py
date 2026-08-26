@@ -180,6 +180,49 @@ class TestRewriteGroundTruth(Fixture):
 
         self.assertIn("boxes", json.loads(path.read_text(encoding="utf-8"))["matches"][0])
 
+    def page(self, *parts: str) -> None:
+        """A page shipped under pages/, keeping its source sub-structure."""
+        path = self.root.joinpath("pages", *parts)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"pixels")
+
+    def test_a_source_tree_reference_is_relocated_under_pages(self) -> None:
+        self.page("scores", "Haydn,_Joseph", "images", "sq10313029:0001.png")
+        path = self.document(
+            "/workspace/b0/ossq-omr/scores/Haydn,_Joseph/images/sq10313029:0001.png"
+        )
+
+        self.assertEqual(rewrite_ground_truth(path, self.root), 1)
+
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            doc["matches"][0]["page_image"],
+            "pages/scores/Haydn,_Joseph/images/sq10313029:0001.png",
+        )
+
+    def test_it_prefers_the_longest_matching_suffix(self) -> None:
+        # Page filenames repeat across works, so a basename match can resolve to a
+        # page from the wrong quartet - which would silently score a detector
+        # against the wrong image rather than failing.
+        self.page("scores", "Haydn", "images", "sq1:0003.png")
+        self.page("scores", "Mozart", "images", "sq1:0003.png")
+        path = self.document("/workspace/b0/ossq-omr/scores/Mozart/images/sq1:0003.png")
+
+        rewrite_ground_truth(path, self.root)
+
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            doc["matches"][0]["page_image"], "pages/scores/Mozart/images/sq1:0003.png"
+        )
+
+    def test_an_unresolvable_page_is_left_absolute(self) -> None:
+        path = self.document("/workspace/b0/ossq-omr/scores/Absent/images/none.png")
+
+        rewrite_ground_truth(path, self.root)
+
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        self.assertTrue(doc["matches"][0]["page_image"].startswith("/workspace"))
+
     def test_a_document_with_no_matches_is_handled(self) -> None:
         path = self.root / "empty.json"
         path.write_text(json.dumps({}), encoding="utf-8")
@@ -203,6 +246,22 @@ class TestVerify(Fixture):
         (self.root / "index.txt").write_text("/opt/a.png,/opt/a.txt\n", encoding="utf-8")
 
         self.assertTrue(any("absolute path" in p for p in verify(self.root)))
+
+    def test_an_absolute_page_reference_is_reported(self) -> None:
+        (self.root / "s.json").write_text(
+            json.dumps({"matches": [{"page_image": "/workspace/b0/x.png"}]}),
+            encoding="utf-8",
+        )
+
+        self.assertTrue(any("absolute page" in p for p in verify(self.root)))
+
+    def test_a_page_reference_pointing_nowhere_is_reported(self) -> None:
+        (self.root / "s.json").write_text(
+            json.dumps({"matches": [{"page_image": "pages/absent.png"}]}),
+            encoding="utf-8",
+        )
+
+        self.assertTrue(any("missing page" in p for p in verify(self.root)))
 
     def test_a_relative_path_pointing_nowhere_is_reported(self) -> None:
         # Relative and wrong is the subtle case: it passes a grep for "/" and still

@@ -105,14 +105,44 @@ def rewrite_index(index_path: Path, root: Path) -> int:
     return changed
 
 
+def relocate_page(path: str, doc_dir: Path) -> str:
+    """A `page_image` reference rewritten to where the page actually ships.
+
+    These references point into the *source* tree the OCR pass read
+    (`/workspace/b0/ossq-omr/scores/<composer>/<work>/images/scanned/original/x.png`),
+    while the pages ship under a `pages/` directory beside the document, keeping their
+    sub-structure. There is no shared prefix to strip, so the match is made by trying
+    successively shorter trailing suffixes of the original path and taking the longest
+    one that exists.
+
+    Longest-first matters: page filenames repeat across works (`sq...:0003.png` is not
+    unique), so matching on the basename alone would cheerfully resolve to a page from
+    the wrong quartet. The longest surviving suffix keeps enough of the composer/work
+    path to stay unambiguous.
+    """
+    parts = Path(path).parts
+    for start in range(len(parts)):
+        suffix = Path(*parts[start:])
+        candidate = doc_dir / "pages" / suffix
+        if candidate.exists():
+            return (Path("pages") / suffix).as_posix()
+    return path
+
+
 def rewrite_ground_truth(doc_path: Path, root: Path) -> int:
     """Rewrite absolute `page_image` references in an OCR-first ground-truth file."""
     doc = json.loads(doc_path.read_text(encoding="utf-8"))
+    doc_dir = doc_path.parent
     changed = 0
     for match in doc.get("matches", []):
         page = match.get("page_image", "")
-        if page.startswith("/"):
-            match["page_image"] = relative_to_root(page, root)
+        if not page.startswith("/"):
+            continue
+        moved = relocate_page(page, doc_dir)
+        if moved == page:
+            moved = relative_to_root(page, root)
+        if moved != page:
+            match["page_image"] = moved
             changed += 1
     if changed:
         doc_path.write_text(json.dumps(doc, indent=1), encoding="utf-8")
@@ -148,6 +178,26 @@ def verify(root: Path) -> list[str]:
                 if not (index_dir / field).exists():
                     problems.append(f"missing file {index_path.name}:{number} -> {field}")
                     break
+
+    for doc_path in root.rglob("*.json"):
+        if doc_path.name == "MANIFEST.json":
+            continue
+        try:
+            doc = json.loads(doc_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        if not isinstance(doc, dict):
+            continue
+        for match in doc.get("matches", []):
+            page = match.get("page_image", "")
+            if not page:
+                continue
+            if page.startswith("/"):
+                problems.append(f"absolute page reference in {doc_path.name}")
+                break
+            if not (doc_path.parent / page).exists():
+                problems.append(f"missing page {doc_path.name} -> {page}")
+                break
     return problems
 
 
