@@ -188,8 +188,16 @@ def verify(root: Path) -> list[str]:
             continue
         if not isinstance(doc, dict):
             continue
-        for match in doc.get("matches", []):
-            page = match.get("page_image", "")
+        # Two schemas reference pages, and they use different keys. The OCR-first
+        # ground truth carries `matches[].page_image`; the per-page box files carry a
+        # single top-level `image`. Checking only the first would let a broken box
+        # reference ship in silence - which is the same class of gap that let the
+        # empty pages/ directory through.
+        references = [m.get("page_image", "") for m in doc.get("matches", [])]
+        if isinstance(doc.get("image"), str):
+            references.append(doc["image"])
+
+        for page in references:
             if not page:
                 continue
             if page.startswith("/"):

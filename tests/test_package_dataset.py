@@ -263,6 +263,23 @@ class TestVerify(Fixture):
 
         self.assertTrue(any("missing page" in p for p in verify(self.root)))
 
+    def test_a_broken_reference_in_the_box_schema_is_reported(self) -> None:
+        # Per-page box files use a top-level `image` key, not `matches[].page_image`.
+        # Checking only the latter let this whole schema pass by silence.
+        (self.root / "p.boxes.json").write_text(
+            json.dumps({"image": "absent.png", "text_boxes": {}}), encoding="utf-8"
+        )
+
+        self.assertTrue(any("missing page" in p for p in verify(self.root)))
+
+    def test_a_resolving_box_reference_is_accepted(self) -> None:
+        (self.root / "p.png").write_bytes(b"pixels")
+        (self.root / "p.boxes.json").write_text(
+            json.dumps({"image": "p.png", "text_boxes": {}}), encoding="utf-8"
+        )
+
+        self.assertEqual(verify(self.root), [])
+
     def test_a_relative_path_pointing_nowhere_is_reported(self) -> None:
         # Relative and wrong is the subtle case: it passes a grep for "/" and still
         # fails on first read.
