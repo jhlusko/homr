@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Standalone equivalent of the reset the artifact viewer applies. Without it the
+   page renders with the browser's default 8px body margin, which the published
+   version does not have. */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+img{max-width:100%}
+</style>
+<title>What We Added to homr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --bg:#FAFAF8; --card:#FFFFFF; --code-bg:#F1F3F2;
+  --fg:#191C1B; --fg-soft:#4C5551; --fg-faint:#767F7B;
+  --line:#E0E4E2; --line-strong:#C4CBC7;
+  --acc:#0E6E5E; --acc-bg:#E4F2EE;
+  --warn:#8A5A16; --warn-bg:#FAF0DF;
+  --good:#0E6E5E; --bad:#9A3F2C;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1211; --card:#151A19; --code-bg:#111715;
+    --fg:#E6EAE8; --fg-soft:#A6B0AC; --fg-faint:#77837E;
+    --line:#232A28; --line-strong:#36403C;
+    --acc:#54C6AC; --acc-bg:#10221E;
+    --warn:#D9A855; --warn-bg:#241C0E;
+    --good:#54C6AC; --bad:#E28E76;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1211; --card:#151A19; --code-bg:#111715;
+  --fg:#E6EAE8; --fg-soft:#A6B0AC; --fg-faint:#77837E;
+  --line:#232A28; --line-strong:#36403C;
+  --acc:#54C6AC; --acc-bg:#10221E;
+  --warn:#D9A855; --warn-bg:#241C0E;
+  --good:#54C6AC; --bad:#E28E76;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem;margin:0 auto;padding:0 1.5rem 6rem}
+.m{max-width:40rem}
+
+header.top{padding:4.5rem 0 0}
+.kicker{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin:0 0 1.2rem;
+}
+h1{
+  font-weight:700;font-size:clamp(2.3rem,6vw,3.6rem);line-height:1.05;
+  letter-spacing:-.035em;margin:0 0 1.1rem;text-wrap:balance;
+}
+.lede{
+  font-size:clamp(1.08rem,2vw,1.28rem);line-height:1.5;
+  color:var(--fg-soft);max-width:42rem;margin:0 0 1.6rem;
+}
+.meta{font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--fg-faint)}
+
+hr.div{
+  border:0;height:1px;background:var(--line);margin:3.2rem 0;
+}
+hr.div.staff{
+  height:13px;
+  background:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px 4px);
+}
+
+h2{
+  font-weight:600;font-size:clamp(1.45rem,3vw,1.95rem);line-height:1.2;
+  letter-spacing:-.025em;margin:0 0 .9rem;text-wrap:balance;
+}
+h3{font-weight:600;font-size:1.06rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem}
+h4{
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:.78rem;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--fg-faint);
+  margin:2rem 0 .6rem;
+}
+p{margin:0 0 1.1rem;max-width:40rem}
+a{color:var(--acc)}
+code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.87em;
+  background:var(--code-bg);padding:.12em .38em;border-radius:3px;
+  border:1px solid var(--line);
+}
+pre{
+  background:var(--code-bg);border:1px solid var(--line);border-radius:4px;
+  padding:1rem 1.1rem;overflow-x:auto;margin:1.2rem 0 1.6rem;max-width:44rem;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.83rem;line-height:1.6;
+}
+pre code{background:none;border:0;padding:0;font-size:1em}
+.cmt{color:var(--fg-faint)}
+.kw{color:var(--acc);font-weight:500}
+
+.tldr{
+  background:var(--card);border:1px solid var(--line);border-radius:4px;
+  padding:1.4rem 1.6rem;margin:0 0 2rem;max-width:44rem;
+}
+.tldr h2{font-size:.78rem;font-family:"IBM Plex Mono",monospace;font-weight:500;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin:0 0 .9rem}
+.tldr ul{margin:0;padding-left:1.1rem}
+.tldr li{margin-bottom:.55rem;font-size:.95rem}
+.tldr li:last-child{margin-bottom:0}
+
+.callout{
+  margin:1.6rem 0;padding:1.1rem 1.3rem;border-radius:4px;max-width:40rem;
+  background:var(--warn-bg);border:1px solid var(--line);border-left:3px solid var(--warn);
+}
+.callout .lbl{
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--warn);
+  display:block;margin-bottom:.45rem;
+}
+.callout p{margin:0;font-size:.93rem}
+.callout.tip{background:var(--acc-bg);border-left-color:var(--acc)}
+.callout.tip .lbl{color:var(--acc)}
+
+.tablewrap{overflow-x:auto;margin:1.4rem 0 1.9rem;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:27rem}
+caption{
+  caption-side:top;text-align:left;font-family:"IBM Plex Mono",monospace;
+  font-size:.71rem;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--fg-faint);padding-bottom:.65rem;
+}
+th{
+  text-align:left;font-weight:500;font-size:.72rem;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--fg-faint);
+  border-bottom:1px solid var(--line-strong);padding:0 .85rem .45rem 0;
+}
+th.grp{border-bottom:none;color:var(--acc);padding-bottom:.15rem}
+td{padding:.45rem .85rem .45rem 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;
+  font-family:"IBM Plex Mono",monospace;font-size:.84rem}
+tr:last-child td{border-bottom:none}
+.win{color:var(--good);font-weight:500}
+.bad{color:var(--bad);font-weight:500}
+.mark td{background:var(--acc-bg)}
+.sep{border-left:1px solid var(--line)}
+
+ul,ol{max-width:40rem;padding-left:1.2rem;margin:0 0 1.1rem}
+li{margin-bottom:.5rem}
+
+footer{
+  margin-top:1rem;padding-top:1.8rem;border-top:1px solid var(--line);
+  font-size:.84rem;color:var(--fg-faint);max-width:40rem;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="kicker">homr · engineering notes</p>
+  <h1>What We Added to homr</h1>
+  <p class="lede">Structured notation heads, a page-level text stage, decode-time cross-staff reranking, and a scan-adapted checkpoint — plus the traps we hit getting there. Written for people who work on the codebase.</p>
+  <p class="meta">Engineering write-up · every figure from a held-out split</p>
+</header>
+
+<div class="tldr" style="margin-top:2.5rem">
+  <h2>TL;DR</h2>
+  <ul>
+    <li><strong>Nothing breaks.</strong> Every addition is off by default; several are zero-gated so enabling them is <em>still</em> a no-op until trained. Your existing checkpoints load and behave identically.</li>
+    <li><strong>homr can represent beams now</strong> — full six-level state, 95.1% exact-vector on held-out. Also ties, slur spans/sides, stem direction.</li>
+    <li><strong>Recognition improved on real scans</strong> — every branch, +2.1 to +3.5 pts on vocal, +1.8 to +6.3 on instrumental, vs. the pinned upstream checkpoint.</li>
+    <li><strong>Decode-time reranking</strong> cuts structural findings 20.8% over 200 pages, zero pages made worse.</li>
+    <li><strong>New Stage 3</strong>: page-level text detection (lyrics/dynamics/tempo/staff-text/expression).</li>
+    <li><strong>Four things didn't work.</strong> They're written up too, so you don't spend the week we did.</li>
+  </ul>
+</div>
+
+<hr class="div staff">
+
+<section>
+<h2>First question: will this break my checkpoint?</h2>
+
+<p>No, and that was a hard design constraint rather than a hope. The rule we held to:</p>
+
+<blockquote style="margin:1.4rem 0;padding-left:1.2rem;border-left:2px solid var(--acc);color:var(--fg-soft);max-width:40rem;font-style:italic">
+a checkpoint trained without a feature must keep loading and behaving exactly as before
+</blockquote>
+
+<p>In <code>configs.py</code> that looks like this — every extension defaults off:</p>
+
+<pre><code><span class="cmt"># Structured notation heads (beams, stem direction, slurs). Off by default: they</span>
+<span class="cmt"># are output-only additions, and a checkpoint trained without them must keep</span>
+<span class="cmt"># loading and behaving exactly as before.</span>
+self.enable_structured_heads = <span class="kw">False</span>
+self.enable_profile_context  = <span class="kw">False</span>
+self.duration_adherence_weight    = <span class="kw">0.0</span>
+self.cross_staff_coherence_weight = <span class="kw">0.0</span></code></pre>
+
+<p>Two of those go further than a flag. <code>profile_context</code> and the cross-staff adapter have <strong>zero-initialised gates</strong>, so even switching them on is a no-op until training moves the gate. That means you can land the code, ship it, and decide later whether to train it — which is the property that makes this contributable rather than a fork.</p>
+
+<p>Checkpoint loading validates an allowlist of expected new parameters and rejects everything else. An absent <em>core</em> weight is an error, not a silent reinitialisation — which matters more than it sounds, because a silently reinitialised encoder produces plausible-looking garbage.</p>
+
+<div class="callout tip">
+  <span class="lbl">Design rule worth stealing</span>
+  <p>New semantics become <strong>new heads</strong>, never an expanded rhythm vocabulary. Growing that vocabulary would alter the biggest existing softmax and embedding matrices and entangle notation fidelity with note-sequence accuracy. Keep the thing that already works untouched.</p>
+</div>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Structured notation heads</h2>
+
+<p>Eleven heads read the decoder's hidden state and predict, per note: six beam levels, stem direction, tie state, dynamic mark, and per-slot slur event and side. Head names are stable identifiers (<code>beam.level.1</code>, <code>stem.direction</code>, <code>slur.slot.1.event</code>…) and the trained manifest declares which ones a checkpoint actually supports — <em>a name absent from the manifest means unsupported, not "confidently predicts nothing."</em></p>
+
+<p>Training runs with the core frozen. From a real run:</p>
+
+<pre><code>checkpoint: loaded 326 parameters; initialized 22 new ones
+            under decoder.structured_heads
+training 22 tensor(s), everything else frozen</code></pre>
+
+<p>Freezing isn't an optimisation, it's what makes the result mean something. If the core moved too, a gain could be the heads or the core drifting to suit them.</p>
+
+<div class="tablewrap">
+<table>
+<caption>Held-out, 3,904 sequences · upstream homr can't express any of these</caption>
+<tr><th>Head</th><th class="n">Macro F1</th><th class="n">Support</th></tr>
+<tr class="mark"><td><strong>exact beam vector</strong></td><td class="n win">0.9508</td><td class="n">56,741</td></tr>
+<tr><td>beam level 1</td><td class="n win">0.9562</td><td class="n">56,741</td></tr>
+<tr><td>slur spans</td><td class="n win">0.9290</td><td class="n">12,998</td></tr>
+<tr><td>slur sides</td><td class="n win">0.9094</td><td class="n">6,081</td></tr>
+<tr><td>beam level 3</td><td class="n">0.8480</td><td class="n">2,107</td></tr>
+<tr><td>hooks</td><td class="n">0.8162</td><td class="n">1,285</td></tr>
+<tr><td>beam level 2</td><td class="n">0.8130</td><td class="n">14,372</td></tr>
+<tr><td>ties</td><td class="n">0.8032</td><td class="n">5,361</td></tr>
+<tr><td>stems</td><td class="n">0.7189 <span style="color:var(--fg-faint)">(micro 0.9483)</span></td><td class="n">—</td></tr>
+<tr><td>beam level 4</td><td class="n bad">0.5972</td><td class="n bad">8</td></tr>
+<tr><td>dynamics</td><td class="n bad">0.1030</td><td class="n">4,517</td></tr>
+</table>
+</div>
+
+<p><code>exact_beam_vector</code> is the number to care about: the share of notes where the <em>whole</em> six-level state is right. A note's beaming is the vector, not any one level.</p>
+
+<div class="callout">
+  <span class="lbl">Don't trust two of those rows</span>
+  <p><strong>Beam level 4</strong> has 8 supported positions in the entire split — that 0.5972 is arithmetic, not a measurement. <strong>Dynamics</strong> at 0.103 is a rarity artifact: 94.5% of notes carry none, and the labelled rest spreads over 11 classes, five with &lt;13 examples. Macro-F1 weights classes equally, so a head that nails <code>p</code>/<code>f</code>/<code>sf</code> and can't learn <code>fz</code> still scores ~0.10.</p>
+</div>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>The generator couldn't write beams</h2>
+
+<p>Worth its own section because it's the kind of thing that hides for months. The heads predicted beams at 95% and <code>music_xml_generator.py</code> contained <strong>zero</strong> beam references. Every prediction was thrown away on the way out, and renders showed the engraver's <em>automatic</em> beaming — which we'd already measured as rewriting the grouping of 1.7% of notes, its biggest single pattern turning backward hooks into full beams.</p>
+
+<p><code>build_beams()</code> now emits per-level elements. Four edges, each of which fails silently:</p>
+
+<ul>
+  <li>Hooks need MusicXML's spelling — <code>forward hook</code>, not our internal <code>forward_hook</code>. Wrong one → the engraver ignores it.</li>
+  <li><code>flag</code> and <code>not_applicable</code> emit <strong>nothing</strong>. Absence <em>is</em> how MusicXML says "not beamed"; writing anything asserts a connection that isn't there.</li>
+  <li>Inapplicable levels must not renumber later ones, or a 16th beam gets written as an 8th.</li>
+  <li>Notes with no structured labels emit exactly what they did before — so checkpoints without the heads are untouched.</li>
+</ul>
+
+<div class="callout">
+  <span class="lbl">The bit that stung</span>
+  <p>Nine unit tests passed while the real path emitted <em>zero</em> beams. The end-to-end check caught it: my probe called <code>attach_sidecar(symbols, path)</code> with the args reversed. Green unit tests are not evidence a feature works.</p>
+</div>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Decode-time cross-staff reranking</h2>
+
+<p>This is the biggest end-to-end quality win and it needs no retraining at all.</p>
+
+<p>Ensemble scores hand you a constraint a single-staff decoder can't use: sibling staves in a system must agree about where barlines fall. So at each staff's <em>narrowest-margin</em> rhythm decisions, fork a full alternate decode via the existing <code>generate_from_prefix</code>, then keep whichever candidate best matches the other staves' majority cumulative barline positions.</p>
+
+<p>Deliberately narrower than real beam search — that would need per-step KV-cache batching, and <code>decoder_inference.py</code> is batch=1 throughout. Much bigger build, same stated goal.</p>
+
+<div class="tablewrap">
+<table>
+<caption>200-page benchmark, before → after</caption>
+<tr><th>Measure</th><th class="n">Before</th><th class="n">After</th><th class="n">Change</th></tr>
+<tr class="mark"><td>structural findings</td><td class="n">428</td><td class="n">339</td><td class="n win">−20.8%</td></tr>
+<tr><td>systems improved</td><td class="n">—</td><td class="n">81 / 899</td><td class="n win">9.0%</td></tr>
+<tr><td>pages made worse</td><td class="n">—</td><td class="n win">0</td><td class="n">—</td></tr>
+</table>
+</div>
+
+<p>A 20-page pilot showed 48%; the full run says 20.8%. Report the bigger sample. <strong>Zero regressions across 200 pages</strong> is what makes this safe to turn on.</p>
+
+<p>It sits on top of deterministic cross-staff analysis — eight consistency checks running live, firing on 71.4% of pages, with repair proposals on 14.6%. The ordering was deliberate: checks, then targeted repair, then a learned adapter <em>only</em> if the cheap things fall short. The adapter is still unbuilt and zero-gated, and that's a success condition, not a TODO.</p>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Recognition: the actual numbers</h2>
+
+<p>Upstream pinned checkpoint vs. ours, same loader, same metric, same held-out staves.</p>
+
+<div class="tablewrap">
+<table>
+<caption>Per-branch accuracy · free-running decode with length penalty</caption>
+<tr>
+  <th rowspan="2">Branch</th>
+  <th class="n grp" colspan="3">Vocal scans (n=362)</th>
+  <th class="n grp sep" colspan="3">Instrumental scans (n=600)</th>
+</tr>
+<tr>
+  <th class="n">homr</th><th class="n">ours</th><th class="n">Δ</th>
+  <th class="n sep">homr</th><th class="n">ours</th><th class="n">Δ</th>
+</tr>
+<tr class="mark"><td>pitch</td><td class="n">0.5316</td><td class="n">0.5666</td><td class="n win">+3.50</td><td class="n sep">0.9382</td><td class="n">0.9799</td><td class="n win">+4.17</td></tr>
+<tr><td>rhythm</td><td class="n">0.5764</td><td class="n">0.6052</td><td class="n win">+2.88</td><td class="n sep">0.9069</td><td class="n">0.9679</td><td class="n win">+6.10</td></tr>
+<tr><td>lift</td><td class="n">0.6210</td><td class="n">0.6440</td><td class="n win">+2.30</td><td class="n sep">0.9221</td><td class="n">0.9848</td><td class="n win">+6.27</td></tr>
+<tr><td>articulation</td><td class="n">0.6493</td><td class="n">0.6726</td><td class="n win">+2.33</td><td class="n sep">0.9613</td><td class="n">0.9838</td><td class="n win">+2.25</td></tr>
+<tr><td>slur</td><td class="n">0.6312</td><td class="n">0.6523</td><td class="n win">+2.11</td><td class="n sep">0.9519</td><td class="n">0.9803</td><td class="n win">+2.84</td></tr>
+<tr><td>position</td><td class="n">0.6251</td><td class="n">0.6533</td><td class="n win">+2.82</td><td class="n sep">0.9720</td><td class="n">0.9902</td><td class="n win">+1.82</td></tr>
+</table>
+</div>
+
+<p>Two things before you quote these. The absolute levels differ between domains because the tasks differ — OSSQ staves are single quartet lines, Lieder staves are dense piano-and-voice. <strong>Compare within a column pair, not across.</strong> And this metric is stricter than teacher-forced <code>eval_accuracy</code>: both sides are padded to the longer length with a sentinel that can't match, so a length disagreement counts against you rather than being scored on the overlap only.</p>
+
+<p>Also: it's a <strong>combined</strong> delta. Corrected pagination, carried clefs, restored barlines and scan adaptation all landed in one checkpoint. It says the programme worked; it doesn't tell you which change earned what.</p>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Stage 3: page-level text detection</h2>
+
+<p>New stage. Detects and classifies text regions — lyrics, dynamics, tempo, staff text, expression — to feed a recogniser crops.</p>
+
+<p>Supervision is OCR-first: run OCR over each scanned page, keep only reads that also match the score's own symbolic text. Free real-scan boxes, no manual annotation. The catch is that a box exists <em>only</em> where OCR and the score agree, so text the OCR missed is unlabelled — and calling it background trains the detector to miss exactly what it's for.</p>
+
+<p>We ran the ablation instead of arguing: three masking policies × two loss configs.</p>
+
+<div class="tablewrap">
+<table>
+<caption>Page-level F1 on Lyrics + Dynamic (93% of all boxes)</caption>
+<tr><th>Run</th><th>Masking</th><th class="n">Supervised px</th><th>Loss</th><th class="n">F1</th></tr>
+<tr class="mark"><td>E2</td><td>background-outside</td><td class="n">100%</td><td>2-class</td><td class="n win">88.5%</td></tr>
+<tr><td>E1</td><td>ignore-outside</td><td class="n">1.98%</td><td>2-class</td><td class="n">86.6%</td></tr>
+<tr><td>E4</td><td>blank-paper</td><td class="n">86.2%</td><td>2-class</td><td class="n">85.8%</td></tr>
+<tr><td>E0</td><td><em>no scan data</em></td><td class="n">—</td><td>all classes</td><td class="n">84.5%</td></tr>
+<tr><td>E3</td><td>ignore-outside</td><td class="n">1.98%</td><td>all classes</td><td class="n bad">80.1%</td></tr>
+<tr><td>E5</td><td>blank-paper</td><td class="n">86.2%</td><td>all classes</td><td class="n bad">77.7%</td></tr>
+</table>
+</div>
+
+<p>Real-scan data helps a lot — the synthetic-only baseline gets 0.581 patch IoU on lyrics on real scans, 0.966 with scan data. It's not bad at lyrics generally (0.955 on synthetic); it's bad at lyrics <em>on scans</em>.</p>
+
+<p>The structural finding: <strong>every 2-class run beats the baseline, every all-class run falls below it</strong>, across masking policies spanning two orders of magnitude of supervised pixels. One loss can't serve a densely-labelled synthetic class set and a sparsely-labelled scan class set at once. The answer is two models, surfaced in the app as a user-selected vocal/instrumental toggle.</p>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Four things that didn't work</h2>
+<p class="m">Each of these looked like a good idea. Save yourself the week.</p>
+
+<h4>1 · Unfreezing the core to improve conditioning</h4>
+<p>Score-profile conditioning over a <em>frozen</em> core: mean ablation delta <strong>+0.0615</strong>, positive in all ten epochs. Identical run, only the freeze policy changed (150 trainable tensors instead of 8): the delta oscillated in sign and ran an order of magnitude below the frozen run's smallest value. Unfreezing didn't improve it — it <strong>erased</strong> it.</p>
+
+<h4>2 · Time-signature conditioning + duration loss</h4>
+<p>Mean delta <strong>+0.0513</strong>, slightly <em>lower</em> than profile-only, ranges overlapping heavily. Both mechanisms were enabled in the same run, so nothing isolates either. Honest read: adding both didn't measurably help or hurt. Not "time-signature conditioning works."</p>
+
+<h4>3 · Throwing synthetic renders at a scan-adapted model</h4>
+<p>42,088 staves of the same music, engraved instead of photographed — the biggest untapped source we had. Scan accuracy got <em>worse</em> at every weight (0.96906 → 0.96863 at full, 0.96847 at 0.4). Lower weight = less damage, never a sign flip. 15% general replay didn't prevent it. Useful consequence: the model isn't data-limited on staves of this kind, so more of the same won't help you either.</p>
+
+<h4>4 · The masking policy that should have won</h4>
+<p>"Blank-paper" masking labels unmatched <em>white</em> pixels background and leaves unmatched <em>inked</em> pixels ignored — blank paper is certainly not text, so those negatives are free. Lifts supervision 1.98% → 86.2%. We predicted it'd keep E1's recall and gain E2's precision. It gained <strong>nothing</strong> (78.8% vs 78.5% precision). So E2 wins by labelling ambiguous <em>inked</em> regions background — the one thing this policy refuses to do. Obvious in hindsight: detectors don't fire on blank paper.</p>
+
+<div class="callout">
+  <span class="lbl">And then we did it anyway</span>
+  <p>We trained the instrumental detector with the blank-paper policy after writing that conclusion down. It emitted <strong>4,378 boxes per page</strong> against ~15 real ones. Patch IoU hid it completely (0.853 on Tempo while emitting 92,735 tempo boxes); background IoU sitting at 0.360 was the warning we didn't act on. A conclusion recorded is not a conclusion applied.</p>
+<p style="margin-top:.9rem;font-size:.93rem">Retrained on background-outside masks: Dynamic precision <strong>0.1% &rarr; 43.1%</strong>, recall 32.5% &rarr; 75.7%, overall recall 71%. Rarer classes still over-predict (9.7&ndash;22.2% precision). Note this ground truth is OCR-confirmed so precision is understated, and the vocal detector's 88.5% used complete engraver annotations — don't compare the two directly.</p>
+</div>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Traps in the data pipeline</h2>
+<p class="m">Corpus-side, but they cost the most time and every one of them <em>returned success</em>.</p>
+
+<div class="tablewrap">
+<table>
+<caption>Silent failures, and what each looked like</caption>
+<tr><th>Component</th><th>Failure</th><th>Presents as</th></tr>
+<tr><td>OCR engine</td><td>0 boxes on palette-mode PNGs</td><td>"corpus has no text"</td></tr>
+<tr><td><code>cv2.imread</code></td><td><code>None</code> on bad path, warns only</td><td>a model scoring 0.0%</td></tr>
+<tr><td><code>mscore -j</code> + <code>check=True</code></td><td>1 bad file discards all 200</td><td>1,515/3,715 "unrenderable"</td></tr>
+<tr><td>two classes named <code>Staff2Score</code></td><td>one ignores the checkpoint arg</td><td>"these models are equivalent"</td></tr>
+<tr><td><code>split(",")</code> on an index</td><td>truncates paths containing commas</td><td>an eval over nothing</td></tr>
+<tr><td>onnxruntime thread pools</td><td>572 threads/process</td><td>the box stops forking</td></tr>
+</table>
+</div>
+
+<p>The expensive one: <code>(page, system)</code> joins between a synthetic-paginated symbolic directory and scanned crops. Different editions paginate differently — 24 pages vs 22 — and because both dirs held the <em>same segment count</em>, the join found a crop, part counts matched, every guard passed. <strong>56.7% of scanned staves were labelled with the wrong music.</strong> Now 7.9%.</p>
+
+<p>Two more came from a review page that renders labels back into notation beside the scan, and from nothing else: <strong>2.4% of staves had no clef token</strong> (invisible — pitches are absolute, so it costs nothing in accuracy and shows up only when something <em>reconstructs</em> the staff), and <strong>every barline was stripped</strong> upstream — 8,617 in the whole scores, 3,740 repeats, zero in training data.</p>
+
+<div class="callout tip">
+  <span class="lbl">Checks worth adding to your own pipeline</span>
+  <p>Do your scanned and synthetic tracks paginate identically? Any <code>(page, system)</code> join is wrong if not. · Count clef tokens — a corpus with 2% missing trains and evaluates normally. · Count barlines in segments vs. whole scores; zero is a real possibility. · Render your labels and look at them.</p>
+</div>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>If you want to build on this</h2>
+
+<p>Turning the heads on is a config change plus trained weights:</p>
+
+<pre><code>config.enable_structured_heads = <span class="kw">True</span>
+<span class="cmt"># head names come from the manifest, not from assuming the full set —</span>
+<span class="cmt"># a name absent from it is UNSUPPORTED, not "predicts nothing"</span>
+manifest = <span class="kw">load</span>(<span class="cmt">"heads_manifest.json"</span>)</code></pre>
+
+<p>Training them yourself needs token files with notation sidecars (beam/stem/slur labels per note) and a frozen core — <code>train_structured_heads.py</code> enforces the freeze and refuses to run without heads to train.</p>
+
+<p>Two corpora of OCR-first text ground truth are prepared for release, derived from openly-licensed OpenScore editions:</p>
+
+<div class="tablewrap">
+<table>
+<caption>Datasets</caption>
+<tr><th>Set</th><th class="n">Scores</th><th class="n">Pages</th><th class="n">Boxes</th></tr>
+<tr><td>Instrumental (quartets)</td><td class="n">93</td><td class="n">2,625</td><td class="n">36,897</td></tr>
+<tr><td>Vocal (Lieder)</td><td class="n">324</td><td class="n">1,270</td><td class="n">20,785</td></tr>
+</table>
+</div>
+
+<p>The instrumental set is 29,796 dynamics, 3,561 staff texts, 2,161 tempo marks, 1,379 expressions — and <strong>zero lyrics pixels by construction</strong>, which is what makes it a clean complement to a vocal corpus. It's also the first real-scan supervision tempo, staff text and expression have ever had.</p>
+
+<p>Plus the corrected symbolic corpus, the head weights and manifest, and the review tooling — which found two of the three corpus bugs above and is probably the highest-leverage thing in the list.</p>
+</section>
+
+<hr class="div staff">
+
+<footer>
+<p>Figures from held-out splits. Single-seed runs, no variance estimates — treat small deltas accordingly. Where a number is a lower bound or a small-support artifact, it says so inline. Single-seed runs, so treat small deltas accordingly.</p>
+</footer>
+
+</div>
+</body>
+</html>
