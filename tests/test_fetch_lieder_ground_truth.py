@@ -24,7 +24,11 @@ def _mscx(measures_xml: str) -> bytes:
 
 
 class TestMeasuresPerSystem(unittest.TestCase):
-    def test_splits_on_line_breaks_within_one_page(self) -> None:
+    def test_the_break_carrying_measure_ends_its_own_system(self) -> None:
+        # MuseScore breaks *after* the measure carrying the LayoutBreak, so that
+        # measure is the last of its system - here system one is measures 1-3,
+        # not 1-2. Getting this backwards shifted every system in every piece one
+        # measure late; see measures_per_system's own comment.
         mscx = _mscx(
             "<Measure></Measure>"
             "<Measure></Measure>"
@@ -34,9 +38,9 @@ class TestMeasuresPerSystem(unittest.TestCase):
 
         pages = measures_per_system(mscx)
 
-        self.assertEqual(pages, [[2, 2]])
+        self.assertEqual(pages, [[3, 1]])
 
-    def test_page_breaks_start_a_new_page_and_a_new_system(self) -> None:
+    def test_page_breaks_close_their_own_page_after_the_break_measure(self) -> None:
         mscx = _mscx(
             "<Measure></Measure>"
             '<Measure><LayoutBreak><subtype>page</subtype></LayoutBreak></Measure>'
@@ -45,7 +49,31 @@ class TestMeasuresPerSystem(unittest.TestCase):
 
         pages = measures_per_system(mscx)
 
-        self.assertEqual(pages, [[1], [2]])
+        self.assertEqual(pages, [[2], [1]])
+
+    def test_a_break_on_the_final_measure_adds_no_trailing_empty_system(self) -> None:
+        mscx = _mscx(
+            "<Measure></Measure>"
+            '<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>'
+        )
+
+        pages = measures_per_system(mscx)
+
+        self.assertEqual(pages, [[2]])
+
+    def test_total_measures_are_preserved_across_the_split(self) -> None:
+        mscx = _mscx(
+            "<Measure></Measure>"
+            '<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>'
+            "<Measure></Measure>"
+            '<Measure><LayoutBreak><subtype>page</subtype></LayoutBreak></Measure>'
+            "<Measure></Measure>"
+        )
+
+        pages = measures_per_system(mscx)
+
+        self.assertEqual(sum(sum(p) for p in pages), 5)
+        self.assertEqual(pages, [[2, 2], [1]])
 
     def test_no_breaks_at_all_is_one_page_one_system(self) -> None:
         mscx = _mscx("<Measure></Measure>" * 5)

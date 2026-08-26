@@ -176,15 +176,28 @@ def measures_per_system(mscx_bytes: bytes) -> list[list[int]]:
     for measure in measures:
         layout_break = measure.find("LayoutBreak")
         subtype = layout_break.findtext("subtype") if layout_break is not None else None
-        if subtype in ("line", "page") and current_system > 0:
+        # A MuseScore LayoutBreak attached to a measure breaks *after* that
+        # measure - the measure carrying it is the LAST one of its own system,
+        # not the first of the next. Counting it into the current system before
+        # closing that system is therefore the whole point: an earlier version
+        # closed first and counted after, which pushed every break-carrying
+        # measure into the following system and shifted every system's range one
+        # measure late for the entire piece. Caught by fingerprinting homr's own
+        # reading of real crops against the real MusicXML
+        # (`fingerprint_measures.py`): recovered ranges came back a consistent +1
+        # from the assigned ones across every piece checked, and lined up exactly
+        # once this was corrected.
+        current_system += 1
+        if subtype in ("line", "page"):
             current_page.append(current_system)
             current_system = 0
         if subtype == "page":
             pages.append(current_page)
             current_page = []
-        current_system += 1
-    current_page.append(current_system)
-    pages.append(current_page)
+    if current_system > 0:
+        current_page.append(current_system)
+    if current_page:
+        pages.append(current_page)
     return pages
 
 

@@ -3,6 +3,7 @@ import unittest
 from training.omr_datasets.ocr_first_text_ground_truth import (
     match_dynamics_to_ocr,
     match_lyrics_to_ocr,
+    match_verses_to_ocr,
     page_measure_ranges,
 )
 
@@ -84,6 +85,50 @@ class TestMatchDynamicsToOcr(unittest.TestCase):
         # A whole-line comparison against a one-letter mark should not fire just
         # because the mark happens to be a substring of a much longer line.
         matches = match_dynamics_to_ocr(["f"], [_ocr_line("far away from here")])
+
+        self.assertEqual(matches, [])
+
+
+def _ocr_line_at(text: str, top: int) -> dict:
+    return {"box": {"left": 0, "top": top, "width": 10, "height": 10}, "text": text, "score": 0.9}
+
+
+class TestMatchVersesToOcr(unittest.TestCase):
+    def test_each_verse_matches_its_own_printed_line(self) -> None:
+        words_per_verse = {"1": ["Fried", "li", "cher"], "2": ["An", "de", "re"]}
+        lines = [_ocr_line_at("Fried li cher", 0), _ocr_line_at("An de re", 20)]
+
+        matches = match_verses_to_ocr(words_per_verse, lines)
+
+        self.assertEqual(len(matches), 2)
+        by_verse = {m["verse"]: m["text"] for m in matches}
+        self.assertEqual(by_verse["1"], "Fried li cher")
+        self.assertEqual(by_verse["2"], "An de re")
+
+    def test_a_line_already_claimed_by_one_verse_is_not_reused_by_another(self) -> None:
+        # Both verses happen to share every word - without exclusion, the second
+        # verse would double-claim the first verse's own line.
+        words_per_verse = {"1": ["gleich"], "2": ["gleich"]}
+        lines = [_ocr_line_at("gleich", 0)]
+
+        matches = match_verses_to_ocr(words_per_verse, lines)
+
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["verse"], "1")
+
+    def test_verses_are_tried_in_numeric_order(self) -> None:
+        words_per_verse = {"2": ["Zweite"], "1": ["Erste"]}
+        lines = [_ocr_line_at("Erste", 0), _ocr_line_at("Zweite", 20)]
+
+        matches = match_verses_to_ocr(words_per_verse, lines)
+
+        self.assertEqual([m["verse"] for m in matches], ["1", "2"])
+
+    def test_no_matching_line_for_a_verse_is_not_an_error(self) -> None:
+        words_per_verse = {"1": ["Fried", "li", "cher"]}
+        lines = [_ocr_line_at("completely unrelated text", 0)]
+
+        matches = match_verses_to_ocr(words_per_verse, lines)
 
         self.assertEqual(matches, [])
 

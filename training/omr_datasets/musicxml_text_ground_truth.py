@@ -37,9 +37,17 @@ def extract_expected_texts(musicxml_bytes: bytes) -> list[dict]:
     """One entry per lyric syllable or dynamics marking, in document order, each
     `{"kind": "lyric"|"dynamic", "text": str, "part_id": str, "measure_index": int}`
     - a syllable entry also carries `"syllabic"` (MusicXML's own `begin`/`middle`/
-    `end`/`single`, or `""` if unmarked), which `words_from_syllables` below uses
-    to reconstruct whole words - OCR reads whole printed words, not the individual
-    note-aligned syllables a singer's part splits them into.
+    `end`/`single`, or `""` if unmarked), which `words_from_syllables`/`words_by_verse`
+    below use to reconstruct whole words - OCR reads whole printed words, not the
+    individual note-aligned syllables a singer's part splits them into - and
+    `"verse"` (MusicXML's own `<lyric number="...">`, defaulting to `"1"` when
+    absent - a note with no `number` attribute at all is that piece's only verse).
+
+    Strophic Lieder routinely print 2+ verses under one staff, each its own
+    `<lyric number="N">` per note; `words_by_verse` keeps them apart so their
+    syllables never interleave into corrupted words - confirmed necessary by
+    checking a real sample of this corpus directly (most matched pieces carry 2
+    verses, at least one carries 4), not assumed.
 
     `measure_index` is a 0-based sequential position within its own part's measure
     list, not MusicXML's own `number` attribute - that attribute is display text
@@ -64,6 +72,7 @@ def extract_expected_texts(musicxml_bytes: bytes) -> list[dict]:
                                 "part_id": part_id,
                                 "measure_index": measure_index,
                                 "syllabic": syllabic_el.text if syllabic_el is not None else "",
+                                "verse": lyric.get("number") or "1",
                             }
                         )
             for direction in measure.findall("direction"):
@@ -93,19 +102,14 @@ def extract_expected_texts(musicxml_bytes: bytes) -> list[dict]:
     return results
 
 
-def words_from_syllables(entries: list[dict]) -> list[str]:
-    """Whole printed words, reconstructed from consecutive lyric entries using
-    MusicXML's own `syllabic` marker (`single`/`begin`/`middle`/`end`) - a `begin`
-    starts a new word, `middle`/`end` continue the current one, `single` (or an
-    unmarked syllable) is its own whole word. OCR reads whole words off the page,
-    not individual note-aligned syllables, so this is the unit `ocr_first_text_
-    ground_truth.py` actually searches for, not the raw per-note entries.
-    """
+def _words_from_ordered_lyric_entries(entries: list[dict]) -> list[str]:
+    """The actual word-reconstruction walk, over entries already known to belong
+    to one single verse/voice - interleaving two different verses' syllables here
+    would corrupt both, which is exactly why `words_by_verse` groups by verse
+    before ever calling this."""
     words: list[str] = []
     current = ""
     for entry in entries:
-        if entry["kind"] != "lyric":
-            continue
         syllabic = entry.get("syllabic", "")
         if syllabic in ("begin", "single", ""):
             if current:
@@ -119,3 +123,34 @@ def words_from_syllables(entries: list[dict]) -> list[str]:
     if current:
         words.append(current)
     return words
+
+
+def words_from_syllables(entries: list[dict]) -> list[str]:
+    """Whole printed words, reconstructed from consecutive lyric entries using
+    MusicXML's own `syllabic` marker (`single`/`begin`/`middle`/`end`) - a `begin`
+    starts a new word, `middle`/`end` continue the current one, `single` (or an
+    unmarked syllable) is its own whole word. OCR reads whole words off the page,
+    not individual note-aligned syllables, so this is the unit `ocr_first_text_
+    ground_truth.py` actually searches for, not the raw per-note entries.
+
+    Does not separate verses - use `words_by_verse` instead for any piece that
+    might have more than one (kept only for pieces/tests with a single verse,
+    where separating would be a no-op anyway).
+    """
+    return _words_from_ordered_lyric_entries([e for e in entries if e["kind"] == "lyric"])
+
+
+def words_by_verse(entries: list[dict]) -> dict[str, list[str]]:
+    """`{verse_number: [word, ...]}` - each verse's own syllables reconstructed
+    independently, in the original document order within that verse, so a
+    strophic piece's 2nd/3rd/4th verse doesn't get its words corrupted by
+    interleaving with verse 1's (or vice versa). Verse numbers are MusicXML's own
+    `<lyric number="...">` strings (`"1"`, `"2"`, ...), matching
+    `extract_expected_texts`'s own `"verse"` field.
+    """
+    by_verse: dict[str, list[dict]] = {}
+    for entry in entries:
+        if entry["kind"] != "lyric":
+            continue
+        by_verse.setdefault(entry.get("verse", "1"), []).append(entry)
+    return {verse: _words_from_ordered_lyric_entries(es) for verse, es in by_verse.items()}

@@ -27,6 +27,7 @@ import json
 import re
 from pathlib import Path
 
+import cv2
 import yaml
 
 from training.omr_datasets.fetch_lieder_ground_truth import (
@@ -39,7 +40,7 @@ from training.omr_datasets.fetch_lieder_ground_truth import (
 from training.omr_datasets.musicxml_text_ground_truth import (
     extract_expected_texts,
     unzip_mxl,
-    words_from_syllables,
+    words_by_verse,
 )
 
 _STRIP_PUNCTUATION_RE = re.compile(r"^[.,;:!?'\"()\[\]]+|[.,;:!?'\"()\[\]]+$")
@@ -76,8 +77,20 @@ def _normalize_token(token: str) -> str:
 def ocr_page(reader: object, image_path: Path) -> list[dict]:
     """`[{"box": {left,top,width,height}, "text": str, "score": float}, ...]` for
     one page, converting RapidOCR's own 4-point polygon boxes to the plain
-    axis-aligned shape every other box in this corpus already uses."""
-    result = reader(str(image_path))
+    axis-aligned shape every other box in this corpus already uses.
+
+    The image is decoded here rather than handed to RapidOCR as a path, because its
+    own loader returns **zero boxes, with no error, on palette-mode (`mode=P`) PNGs**.
+    Every OSSQ-OMR scan is palette-mode and every Lieder scan is RGB, so this failed
+    in exactly one corpus and looked like "OCR finds no text on instrumental pages" -
+    a plausible enough story to act on, and wrong. The same page decoded by
+    `cv2.imread` and passed as an array yields 39 boxes. Decoding here also means one
+    loader for both corpora rather than two that can disagree.
+    """
+    image = cv2.imread(str(image_path))
+    if image is None:
+        return []
+    result = reader(image)
     if result.boxes is None or result.txts is None:
         return []
     lines = []
@@ -128,11 +141,45 @@ def match_lyrics_to_ocr(
     return confirmed
 
 
-def match_dynamics_to_ocr(expected_dynamics: list[str], ocr_lines: list[dict]) -> list[dict]:
+def _box_key(line: dict) -> tuple:
+    box = line["box"]
+    return (box["left"], box["top"], box["width"], box["height"])
+
+
+def match_verses_to_ocr(
+    words_per_verse: dict[str, list[str]], ocr_lines: list[dict]
+) -> list[dict]:
+    """`match_lyrics_to_ocr`, run once per verse instead of once against every
+    verse's syllables pooled together - a strophic piece prints each verse as its
+    own separate line under the same staff, so each verse's own word list should
+    only ever match its own physical printed line, not compete/blend with another
+    verse's. Verses are tried in numeric order (`"1"`, `"2"`, ...) and an OCR line
+    already claimed by an earlier verse is excluded from later verses' own
+    matching, so one physical printed line can't be double-counted as two
+    different verses just because both verses happen to share some words.
+    """
+    claimed: set[tuple] = set()
+    confirmed: list[dict] = []
+    for verse in sorted(words_per_verse, key=lambda v: (len(v), v)):
+        available = [line for line in ocr_lines if _box_key(line) not in claimed]
+        for m in match_lyrics_to_ocr(words_per_verse[verse], available):
+            claimed.add(_box_key(m))
+            confirmed.append({**m, "verse": verse})
+    return confirmed
+
+
+def match_dynamics_to_ocr(
+    expected_dynamics: list[str], ocr_lines: list[dict], kind: str = "dynamic"
+) -> list[dict]:
     """OCR lines confirmed as one specific dynamics marking - dynamics are typeset
     as their own short, standalone mark (`p`, `f`, `cresc.`), not part of a longer
     text line, so this matches an OCR line's *whole* text against one expected
     mark, not token-by-token like `match_lyrics_to_ocr`.
+
+    `kind` exists because tempo marks, staff text and expression markings are typeset
+    the same way - short, standalone, on their own - so they match by exactly this
+    rule and only need a different label on the result. Lyrics are the odd one out,
+    not dynamics.
     """
     normalized_expected = {_normalize_token(d) for d in expected_dynamics if _normalize_token(d)}
     confirmed = []
@@ -145,7 +192,7 @@ def match_dynamics_to_ocr(expected_dynamics: list[str], ocr_lines: list[dict]) -
             default=0.0,
         )
         if best_ratio >= TOKEN_MATCH_THRESHOLD:
-            confirmed.append({**line, "kind": "dynamic", "match_ratio": best_ratio})
+            confirmed.append({**line, "kind": kind, "match_ratio": best_ratio})
     return confirmed
 
 
@@ -164,11 +211,26 @@ def main() -> None:
     parser.add_argument("--systems", type=Path, required=True, help="imslp_systems(_repaired) dir.")
     parser.add_argument("--pngs", type=Path, required=True, help="Matching imslp_pngs dir.")
     parser.add_argument("--out", type=Path, required=True, help="Output dir for per-score JSON.")
+    parser.add_argument(
+        "--ocr-threads", type=int, default=4,
+        help="onnxruntime intra-op threads per session. The default of -1 means 'one "
+             "per core', which on a 128-core box is ~128 threads per session and three "
+             "sessions per process - about 340 threads. Running this sharded then hits "
+             "the container's pid limit (3840 here) at around eight shards and every "
+             "fork on the box starts failing, which looks like the machine dying rather "
+             "than like an OCR setting. OMP_NUM_THREADS does not bound this; only "
+             "onnxruntime's own option does.",
+    )
     args = parser.parse_args()
 
     from rapidocr import RapidOCR  # deferred - a real, if modest, model-load cost
 
-    reader = RapidOCR()
+    reader = RapidOCR(
+        params={
+            "EngineConfig.onnxruntime.intra_op_num_threads": args.ocr_threads,
+            "EngineConfig.onnxruntime.inter_op_num_threads": args.ocr_threads,
+        }
+    )
 
     lieder = load_lieder_scores(args.scores_yaml_cache)
     mscx_tree = load_lieder_file_tree(args.file_tree_cache)
@@ -207,14 +269,15 @@ def main() -> None:
         for page_index, (start, end) in enumerate(ranges):
             if page_index >= len(detected_pages):
                 break
-            page_words = words_from_syllables(
-                [e for e in expected if e["kind"] == "lyric" and start <= e["measure_index"] < end]
-            )
+            page_lyric_entries = [
+                e for e in expected if e["kind"] == "lyric" and start <= e["measure_index"] < end
+            ]
+            words_per_verse = words_by_verse(page_lyric_entries)
             page_dynamics = [
                 e["text"] for e in expected
                 if e["kind"] == "dynamic" and start <= e["measure_index"] < end
             ]
-            if not page_words and not page_dynamics:
+            if not words_per_verse and not page_dynamics:
                 continue
 
             page_path = args.pngs / detected_pages[page_index]["image"]
@@ -224,7 +287,7 @@ def main() -> None:
                 print(f"{score_id} page {page_index}: OCR FAILED ({e})")
                 continue
 
-            for m in match_lyrics_to_ocr(page_words, ocr_lines):
+            for m in match_verses_to_ocr(words_per_verse, ocr_lines):
                 matches.append({**m, "page_index": page_index, "page_image": str(page_path.name)})
             for m in match_dynamics_to_ocr(page_dynamics, ocr_lines):
                 matches.append({**m, "page_index": page_index, "page_image": str(page_path.name)})

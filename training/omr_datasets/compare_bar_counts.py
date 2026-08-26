@@ -10,9 +10,19 @@ bar-line counter - see `fetch_lieder_ground_truth.py`'s own docstring for the de
 Ground truth's per-piece page list is positional (page 0 = the piece's own first
 page of music), not keyed by the PDF's real page number - our own detected pages
 skip cover/blank/title pages already (`detect_imslp_systems.detect_score`'s existing
-per-page skip-on-no-systems), so the two are zipped in page order, not by page
-number. A page-count mismatch between the two is itself a real finding (a missed or
-extra page), reported separately from per-system bar-count agreement.
+per-page skip-on-no-systems).
+
+Pairing is by *flat system position across the whole piece*, not by page - real
+manual review (via `/compare`, on the review site) found that a page-count
+mismatch is very often not a real detection problem at all: the transcription's own
+line breaks usually still match the scan's, just distributed across a different
+number of pages (MuseScore's own default spacing fits fewer systems per page than
+many historical prints). Pairing per page would compare the wrong systems to each
+other past the first page-count divergence; pairing by flat position doesn't, as
+long as the underlying system sequence itself still matches. A *total* system-count
+mismatch (not a page-count one) is still reported separately, since that is a real,
+different finding - the piece's own system sequence itself came out a different
+length than expected, not just spread across a different number of pages.
 """
 
 # flake8: noqa: T201
@@ -100,39 +110,50 @@ def count_bar_lines_per_system(page_path: Path, systems: list[dict]) -> list[int
 def compare_one_score(
     score_id: str, ground_truth: dict, systems_doc: dict, png_dir: Path
 ) -> tuple[list[dict], bool]:
-    """One row per compared system, in page order, plus whether the page count
-    matched at all - rows carry enough (`page_index`/`is_first_page`/
+    """One row per compared system, plus whether the *total* system count agreed
+    across the whole piece - rows carry enough (`page_index`/`is_first_page`/
     `is_last_page`) to build a *targeted* re-review list afterward (which specific
     pages look wrong, not just which scores), per the user's own request: manual
     review effort should go where the auto-detector demonstrably failed - most
     plausibly the first/last page of a piece (piano-only intro/outro systems), not
     a blanket re-check of every low-scoring score.
+
+    Pairs by *flat system position across the whole piece*, not by page - found
+    from real manual review (via `/compare`) that a "different layout" judgment
+    usually still has matching line breaks (the same systems, in the same order),
+    just distributed across a different number of pages than the scan (MuseScore's
+    own rendering spacing puts fewer systems per page than the historical print).
+    Pairing per page against that assumption compares the wrong systems to each
+    other past the first page-count divergence; pairing by flat position doesn't,
+    as long as the underlying system sequence itself still matches - which is the
+    thing this check actually cares about, not how it happens to paginate.
     """
-    gt_pages = ground_truth["pages"]
+    gt_flat = [count for page in ground_truth["pages"] for count in page]
     detected_pages = [systems_doc["pages"][k] for k in sorted(systems_doc["pages"])]
-    page_count_matched = len(gt_pages) == len(detected_pages)
-    last_page_index = min(len(gt_pages), len(detected_pages)) - 1
+    last_page_index = len(detected_pages) - 1
 
     rows = []
-    for page_index, (gt_page, detected_page) in enumerate(
-        zip(gt_pages, detected_pages, strict=False)
-    ):
+    system_position = 0
+    for page_index, detected_page in enumerate(detected_pages):
         page_path = png_dir / detected_page["image"]
         detected = count_bar_lines_per_system(page_path, detected_page["systems"])
-        for system_index, (d, g) in enumerate(zip(detected, gt_page, strict=False)):
-            rows.append(
-                {
-                    "score_id": score_id,
-                    "page_index": page_index,
-                    "page_image": detected_page["image"],
-                    "system_index": system_index,
-                    "detected": d,
-                    "ground_truth": g,
-                    "is_first_page": page_index == 0,
-                    "is_last_page": page_index == last_page_index,
-                }
-            )
-    return rows, page_count_matched
+        for system_index, d in enumerate(detected):
+            if system_position < len(gt_flat):
+                rows.append(
+                    {
+                        "score_id": score_id,
+                        "page_index": page_index,
+                        "page_image": detected_page["image"],
+                        "system_index": system_index,
+                        "detected": d,
+                        "ground_truth": gt_flat[system_position],
+                        "is_first_page": page_index == 0,
+                        "is_last_page": page_index == last_page_index,
+                    }
+                )
+            system_position += 1
+    total_system_count_matched = system_position == len(gt_flat)
+    return rows, total_system_count_matched
 
 
 def main() -> None:
@@ -159,7 +180,7 @@ def main() -> None:
     all_rows: list[dict] = []
     exact_system_match = 0
     total_systems_compared = 0
-    page_count_mismatches = []
+    system_count_mismatches = []
     worst_scores = []
 
     for gt_path in gt_paths:
@@ -172,15 +193,15 @@ def main() -> None:
         systems_doc = yaml.safe_load(systems_path.read_text(encoding="utf-8"))
 
         try:
-            rows, page_count_matched = compare_one_score(
+            rows, total_system_count_matched = compare_one_score(
                 score_id, ground_truth, systems_doc, args.pngs
             )
         except Exception as e:  # noqa: BLE001
             print(f"{score_id}: FAILED ({e})")
             continue
 
-        if not page_count_matched:
-            page_count_mismatches.append(score_id)
+        if not total_system_count_matched:
+            system_count_mismatches.append(score_id)
 
         score_exact = sum(1 for row in rows if row["detected"] == row["ground_truth"])
         score_total = len(rows)
@@ -200,7 +221,7 @@ def main() -> None:
 
     print()
     print(f"scores compared: {len(gt_paths)}")
-    print(f"page-count mismatches: {len(page_count_mismatches)} ({page_count_mismatches})")
+    print(f"total-system-count mismatches: {len(system_count_mismatches)} ({system_count_mismatches})")
     print(
         f"systems compared: {total_systems_compared}, "
         f"exact bar-count match: {exact_system_match} "

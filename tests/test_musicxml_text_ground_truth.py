@@ -5,12 +5,16 @@ import zipfile
 from training.omr_datasets.musicxml_text_ground_truth import (
     extract_expected_texts,
     unzip_mxl,
+    words_by_verse,
     words_from_syllables,
 )
 
 
-def _lyric(text: str, syllabic: str) -> dict:
-    return {"kind": "lyric", "text": text, "part_id": "P1", "measure_index": 0, "syllabic": syllabic}
+def _lyric(text: str, syllabic: str, verse: str = "1") -> dict:
+    return {
+        "kind": "lyric", "text": text, "part_id": "P1", "measure_index": 0,
+        "syllabic": syllabic, "verse": verse,
+    }
 
 _MUSICXML = """<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise>
@@ -46,6 +50,36 @@ class TestExtractExpectedTexts(unittest.TestCase):
         self.assertEqual([r["text"] for r in lyrics], ["Fried", "li"])
         self.assertEqual([r["measure_index"] for r in lyrics], [0, 1])
         self.assertTrue(all(r["part_id"] == "P1" for r in lyrics))
+
+    def test_lyric_number_becomes_the_verse_field(self) -> None:
+        results = extract_expected_texts(_MUSICXML.encode())
+
+        lyrics = [r for r in results if r["kind"] == "lyric"]
+        self.assertTrue(all(r["verse"] == "1" for r in lyrics))
+
+    def test_a_missing_lyric_number_defaults_to_verse_1(self) -> None:
+        xml = """<?xml version="1.0"?>
+        <score-partwise>
+          <part id="P1"><measure number="1"><note><pitch><step>C</step><octave>4</octave></pitch>
+          <lyric><syllabic>single</syllabic><text>Wort</text></lyric></note></measure></part>
+        </score-partwise>"""
+
+        results = extract_expected_texts(xml.encode())
+
+        self.assertEqual(results[0]["verse"], "1")
+
+    def test_a_second_verse_on_the_same_note_is_kept_separate(self) -> None:
+        xml = """<?xml version="1.0"?>
+        <score-partwise>
+          <part id="P1"><measure number="1"><note><pitch><step>C</step><octave>4</octave></pitch>
+          <lyric number="1"><syllabic>single</syllabic><text>Erste</text></lyric>
+          <lyric number="2"><syllabic>single</syllabic><text>Zweite</text></lyric>
+          </note></measure></part>
+        </score-partwise>"""
+
+        results = extract_expected_texts(xml.encode())
+
+        self.assertEqual({r["verse"] for r in results}, {"1", "2"})
 
     def test_extracts_standard_dynamics_by_tag_name(self) -> None:
         results = extract_expected_texts(_MUSICXML.encode())
@@ -112,6 +146,56 @@ class TestWordsFromSyllables(unittest.TestCase):
         entries = [_lyric("Fried", "begin"), _lyric("li", "middle")]
 
         self.assertEqual(words_from_syllables(entries), ["Friedli"])
+
+
+class TestWordsByVerse(unittest.TestCase):
+    def test_a_single_verse_reconstructs_the_same_as_words_from_syllables(self) -> None:
+        entries = [
+            _lyric("Fried", "begin"), _lyric("li", "middle"), _lyric("cher", "end"),
+        ]
+
+        self.assertEqual(words_by_verse(entries), {"1": ["Friedlicher"]})
+
+    def test_two_verses_interleaved_per_note_are_kept_fully_separate(self) -> None:
+        # Real MusicXML shape: each note carries both verses' own <lyric> elements
+        # back to back, so the flat document-order sequence alternates verse 1,
+        # verse 2, verse 1, verse 2... - words_by_verse must not let their
+        # syllables blend into each other's words.
+        entries = [
+            _lyric("Er", "single", verse="1"),
+            _lyric("Sie", "single", verse="2"),
+            _lyric("ste", "single", verse="1"),
+            _lyric("Zwei", "single", verse="2"),
+        ]
+
+        result = words_by_verse(entries)
+
+        self.assertEqual(result["1"], ["Er", "ste"])
+        self.assertEqual(result["2"], ["Sie", "Zwei"])
+
+    def test_a_multi_syllable_word_within_one_verse_still_reconstructs_correctly(self) -> None:
+        entries = [
+            _lyric("Fried", "begin", verse="1"),
+            _lyric("Sie", "single", verse="2"),
+            _lyric("li", "middle", verse="1"),
+            _lyric("cher", "end", verse="1"),
+        ]
+
+        result = words_by_verse(entries)
+
+        self.assertEqual(result["1"], ["Friedlicher"])
+        self.assertEqual(result["2"], ["Sie"])
+
+    def test_ignores_dynamics_entries(self) -> None:
+        entries = [
+            {"kind": "dynamic", "text": "p", "part_id": "P1", "measure_index": 0},
+            _lyric("Wort", "single"),
+        ]
+
+        self.assertEqual(words_by_verse(entries), {"1": ["Wort"]})
+
+    def test_empty_input_returns_an_empty_dict(self) -> None:
+        self.assertEqual(words_by_verse([]), {})
 
 
 class TestUnzipMxl(unittest.TestCase):

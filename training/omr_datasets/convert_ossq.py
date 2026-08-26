@@ -29,6 +29,7 @@ from pathlib import Path
 
 from homr.transformer.structured_notation import DynamicMark
 from training.omr_datasets.convert_lieder import _count_staffs, is_grandstaff
+from training.omr_datasets.barline_placement import BarlinePlacementIndex, apply_barlines
 from training.omr_datasets.dynamics_placement import DynamicsPlacementIndex, apply_dynamics
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar
@@ -69,6 +70,47 @@ def extract_part(segment: ET.Element, part_index: int) -> ET.Element:
     return single
 
 
+def clef_of(part: ET.Element) -> ET.Element | None:
+    """The last clef this part establishes, or None if it never states one."""
+    clefs = list(part.iter("clef"))
+    return copy.deepcopy(clefs[-1]) if clefs else None
+
+
+def ensure_clef(single: ET.Element, carried: ET.Element | None) -> bool:
+    """Give a segment its clef when the source omitted one. True if inserted.
+
+    MusicXML states a clef in `<attributes>` where it is established or changes, and a
+    systemwise segment cut out of the middle of a part can begin without one - measured,
+    **2.4% of staves in both tracks** have no clef token at all, starting instead at
+    `keySignature` or `timeSignature`. Engraved music restates the clef on every system,
+    so the crop shows one and the label does not, and the two disagree for no reason
+    visible in either file alone.
+
+    That is worse than it sounds for a reason that hides it: pitches in this format are
+    absolute (`B3`), so a missing clef costs almost nothing in pitch accuracy and does
+    not show up in any accuracy number. What it does is teach the model that the same
+    visual evidence sometimes maps to a sequence with no clef, and leave every consumer
+    of these tokens to guess - a bass staff reconstructed as treble, with its notes on
+    ledger lines far below the staff, which is how this was found at all.
+
+    The clef in effect is not ambiguous: it is whatever the previous segment of the same
+    part established. Carrying it forward is the same recovery `slur_placement.py` and
+    `dynamics_placement.py` already do for their own upstream losses.
+    """
+    if carried is None or next(single.iter("clef"), None) is not None:
+        return False
+    measure = single.find("part/measure")
+    if measure is None:
+        return False
+    attributes = measure.find("attributes")
+    if attributes is None:
+        attributes = ET.Element("attributes")
+        measure.insert(0, attributes)
+    # After key/time if present, which is where MusicXML writes it.
+    attributes.append(copy.deepcopy(carried))
+    return True
+
+
 class UnconvertibleStaff(RuntimeError):
     """One staff homr's token pipeline cannot express, for a reason worth naming.
 
@@ -102,14 +144,19 @@ def _write_example(
     stem: str,
     placements: list[dict[str, str]] | None = None,
     dynamics: list[DynamicMark] | None = None,
-) -> tuple[Path | None, int]:
+    carried_clef: ET.Element | None = None,
+    barlines: list[list[ET.Element]] | None = None,
+) -> tuple[Path | None, int, ET.Element | None]:
     """Tokenise one part of one system.
 
-    Returns the token file - or None if it is empty - and how many slur markings had to be
-    collapsed to fit the legacy token field.
+    Returns the token file - or None if it is empty - how many slur markings had to be
+    collapsed to fit the legacy token field, and the clef this segment leaves in effect
+    for the next one (see `ensure_clef`).
     """
     segment = ET.parse(segment_path).getroot()  # noqa: S314
     single = extract_part(segment, part_index)
+    ensure_clef(single, carried_clef)
+    leaves_clef = clef_of(single) or carried_clef
     if placements:
         # 27.20: the round-trip that produced these segments dropped slur placement, so it
         # is put back from the original score before tokenising. Writing it into the XML
@@ -120,6 +167,12 @@ def _write_example(
         # treatment as slur placement - put back from the original score, as ordinary
         # <direction> elements, before tokenising.
         apply_dynamics(single.find("part"), dynamics)
+    if barlines:
+        # The round trip drops <barline> entirely too - measured, 8,617 barlines and
+        # 3,740 repeats present in the whole scores and zero in the segments. Human
+        # review kept reporting exactly this ("correct but missing final repeat"), so
+        # they are put back the same way, by measure rather than by note.
+        apply_barlines(single.find("part"), barlines)
 
     scratch = out_dir / f"{stem}.musicxml"
     scratch.write_text(
@@ -144,11 +197,11 @@ def _write_example(
         # refused rather than handled.
         staves = _count_staffs(voices[0]) if voices else 0
         print(f"  skipped {stem}: part is on {staves} staves, but a crop shows one")
-        return None, 0
+        return None, 0, leaves_clef
 
     symbols = [symbol for voice in voices for measure in voice for symbol in measure]
     if not symbols:
-        return None, 0
+        return None, 0, leaves_clef
 
     collapsed = collapse_unrepresentable_slurs(symbols)
 
@@ -167,7 +220,7 @@ def _write_example(
     tokens = out_dir / f"{stem}.txt"
     tokens.write_text(lines, encoding="utf-8")
     write_sidecar(tokens, symbols)
-    return tokens, collapsed
+    return tokens, collapsed, leaves_clef
 
 
 def collapse_unrepresentable_slurs(symbols: list) -> int:
@@ -197,6 +250,40 @@ def collapse_unrepresentable_slurs(symbols: list) -> int:
         symbol.slur = "slurStart_slurStop" if len(unique) > 1 else unique[0]
         cut += len(parts) - len(symbol.slur.split("_"))
     return cut
+
+
+class MissingSegments(RuntimeError):
+    """Raised rather than falling back to another track's symbolic data."""
+
+
+def segments_dir(work: Path, track: str) -> Path:
+    """The systemwise MusicXML whose `(page, system)` numbering matches `track`'s crops.
+
+    This exists because getting it wrong is invisible. `build` joins a segment to its
+    crop positionally on `(page, system)`, and the two tracks paginate differently: a
+    score rendering to 24 synthetic pages can scan to 22. Reading `musicxml/unaligned`
+    - which is keyed to the *synthetic* pagination - for the scanned track therefore
+    pairs each crop with whatever music happens to sit at that index in the other
+    layout. Both directories hold the same number of segments, the crop is found, the
+    part count matches, every guard in `build` passes, and 56.7% of scanned staves end
+    up labelled with the wrong music (measured over 900 staves, all 9 validation
+    scores; per-score collapse 63-95%).
+
+    A missing directory raises instead of falling back, because falling back is
+    precisely the failure this function exists to prevent - and a silent fallback would
+    reproduce it while looking like a successful conversion.
+    """
+    candidate = (
+        work / "musicxml" / "unaligned"
+        if track == "synthetic"
+        else work / "musicxml" / "scanned" / "systemwise"
+    )
+    if not candidate.is_dir():
+        raise MissingSegments(
+            f"no {track} systemwise MusicXML at {candidate} - refusing to fall back to "
+            f"another track's pagination"
+        )
+    return candidate
 
 
 def build(
@@ -230,10 +317,22 @@ def build(
     collapsed_slurs = 0
     placement_index: dict[str, PlacementIndex] = {}
     dynamics_index: dict[str, DynamicsPlacementIndex] = {}
+    barline_index: dict[str, BarlinePlacementIndex] = {}
     unconvertible: collections.Counter[str] = collections.Counter()
+    skipped_works = 0
     for work in sorted((dataset_root / "scores").glob("*/*")):
-        segments = sorted((work / "musicxml" / "unaligned").glob("*.musicxml"))
+        try:
+            segments = sorted(segments_dir(work, track).glob("*.musicxml"))
+        except MissingSegments:
+            # A work that has no symbolic data for this track contributes nothing; that
+            # is different from having it and reading the wrong one, which is what this
+            # refuses to do.
+            skipped_works += 1
+            continue
         crops = work / "images" / track / "partwise"
+        # Per part, the clef last established in this work. Reset per work: a clef in
+        # effect is a property of one piece and must never carry across scores.
+        clef_carry: dict[int, ET.Element | None] = {}
         for segment_path in segments:
             score_id, page, system = segment_path.stem.split(":")
             assigned = manifest.split_for(score_id, track)
@@ -255,8 +354,12 @@ def build(
                 dynamics_index[score_id] = (
                     DynamicsPlacementIndex(work, score_id, whole) if whole.is_file() else None
                 )
+                barline_index[score_id] = (
+                    BarlinePlacementIndex(work, score_id, whole) if whole.is_file() else None
+                )
             index = placement_index[score_id]
             dyn_index = dynamics_index[score_id]
+            bar_index = barline_index[score_id]
 
             for part_index in range(len(parts)):
                 image = crops / CROP_NAME.format(
@@ -271,13 +374,21 @@ def build(
                     if dyn_index
                     else None
                 )
+                barlines = (
+                    bar_index.for_segment(int(page), int(system), part_index)
+                    if bar_index
+                    else None
+                )
+                carried = clef_carry.get(part_index)
                 try:
-                    tokens, collapsed = _write_example(
-                        segment_path, part_index, out_dir, stem, placements, dynamics
+                    tokens, collapsed, carried = _write_example(
+                        segment_path, part_index, out_dir, stem, placements, dynamics,
+                        carried, barlines,
                     )
                 except UnconvertibleStaff as refused:
                     unconvertible[refused.reason] += 1
                     continue
+                clef_carry[part_index] = carried
                 collapsed_slurs += collapsed
                 if tokens is not None:
                     examples.append(
@@ -285,6 +396,8 @@ def build(
                     )
 
     print(f"{len(examples)} examples written to {out_dir}")
+    if skipped_works:
+        print(f"  {skipped_works} works skipped: no {track} systemwise MusicXML")
     if unbuilt:
         print(
             f"  {unbuilt} parts skipped: no staff crops for the system at all - run"
