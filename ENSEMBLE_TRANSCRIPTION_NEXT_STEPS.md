@@ -101,7 +101,8 @@ pick back up directly, in the priority order the evidence supports.
   - [What ships as a choice, and what only ships](#what-ships-as-a-choice-and-what-only-ships)
   - [Surfacing: threshold-gated, not always-on](#surfacing-threshold-gated-not-always-on)
   - [Why `/v1/regenerate` is the right seam](#why-v1regenerate-is-the-right-seam)
-  - [Still unproven, and it gates everything above](#still-unproven-and-it-gates-everything-above)
+  - [~~Still unproven~~ Resolved 2026-08-25: the heads export cleanly](#still-unproven-resolved-2026-08-25-the-heads-export-cleanly)
+  - [What is now the real blocker](#what-is-now-the-real-blocker)
 
 ## 1. The text detector's page-level precision has collapsed for five of seven classes — **CLOSED 2026-08-20, user decision**
 
@@ -4691,9 +4692,41 @@ score is rebuilt, no re-recognition. The contract needs extending, since regener
 currently validates six-field string symbols and structured notation is not among those
 six fields.
 
-### Still unproven, and it gates everything above
+### ~~Still unproven~~ Resolved 2026-08-25: the heads export cleanly
 
-`training/onnx/convert.py` has **never been run with `enable_structured_heads=True`**.
-Production inference downloads ONNX from `liebharc/homr` releases; whether the heads
-survive `torch.export` and what the exported graph's extra outputs look like is unknown.
-Until that is answered, none of the UI work can be scheduled honestly.
+They do survive export, and more easily than expected, because two things turned out to
+be true that were not obvious until checked:
+
+1. The heads are a **non-autoregressive** projection of the hidden state
+   (`structuredHeadsAutoregressive: false` in the capability manifest).
+2. The decoder graph **already emits `hidden`** as an output.
+
+So the heads export as their own small graph (132 KB) consuming `hidden`, and the decoder
+export is untouched. A deployment missing that file behaves exactly as it did before -
+the same rule `configs.py` applies to enabling the heads at all.
+
+Verified with the real trained weights, not a fresh module: `heads_clef.pth` loads its 22
+tensors with nothing missing or unexpected, and against 50 random hidden states the
+exported graph gives a **max absolute logit delta of 5.7e-06** and **zero disagreements
+in decoded notation**. The second number is the one that matters - logit drift at float32
+rounding is harmless, a different decoded beam state is a different score.
+
+`convert_structured_heads()` in `training/onnx/convert.py`, 6 tests.
+
+One incidental fix: `convert.py` imported the segnet model and the encoder at module
+scope, pulling in `pytorch_lightning` and `timm`. Neither is needed to export the decoder
+or the heads, and at module scope they made this work untestable without the whole
+segmentation stack. Made local to the functions that use them, which also cleared one
+pre-existing test failure and three collection errors.
+
+### What is now the real blocker
+
+Not the model. `base_url` in `homr/main.py:370` is a **hardcoded local variable** pointing
+at `liebharc/homr`'s release tag, with no environment override and no config seam. Serving
+our own weights means changing that line - so the redirect has to live in the commit OTS
+pins, which is why the code pin and the weights pin are less independent than they look.
+
+Also worth knowing before any model swap: `download_weights` decides freshness purely by
+`os.path.exists(model)` - no version, no checksum. The Dockerfile bakes weights into the
+image so a rebuild is clean, but any deployment with a persisted cache will silently keep
+serving the old model.
