@@ -24,6 +24,16 @@ class FilePaths:
             f"decoder_{model_name}.onnx",
         )  # noqa: E501
 
+        # The structured heads export as their own small graph rather than as extra
+        # decoder outputs. They are a non-autoregressive projection of the hidden state,
+        # and the decoder graph already emits `hidden`, so nothing about the decoder
+        # export has to change to carry them - which also means a deployment can drop
+        # this file and keep working exactly as it did.
+        self.structured_heads_path = os.path.join(
+            workspace,
+            f"structured_heads_{model_name}.onnx",
+        )  # noqa: E501
+
         self.encoder_path_fp16 = os.path.join(
             workspace,
             f"encoder_{model_name}_fp16.onnx",

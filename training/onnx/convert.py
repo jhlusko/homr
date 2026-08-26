@@ -6,13 +6,12 @@ from torch.export import Dim
 from homr.segmentation.config import segnet_path_onnx, segnet_path_torch
 from homr.simple_logging import eprint
 from homr.transformer.configs import Config
-from training.architecture.segmentation.model import create_segnet  # type: ignore
 from training.architecture.transformer.decoder import (
     ScoreTransformerWrapper,
     get_score_wrapper,
     init_cache,
 )
-from training.architecture.transformer.encoder import get_encoder
+from training.architecture.transformer.structured_heads import StructuredNotationHeads
 
 
 class DecoderWrapper(torch.nn.Module):
@@ -97,6 +96,10 @@ def convert_encoder(overwrite: bool) -> str | None:
         return None
 
     # Get Encoder
+    # Local for the same reason as create_segnet below: the encoder imports timm,
+    # which the decoder and structured-head exports do not need.
+    from training.architecture.transformer.encoder import get_encoder
+
     model = get_encoder(config)
 
     # Load weights
@@ -219,6 +222,12 @@ def convert_segnet(overwrite: bool) -> str | None:
         )
         return None
 
+    # Imported here rather than at module scope: it pulls in pytorch_lightning and
+    # the whole segmentation stack, which the encoder, decoder and structured-head
+    # exports have no need of. Keeping it local means those three can be used - and
+    # tested - without installing any of it.
+    from training.architecture.segmentation.model import create_segnet  # type: ignore
+
     model = create_segnet()
     model.load_state_dict(torch.load(segnet_path_torch, weights_only=True), strict=True)
     model.eval()
@@ -238,5 +247,81 @@ def convert_segnet(overwrite: bool) -> str | None:
         dynamic_shapes={"image": (Dim("batch_size"), 3, 320, 320)},
         dynamo=True,
         external_data=False,
+    )
+    return path_out
+
+
+class StructuredHeadsWrapper(torch.nn.Module):
+    """Fixed output order for the heads, which otherwise come back in a dict.
+
+    ONNX graphs have positional outputs, so the head order becomes part of the file's
+    contract. Sorting by name makes it reproducible across exports rather than dependent
+    on dict insertion order.
+    """
+
+    def __init__(self, heads: StructuredNotationHeads, names: list[str]) -> None:
+        super().__init__()
+        self.heads = heads
+        self.names = names
+
+    def forward(self, hidden: torch.Tensor) -> tuple[torch.Tensor, ...]:
+        logits = self.heads(hidden)
+        return tuple(logits[name] for name in self.names)
+
+
+def convert_structured_heads(overwrite: bool, weights: str) -> str | None:
+    """Export the structured beam/stem/slur heads as their own ONNX graph.
+
+    Separate from the decoder on purpose. The heads are a non-autoregressive projection
+    of the decoder's hidden state - `structuredHeadsAutoregressive: false` in the
+    capability manifest - and the decoder graph already exposes `hidden` as an output.
+    So they need no change to the decoder export, and a deployment without this file
+    behaves exactly as it did before, which is the same rule `configs.py` applies to
+    enabling the heads at all.
+
+    `weights` is a heads checkpoint (`heads_clef.pth`), which holds only the head
+    tensors; it is meaningless apart from the core it was trained against.
+    """
+    config = Config()
+    path_out = config.filepaths.structured_heads_path
+
+    if os.path.exists(path_out) and not overwrite:
+        eprint(f"Structured heads already exist at {path_out}. Use --overwrite.")
+        return None
+
+    heads = StructuredNotationHeads(
+        dim=config.decoder_dim,
+        beam_levels=config.structured_beam_levels,
+        slur_slots=config.structured_slur_slots,
+    )
+    state = torch.load(weights, weights_only=True, map_location=torch.device("cpu"))
+    # The checkpoint stores the heads under their path in the full model; strip that
+    # prefix so the module can be loaded standalone.
+    stripped = {key.split("structured_heads.", 1)[-1]: value for key, value in state.items()}
+    missing, unexpected = heads.load_state_dict(stripped, strict=False)
+    if missing or unexpected:
+        raise ValueError(
+            f"Head weights do not match this config: {len(missing)} missing, "
+            f"{len(unexpected)} unexpected. The checkpoint was probably trained with a "
+            f"different beam-level or slur-slot count."
+        )
+    heads.eval()
+
+    names = sorted(heads.head_names())
+    hidden = torch.randn((1, 1, config.decoder_dim)).float()
+
+    torch.onnx.export(
+        StructuredHeadsWrapper(heads, names),
+        (hidden,),
+        path_out,
+        input_names=["hidden"],
+        output_names=names,
+        # The decoder emits one token per step, but the same graph has to serve a
+        # whole-sequence hidden state too.
+        dynamic_axes={"hidden": {1: "seq_len"}, **{name: {1: "seq_len"} for name in names}},
+        opset_version=18,
+        do_constant_folding=True,
+        export_params=True,
+        dynamo=False,
     )
     return path_out
