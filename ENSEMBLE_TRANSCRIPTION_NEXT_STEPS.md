@@ -4719,6 +4719,40 @@ or the heads, and at module scope they made this work untestable without the who
 segmentation stack. Made local to the functions that use them, which also cleared one
 pre-existing test failure and three collection errors.
 
+**Follow-up attempt at a full-model export, and a mistake worth recording.** With the real
+checkpoint now local, I tried exporting the whole pipeline - not just the heads - by
+splitting `scans_clef_best.pth` into the two files `convert_encoder`/`convert_decoder`
+already expect (`training/onnx/split_pinned_checkpoint.py`, 7 tests; both halves load
+`strict=True` into fresh modules, so the split itself is exactly right: 184 encoder + 141
+decoder tensors from 326, the one dropped key being `decoder.note_mask`, a buffer
+`ScoreDecoder` derives from config rather than a learned tensor).
+
+The exports it produced are not trustworthy. Encoder: 65 KB, against a real encoder of
+52.8 MB - roughly 800x too small to hold a ConvNeXt's weights, so something in the export
+path silently failed to embed them. Decoder: 188 MB against a real 47.3 MB - 4x too large,
+which is its own, different anomaly. Neither number was sanity-checked before I ran the
+export, which is the same mistake this document has flagged before: a step that reports
+success is not the same as a step that worked, and I did not verify decoded output against
+the torch model the way the heads export was verified (max logit delta, zero decoded-
+notation disagreements). That verification is real work still to do, not a formality.
+
+**A real mistake in the process, not just a modelling gap.** `convert_encoder`/
+`convert_decoder` write to `config.filepaths.encoder_path`/`decoder_path`, which are fixed
+to `homr/transformer/{encoder,decoder}_pytorch_model_426-....onnx` regardless of whose
+weights were loaded into them - the filename is keyed to the *architecture*, not the
+checkpoint. That path doubles as the live cache `download_weights` populates, and both
+functions do guard it (`if exists and not overwrite: warn and refuse`) - the mistake was
+mine, passing `overwrite=True` without registering that the file I was about to replace
+was the real upstream cache and not a scratch copy of my own. The guard did exactly what
+it was built to do; I overrode it without checking what it was protecting.
+
+Caught by comparing file sizes against timestamps immediately after, not by the guard,
+since I had disabled it. Recovered by fetching the two zips directly from `liebharc/homr`'s
+release and restoring the original files; nothing tracked in git was affected, since
+`*.onnx` is gitignored. Worth a real fix before this export path is used again outside a
+scratch directory - `--overwrite` protecting a path that is also a live, shared cache is a
+sharper edge than the flag name suggests.
+
 ### What is now the real blocker
 
 Not the model. `base_url` in `homr/main.py:370` is a **hardcoded local variable** pointing
