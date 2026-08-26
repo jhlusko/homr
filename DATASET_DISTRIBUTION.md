@@ -188,9 +188,32 @@ reproducible release and one that generates confused issues.
 - **Absolute accuracy is not comparable across the two domains.** Lieder and OSSQ scans
   differ in difficulty; only the within-domain deltas mean anything.
 
-## Licensing
+## Licensing — and the one part that cannot ship as-is
 
-OpenScore Lieder and OpenScore String Quartets are CC0. IMSLP page scans carry their own
-per-scan terms and are **not** blanket-redistributable - check before including page
-images rather than crops. The derived token files and `.notation.json` sidecars are ours
-to license.
+The transcriptions are the easy part: OpenScore Lieder and OpenScore String Quartets are
+both CC0, and the derived token files, `.notation.json` sidecars and box ground truth are
+ours to license.
+
+**The page scans are not uniform, and the difference decides what can be published.**
+
+| what | source | redistributable |
+|---|---|---|
+| `corpora/*` staff crops | derived from scans | yes - small transformative excerpts |
+| `datasets/ossq_instrumental_text/pages/` | OSSQ's own scanned pages | yes - CC0 with the corpus |
+| `datasets/lieder_vocal_text/pages/` | **IMSLP page scans, 6.5 GB** | **no, not blanket** |
+
+IMSLP scans carry **per-scan** terms set by the individual uploader - some public domain,
+some CC-BY-NC-SA, some more restrictive - and there is no single licence covering the
+set. A 6.5 GB blanket republication is the one action here that is actually likely to
+cause a problem.
+
+The practical split, which keeps the release useful without republishing them:
+
+- **Ship** the staff crops, all token/notation files, the box ground truth, and the OSSQ
+  pages. That covers Stage 2 training and OSSQ Stage 3 end to end.
+- **Do not ship** `datasets/lieder_vocal_text/pages/`. Ship the ground-truth JSON, which
+  names each page by its IMSLP id (`IMSLP10416-p001.png`), plus a fetch script. Anyone
+  can retrieve the same pages from IMSLP under whatever terms apply to each.
+
+This costs a downloader one extra step for Lieder Stage 3 only, and costs nothing
+anywhere else. The local archive keeps the pages; the *published* artifact does not.

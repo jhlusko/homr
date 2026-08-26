@@ -50,4 +50,20 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 echo "All directories packaged and verified portable."
-echo "Next: tar each one and publish alongside DATASET_DISTRIBUTION.md."
+
+# The IMSLP pages are the one part of this tree that cannot be republished as a set:
+# each scan carries its own uploader-set terms, and there is no blanket licence. They
+# stay in the local archive; they must not go into the published artifact. Said loudly
+# here because the packaging step is exactly where someone would tar the lot.
+PAGES="$ROOT/datasets/lieder_vocal_text/pages"
+if [ -d "$PAGES" ]; then
+  echo
+  echo "NOTE: $PAGES ($(du -sh "$PAGES" 2>/dev/null | cut -f1)) is IMSLP page scans."
+  echo "Exclude it when tarring for publication - per-scan terms, no blanket licence."
+  echo "Ship the ground-truth JSON (it names pages by IMSLP id) and a fetch script."
+fi
+
+echo
+echo "Next: tar each directory and publish alongside DATASET_DISTRIBUTION.md, e.g."
+echo "  tar -C \"$ROOT/corpora\" -czf ossq_scanned_corrected.tar.gz ossq_scanned_corrected"
+echo "  tar -C \"$ROOT/datasets\" --exclude=pages -czf lieder_vocal_text.tar.gz lieder_vocal_text"
