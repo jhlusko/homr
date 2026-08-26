@@ -51,19 +51,20 @@ if [ "$failed" -ne 0 ]; then
 fi
 echo "All directories packaged and verified portable."
 
-# The IMSLP pages are the one part of this tree that cannot be republished as a set:
-# each scan carries its own uploader-set terms, and there is no blanket licence. They
-# stay in the local archive; they must not go into the published artifact. Said loudly
-# here because the packaging step is exactly where someone would tar the lot.
-PAGES="$ROOT/datasets/lieder_vocal_text/pages"
-if [ -d "$PAGES" ]; then
-  echo
-  echo "NOTE: $PAGES ($(du -sh "$PAGES" 2>/dev/null | cut -f1)) is IMSLP page scans."
-  echo "Exclude it when tarring for publication - per-scan terms, no blanket licence."
-  echo "Ship the ground-truth JSON (it names pages by IMSLP id) and a fetch script."
-fi
+# The page scans ship with everything else: this release is published on
+# ourtextscores.com, which already hosts IMSLP scans. Checked here only because a
+# Stage 3 dataset whose pages never arrived is unusable and looks fine by file count -
+# the same failure that left ossq_instrumental_text/pages/ empty.
+for dataset in ossq_instrumental_text lieder_vocal_text; do
+  pages="$ROOT/datasets/$dataset/pages"
+  if [ -d "$ROOT/datasets/$dataset" ] && [ ! -d "$pages" ]; then
+    echo "WARNING: $dataset has no pages/ - its Stage 3 ground truth is unusable."
+  elif [ -d "$pages" ] && [ -z "$(find "$pages" -type f -print -quit 2>/dev/null)" ]; then
+    echo "WARNING: $pages is empty - its Stage 3 ground truth is unusable."
+  fi
+done
 
 echo
 echo "Next: tar each directory and publish alongside DATASET_DISTRIBUTION.md, e.g."
-echo "  tar -C \"$ROOT/corpora\" -czf ossq_scanned_corrected.tar.gz ossq_scanned_corrected"
-echo "  tar -C \"$ROOT/datasets\" --exclude=pages -czf lieder_vocal_text.tar.gz lieder_vocal_text"
+echo "  tar -C \"$ROOT/corpora\"  -czf ossq_scanned_corrected.tar.gz ossq_scanned_corrected"
+echo "  tar -C \"$ROOT/datasets\" -czf lieder_vocal_text.tar.gz    lieder_vocal_text"
