@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
-from homr import color_adjust, download_utils
+from homr import color_adjust, download_utils, text_detector_config
 from homr.autocrop import autocrop
 from homr.bar_line_detection import (
     detect_bar_lines,
@@ -396,40 +396,45 @@ def download_weights(segnet_use_gpu: bool, transformer_use_gpu: bool, coreml_enc
         models.append(default_config.filepaths.decoder_path)
     missing_models = [model for model in models if not os.path.exists(model)]
 
-    if len(missing_models) == 0:
-        return
+    if len(missing_models) > 0:
+        eprint("Downloading", len(missing_models), "models - this is only required once")
+        for model in missing_models:
+            if not os.path.exists(model):
+                base_name = os.path.basename(model).split(".")[0]
+                eprint(f"Downloading {base_name}")
+                try:
+                    zip_name = base_name + ".zip"
+                    download_url = base_url + zip_name
+                    downloaded_zip = os.path.join(os.path.dirname(model), zip_name)
+                    download_utils.download_file(download_url, downloaded_zip)
 
-    eprint("Downloading", len(missing_models), "models - this is only required once")
-    for model in missing_models:
-        if not os.path.exists(model):
-            base_name = os.path.basename(model).split(".")[0]
-            eprint(f"Downloading {base_name}")
-            try:
-                zip_name = base_name + ".zip"
-                download_url = base_url + zip_name
-                downloaded_zip = os.path.join(os.path.dirname(model), zip_name)
-                download_utils.download_file(download_url, downloaded_zip)
+                    destination_dir = os.path.dirname(model)
+                    download_utils.unzip_file(downloaded_zip, destination_dir)
+                finally:
+                    if os.path.exists(downloaded_zip):
+                        os.remove(downloaded_zip)
 
-                destination_dir = os.path.dirname(model)
-                download_utils.unzip_file(downloaded_zip, destination_dir)
-            finally:
-                if os.path.exists(downloaded_zip):
-                    os.remove(downloaded_zip)
-
-    download_structured_heads_if_available(base_url)
+    # Independent of whether any *required* model was missing: an install where the
+    # segnet/encoder/decoder were already present (every run after the first) must
+    # still pick up an optional model it doesn't have yet - e.g. after upgrading to a
+    # version that ships structured heads or a text detector for the first time.
+    download_optional_model(default_config.filepaths.structured_heads_path, base_url)
+    download_optional_model(text_detector_config.detector_vocal_path, base_url)
+    download_optional_model(text_detector_config.detector_instrumental_path, base_url)
 
 
-def download_structured_heads_if_available(base_url: str) -> None:
-    """Best-effort fetch of the optional structured-heads graph.
+def download_optional_model(model: str, base_url: str) -> None:
+    """Best-effort fetch of a model whose absence is normal, ordinary behaviour.
 
     Deliberately separate from the required-model loop above: that loop raises on
-    failure, which is correct for a model inference cannot run without. The heads are
-    the opposite - `get_decoder` already treats their absence as normal, off-by-default
-    behaviour (`decoder_inference.py`), so a release without this asset yet, or a
-    network hiccup fetching it, must not turn an optional feature into a startup
-    failure for everyone.
+    failure, which is correct for a model inference cannot run without (the segnet,
+    encoder, decoder). The structured heads and the two Stage 3 text detectors are the
+    opposite - each is off-by-default, and their absence is already handled elsewhere
+    as the normal case (`decoder_inference.get_decoder` for the heads; no inference
+    class reads the detector paths yet at all). A release without one of these assets
+    yet, or a network hiccup fetching it, must not turn an optional feature into a
+    startup failure for everyone, or for the other optional models in the same call.
     """
-    model = default_config.filepaths.structured_heads_path
     if os.path.exists(model):
         return
     base_name = os.path.basename(model).split(".")[0]
@@ -440,7 +445,7 @@ def download_structured_heads_if_available(base_url: str) -> None:
         download_utils.unzip_file(downloaded_zip, os.path.dirname(model))
     except Exception as ex:  # noqa: BLE001
         eprint(ex)
-        eprint(f"Could not download {base_name} - continuing without structured heads.")
+        eprint(f"Could not download {base_name} - continuing without it.")
     finally:
         if os.path.exists(downloaded_zip):
             os.remove(downloaded_zip)
