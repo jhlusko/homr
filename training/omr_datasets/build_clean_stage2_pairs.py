@@ -87,6 +87,9 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--overfull-out", type=Path,
+                        help="Where to quarantine pairs with an overfull bar.")
+    parser.add_argument("--overfull-manifest", type=Path)
     parser.add_argument("--recovered-manifest", type=Path)
     parser.add_argument("--quarantine-manifest", type=Path)
     parser.add_argument("--quarantine-report", type=Path)
@@ -111,6 +114,8 @@ def main() -> None:
     manifest_lines = []
     inconsistent = 0
     overfull_skipped = 0
+    overfull_lines: list[str] = []
+    overfull_detail: list[dict] = []
 
     for score_id in score_ids:
         ranges = aligned_ranges(alignment_doc["scores"][score_id])
@@ -179,7 +184,29 @@ def main() -> None:
                 # out longer than the staff's prevailing one. Training on it teaches the
                 # model to write overfull bars. 45 across 25 scores; reviewed examples
                 # ran 1.062 and 1.125 whole notes against a 4/4 bar.
-                if overfull_bars(cleaned):
+                overfull = overfull_bars(cleaned)
+                if overfull:
+                    # Quarantined, not discarded. 417 pairs is ~10% of the corpus and
+                    # the loss is asymmetric: implied tuplets are concentrated in the
+                    # densest, most interesting writing, so dropping them silently
+                    # trains the model on the easy half of the repertoire. Written to
+                    # their own directory and manifest so they can be reviewed and, if
+                    # a representation is found, recovered.
+                    stem = f"{score_id}-sys{position}-v{voice_index}"
+                    if args.overfull_out:
+                        args.overfull_out.mkdir(parents=True, exist_ok=True)
+                        image_path = args.overfull_out / f"{stem}.png"
+                        tokens_path = args.overfull_out / f"{stem}.tokens"
+                        crop = page.crop(
+                            (box["left"], box["top"],
+                             box["left"] + box["width"], box["top"] + box["height"])
+                        )
+                        crop.save(image_path)
+                        tokens_path.write_text(token_lines_to_str(cleaned), encoding="utf-8")
+                        write_sidecar(tokens_path, cleaned)
+                        overfull_lines.append(f"{image_path},{tokens_path}")
+                        overfull_detail.append({"stem": stem, "bars": overfull,
+                                                "measures": end - start})
                     overfull_skipped += 1
                     continue
                 divider_count = sum(
@@ -231,6 +258,7 @@ def main() -> None:
                 "pairs": len(manifest_lines),
                 "span_inconsistent_pairs_skipped": inconsistent,
                 "overfull_bar_pairs_skipped": overfull_skipped,
+                "overfull_detail": overfull_detail,
                 "quarantined_recovered_pairs": quarantine_count,
                 "scores": audit,
             },
@@ -241,6 +269,11 @@ def main() -> None:
     print(f"{len(manifest_lines)} clean pairs written")
     print(f"{inconsistent} pair(s) skipped: divider count disagreed with aligned span")
     print(f"{overfull_skipped} pair(s) skipped: overfull bar (implied tuplet)")
+    if args.overfull_manifest:
+        args.overfull_manifest.write_text(
+            "\n".join(overfull_lines) + ("\n" if overfull_lines else ""), encoding="utf-8"
+        )
+        print(f"  quarantined to {args.overfull_manifest}")
     print(f"{quarantine_count} historical recovered pairs quarantined (files preserved)")
 
 

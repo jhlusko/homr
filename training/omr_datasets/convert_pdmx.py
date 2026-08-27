@@ -46,7 +46,20 @@ pdmx_root = os.path.join(dataset_root, "pdmx")
 pdmx_csv = os.path.join(pdmx_root, "PDMX.csv")
 pdmx_mxl_root = os.path.join(pdmx_root, "mxl")
 pdmx_out_root = os.path.join(pdmx_root, "out")
-pdmx_train_index = os.path.join(pdmx_root, "index.txt")
+#: Everything the converter wrote, training and validation together.  Callers that
+#: TRAIN must not use this - see pdmx_train_index below.
+pdmx_index = os.path.join(pdmx_root, "index.txt")
+
+#: The training split.  `index.txt` holds all 35,800 converted rows, validation
+#: included, and pointing replay at it meant every run - 426, 447 and 448 alike -
+#: sampled its 1,300 replay pairs from a pool containing the whole 3,349-row
+#: validation set.  A clean split already existed beside it and nothing used it, so
+#: every PDMX figure this project has quoted was measured against rows the model may
+#: have trained on.
+pdmx_train_index = os.path.join(pdmx_root, "index_train.txt")
+
+#: The held-out split, disjoint from the above (verified: zero overlapping rows).
+pdmx_valid_index = os.path.join(pdmx_root, "index_valid.txt")
 
 _MAX_COMPLEXITY = 2
 _MAX_TRACKS = 2
@@ -330,7 +343,7 @@ def convert_pdmx() -> None:
     mxl_paths = _load_filtered_paths()
     eprint(f"{len(mxl_paths)} files pass pre-filters (c<={_MAX_COMPLEXITY}, tracks<={_MAX_TRACKS})")
 
-    with open(pdmx_train_index, "w") as index_f:
+    with open(pdmx_index, "w") as index_f:
         file_number = 0
         skipped_files = 0
         with multiprocessing.Pool(processes=_N_WORKERS, maxtasksperchild=2) as p:
@@ -356,7 +369,7 @@ def convert_pdmx() -> None:
                         f"skipped {skipped_files} files",
                     )
 
-    eprint("Done - index written to", pdmx_train_index)
+    eprint("Done - index written to", pdmx_index)
 
 
 if __name__ == "__main__":
