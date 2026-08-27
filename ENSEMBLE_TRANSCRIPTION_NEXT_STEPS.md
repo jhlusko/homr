@@ -103,6 +103,7 @@ pick back up directly, in the priority order the evidence supports.
   - [Why `/v1/regenerate` is the right seam](#why-v1regenerate-is-the-right-seam)
   - [~~Still unproven~~ Resolved 2026-08-25: the heads export cleanly](#still-unproven-resolved-2026-08-25-the-heads-export-cleanly)
   - [What is now the real blocker](#what-is-now-the-real-blocker)
+  - [Release published: `onnx_checkpoints` on `jhlusko/homr`, verified end-to-end](#release-published-onnxcheckpoints-on-jhluskohomr-verified-end-to-end)
 
 ## 1. The text detector's page-level precision has collapsed for five of seven classes — **CLOSED 2026-08-20, user decision**
 
@@ -4868,3 +4869,47 @@ Also worth knowing before any model swap: `download_weights` decides freshness p
 `os.path.exists(model)` - no version, no checksum. The Dockerfile bakes weights into the
 image so a rebuild is clean, but any deployment with a persisted cache will silently keep
 serving the old model.
+
+### Release published: `onnx_checkpoints` on `jhlusko/homr`, verified end-to-end
+
+https://github.com/jhlusko/homr/releases/tag/onnx_checkpoints
+
+Ten assets: segnet (fp32 + fp16, unchanged from upstream - required so pointing
+`HOMR_WEIGHTS_BASE_URL` here is a strict superset of upstream's release, not a partial
+swap that 404s on Stage 1), encoder, decoder (quantized default + fp32 fallback),
+structured heads, and both Stage 3 detectors (quantized default + fp32 fallback each).
+
+**A real gap caught before publishing, not after.** `download_weights` uses one
+`base_url` for every required model, segnet included. Publishing only the parts we'd
+changed (encoder/decoder/heads/detectors) would have meant anyone setting
+`HOMR_WEIGHTS_BASE_URL` got a 404 fetching segnet - a required model, so this breaks
+startup entirely, not degrades gracefully. Fixed by re-hosting upstream's unchanged
+segnet weights as additional assets on the same release.
+
+**Stage 3 wired into auto-download, not just published as inert assets.**
+`homr/text_detector_config.py` (new) holds `detector_vocal_path`/
+`detector_instrumental_path`, flat module constants matching
+`homr/segmentation/config.py`'s own style - the text detector isn't part of the
+transformer pipeline, so it doesn't belong on `Config.filepaths`. `download_weights`
+now attempts all three optional models (heads + both detectors) via one shared
+`download_optional_model()` instead of one-off copies, each independently best-effort.
+
+**Writing the test for this caught a real bug before it shipped.** The three optional
+fetches were placed after `if len(missing_models) == 0: return` - which fires on every
+run after the first, once segnet/encoder/decoder are already cached. That made the
+optional fetches unreachable except on a completely fresh install: upgrading to a
+version that ships a text detector for the first time would have silently never
+fetched it. Fixed by running the optional fetches unconditionally.
+
+**Verified for real, not asserted:** ran `download_weights` from a completely empty
+directory against the actual published `HOMR_WEIGHTS_BASE_URL`, over the real network,
+on the GPU instance. All 6 non-fp16 models (3 required + 3 optional) downloaded with
+zero errors, and every file landed at the exact byte size published - confirming the
+quantized decoder (47,619,839 bytes) and both quantized detectors
+(14,517,874/14,517,875 bytes) are what a fresh install actually gets, not the fp32
+fallbacks.
+
+**What is still not true, stated plainly so it isn't assumed:** no inference class in
+`homr/` reads the two detector paths yet - only the download step exists. Wiring an
+actual Stage 3 inference class, the vocal/instrumental toggle itself, and the
+refinement-choice UI for the structured heads are all separate, not-yet-started work.
