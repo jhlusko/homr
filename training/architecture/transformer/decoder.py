@@ -321,7 +321,18 @@ class ScoreDecoder(nn.Module):
         for index, rhythm_symbol in enumerate(config.rhythm_vocab.keys()):
             if has_rhythm_symbol_a_position(rhythm_symbol):
                 note_mask[index] = 1
-        self.note_mask = nn.Parameter(note_mask)
+        # `requires_grad=False`: this is a fixed lookup - 1 where a rhythm token takes
+        # a staff position - derived deterministically from the vocabulary, with
+        # nothing to learn.  Left trainable it drifted: checkpoint 447 carries values
+        # from -0.1074 to 1.2761, mean 0.161 away from the 0/1 it is meant to be.  It
+        # still rounds back correctly so nothing was broken, but a table that encodes
+        # a fact about the vocabulary should not be moved by gradient descent.
+        #
+        # It stays an nn.Parameter, and so stays in the state_dict: demoting it to a
+        # non-persistent buffer would silently replace every existing checkpoint's
+        # drifted values with the exact mask at load time, changing inference for the
+        # pinned checkpoint.  Freezing stops further drift without rewriting history.
+        self.note_mask = nn.Parameter(note_mask, requires_grad=False)
 
         # DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's ground-truth-supervised duration-
         # adherence loss (calDurationAdherenceLoss below): a fixed, non-trainable

@@ -3,6 +3,7 @@ from typing import Any
 import torch
 from torch import nn
 
+from homr.simple_logging import eprint
 from homr.transformer.configs import Config
 from homr.transformer.vocabulary import EncodedSymbol
 from training.architecture.transformer.decoder import get_decoder
@@ -180,6 +181,42 @@ class TrOMR(nn.Module):
             param.requires_grad = True
 
 
+def grow_state_dict_rows(state: dict, model: torch.nn.Module) -> tuple[dict, list[str]]:
+    """Widen checkpoint tensors whose first dimension grew with the vocabulary.
+
+    Adding a token appends a row to every per-token tensor - the embedding table and
+    the output head's weight and bias.  `load_state_dict` rejects the shape mismatch
+    outright (a size mismatch raises even with `strict=False`), so a checkpoint from
+    before the token existed cannot be warm started without help.
+
+    Existing rows are copied into the widened tensor at their original indices and the
+    appended rows keep the freshly initialised model's own values.  That is only sound
+    because new tokens are appended to the END of the vocabulary: every pre-existing
+    index still means what it meant, so row *i* of the old tensor is still row *i* of
+    the new one.  Inserting a token anywhere else would silently remap every embedding
+    after it, which is exactly the failure this ordering exists to prevent.
+    """
+    current = model.state_dict()
+    grown: list[str] = []
+    out = dict(state)
+    for key, tensor in state.items():
+        target = current.get(key)
+        if target is None or not hasattr(tensor, "shape"):
+            continue
+        if tensor.shape == target.shape:
+            continue
+        same_tail = tensor.shape[1:] == target.shape[1:]
+        if not same_tail or tensor.shape[0] >= target.shape[0]:
+            # Only growth along the token axis is understood.  Anything else is a
+            # genuine architecture change and must not be papered over.
+            continue
+        widened = target.clone()
+        widened[: tensor.shape[0]] = tensor
+        out[key] = widened
+        grown.append(f"{key} {tuple(tensor.shape)} -> {tuple(target.shape)}")
+    return out, grown
+
+
 def load_model(config: Config) -> TrOMR:
     """Load model from checkpoint."""
     model = TrOMR(config)
@@ -191,11 +228,16 @@ def load_model(config: Config) -> TrOMR:
         with safetensors.safe_open(checkpoint_path, framework="pt", device=0) as f:
             for k in f.keys():
                 tensors[k] = f.get_tensor(k)
+        tensors, grown = grow_state_dict_rows(tensors, model)
+        for line in grown:
+            eprint("warm start: widened", line)
         model.load_state_dict(tensors, strict=False)
     else:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.load_state_dict(
-            torch.load(checkpoint_path, map_location=device, weights_only=True), strict=False
-        )
+        state = torch.load(checkpoint_path, map_location=device, weights_only=True)
+        state, grown = grow_state_dict_rows(state, model)
+        for line in grown:
+            eprint("warm start: widened", line)
+        model.load_state_dict(state, strict=False)
     model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     return model
