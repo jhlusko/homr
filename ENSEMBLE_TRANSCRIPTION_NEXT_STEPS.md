@@ -4830,9 +4830,32 @@ resolving.
   identical to 1e-6) shows 2 disagreements from the same cause - a near-tied logit can
   flip on rounding-level noise regardless of quantization.
 
-  **Net position: the quantized decoder is validated on real data and can ship.** The
-  fp32 decoder remains available as a larger, marginally more faithful fallback if a
-  future case needs it, but nothing found here argues for preferring it by default.
+  **Broadened 2026-08-26, same day: the first pass covered one score by accident.**
+  `sorted(glob(...))[:15]` put 15 consecutive crops from a single piece (`sq10307350`) in
+  front, not a spread across the 9 distinct scores in this validation split - caught only
+  when asked directly whether the crops had actually been tested, not by anything in the
+  script itself. Re-ran with 3 crops sampled from each of the 9 scores (27 total):
+
+  | comparison | token-sequence | beam-level (855 notes) |
+  |---|---|---|
+  | torch vs fp32-onnx | 27/27 exact match | 848/855 agree (99.2%) |
+  | torch vs quantized-onnx | 0/27 mismatches | 833/855 agree (97.4%) |
+
+  Consistent with the narrower first pass, and the broader sample adds the number that
+  actually settles the shipping question: of the 22 beam-level disagreements between
+  quantized-onnx and the torch reference, **22/22 (100%) fell on a note the quantized
+  model had already flagged as uncertain** (below the confidence threshold, `structured_
+  decode.py`'s own gate). Zero fell on a note it was confident about. Quantization never
+  silently changed a decision the model was sure of in this sample - every place it
+  landed differently from fp32 was already going to reach the user as a reviewable
+  alternative regardless of which side it fell on, because that is precisely what "below
+  threshold" means.
+
+  **Net position: the quantized decoder is validated across every score in this held-out
+  split and ships as the default.** It matches production's own real-world precedent
+  (upstream's release is quantized, not fp32), it is 4x smaller, and nothing in either
+  test round argues for preferring the fp32 decoder - it remains available as a fallback,
+  not because the data asks for one.
 
 ### What is now the real blocker
 
