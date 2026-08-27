@@ -80,6 +80,57 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class TestGrandStaffReconstruction(unittest.TestCase):
+    """`chord` is a SEPARATOR joining simultaneous symbols, so a grand staff cannot be
+    split symbol by symbol: it carries no position and belongs to whichever staves its
+    neighbours are on. Validated on the corpus - both reconstructed staves give a
+    median bar of 3/4, matching genuine single staves, against 5/6 unsplit."""
+
+    def _grand(self):
+        return [
+            n("clef_G2", "upper"), EncodedSymbol("chord"), n("clef_F4", "lower"),
+            EncodedSymbol("keySignature_0"),
+            n("note_4", "upper"), EncodedSymbol("chord"), n("note_4", "lower"),
+            EncodedSymbol("barline"),
+        ]
+
+    def test_a_chord_spanning_both_staves_is_partitioned(self) -> None:
+        from training.omr_datasets.audit_label_consistency import split_grand_staff
+        upper, lower = split_grand_staff(self._grand())
+        self.assertEqual([s.rhythm for s in upper if s.rhythm.startswith("note")], ["note_4"])
+        self.assertEqual([s.rhythm for s in lower if s.rhythm.startswith("note")], ["note_4"])
+
+    def test_system_wide_symbols_reach_both_staves(self) -> None:
+        from training.omr_datasets.audit_label_consistency import split_grand_staff
+        for staff in split_grand_staff(self._grand()):
+            self.assertIn("keySignature_0", [s.rhythm for s in staff])
+            self.assertIn("barline", [s.rhythm for s in staff])
+
+    def test_each_staff_keeps_its_own_clef(self) -> None:
+        from training.omr_datasets.audit_label_consistency import split_grand_staff
+        upper, lower = split_grand_staff(self._grand())
+        self.assertIn("clef_G2", [s.rhythm for s in upper])
+        self.assertIn("clef_F4", [s.rhythm for s in lower])
+        self.assertNotIn("clef_F4", [s.rhythm for s in upper])
+
+    def test_a_split_staff_has_the_same_bar_length_as_the_music(self) -> None:
+        """The acceptance test: an unsplit grand staff gives a nonsense duration
+        because group_into_chords takes the minimum across a chord."""
+        from training.omr_datasets.audit_label_consistency import (
+            measure_durations, split_grand_staff)
+        grand = [n("note_4", "upper"), EncodedSymbol("chord"), n("note_2", "lower"),
+                 n("note_4", "upper"), EncodedSymbol("chord"), n("note_2", "lower"),
+                 EncodedSymbol("barline")]
+        upper, lower = split_grand_staff(grand)
+        self.assertEqual(measure_durations(upper), [Fraction(1, 2)])
+        self.assertEqual(measure_durations(lower), [Fraction(1)])
+
+    def test_a_single_staff_passes_through_untouched(self) -> None:
+        from training.omr_datasets.audit_label_consistency import split_grand_staff
+        staff = bar(["note_4"] * 4)
+        self.assertEqual(split_grand_staff(staff), [staff])
+
+
 class TestSingleStaffOnly(unittest.TestCase):
     """Neither shaping of a grand staff gives usable durations: left whole, chord
     grouping takes a minimum and the median bar comes out 13/16 against 3/4; split by
