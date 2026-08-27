@@ -372,6 +372,14 @@ class MeasureCutter:
             ]
         self.key = EncodedSymbol("keySignature_0")
         self.time = EncodedSymbol("timeSignature/4")
+        #: The numerator token that precedes `self.time`, carried separately.  It has
+        #: to be: `"timeSignature" in symbol.rhythm` matches `timeSignatureBeats_3` as
+        #: well as `timeSignature/4`, and since the numerator is emitted first the
+        #: denominator overwrote it a moment later - so every restatement carried
+        #: across a slice boundary lost its numerator. That left 77 numerators against
+        #: 416 time signatures in the corpus, five times less metre supervision than
+        #: the labels actually contain.
+        self.time_beats: EncodedSymbol | None = None
 
     def _position_to_staff_no(self, symbol: EncodedSymbol) -> int:
         if symbol.position == "lower":
@@ -384,6 +392,7 @@ class MeasureCutter:
         clefs = self.clefs.copy()
         key = self.key
         time = self.time
+        time_beats = self.time_beats
         # Lieder pages are crops of one continuously rendered score, so a courtesy time
         # signature is only visible where the source XML actually redeclares it. pdmx and
         # musetrainer windows are each re-rendered standalone (see generate_xml), and that
@@ -412,6 +421,14 @@ class MeasureCutter:
                 elif "chord" in symbol.rhythm:
                     if not first_measure_before_any_non_key_or_clef:
                         measure_result.append(symbol)
+                elif symbol.rhythm.startswith("timeSignatureBeats"):
+                    # Checked before the denominator: the prefix test below would match
+                    # this token too, and the numerator must not be mistaken for it.
+                    self.time_beats = symbol
+                    if not first_measure_before_any_non_key_or_clef:
+                        measure_result.append(symbol)
+                    else:
+                        time_beats = symbol
                 elif "timeSignature" in symbol.rhythm:
                     self.time = symbol
                     if not first_measure_before_any_non_key_or_clef:
@@ -426,6 +443,10 @@ class MeasureCutter:
             if is_first_measure:
                 if has_time:
                     measure_result.insert(0, time)
+                    # The numerator goes back in front of its denominator, so a
+                    # restated signature says 3/4 rather than an unqualified "/4".
+                    if time_beats is not None:
+                        measure_result.insert(0, time_beats)
                 measure_result.insert(0, key)
                 for j, clef in enumerate(reversed(clefs)):
                     if j > 0:
