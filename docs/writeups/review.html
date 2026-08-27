@@ -179,6 +179,7 @@ iframe.cmp{
   <h1>OMR Label Review</h1>
   <div class="sets">
     <button id="set-checkpoint" onclick="switchSet('checkpoint')">0 &middot; Checkpoint diff</button>
+    <button id="set-metre" onclick="switchSet('metre')">0b &middot; Metre</button>
     <button id="set-eval" onclick="switchSet('eval')">1 &middot; Eval set</button>
     <button id="set-voices" onclick="switchSet('voices')">1b &middot; Other staves</button>
     <button id="set-silent" onclick="switchSet('silent')">1c &middot; Silent staves</button>
@@ -219,6 +220,19 @@ const SETS = {
       ["ref-wrong",   "REFERENCE is wrong \u2014 not a model regression"],
       ["both-wrong",  "Both checkpoints wrong"],
       ["unclear",     "Unclear"]
+    ]
+  },
+  metre: {
+    dir: "review-data/sets/metre",
+    left: "left", right: "right",
+    leftLabel: "Label", rightLabel: "Model reading of the page",
+    question: "H9 &mdash; Which one matches the <strong>metre on the page</strong>?",
+    detail: "The label and the model disagree about at least one bar's total duration. The usual cause is notational equivalence: the transcription writes a passage in compound metre (6/8, 9/8) with plain eighths where the page writes 4/4 with triplets. The music sounds the same and the transcription is defensible, but an OMR label must reproduce what is PRINTED. No tuplet filter can see this &mdash; these labels contain no tuplet tokens at all.",
+    verdicts: [
+      ["label-ok",  "LABEL matches the page"],
+      ["model-ok",  "MODEL matches the page \u2014 label is wrong"],
+      ["both-wrong","Neither matches"],
+      ["unclear",   "Unclear"]
     ]
   },
   // Each set is one experiment with one null hypothesis. Keep the questions
@@ -485,6 +499,11 @@ function render(){
   }
   if (it.n_beams !== undefined) {
     metaBits += '<span>beam elements: <strong>' + it.n_beams + '</strong></span>';
+  }
+  if (it.label_beats !== undefined) {
+    metaBits += '<span>bar length &mdash; label <strong>' + it.label_beats.toFixed(3)
+      + '</strong> &middot; model <strong>' + it.predicted_beats.toFixed(3)
+      + '</strong> (whole notes)</span>';
   }
   if (it.delta !== undefined) {
     const dir = it.delta < 0 ? "regression" : "gain";
