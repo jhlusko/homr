@@ -93,3 +93,17 @@ class TestNoteMaskIsNotTrained(unittest.TestCase):
         from training.architecture.transformer.tromr_arch import TrOMR
 
         self.assertIn("decoder.note_mask", TrOMR(Config()).state_dict())
+
+
+class TestInferenceLoaderWidensToo(unittest.TestCase):
+    """The training loader and the inference loader are different code paths. Only the
+    training one was widened at first, so scoring any pre-vocabulary checkpoint failed
+    outright - and that path is also what loads the pinned checkpoint in production."""
+
+    def test_staff2score_uses_the_same_widening(self) -> None:
+        import inspect
+
+        from training.architecture.transformer import staff2score
+
+        source = inspect.getsource(staff2score.Staff2Score.__init__)
+        self.assertIn("grow_state_dict_rows", source)

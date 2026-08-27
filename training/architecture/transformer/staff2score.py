@@ -10,13 +10,14 @@ from homr.simple_logging import eprint
 from homr.transformer.configs import Config
 from homr.transformer.vocabulary import EncodedSymbol
 from homr.type_definitions import NDArray
-from training.architecture.transformer.tromr_arch import TrOMR
+from training.architecture.transformer.tromr_arch import TrOMR, grow_state_dict_rows
 from training.transformer.image_utils import (
     ndarray_to_tensor,
     pad_to_3_dims,
     prepare_for_tensor,
     read_image_to_ndarray,
 )
+from homr.simple_logging import eprint
 from training.transformer.training_vocabulary import token_lines_to_str
 
 
@@ -40,7 +41,15 @@ class Staff2Score:
         self.model = TrOMR(config)
         self.model.eval_mode()
         checkpoint_file_path = config.filepaths.checkpoint
-        self.model.load_state_dict(load_model_weights(checkpoint_file_path), strict=False)
+        # Widen per-token tensors the same way the training loader does. Without this
+        # NO checkpoint saved before a vocabulary token was added can be loaded for
+        # inference at all - load_state_dict raises on the size mismatch even with
+        # strict=False - which would strand the pinned checkpoint the moment the
+        # vocabulary grows, not just this comparison.
+        state, grown = grow_state_dict_rows(load_model_weights(checkpoint_file_path), self.model)
+        for line in grown:
+            eprint("widened for inference:", line)
+        self.model.load_state_dict(state, strict=False)
         self.model.to(self.device)
 
         if not os.path.exists(config.filepaths.rhythmtokenizer):
