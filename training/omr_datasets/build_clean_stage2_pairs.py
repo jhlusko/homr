@@ -35,6 +35,7 @@ from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
 from training.omr_datasets.audit_clean_stage2_pairs import MEASURE_DIVIDERS
+from training.omr_datasets.audit_label_consistency import overfull_bars
 from training.omr_datasets.system_count_alignment import aligned_ranges
 from training.transformer.training_vocabulary import calc_ratio_of_tuplets, token_lines_to_str
 
@@ -109,6 +110,7 @@ def main() -> None:
     audit = []
     manifest_lines = []
     inconsistent = 0
+    overfull_skipped = 0
 
     for score_id in score_ids:
         ranges = aligned_ranges(alignment_doc["scores"][score_id])
@@ -172,6 +174,14 @@ def main() -> None:
                 # disagreements rather than a counting artefact).  Drop them here so
                 # the corpus is consistent by construction and the audit stays a
                 # strict independent check rather than being relaxed to accommodate.
+                # An implied tuplet - engraved with no bracket and no numeral - is
+                # recorded by neither the transcription nor the model, so the bar comes
+                # out longer than the staff's prevailing one. Training on it teaches the
+                # model to write overfull bars. 45 across 25 scores; reviewed examples
+                # ran 1.062 and 1.125 whole notes against a 4/4 bar.
+                if overfull_bars(cleaned):
+                    overfull_skipped += 1
+                    continue
                 divider_count = sum(
                     1 for line in token_lines_to_str(cleaned).splitlines()
                     if line.split() and line.split()[0] in MEASURE_DIVIDERS
@@ -220,6 +230,7 @@ def main() -> None:
                 "model_predictions_used": False,
                 "pairs": len(manifest_lines),
                 "span_inconsistent_pairs_skipped": inconsistent,
+                "overfull_bar_pairs_skipped": overfull_skipped,
                 "quarantined_recovered_pairs": quarantine_count,
                 "scores": audit,
             },
@@ -229,6 +240,7 @@ def main() -> None:
     )
     print(f"{len(manifest_lines)} clean pairs written")
     print(f"{inconsistent} pair(s) skipped: divider count disagreed with aligned span")
+    print(f"{overfull_skipped} pair(s) skipped: overfull bar (implied tuplet)")
     print(f"{quarantine_count} historical recovered pairs quarantined (files preserved)")
 
 

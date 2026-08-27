@@ -34,6 +34,17 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
+#: Scores excluded wholesale, with the evidence for each.  Kept as a named constant
+#: rather than a data file so the reason travels with the decision.
+EXCLUDED_SCORES = {
+    # 10 of the 45 overfull bars in the corpus, 7 of 10 reference defects the reviewer
+    # found in the checkpoint diff, and 5 of 5 "neither is right" verdicts in the metre
+    # review. Its 41 metre changes across six distinct signatures are genuine, but the
+    # page writes implied tuplets the labels cannot represent.
+    "IMSLP405017": "implied tuplets and unrepresentable metre changes",
+}
+
+
 #: A grand-staff accompaniment made mostly of rests is not an accompaniment.  When a
 #: score's voice-1 labels fall below this fraction of pitched notes, the ground-truth
 #: MusicXML for that part is itself defective and no alignment can fix it: IMSLP183806
@@ -233,6 +244,9 @@ def main() -> None:
 
     clean = load_manifest(args.clean_manifest)
     defective = rest_dominated_scores(clean, args.min_accompaniment_note_fraction)
+    defective.update({score: -1.0 for score in EXCLUDED_SCORES})
+    for score, reason in EXCLUDED_SCORES.items():
+        print(f"excluding {score}: {reason}")
     for score_id, fraction in sorted(defective.items()):
         print(f"excluding {score_id}: accompaniment is {fraction:.0%} notes - source defect")
     reverse_pairs: dict[str, str] = {}
