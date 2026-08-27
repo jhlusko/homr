@@ -538,7 +538,44 @@ def build_articulations(
             parent.append(child)
 
 
-def build_slurs(note: ET.Element, slurs: str, slur_number: int) -> None:
+#: Which structured-head slur events correspond to a written `<slur type="start"/>` vs
+#: `<slur type="stop"/>` element. `start_and_stop` (one note closing one span and opening
+#: another in the same canonical slot) answers to both.
+_STOP_EVENTS = ("stop", "start_and_stop")
+_START_EVENTS = ("start", "start_and_stop")
+
+
+def slur_placement(model_note: EncodedSymbol, xml_type: str) -> str | None:
+    """The structured heads' predicted placement for a `<slur type="{xml_type}">`
+    element, or `None` if the heads didn't run or predicted nothing specific.
+
+    Matched by *event value*, not slot position: `notation.slurs` is a tuple of
+    independent slot predictions, and nothing guarantees slot 0 lines up with whichever
+    slur `build_slurs` happens to write first - especially for `slurStart_slurStop`,
+    which writes two elements from one base-branch token. Searching for the slot whose
+    own event matches the element being written is the only correspondence that doesn't
+    assume an ordering that was never guaranteed.
+    """
+    notation = getattr(model_note, "notation", None)
+    if notation is None:
+        return None
+    wanted = _STOP_EVENTS if xml_type == "stop" else _START_EVENTS
+    for event, side in notation.slurs:
+        if str(event) in wanted and str(side) != "unspecified":
+            return str(side)
+    return None
+
+
+def _add_slur(notation: ET.Element, xml_type: str, number: int, model_note: EncodedSymbol) -> None:
+    attrs = {"type": xml_type, "number": str(number)}
+    placement = slur_placement(model_note, xml_type)
+    if placement is not None:
+        attrs["placement"] = placement
+    ET.SubElement(notation, "slur", **attrs)
+
+
+def build_slurs(note: ET.Element, model_note: EncodedSymbol, slur_number: int) -> None:
+    slurs = model_note.slur
     notation = note.find("notations")
     if notation is None:
         notation = ET.SubElement(note, "notations")
@@ -548,12 +585,12 @@ def build_slurs(note: ET.Element, slurs: str, slur_number: int) -> None:
     elif slurs == nonote:
         eprint("WARNING note without valid articulation", slurs)
     elif slurs == "slurStart":
-        ET.SubElement(notation, "slur", type="start", number=str(slur_number))
+        _add_slur(notation, "start", slur_number, model_note)
     elif slurs == "slurStop":
-        ET.SubElement(notation, "slur", type="stop", number=str(slur_number))
+        _add_slur(notation, "stop", slur_number, model_note)
     elif slurs == "slurStart_slurStop":
-        ET.SubElement(notation, "slur", type="stop", number=str(slur_number))
-        ET.SubElement(notation, "slur", type="start", number=str(slur_number))
+        _add_slur(notation, "stop", slur_number, model_note)
+        _add_slur(notation, "start", slur_number, model_note)
     else:
         raise ValueError("Unsupported slur " + slurs)
 
@@ -660,7 +697,7 @@ def build_note_or_rest(
     build_beams(note, model_note)
 
     build_articulations(note, model_note.articulation, tuplet_mark, state)
-    build_slurs(note, model_note.slur, slur_number)
+    build_slurs(note, model_note, slur_number)
 
     return note
 
