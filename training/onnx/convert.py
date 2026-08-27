@@ -397,3 +397,43 @@ def quantize_decoder(src_path: str, dst_path: str, overwrite: bool = False) -> s
 
     quantize_dynamic(src_path, dst_path, weight_type=QuantType.QUInt8)
     return dst_path
+
+
+def convert_detector(
+    checkpoint: str, out_classes: int, path_out: str, overwrite: bool = False
+) -> str | None:
+    """Export a Stage 3 text-detector checkpoint (`detector_e2.pth`, `detector_instr_bg.pth`,
+    ...) to ONNX.
+
+    Same architecture and export shape as `convert_segnet` - both are `CamVidModel`
+    (resnet18 encoder, UNet decoder) - just with the detector's own class count and
+    checkpoint rather than Stage 1's pinned segnet weights, so this is a parameterised
+    sibling rather than a copy-modify of that function.
+    """
+    if os.path.exists(path_out) and not overwrite:
+        eprint(f"Detector ONNX already exists at {path_out}. Use --overwrite.")
+        return None
+
+    # Local for the same reason as convert_segnet's own import: keeps the encoder,
+    # decoder and structured-head exports usable without pytorch_lightning installed.
+    from training.architecture.segmentation.model import CamVidModel
+
+    model = CamVidModel(arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=out_classes)
+    model.load_state_dict(torch.load(checkpoint, weights_only=True, map_location="cpu"), strict=True)
+    model.eval()
+
+    sample_inputs = torch.randn(1, 3, 320, 320)
+
+    torch.onnx.export(
+        model,
+        sample_inputs,
+        path_out,
+        opset_version=18,
+        do_constant_folding=True,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_shapes={"image": (Dim("batch_size"), 3, 320, 320)},
+        dynamo=True,
+        external_data=False,
+    )
+    return path_out

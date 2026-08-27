@@ -416,6 +416,35 @@ def download_weights(segnet_use_gpu: bool, transformer_use_gpu: bool, coreml_enc
                 if os.path.exists(downloaded_zip):
                     os.remove(downloaded_zip)
 
+    download_structured_heads_if_available(base_url)
+
+
+def download_structured_heads_if_available(base_url: str) -> None:
+    """Best-effort fetch of the optional structured-heads graph.
+
+    Deliberately separate from the required-model loop above: that loop raises on
+    failure, which is correct for a model inference cannot run without. The heads are
+    the opposite - `get_decoder` already treats their absence as normal, off-by-default
+    behaviour (`decoder_inference.py`), so a release without this asset yet, or a
+    network hiccup fetching it, must not turn an optional feature into a startup
+    failure for everyone.
+    """
+    model = default_config.filepaths.structured_heads_path
+    if os.path.exists(model):
+        return
+    base_name = os.path.basename(model).split(".")[0]
+    downloaded_zip = os.path.join(os.path.dirname(model), base_name + ".zip")
+    try:
+        eprint(f"Downloading {base_name} (optional)")
+        download_utils.download_file(base_url + base_name + ".zip", downloaded_zip)
+        download_utils.unzip_file(downloaded_zip, os.path.dirname(model))
+    except Exception as ex:  # noqa: BLE001
+        eprint(ex)
+        eprint(f"Could not download {base_name} - continuing without structured heads.")
+    finally:
+        if os.path.exists(downloaded_zip):
+            os.remove(downloaded_zip)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
