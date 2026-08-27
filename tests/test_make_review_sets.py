@@ -39,3 +39,32 @@ class TestSampleSpreadAcrossScores(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestIdenticalPanesAreDropped(unittest.TestCase):
+    """Two methods can choose different measure ranges whose slices render the same
+    tokens - an all-rest passage being the common case. Asking which of two identical
+    panes is right is a question with no answer."""
+
+    def test_a_pair_with_identical_labels_is_not_offered_for_review(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from training.omr_datasets.make_review_sets import build_set
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.png").write_bytes(b"png")
+            same = root / "same.tokens"
+            same.write_text("rest_4 _ _ _ _ upper\n", encoding="utf-8")
+            other = root / "other.tokens"
+            other.write_text("note_4 C4 _ _ _ upper\n", encoding="utf-8")
+            left = {"S-sys0-v0": f"{root/'a.png'},{same}",
+                    "S-sys1-v0": f"{root/'a.png'},{same}"}
+            right = {"S-sys0-v0": f"{root/'a.png'},{same}",
+                     "S-sys1-v0": f"{root/'a.png'},{other}"}
+            out = root / "out"
+            build_set("t", ["S-sys0-v0", "S-sys1-v0"], left, right, out, 10)
+            import json
+            ids = [x["id"] for x in json.load(open(out / "t" / "manifest.json"))]
+            self.assertEqual(ids, ["S-sys1-v0"])

@@ -109,6 +109,14 @@ def write_xml(tokens: Path, destination: Path) -> int:
     return sum(symbol.rhythm in MEASURE_DIVIDERS for symbol in symbols)
 
 
+def _same_label(left_line: str, right_line: str) -> bool:
+    """Do these two manifest rows carry byte-identical tokens?"""
+    a, b = Path(left_line.split(",", 1)[1]), Path(right_line.split(",", 1)[1])
+    if not a.is_file() or not b.is_file():
+        return False
+    return a.read_bytes() == b.read_bytes()
+
+
 def build_set(
     name: str,
     stems: list[str],
@@ -119,6 +127,17 @@ def build_set(
     extra: dict[str, dict] | None = None,
 ) -> dict:
     """Write one review set: crops, one or two rendered scores, and a manifest."""
+    if right is not None:
+        # Two methods can pick different measure RANGES whose slices render the same
+        # tokens - an all-rest passage being the common case - and asking which of two
+        # identical panes is correct wastes a reviewer's attention on a question with
+        # no answer. Six of a hundred arbitrated items were this, and the reviewer
+        # spotted it before the generator did.
+        identical = [s for s in stems if s in left and s in right
+                     and _same_label(left[s], right[s])]
+        if identical:
+            print(f"{name:9s} dropping {len(identical)} item(s) whose two labels are identical")
+            stems = [s for s in stems if s not in set(identical)]
     chosen = sample_spread_across_scores(stems, limit, name)
     out = out_root / name
     crops = out / "crops"
