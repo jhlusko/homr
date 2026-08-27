@@ -90,6 +90,9 @@ figure.scan figcaption{
   margin-top:.45rem;font-family:"IBM Plex Mono",monospace;font-size:.68rem;
   letter-spacing:.05em;text-transform:uppercase;color:var(--fg-faint);
 }
+.cmp-caption{font-size:.82rem;color:var(--fg-soft);text-transform:uppercase;
+letter-spacing:.06em;margin:.9rem 0 .35rem}
+.cmp-caption:empty{display:none}
 iframe.cmp{
   width:100%;height:660px;border:1px solid var(--line-strong);
   border-radius:4px;background:#fff;display:block;margin-bottom:1.1rem;
@@ -175,7 +178,11 @@ iframe.cmp{
 <header class="top">
   <h1>OMR Label Review</h1>
   <div class="sets">
+    <button id="set-checkpoint" onclick="switchSet('checkpoint')">0 &middot; Checkpoint diff</button>
     <button id="set-eval" onclick="switchSet('eval')">1 &middot; Eval set</button>
+    <button id="set-voices" onclick="switchSet('voices')">1b &middot; Other staves</button>
+    <button id="set-silent" onclick="switchSet('silent')">1c &middot; Silent staves</button>
+    <button id="set-abstained" onclick="switchSet('abstained')">1d &middot; Abstained</button>
     <button id="set-arbitrated" onclick="switchSet('arbitrated')">2 &middot; Arbitrated</button>
     <button id="set-rejected" onclick="switchSet('rejected')">2b &middot; Rejected</button>
     <button id="set-pseudo" onclick="switchSet('pseudo')">3 &middot; Pseudo-labels</button>
@@ -193,6 +200,27 @@ iframe.cmp{
 </div>
 <script>
 const SETS = {
+  checkpoint: {
+    dir: "review-data/sets/checkpoint",
+    left: "left", right: "right",
+    leftLabel: "Old checkpoint (426)", rightLabel: "New checkpoint (447)",
+    question: "H0 &mdash; Is the <strong>new</strong> checkpoint's reading better here?",
+    detail: "Ordered worst-regression first, so the cases that would block shipping come up before the wins. The scan crop is the arbiter for both comparisons.",
+    firstCaption: "Old checkpoint vs new checkpoint \u2014 did the model change for the better?",
+    second: {
+      left: "reference", right: "right",
+      leftLabel: "Reference label", rightLabel: "New checkpoint (447)",
+      caption: "Reference label vs new checkpoint \u2014 is the label itself right?"
+    },
+    verdicts: [
+      ["new-better",  "NEW checkpoint is better"],
+      ["old-better",  "OLD checkpoint is better \u2014 regression"],
+      ["same",        "No real difference"],
+      ["ref-wrong",   "REFERENCE is wrong \u2014 not a model regression"],
+      ["both-wrong",  "Both checkpoints wrong"],
+      ["unclear",     "Unclear"]
+    ]
+  },
   // Each set is one experiment with one null hypothesis. Keep the questions
   // disjoint: a set that asks two things at once cannot answer either.
   eval: {
@@ -205,6 +233,44 @@ const SETS = {
       ["complete",  "Correct \u2014 exactly the scan line"],
       ["truncated", "TRUNCATED \u2014 scan has more"],
       ["wrong",     "WRONG passage or extra bars"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  voices: {
+    dir: "review-data/sets/voices",
+    left: "left", right: null,
+    leftLabel: "Label for THIS staff", rightLabel: "",
+    question: "H6 &mdash; Does the label match <strong>this staff</strong>?",
+    detail: "Consensus is decided from the voice-0 crop and applied to every staff in the system, so 2079 of 3964 evaluation pairs (52%) have never been checked against their own crop by any method. The one confirmed consensus failure was exactly this: a dense piano grand staff labelled as three measures of rests, with both methods agreeing.",
+    verdicts: [
+      ["complete",  "Matches this staff"],
+      ["wrong-part", "WRONG STAFF \u2014 this is another part's music"],
+      ["truncated", "TRUNCATED or extra bars"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  silent: {
+    dir: "review-data/sets/silent",
+    left: "left", right: null,
+    leftLabel: "Label (all rests)", rightLabel: "",
+    question: "H7 &mdash; Is this staff <strong>really silent</strong> here?",
+    detail: "Every one of these labels is nothing but rests. Complete coverage, not a sample \u2014 there are only 63 in the whole evaluation set. A vocal line resting under a piano introduction is normal; a piano staff resting for a whole system is not, and that is the shape the confirmed consensus failure took.",
+    verdicts: [
+      ["silent",    "Correct \u2014 the staff really rests"],
+      ["has-notes", "WRONG \u2014 the crop has notes"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  abstained: {
+    dir: "review-data/sets/abstained",
+    left: "left", right: null,
+    leftLabel: "Bar-count label (unchecked)", rightLabel: "",
+    question: "H8 &mdash; Is this <strong>unchecked</strong> label usable?",
+    detail: "Content alignment abstained here, so the bar-count label was kept without a second opinion. These train but never evaluate, and no review has ever sampled them.",
+    verdicts: [
+      ["complete",  "Correct"],
+      ["truncated", "TRUNCATED \u2014 scan has more"],
+      ["wrong",     "WRONG passage"],
       ["unclear",   "Unclear"]
     ]
   },
@@ -393,6 +459,11 @@ function render(){
     "/" + cfg.dir + "/scores/" + it.id + "__" + side + ".musicxml";
   const cropOnly = cfg.cropOnly === true;
   const singlePane = !cropOnly && !cfg.right;
+  // A set may declare a SECOND comparison. On the checkpoint diff the first pane pair
+  // answers "did the model change for the better" and the second answers "is either
+  // of them right at all" - two different questions that a single pairing cannot ask,
+  // and the second is the one that catches a bad reference.
+  const second = cfg.second || null;
   let url = "";
   if (singlePane) {
     url = "/score-editor/index.html?score=" + encodeURIComponent(scoreUrl(cfg.left))
@@ -414,6 +485,14 @@ function render(){
   }
   if (it.n_beams !== undefined) {
     metaBits += '<span>beam elements: <strong>' + it.n_beams + '</strong></span>';
+  }
+  if (it.delta !== undefined) {
+    const dir = it.delta < 0 ? "regression" : "gain";
+    metaBits += '<span>token accuracy: <strong>' + (it.old_accuracy*100).toFixed(1)
+      + '%</strong> &rarr; <strong>' + (it.new_accuracy*100).toFixed(1) + '%</strong>'
+      + ' (' + (it.delta >= 0 ? "+" : "") + (it.delta*100).toFixed(1) + ' ' + dir + ')</span>'
+      + '<span>positions gained <strong>' + it.gains + '</strong> &middot; lost <strong>'
+      + it.regressions + '</strong></span>';
   }
   if (it.left_bars !== undefined) {
     metaBits += '<span>bars &mdash; label: <strong>' + it.left_bars + '</strong>'
@@ -451,8 +530,25 @@ function render(){
     + (cropOnly
         ? '<div class="err">Judge the scan crop above. No label is shown for this set '
           + 'on purpose &mdash; the question is whether the image contains music.</div>'
-        : '<iframe class="cmp" src="' + url + '" title="'
+        : '<div class="cmp-caption">' + (cfg.firstCaption || "") + '</div>'
+          + '<iframe class="cmp" src="' + url + '" title="'
           + (singlePane ? "label" : "comparison") + '" loading="lazy"></iframe>')
+    + (second
+        ? '<div class="cmp-caption">' + (second.caption || "") + '</div>'
+          + '<iframe class="cmp" src="' + "/score-editor/index.html"
+            + "?compareLeft="  + encodeURIComponent(scoreUrl(second.left))
+            + "&compareRight=" + encodeURIComponent(scoreUrl(second.right))
+            + "&leftLabel="    + encodeURIComponent(second.leftLabel)
+            + "&rightLabel="   + encodeURIComponent(second.rightLabel)
+          + '" title="second comparison" loading="lazy"></iframe>'
+          // The crop again, because it is the arbiter for BOTH comparisons and the
+          // second one sits a full viewport below the first: scrolling back up to
+          // check the scan is exactly the friction that makes a reviewer judge the
+          // panes against each other instead of against the page.
+          + '<figure class="scan"><img loading="lazy" src="' + cfg.dir + '/crops/'
+          + it.id + '.png" alt="Scan crop">'
+          + '<figcaption>The scan &mdash; the arbiter</figcaption></figure>'
+        : '')
     + '<div class="verdicts">' + btns + '</div>'
     + '<div class="notes"><label for="review-notes">Notes</label>'
     + '<textarea id="review-notes" placeholder="Add notes about this item…"></textarea></div>'

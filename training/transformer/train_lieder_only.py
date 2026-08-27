@@ -46,20 +46,39 @@ EPOCHS = 12
 
 
 def main() -> None:
-    counts = [IMSLP_COUNT, PDMX_REPLAY_COUNT]
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--train-index", default=IMSLP_TRAIN_INDEX)
+    parser.add_argument("--val-index", default=IMSLP_VAL_INDEX)
+    parser.add_argument(
+        "--imslp-count", type=int, default=IMSLP_COUNT,
+        help="Lieder pairs in the mix; sets the replay ratio against PDMX_REPLAY_COUNT.",
+    )
+    parser.add_argument("--replay-count", type=int, default=PDMX_REPLAY_COUNT)
+    parser.add_argument("--epochs", type=int, default=EPOCHS)
+    args = parser.parse_args()
+
+    # Paths are arguments rather than constants so a rebuilt corpus can be trained on
+    # without editing the module and silently changing what an earlier run meant.  The
+    # defaults still point at the original indices, which read from
+    # `stage2_pairs_out/` - the model-recovered pairs later quarantined as circular.
+    counts = [args.imslp_count, args.replay_count]
     total = sum(counts)
     print(
-        f"mix: IMSLP Lieder scans {IMSLP_COUNT}, pdmx replay {PDMX_REPLAY_COUNT} "
-        f"({100 * PDMX_REPLAY_COUNT / total:.1f}%), total {total}"
+        f"mix: IMSLP Lieder scans {args.imslp_count}, pdmx replay {args.replay_count} "
+        f"({100 * args.replay_count / total:.1f}%), total {total}"
     )
+    print(f"train index: {args.train_index}")
+    print(f"val index:   {args.val_index}")
     print("OSSQ scanned deliberately excluded - see this module's docstring")
     train_transformer(
         warm_start=True,
-        dataset_index=[IMSLP_TRAIN_INDEX, pdmx_train_index],
+        dataset_index=[args.train_index, pdmx_train_index],
         dataset_weights=[float(c) for c in counts],
         number_of_files=total,
-        number_of_epochs=EPOCHS,
-        validation_index=IMSLP_VAL_INDEX,
+        number_of_epochs=args.epochs,
+        validation_index=args.val_index,
     )
 
 

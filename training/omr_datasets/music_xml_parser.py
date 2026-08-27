@@ -8,6 +8,8 @@ from homr.transformer.vocabulary import (
     EncodedSymbol,
     empty,
     has_rhythm_symbol_a_position,
+    TIME_SIGNATURE_BEATS_PREFIX,
+    VALID_TIME_SIGNATURE_NUMERATORS,
 )
 from training.omr_datasets.staff_merging import (
     EncodedSymbolWithPos,
@@ -484,6 +486,13 @@ def _process_attributes(part: TokensPart, attribute: ET.Element) -> None:
         beat_type = _text(_child(times[0], "beat-type"))
         if not beat_type.isdigit() or int(beat_type) not in VALID_TIME_SIGNATURE_DENOMINATORS:
             raise ValueError(f"Unsupported time signature denominator: {beat_type}")
+        # The numerator goes first, as its own token.  Without it 3/4 and 4/4 are the
+        # same label and the renderer has to guess from measure durations.
+        beats = _text(_child(times[0], "beats"))
+        if beats.isdigit() and int(beats) in VALID_TIME_SIGNATURE_NUMERATORS:
+            part.append_symbol(
+                EncodedSymbol(f"{TIME_SIGNATURE_BEATS_PREFIX}{int(beats)}")
+            )
         part.append_symbol(EncodedSymbol(f"timeSignature/{beat_type}"))
 
     style = _children(attribute, "measure-style")

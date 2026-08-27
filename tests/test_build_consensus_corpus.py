@@ -77,3 +77,52 @@ class TestSpanExtraction(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRestDominatedScores(unittest.TestCase):
+    """A grand-staff accompaniment made of rests is a defect in the transcription
+    itself, not in the alignment: IMSLP183806 carries 40 notes against 136 rests over
+    66 measures while its scan shows dense piano, and every all-rest label human
+    review rejected came from it.  1 of 234 scores trips this."""
+
+    def _manifest(self, tmp, voice, notes, rests, pairs):
+        from pathlib import Path
+        out = {}
+        for i in range(pairs):
+            stem = f"IMSLPX-sys{i}-v{voice}"
+            tok = Path(tmp) / f"{stem}.tokens"
+            tok.write_text("\n".join(["note_4 C4 _ _ _ upper"] * notes
+                                     + ["rest_4 _ _ _ _ upper"] * rests) + "\n",
+                           encoding="utf-8")
+            out[stem] = f"{tmp}/{stem}.png,{tok}"
+        return out
+
+    def test_a_rest_dominated_accompaniment_is_flagged(self) -> None:
+        import tempfile
+        from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+        with tempfile.TemporaryDirectory() as tmp:
+            m = self._manifest(tmp, voice=1, notes=1, rests=9, pairs=6)
+            self.assertIn("IMSLPX", rest_dominated_scores(m))
+
+    def test_a_normal_accompaniment_is_not(self) -> None:
+        import tempfile
+        from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+        with tempfile.TemporaryDirectory() as tmp:
+            m = self._manifest(tmp, voice=1, notes=9, rests=1, pairs=6)
+            self.assertEqual(rest_dominated_scores(m), {})
+
+    def test_a_resting_vocal_line_is_never_flagged(self) -> None:
+        """Only the accompaniment is judged: a vocal line resting under a piano
+        introduction is ordinary, and 56 of 56 such labels were correct on review."""
+        import tempfile
+        from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+        with tempfile.TemporaryDirectory() as tmp:
+            m = self._manifest(tmp, voice=0, notes=0, rests=10, pairs=6)
+            self.assertEqual(rest_dominated_scores(m), {})
+
+    def test_too_few_pairs_to_judge(self) -> None:
+        import tempfile
+        from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+        with tempfile.TemporaryDirectory() as tmp:
+            m = self._manifest(tmp, voice=1, notes=1, rests=9, pairs=2)
+            self.assertEqual(rest_dominated_scores(m), {})

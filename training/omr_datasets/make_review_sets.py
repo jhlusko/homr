@@ -23,6 +23,19 @@ Each set here is a separate experiment with its own null hypothesis:
              comparison - because that is the whole question.  This is the failure
              that displaced ten systems in IMSLP637441 at the highest margin in the
              score, so the detector's precision matters on its own terms.
+``voices``   Consensus pairs on a staff OTHER than voice 0.  H: the label matches
+             this staff.  Consensus is decided from the voice-0 crop reading and
+             applied to every staff in the system, so 2079 of 3964 evaluation pairs
+             - 52% - have never been checked against their own crop by any method.
+             IMSLP183806-sys1-v1 is the confirmed case: a dense piano grand staff
+             labelled as three measures of rests, and both methods agreed.
+``silent``   Consensus pairs whose label is ENTIRELY rests.  H: the staff really is
+             silent there.  Complete coverage, not a sample - there are only 63.
+             A staff that rests for a whole system is normal for a vocal line under
+             a piano introduction and much less so elsewhere, and this is the shape
+             the one confirmed consensus failure took.
+``abstained`` Pairs where content alignment abstained and the bar-count label was
+             kept unchecked.  H: they are usable.  Never sampled by any review.
 ``octave``   Pairs from scores recovered by the octave-shift parser fix.  H: the
              written pitches sit at the printed octave.  The sign of
              OCTAVE_SHIFT_DIRECTION is asserted from the MusicXML convention and has
@@ -186,6 +199,26 @@ def main() -> None:
     disagree = sorted(s for s in by_verdict[ARBITRATED] if s in clean)
     discarded = sorted(s for s in by_verdict[REJECTED] if s in clean or s in reverse)
 
+    def label_is_all_rests(line: str) -> bool:
+        tokens = Path(line.split(",", 1)[1])
+        if not tokens.is_file():
+            return False
+        notes = rests = 0
+        for raw in tokens.read_text(encoding="utf-8").splitlines():
+            head = raw.split()
+            if not head:
+                continue
+            if head[0].startswith("note"):
+                notes += 1
+            elif head[0].startswith("rest"):
+                rests += 1
+        return notes == 0 and rests > 0
+
+    consensus_stems = sorted(s for s in by_verdict[CONSENSUS] if s in clean)
+    non_zero_voice = [s for s in consensus_stems if (parse_stem(s) or ("", 0, 0))[2] != 0]
+    silent = [s for s in consensus_stems if label_is_all_rests(clean[s])]
+    abstained = sorted(s for s in by_verdict[UNARBITRATED] if s in clean)
+
     octave_stems: list[str] = []
     if args.octave_scores and args.octave_scores.exists():
         recovered = {l.strip() for l in args.octave_scores.read_text().splitlines() if l.strip()}
@@ -196,8 +229,10 @@ def main() -> None:
 
     args.out.mkdir(parents=True, exist_ok=True)
     summary = [
-        build_set("eval", sorted(s for s in by_verdict[CONSENSUS] if s in clean),
-                  clean, None, args.out, args.limit),
+        build_set("eval", consensus_stems, clean, None, args.out, args.limit),
+        build_set("voices", non_zero_voice, clean, None, args.out, args.limit),
+        build_set("silent", silent, clean, None, args.out, max(args.limit, len(silent))),
+        build_set("abstained", abstained, clean, None, args.out, args.limit),
         build_set("arbitrated", disagree, clean, reverse, args.out, args.limit),
         build_set("rejected", discarded, {**reverse, **clean}, None, args.out, args.limit),
         build_set("pseudo", sorted(s for s in by_verdict[REVERSE_ONLY] if s in reverse),
@@ -205,8 +240,7 @@ def main() -> None:
         build_set("phantom", phantom, clean, None, args.out, args.phantom_limit),
         build_set("octave", octave_stems, clean, None, args.out, args.limit),
     ]
-    unarb = sorted(s for s in by_verdict[UNARBITRATED] if s in clean)
-    print(f"(unarbitrated pool, not sampled: {len(unarb)})")
+    print(f"(voice>0 in the evaluation set: {len(non_zero_voice)} of {len(consensus_stems)})")
     (args.out / "sets.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
 

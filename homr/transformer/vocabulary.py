@@ -14,6 +14,23 @@ empty = "_"  # used for decorations on note, if there is no decoration
 
 VALID_TIME_SIGNATURE_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16, 32, 48]
 
+#: Time signature numerators the label may state outright.  Until these existed the
+#: vocabulary carried only the denominator, so 3/4, 4/4 and 6/4 were the single token
+#: `timeSignature/4` and the numerator was *inferred* at render time as the median
+#: measure duration across a whole voice.  Three consequences: the model had no target
+#: to learn metre from, a metre change within a piece was unrepresentable even in
+#: principle, and one mis-read triplet moved the median and rewrote the printed metre
+#: of every measure.
+VALID_TIME_SIGNATURE_NUMERATORS = list(range(1, 17)) + [18, 20, 24]
+
+#: Prefix for the numerator token.  It is emitted *before* its `timeSignature/{d}`
+#: partner and is deliberately a separate token rather than a combined
+#: `timeSignature_{n}/{d}`: a combined form would change what the existing
+#: `timeSignature/{d}` tokens mean, invalidating every trained embedding for them,
+#: whereas an additional token leaves old checkpoints loadable - they simply never
+#: emit it, and the renderer falls back to inference exactly as before.
+TIME_SIGNATURE_BEATS_PREFIX = "timeSignatureBeats_"
+
 
 def build_dict(tokens: Iterable[str]) -> dict[str, int]:
     result = {}
@@ -83,6 +100,13 @@ def build_rhythm() -> dict[str, int]:
     #        "diminuendoEnd",
     #    ]
     # )
+
+    # Appended LAST, deliberately: build_dict assigns indices in list order, so adding
+    # these anywhere earlier would renumber every token after them and silently
+    # invalidate existing checkpoints.
+    rhythm.extend(
+        [f"{TIME_SIGNATURE_BEATS_PREFIX}{c}" for c in VALID_TIME_SIGNATURE_NUMERATORS]
+    )
 
     return build_dict(rhythm)
 

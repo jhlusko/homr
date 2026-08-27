@@ -11,6 +11,7 @@ import numpy as np
 from homr import constants
 from homr.simple_logging import eprint
 from homr.transformer.vocabulary import (
+    TIME_SIGNATURE_BEATS_PREFIX,
     EncodedSymbol,
     SymbolDuration,
     empty,
@@ -24,6 +25,18 @@ class ConversionState:
         self.beats = 4 * constants.duration_of_quarter
         self.division = division
         self.nominator = nominator
+        #: A numerator the label stated outright, if the stream carried one.  `None`
+        #: means fall back to `nominator`, the median measure duration inferred over
+        #: the whole voice - which is what every checkpoint trained before the
+        #: `timeSignatureBeats_*` tokens existed will produce.
+        self.stated_beats: int | None = None
+        #: The first numerator the stream stated, kept for the first-measure fallback
+        #: below.  MusicXML wants a `<time>` in the opening attributes, and inferring
+        #: one there would contradict a numerator the label states a moment later.
+        self.first_stated_beats: int | None = None
+        #: ...and its denominator, so the fallback states a whole time signature
+        #: rather than pairing a stated numerator with a hardcoded 4.
+        self.first_denominator: str | None = None
         self.tremolo_state = "stop"
         self.volta_number = 1
         self.last_volta_measure = -10
@@ -196,6 +209,15 @@ def build_measures(
         elif rhythm.startswith("keySignature"):
             attributes = build_or_get_attributes(current_measure, last_attributes)
             build_key(symbol, attributes)
+        elif rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX):
+            # Emitted immediately before its `timeSignature/{d}` partner; it carries
+            # no engraving of its own, it just tells the next one what to print.
+            try:
+                state.stated_beats = int(rhythm.split("_", 1)[1])
+                if state.first_stated_beats is None:
+                    state.first_stated_beats = state.stated_beats
+            except (IndexError, ValueError):
+                state.stated_beats = None
         elif rhythm.startswith("timeSignature"):
             attributes = build_or_get_attributes(current_measure, last_attributes)
             build_time_signature(symbol, attributes, state)
@@ -245,9 +267,13 @@ def build_measures(
         close_current_measure()
     if first_attributes.find("time") is None:
         time_el = ET.SubElement(first_attributes, "time")
-        beats = max(int(state.nominator * 4), 1)
+        beats = (
+            state.first_stated_beats
+            if state.first_stated_beats is not None
+            else max(int(state.nominator * 4), 1)
+        )
         ET.SubElement(time_el, "beats").text = str(beats)
-        ET.SubElement(time_el, "beat-type").text = "4"
+        ET.SubElement(time_el, "beat-type").text = state.first_denominator or "4"
     return measures
 
 
@@ -420,9 +446,23 @@ def build_clef(model_clef: EncodedSymbol, attributes: ET.Element) -> None:
 def build_time_signature(
     model_time_signature: EncodedSymbol, attributes: ET.Element, state: ConversionState
 ) -> None:
+    """Write `<time>`, preferring a numerator the label actually stated.
+
+    Inference remains the fallback so a checkpoint trained before the numerator
+    tokens existed renders exactly as it did.  It is only a fallback because it is
+    a *global* median: one value for the whole voice, so a metre change cannot be
+    expressed, and a single mis-read triplet moves the median and rewrites the metre
+    of every measure in the piece.
+    """
     time = ET.SubElement(attributes, "time")
     denominator = model_time_signature.rhythm.split("/")[1]
-    beats = max(int(state.nominator * int(denominator)), 1)
+    if state.first_denominator is None:
+        state.first_denominator = denominator
+    if state.stated_beats is not None:
+        beats = state.stated_beats
+        state.stated_beats = None
+    else:
+        beats = max(int(state.nominator * int(denominator)), 1)
     ET.SubElement(time, "beats").text = str(beats)
     ET.SubElement(time, "beat-type").text = denominator
     state.beats = beats

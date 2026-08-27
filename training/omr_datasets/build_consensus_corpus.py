@@ -34,6 +34,17 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
+#: A grand-staff accompaniment made mostly of rests is not an accompaniment.  When a
+#: score's voice-1 labels fall below this fraction of pitched notes, the ground-truth
+#: MusicXML for that part is itself defective and no alignment can fix it: IMSLP183806
+#: carries 40 notes against 136 rests across 66 measures while its scan shows dense
+#: piano throughout, and all four all-rest labels human review rejected came from it.
+#: Exactly 1 of 234 scores trips this, so the check is a scalpel, not a sieve.
+MIN_ACCOMPANIMENT_NOTE_FRACTION = 0.35
+
+#: ...but only judge a score once there is enough of it to judge.
+MIN_PAIRS_FOR_ACCOMPANIMENT_CHECK = 5
+
 #: Reverse's own span score below which it is not treated as an arbiter at all.
 #: Under this the system is left unarbitrated rather than counted as agreement or
 #: disagreement - an unsure arbiter must not silently confirm anything.
@@ -54,6 +65,48 @@ def parse_stem(stem: str) -> tuple[str, int, int] | None:
     if not match:
         return None
     return match["score_id"], int(match["system"]), int(match["voice"])
+
+
+def rest_dominated_scores(
+    manifest: dict[str, str],
+    min_fraction: float = MIN_ACCOMPANIMENT_NOTE_FRACTION,
+    min_pairs: int = MIN_PAIRS_FOR_ACCOMPANIMENT_CHECK,
+) -> dict[str, float]:
+    """Scores whose accompaniment labels are mostly rests, with their note fraction.
+
+    This is a *source data* defect - the transcription's own part is near-empty - so
+    it cannot be repaired by choosing a different measure range, and every pair drawn
+    from that part is wrong regardless of how confidently the methods agree.
+    """
+    tally: dict[str, list[int]] = {}
+    for stem, line in manifest.items():
+        parsed = parse_stem(stem)
+        if parsed is None or parsed[2] != 1:
+            continue
+        tokens = Path(line.split(",", 1)[1])
+        if not tokens.is_file():
+            continue
+        notes = rests = 0
+        for raw in tokens.read_text(encoding="utf-8").splitlines():
+            head = raw.split()
+            if not head:
+                continue
+            if head[0].startswith("note"):
+                notes += 1
+            elif head[0].startswith("rest"):
+                rests += 1
+        counts = tally.setdefault(parsed[0], [0, 0, 0])
+        counts[0] += notes
+        counts[1] += rests
+        counts[2] += 1
+    out = {}
+    for score_id, (notes, rests, pairs) in tally.items():
+        if pairs < min_pairs:
+            continue
+        fraction = notes / max(notes + rests, 1)
+        if fraction < min_fraction:
+            out[score_id] = round(fraction, 3)
+    return out
 
 
 def stem_of(manifest_line: str) -> str:
@@ -154,6 +207,12 @@ def main() -> None:
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--min-arbiter-score", type=float, default=MIN_ARBITER_SCORE)
     parser.add_argument(
+        "--min-accompaniment-note-fraction", type=float,
+        default=MIN_ACCOMPANIMENT_NOTE_FRACTION,
+        help="Exclude a score whose voice-1 labels fall below this fraction of "
+        "pitched notes - its transcription's accompaniment part is itself defective.",
+    )
+    parser.add_argument(
         "--crop-readings", type=Path, nargs="+", default=[],
         help="reverse_fingerprint --prediction-cache files. Tells this module whether "
         "reverse had any notes to work with, so an abstention is not read as a phantom.",
@@ -173,6 +232,9 @@ def main() -> None:
                 crop_notes[stem] = bool(tokens)
 
     clean = load_manifest(args.clean_manifest)
+    defective = rest_dominated_scores(clean, args.min_accompaniment_note_fraction)
+    for score_id, fraction in sorted(defective.items()):
+        print(f"excluding {score_id}: accompaniment is {fraction:.0%} notes - source defect")
     reverse_pairs: dict[str, str] = {}
     for path in args.reverse_manifest:
         if path.exists():
@@ -200,10 +262,21 @@ def main() -> None:
         counters[verdict] += 1
         per_score[score_id][verdict] += 1
 
-        if verdict in (ARBITRATED, UNARBITRATED) and stem in clean:
-            # Bar-count label wins a disagreement (28 of 33 on review) but is not
-            # clean enough for evaluation.
-            train_lines.append(clean[stem])
+        if score_id in defective:
+            counters["defective_score"] += 1
+            continue
+        if verdict == ARBITRATED and stem in reverse_pairs:
+            # The content label wins a surviving disagreement.  This flipped once the
+            # rest bug was fixed: on the 822 pre-fix disagreements the bar-count label
+            # was right 45 of 59, but the fix dissolved exactly those, and on the 251
+            # that remain the content label is right 18 of 20.  The rule was correct
+            # for the old population and wrong for the new one - re-measure after
+            # every upstream fix rather than carrying a rule forward.
+            train_lines.append(reverse_pairs[stem])
+        elif verdict == UNARBITRATED:
+            # Kept out of training entirely: 25% wrong on review, the worst pool
+            # measured, and worse than the model-derived pseudo-labels beside it.
+            counters["unarbitrated_dropped"] += 1
         elif verdict == CONSENSUS and stem in clean:
             # The model-free pair, confirmed by content.  Note this deliberately
             # takes the *clean* pair, not the reverse one: identical range, but the
