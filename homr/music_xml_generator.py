@@ -37,6 +37,32 @@ class ConversionState:
         #: ...and its denominator, so the fallback states a whole time signature
         #: rather than pairing a stated numerator with a hardcoded 4.
         self.first_denominator: str | None = None
+        #: Slur numbers currently in use, in the order they were opened.  MusicXML
+        #: pairs a slur by its `number` attribute, so a start and its stop must carry
+        #: the same one.  This used to be the *staff number*, which meant a slur
+        #: beginning on the upper staff and ending on the lower emitted
+        #: `number="1"` against `number="2"` - an unpaired start and an unpaired stop,
+        #: silently dropped by any consumer.  The same collision broke two overlapping
+        #: slurs on one staff, since both took that staff's number.
+        self.open_slurs: list[int] = []
+
+    def open_slur(self) -> int:
+        """Claim the lowest free slur number."""
+        number = 1
+        while number in self.open_slurs:
+            number += 1
+        self.open_slurs.append(number)
+        return number
+
+    def close_slur(self) -> int:
+        """Release the most recently opened slur - slurs nest far more often than they
+        cross, and the flat slur field carries no id to pair on, so last-opened is the
+        best available reading."""
+        if self.open_slurs:
+            return self.open_slurs.pop()
+        # A stop with nothing open: emit a number anyway rather than dropping the
+        # element, so the defect stays visible in the output instead of vanishing.
+        return 1
         self.tremolo_state = "stop"
         self.volta_number = 1
         self.last_volta_measure = -10
@@ -585,6 +611,30 @@ _STOP_EVENTS = ("stop", "start_and_stop")
 _START_EVENTS = ("start", "start_and_stop")
 
 
+def slur_slot_number(model_note: EncodedSymbol, xml_type: str) -> int | None:
+    """The sidecar slot this slur endpoint belongs to, as a MusicXML slur number.
+
+    The slot index *is* the pairing information - the structured notation keeps each
+    concurrent span in its own canonical slot, so a start in slot 0 and its stop in
+    slot 0 are the same slur however far apart they are or which staves they sit on.
+    That is strictly better than inferring pairing from open/close order, which cannot
+    tell two genuinely concurrent slurs apart; `collapse_unrepresentable_slurs` exists
+    precisely because the flat slur field cannot express two spans ending on one note,
+    and the sidecar can.
+
+    Returns `None` when the heads did not run or recorded nothing for this endpoint,
+    which is when the caller falls back to the open-span stack.
+    """
+    notation = getattr(model_note, "notation", None)
+    if notation is None:
+        return None
+    wanted = _STOP_EVENTS if xml_type == "stop" else _START_EVENTS
+    for index, (event, _side) in enumerate(notation.slurs):
+        if str(event) in wanted:
+            return index + 1
+    return None
+
+
 def slur_placement(model_note: EncodedSymbol, xml_type: str) -> str | None:
     """The structured heads' predicted placement for a `<slur type="{xml_type}">`
     element, or `None` if the heads didn't run or predicted nothing specific.
@@ -606,6 +656,14 @@ def slur_placement(model_note: EncodedSymbol, xml_type: str) -> str | None:
     return None
 
 
+def _slur_number(model_note: EncodedSymbol, xml_type: str, state: ConversionState) -> int:
+    """Prefer the sidecar's slot, fall back to the open-span stack."""
+    slot = slur_slot_number(model_note, xml_type)
+    if slot is not None:
+        return slot
+    return state.close_slur() if xml_type == "stop" else state.open_slur()
+
+
 def _add_slur(notation: ET.Element, xml_type: str, number: int, model_note: EncodedSymbol) -> None:
     attrs = {"type": xml_type, "number": str(number)}
     placement = slur_placement(model_note, xml_type)
@@ -614,7 +672,14 @@ def _add_slur(notation: ET.Element, xml_type: str, number: int, model_note: Enco
     ET.SubElement(notation, "slur", **attrs)
 
 
-def build_slurs(note: ET.Element, model_note: EncodedSymbol, slur_number: int) -> None:
+def build_slurs(note: ET.Element, model_note: EncodedSymbol, state: ConversionState) -> None:
+    """Write this note's slur endpoints, numbered by which span they belong to.
+
+    Numbering comes from the state's open-slur stack rather than from the staff, so a
+    slur that begins on one staff and ends on another still pairs - the case that
+    prompted this, where a start on staff 1 and a stop on staff 2 were emitted as
+    `number="1"` and `number="2"` and never joined up.
+    """
     slurs = model_note.slur
     notation = note.find("notations")
     if notation is None:
@@ -625,12 +690,14 @@ def build_slurs(note: ET.Element, model_note: EncodedSymbol, slur_number: int) -
     elif slurs == nonote:
         eprint("WARNING note without valid articulation", slurs)
     elif slurs == "slurStart":
-        _add_slur(notation, "start", slur_number, model_note)
+        _add_slur(notation, "start", _slur_number(model_note, "start", state), model_note)
     elif slurs == "slurStop":
-        _add_slur(notation, "stop", slur_number, model_note)
+        _add_slur(notation, "stop", _slur_number(model_note, "stop", state), model_note)
     elif slurs == "slurStart_slurStop":
-        _add_slur(notation, "stop", slur_number, model_note)
-        _add_slur(notation, "start", slur_number, model_note)
+        # One note closing a span and opening another: close first, so the new span
+        # may reuse the number the old one just freed, exactly as an engraver would.
+        _add_slur(notation, "stop", _slur_number(model_note, "stop", state), model_note)
+        _add_slur(notation, "start", _slur_number(model_note, "start", state), model_note)
     else:
         raise ValueError("Unsupported slur " + slurs)
 
@@ -728,7 +795,6 @@ def build_note_or_rest(
         ET.SubElement(time_mod, "normal-notes").text = str(model_duration.normal_notes)
 
     staff_num = get_staff(model_note)
-    slur_number = staff_num
     ET.SubElement(note, "voice").text = str(get_xml_voice(staff_num, rhythmic_layer))
     ET.SubElement(note, "staff").text = str(staff_num)
 
@@ -737,7 +803,7 @@ def build_note_or_rest(
     build_beams(note, model_note)
 
     build_articulations(note, model_note.articulation, tuplet_mark, state)
-    build_slurs(note, model_note, slur_number)
+    build_slurs(note, model_note, state)
 
     return note
 
