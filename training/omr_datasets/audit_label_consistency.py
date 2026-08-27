@@ -35,7 +35,14 @@ from collections import Counter, defaultdict
 from fractions import Fraction
 from pathlib import Path
 
-from homr.cross_staff_consistency import analyze_system
+from homr.cross_staff_consistency import (
+    check_key_signatures,
+    check_measure_counts,
+    check_measure_durations,
+    check_barline_positions,
+    check_shared_motifs,
+    check_time_signatures,
+)
 from homr.transformer.vocabulary import EncodedSymbol
 from homr.music_xml_generator import add_tuplet_start_stop, group_into_chords
 from training.transformer.training_vocabulary import read_tokens
@@ -111,6 +118,26 @@ def split_grand_staff(symbols: list) -> list[list]:
                     target.append(EncodedSymbol(CHORD))
                 target.append(symbol)
     return [upper, lower]
+
+
+#: Checks that depend on how much DURATION a staff holds.  These cannot run on a
+#: reconstructed grand staff, for a structural reason rather than a fixable bug: the
+#: token format attributes a simultaneity's duration ONCE, and `music_xml_generator`
+#: says so explicitly when it renders one -
+#:
+#:     chord_duration = group.get_duration() if pos_no == len(staff_positions) - 1
+#:                      else Fraction(0)
+#:
+#: so a chord spanning both staves gives its duration to one of them and zero to the
+#: other.  A grand staff is one rhythmic stream, not two, and summing each half
+#: independently produced exactly the systematic 1/8-per-bar offset seen across
+#: hundreds of systems (upper 5/8 against lower 1/2 on the case examined).
+DURATION_DEPENDENT = (check_measure_counts, check_measure_durations, check_barline_positions)
+
+#: Checks that compare symbols rather than durations, and are meaningful on a
+#: reconstructed staff.  Reconstruction took key_signature_mismatch from 95.8% under a
+#: naive split to 0.1%, which is what a correct one should do.
+SYMBOL_ONLY = (check_key_signatures, check_time_signatures, check_shared_motifs)
 
 
 def is_single_staff(symbols: list) -> bool:
@@ -197,20 +224,26 @@ def main() -> None:
     for (score, system), voices in sorted(by_system.items()):
         staves = []
         staff_voice = []
+        staff_is_single: list[bool] = []
         for voice in sorted(voices):
             try:
                 symbols = read_tokens(str(voices[voice]))
             except Exception:  # noqa: BLE001
                 symbols = []
+            single = is_single_staff(symbols) if symbols else True
             for staff in (split_grand_staff(symbols) if symbols else [[]]):
                 staves.append(staff)
                 staff_voice.append(voice)
-            if symbols and not is_single_staff(symbols):
+                staff_is_single.append(single)
+            if symbols and not single:
                 reconstructed += 1
         if not any(staves):
             continue
         systems += 1
         for index, staff in enumerate(staves):
+            if not staff_is_single[index]:
+                # Duration is not per-staff here; see DURATION_DEPENDENT.
+                continue
             bars = overfull_bars(staff, ratio)
             if bars:
                 overfull.append({"score_id": score, "system": system,
@@ -218,7 +251,14 @@ def main() -> None:
                 kinds["overfull_bar"] += 1
         if len(staves) < 2:
             continue
-        for finding in analyze_system(staves):
+        findings = []
+        for check in SYMBOL_ONLY:
+            findings.extend(check(staves))
+        duration_staves = [st for st, single in zip(staves, staff_is_single) if single]
+        if len(duration_staves) >= 2:
+            for check in DURATION_DEPENDENT:
+                findings.extend(check(duration_staves))
+        for finding in findings:
             kinds[finding.kind] += 1
             cross_staff.append({"score_id": score, "system": system,
                                 "kind": finding.kind, "message": finding.message,

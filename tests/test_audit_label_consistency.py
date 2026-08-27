@@ -149,3 +149,26 @@ class TestSingleStaffOnly(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDurationChecksAreScoped(unittest.TestCase):
+    """A grand staff is ONE rhythmic stream: music_xml_generator attributes a
+    simultaneity's duration once and gives the other staff zero -
+
+        chord_duration = group.get_duration() if pos_no == len(staff_positions) - 1
+                         else Fraction(0)
+
+    so summing each half independently is meaningless. That produced a systematic
+    1/8-per-bar offset across hundreds of systems."""
+
+    def test_duration_checks_are_separated_from_symbol_checks(self) -> None:
+        from training.omr_datasets.audit_label_consistency import (
+            DURATION_DEPENDENT, SYMBOL_ONLY)
+        names = {c.__name__ for c in DURATION_DEPENDENT}
+        self.assertEqual(names, {"check_measure_counts", "check_measure_durations",
+                                 "check_barline_positions"})
+        self.assertTrue(names.isdisjoint({c.__name__ for c in SYMBOL_ONLY}))
+
+    def test_symbol_checks_do_not_depend_on_duration(self) -> None:
+        from training.omr_datasets.audit_label_consistency import SYMBOL_ONLY
+        self.assertIn("check_key_signatures", {c.__name__ for c in SYMBOL_ONLY})
