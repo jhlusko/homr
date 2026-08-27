@@ -331,6 +331,16 @@ class TokensPart:
         # Beam, stem and slur labels for the notes of this part. Slur slots depend on
         # which spans are open, so the extractor is per part and fed in document order.
         self.notation = NotationExtractor()
+        # `written - sounding` octaves currently in force, per staff.  MusicXML gives
+        # sounding pitch; the label must carry what is printed.  `octave_shift` is the
+        # 8va/8vb bracket currently open, `clef_octave_change` the transposing clef in
+        # effect.  Both are staff-scoped and both persist until changed.
+        self.octave_shift: dict[int, int] = {}
+        self.clef_octave_change: dict[int, int] = {}
+
+    def written_octave_delta(self, staff: int) -> int:
+        """`written - sounding` octaves for a note on this staff, right now."""
+        return self.octave_shift.get(staff, 0) - self.clef_octave_change.get(staff, 0)
 
     def _ensure_current_measure(self) -> TokensMeasure:
         """
@@ -447,10 +457,15 @@ def _process_attributes(part: TokensPart, attribute: ET.Element) -> None:
         for clef in clefs:
             sign = _text(_child(clef, "sign"))
             line = _text(_child(clef, "line"))
-            has_octave_change = _child(clef, "clef-octave-change") is not None
-            if has_octave_change:
-                raise ValueError("Octave change isn't supported")
             clef_number = int(clef.get("number", "1")) - 1
+            # An octave-transposing clef (the tenor G2 with a small 8 below, and
+            # friends) sounds an octave away from where it is written.  `<pitch>` is
+            # the sounding pitch, so written = sounding - clef-octave-change.  This
+            # used to raise, discarding the whole score: 11 of the 330 Lieder scores.
+            octave_change_node = _child(clef, "clef-octave-change")
+            part.clef_octave_change[clef_number] = (
+                _int_text(octave_change_node, 0) if octave_change_node is not None else 0
+            )
             token = (EncodedSymbol(f"clef_{sign}{line}", empty, empty, empty, empty), clef_number)
             if clef.get("after-barline") == "yes":
                 deferred_clefs_tokens.append(token)
@@ -488,10 +503,39 @@ def _alter_to_lifts(alter: int) -> str:
     return "N"
 
 
-def _pitch_name(pitch: ET.Element) -> str:
+def _pitch_name(pitch: ET.Element, octave_delta: int = 0) -> str:
+    """The pitch token for this note, as it is **printed on the page**.
+
+    MusicXML's ``<pitch>`` is always the *sounding* pitch.  Under an 8va/8vb bracket
+    or an octave-transposing clef the printed note sits a whole octave away from it,
+    and this corpus labels what the scanner can see - so the sounding pitch has to be
+    shifted back to the written one.  ``octave_delta`` is ``written - sounding``.
+    """
     step = _text(_child(pitch, "step"))
     octave = _text(_child(pitch, "octave"))
+    if octave_delta and octave.lstrip("-").isdigit():
+        octave = str(int(octave) + octave_delta)
     return f"{step}{octave}"
+
+
+#: ``written - sounding``, in octaves, for an ``<octave-shift>`` of each type.
+#: An 8va - "play an octave above what is written" - is exported by MuseScore and
+#: others as ``type="down"``, because the element describes the shift that takes the
+#: sounding pitch back to the printed one.  Getting this sign backwards would move
+#: every affected note two octaves from the truth while still looking plausible, so
+#: it is stated here rather than inlined, and verified against homr's own reading of
+#: the printed page (see LIEDER_ALIGNMENT_REBUILD.md).
+OCTAVE_SHIFT_DIRECTION = {"down": -1, "up": 1}
+
+
+def octave_shift_delta(shift_type: str, size: int) -> int:
+    """``written - sounding`` octaves for one ``<octave-shift>`` element."""
+    direction = OCTAVE_SHIFT_DIRECTION.get(shift_type)
+    if direction is None:
+        return 0
+    # size is 8 for one octave, 15 for two, 22 for three.
+    octaves = max(round((size - 1) / 7), 1)
+    return direction * octaves
 
 
 def _rhythm_token(base: str, number: int, dots: int, is_grace: bool) -> str:
@@ -616,7 +660,7 @@ def _process_note(part: TokensPart, note: ET.Element) -> None:
             part.append_rest(staff, is_chord, duration, invisible, sym)
     pitch = _children(note, "pitch")
     if len(pitch) > 0:
-        pitch_name = _pitch_name(pitch[0])
+        pitch_name = _pitch_name(pitch[0], part.written_octave_delta(staff))
         lift = _lift_from_pitch_or_accidental(pitch[0], note)
         rhythm = _rhythm_token("note", base_duration, dots, is_grace)
         sym = EncodedSymbol(rhythm, pitch_name, lift, art, slur, notation=notation)
@@ -677,10 +721,27 @@ def _process_print(part: TokensPart, xmlprint: ET.Element) -> None:
 
 
 def _process_direction(part: TokensPart, xmldirection: ET.Element) -> None:
+    staff_nodes = _children(xmldirection, "staff")
+    staff = _int_text(staff_nodes[0], 1) - 1 if staff_nodes else 0
     for direction_type in _children(xmldirection, "direction-type"):
-        has_octave_shift = _child(direction_type, "octave-shift") is not None
-        if has_octave_shift:
-            raise ValueError("Octave shift isn't supported")
+        octave_shift = _child(direction_type, "octave-shift")
+        if octave_shift is None:
+            continue
+        # An 8va/8vb bracket: notes inside it are printed an octave from where they
+        # sound.  Raising here threw away 86 of the 330 Lieder scores - a quarter of
+        # the corpus - for a routine piano engraving mark.
+        shift_type = octave_shift.get("type", "")
+        if shift_type == "stop":
+            part.octave_shift.pop(staff, None)
+            continue
+        if shift_type == "continue":
+            continue
+        size = int(octave_shift.get("size", "8") or "8")
+        delta = octave_shift_delta(shift_type, size)
+        if delta:
+            part.octave_shift[staff] = delta
+        else:
+            part.octave_shift.pop(staff, None)
     # Feeds the pending-dynamic state a following real note claims (27.94/27.97); see
     # NotationExtractor.handle_direction for the staff-scoping this needs.
     part.notation.handle_direction(xmldirection)

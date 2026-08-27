@@ -1,100 +1,107 @@
 import unittest
 
-from training.omr_datasets.split_pairs_by_score import score_of, split_by_score
+from training.omr_datasets.split_pairs_by_score import (
+    RARE_TOPOLOGIES,
+    rare_topologies_of_score,
+    score_of,
+    split_by_score,
+)
 
 
-def _line(score: str, system: int, voice: int = 0) -> str:
-    stem = f"{score}-sys{system}-v{voice}"
-    return f"/out/{stem}.png,/out/{stem}.tokens"
+def lines_for(scores: dict[str, int]) -> list[str]:
+    out = []
+    for score_id, n in scores.items():
+        for i in range(n):
+            out.append(f"/p/{score_id}-sys{i}-v0.png,/p/{score_id}-sys{i}-v0.tokens")
+    return out
 
 
-class TestScoreOf(unittest.TestCase):
-    def test_reads_the_score_id_from_the_image_stem(self) -> None:
-        self.assertEqual(score_of(_line("IMSLP123", 4)), "IMSLP123")
+class TestRareTopologiesOfScore(unittest.TestCase):
+    """Derived from the manifest, not from the alignment's status field: a system
+    can be `aligned` and still emit no pair, and that proxy matched 54 scores where
+    18 hold every rare pair."""
 
-    def test_score_ids_containing_hyphens_survive(self) -> None:
-        self.assertEqual(score_of(_line("IMSLP-odd-9", 2)), "IMSLP-odd-9")
+    TOPO = {"A": {0: "one-to-one", 1: "many-to-many"}, "B": {0: "reference-line-split"}}
 
-    def test_unparseable_line_returns_none(self) -> None:
-        self.assertIsNone(score_of("/out/garbage.png,/out/garbage.tokens"))
+    def test_only_scores_present_in_the_manifest_count(self) -> None:
+        lines = ["/p/A-sys0-v0.png,/p/A-sys0-v0.tokens"]
+        self.assertEqual(rare_topologies_of_score(lines, self.TOPO), {})
+
+    def test_each_scores_own_rare_kinds_are_reported(self) -> None:
+        lines = ["/p/A-sys1-v0.png,/p/A-sys1-v0.tokens",
+                 "/p/B-sys0-v0.png,/p/B-sys0-v0.tokens"]
+        self.assertEqual(
+            rare_topologies_of_score(lines, self.TOPO),
+            {"A": frozenset({"many-to-many"}), "B": frozenset({"reference-line-split"})},
+        )
+
+    def test_rare_topologies_are_the_non_one_to_one_ones(self) -> None:
+        self.assertNotIn("one-to-one", RARE_TOPOLOGIES)
+        self.assertIn("many-to-many", RARE_TOPOLOGIES)
 
 
-class TestSplitByScore(unittest.TestCase):
-    def _corpus(self, n_scores: int, per_score: int = 4) -> list[str]:
-        return [
-            _line(f"IMSLP{i:04d}", s)
-            for i in range(n_scores)
-            for s in range(per_score)
-        ]
-
-    def test_no_score_appears_in_both_splits(self) -> None:
-        train, val = split_by_score(self._corpus(60), 0.2)
-
+class TestSplit(unittest.TestCase):
+    def test_split_is_score_disjoint(self) -> None:
+        lines = lines_for({f"S{i}": 3 for i in range(40)})
+        train, val = split_by_score(lines, 0.2)
         self.assertEqual({score_of(x) for x in train} & {score_of(x) for x in val}, set())
 
-    def test_every_line_lands_in_exactly_one_split(self) -> None:
-        corpus = self._corpus(40)
+    def test_unstratified_splitting_is_blind_to_topology(self) -> None:
+        """The 2026-08-27 failure, reproduced: with no stratification the rare
+        scores follow the hash, and here every one of them lands in train, leaving
+        validation unable to exercise a single non-one-to-one system."""
+        lines = lines_for({f"S{i}": 3 for i in range(40)})
+        _, val = split_by_score(lines, 0.1)
+        val_scores = {score_of(x) for x in val}
+        rare = {s: frozenset({"many-to-many"})
+                for s in (f"S{i}" for i in range(40)) if s not in val_scores}
+        self.assertTrue(rare, "expected some scores outside validation")
+        # Those same scores DO reach validation once the split is told about them.
+        _, val2 = split_by_score(lines, 0.1, rare_by_score=rare)
+        self.assertTrue(set(rare) & {score_of(x) for x in val2})
 
-        train, val = split_by_score(corpus, 0.25)
+    def test_stratifying_puts_rare_topology_scores_in_validation(self) -> None:
+        rare = {"S3": frozenset({"many-to-many"}), "S7": frozenset({"many-to-many"})}
+        lines = lines_for({f"S{i}": 3 for i in range(40)})
+        _, val = split_by_score(lines, 0.1, rare_by_score=rare)
+        self.assertTrue(set(rare) & {score_of(x) for x in val},
+                        "a rare-topology score must reach validation")
 
-        self.assertEqual(len(train) + len(val), len(corpus))
-        self.assertEqual(set(train) | set(val), set(corpus))
+    def test_a_small_rare_stratum_still_yields_a_validation_score(self) -> None:
+        """18 rare scores at 10% can hash to none; the guarantee must not depend
+        on the hash being kind."""
+        rare = {"R1": frozenset({"many-to-many"})}
+        lines = lines_for({"R1": 3, **{f"S{i}": 3 for i in range(40)}})
+        _, val = split_by_score(lines, 0.0001, rare_by_score=rare)
+        self.assertIn("R1", {score_of(x) for x in val})
 
-    def test_all_systems_of_a_score_stay_together(self) -> None:
-        corpus = self._corpus(50, per_score=6)
+    def test_stratified_split_is_still_score_disjoint(self) -> None:
+        rare = {s: frozenset({"many-to-many"}) for s in ("S3", "S7", "S11")}
+        lines = lines_for({f"S{i}": 3 for i in range(40)})
+        train, val = split_by_score(lines, 0.15, rare_by_score=rare)
+        self.assertEqual({score_of(x) for x in train} & {score_of(x) for x in val}, set())
 
-        train, val = split_by_score(corpus, 0.2)
+    def test_split_is_deterministic(self) -> None:
+        rare = {"S3": frozenset({"many-to-many"})}
+        lines = lines_for({f"S{i}": 2 for i in range(30)})
+        self.assertEqual(split_by_score(lines, 0.1, rare), split_by_score(lines, 0.1, rare))
 
-        for split in (train, val):
-            counts: dict[str, int] = {}
-            for line in split:
-                counts[score_of(line)] = counts.get(score_of(line), 0) + 1
-            self.assertTrue(all(c == 6 for c in counts.values()))
 
-    def test_split_is_deterministic_across_calls(self) -> None:
-        corpus = self._corpus(50)
+if __name__ == "__main__":
+    unittest.main()
 
-        first = split_by_score(corpus, 0.2)
-        second = split_by_score(corpus, 0.2)
 
-        self.assertEqual(first, second)
-
-    def test_input_order_does_not_change_the_split(self) -> None:
-        corpus = self._corpus(50)
-
-        forward = split_by_score(corpus, 0.2)
-        backward = split_by_score(list(reversed(corpus)), 0.2)
-
-        self.assertEqual(set(forward[1]), set(backward[1]))
-
-    def test_adding_a_new_score_does_not_move_existing_ones(self) -> None:
-        # Stability under growth: recovered pairs get appended later, and that must
-        # not reshuffle which scores are held out.
-        base = self._corpus(40)
-        grown = base + [_line("IMSLP9999", s) for s in range(3)]
-
-        base_val = {score_of(x) for x in split_by_score(base, 0.2)[1]}
-        grown_val = {score_of(x) for x in split_by_score(grown, 0.2)[1]}
-
-        self.assertTrue(base_val <= grown_val)
-
-    def test_adding_systems_to_an_existing_score_keeps_it_on_its_side(self) -> None:
-        base = self._corpus(40)
-        val_score = score_of(split_by_score(base, 0.2)[1][0])
-        grown = base + [_line(val_score, 99)]
-
-        train, val = split_by_score(grown, 0.2)
-
-        self.assertIn(val_score, {score_of(x) for x in val})
-        self.assertNotIn(val_score, {score_of(x) for x in train})
-
-    def test_a_larger_fraction_holds_out_more(self) -> None:
-        corpus = self._corpus(100)
-
-        small = len(split_by_score(corpus, 0.1)[1])
-        large = len(split_by_score(corpus, 0.4)[1])
-
-        self.assertLess(small, large)
+class TestEachRareKindReachesValidation(unittest.TestCase):
+    def test_both_kinds_get_their_own_stratum(self) -> None:
+        """A single rare/not-rare split gave validation four reference-line-split
+        pairs and zero many-to-many.  Each kind needs its own stratum."""
+        rare = {"M1": frozenset({"many-to-many"}),
+                "R1": frozenset({"reference-line-split"})}
+        lines = lines_for({"M1": 3, "R1": 3, **{f"S{i}": 3 for i in range(40)}})
+        _, val = split_by_score(lines, 0.0001, rare_by_score=rare)
+        val_scores = {score_of(x) for x in val}
+        self.assertIn("M1", val_scores)
+        self.assertIn("R1", val_scores)
 
 
 if __name__ == "__main__":

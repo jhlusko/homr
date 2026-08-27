@@ -64,3 +64,9 @@ _build/
 /temp
 # Local CPU-torch venv for running the torch-dependent tests off the GPU box.
 .venv-test/
+
+# Review tooling artifacts: regenerable, and large.
+# review-data/ is ~99MB of generated crops and rendered MusicXML (make_review_sets.py).
+# score-editor/ is a ~33MB vendored static build from OTS_Web (npm run build:embed).
+docs/writeups/review-data/
+docs/writeups/score-editor/

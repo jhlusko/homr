@@ -52,7 +52,7 @@ MIN_COVERAGE = 0.5
 MIN_SIMILARITY = 0.55
 
 
-def note_tokens(symbols: list[EncodedSymbol]) -> list[str]:
+def note_tokens(symbols: list[EncodedSymbol], include_rests: bool = False) -> list[str]:
     """The flat, alignable note sequence for one staff's worth of symbols -
     pitch-with-accidental per note, in order, rests and barlines dropped.
 
@@ -64,12 +64,21 @@ def note_tokens(symbols: list[EncodedSymbol]) -> list[str]:
     """
     tokens = []
     for symbol in symbols:
-        if not symbol.rhythm.startswith("note"):
-            continue
-        if symbol.pitch in ("", ".", "_"):
-            continue
-        lift = symbol.lift if symbol.lift in ("#", "b") else ""
-        tokens.append(f"{symbol.pitch}{lift}")
+        if symbol.rhythm.startswith("note"):
+            if symbol.pitch in ("", ".", "_"):
+                continue
+            lift = symbol.lift if symbol.lift in ("#", "b") else ""
+            tokens.append(f"{symbol.pitch}{lift}")
+        elif include_rests and symbol.rhythm.startswith("rest"):
+            # Rests carry no melodic identity, but they do occupy span.  Dropping
+            # them entirely means a rest-heavy system produces NO tokens at all, so
+            # every candidate span scores zero and the segmentation hands it nothing:
+            # human review called 30 of 30 such systems real music, a third of them
+            # with no pitched note anywhere.  Keeping the rest's own rhythm token
+            # (`rest_4`, `rest_1m`, ...) restores the position without pretending to
+            # melodic distinctiveness - a bare "R" would match every other rest in
+            # the piece, which is the false-match risk this function was avoiding.
+            tokens.append(symbol.rhythm)
     return tokens
 
 

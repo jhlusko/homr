@@ -57,6 +57,44 @@ DEFAULT_CONFIG = ProcessingConfig(
 #: treble + piano bass), not two separate barlines - clustered, not counted twice.
 CLUSTER_GAP_FRACTION = 0.02
 
+#: A barline at the very edge closes the crop; it does not add another measure.
+#: The old counter counted edge lines directly, so the same three-measure system
+#: became either 3 or 4 depending on whether segmentation happened to see its left
+#: border.  Count interior dividers + 1 instead.
+EDGE_MARGIN_FRACTION = 0.04
+
+#: Lieder systems contain at least the piano grand staff.  A real measure divider
+#: is consequently detected on two or three physical staves at nearly the same x;
+#: a lone vertical is overwhelmingly a note stem or illustration stroke.  The old
+#: counter treated both as barlines (e.g. a known 3-measure system became 5).
+MIN_BARLINE_CLUSTER_SUPPORT = 2
+
+
+def measure_count_from_barline_centers(xs: list[float], left: float, width: float) -> int:
+    """Count physical measures from clustered barline x positions.
+
+    Returns zero when no barline evidence exists.  Otherwise a system has one more
+    measure than it has *interior* dividers; left/right crop-boundary lines are not
+    themselves measures.
+    """
+    if not xs or width <= 0:
+        return 0
+    clusters: list[list[float]] = []
+    cluster_gap = width * CLUSTER_GAP_FRACTION
+    for x in sorted(xs):
+        if not clusters or x - clusters[-1][-1] > cluster_gap:
+            clusters.append([x])
+        else:
+            clusters[-1].append(x)
+    lo = left + width * EDGE_MARGIN_FRACTION
+    hi = left + width * (1 - EDGE_MARGIN_FRACTION)
+    interior = sum(
+        len(cluster) >= MIN_BARLINE_CLUSTER_SUPPORT
+        and lo < sum(cluster) / len(cluster) < hi
+        for cluster in clusters
+    )
+    return interior + 1
+
 
 def count_bar_lines_per_system(page_path: Path, systems: list[dict]) -> list[int]:
     predictions, debug = load_and_preprocess_predictions(
@@ -96,14 +134,7 @@ def count_bar_lines_per_system(page_path: Path, systems: list[dict]) -> list[int
             if left <= bl.center[0] * scale_x <= right
             and top <= bl.center[1] * scale_y <= bottom
         )
-        clusters = 0
-        prev_x = None
-        cluster_gap = box["width"] * CLUSTER_GAP_FRACTION
-        for x in xs:
-            if prev_x is None or x - prev_x > cluster_gap:
-                clusters += 1
-            prev_x = x
-        counts.append(clusters)
+        counts.append(measure_count_from_barline_centers(xs, left, box["width"]))
     return counts
 
 
@@ -138,19 +169,29 @@ def compare_one_score(
         page_path = png_dir / detected_page["image"]
         detected = count_bar_lines_per_system(page_path, detected_page["systems"])
         for system_index, d in enumerate(detected):
-            if system_position < len(gt_flat):
-                rows.append(
-                    {
-                        "score_id": score_id,
-                        "page_index": page_index,
+            rows.append(
+                {
+                    "score_id": score_id,
+                    "page_index": page_index,
                         "page_image": detected_page["image"],
                         "system_index": system_index,
                         "detected": d,
-                        "ground_truth": gt_flat[system_position],
-                        "is_first_page": page_index == 0,
-                        "is_last_page": page_index == last_page_index,
-                    }
-                )
+                        "system_width_fraction": (
+                            detected_page["systems"][system_index]["boundingBox"]["width"]
+                            / detected_page["width"]
+                        ),
+                        "staff_box_count": len(
+                            detected_page["systems"][system_index].get("staffBoxes", [])
+                        ),
+                        # Diagnostic only.  Alignment no longer assumes this ordinal
+                    # reference system is the matching one.
+                    "ground_truth": (
+                        gt_flat[system_position] if system_position < len(gt_flat) else None
+                    ),
+                    "is_first_page": page_index == 0,
+                    "is_last_page": page_index == last_page_index,
+                }
+            )
             system_position += 1
     total_system_count_matched = system_position == len(gt_flat)
     return rows, total_system_count_matched
@@ -163,21 +204,36 @@ def main() -> None:
         help="fetch_lieder_ground_truth.py's --out dir.",
     )
     parser.add_argument("--systems", type=Path, required=True, help="imslp_systems(_repaired) dir.")
-    parser.add_argument("--pngs", type=Path, required=True, help="Matching imslp_pngs dir.")
+    parser.add_argument(
+        "--pngs", type=Path, required=True, nargs="+", help="Matching imslp_pngs dir(s)."
+    )
     parser.add_argument("--limit", type=int, help="Only check the first N scores (a quick run).")
+    parser.add_argument("--score-ids", type=Path, help="Optional subset, one id per line.")
     parser.add_argument(
         "--rows-out", type=Path,
         help="Write every compared system as one JSON row here - the raw data "
         "targeted_review_candidates.py needs; the console summary alone only has "
         "per-score aggregates.",
     )
+    parser.add_argument(
+        "--failed-out", type=Path,
+        help="Write every score this run could not compare here, as JSON. A run that "
+        "loses scores must say so in a machine-readable way: a 12-way shard launch on "
+        "2026-08-27 exhausted the container's pid ceiling, 130 of 330 scores died in "
+        "the per-score handler below, and two shards wrote an empty rows file and "
+        "exited 0 - indistinguishable from success until the logs were read by hand.",
+    )
     args = parser.parse_args()
 
     gt_paths = sorted(args.ground_truth.glob("*.json"))
+    if args.score_ids:
+        wanted = {line.strip() for line in args.score_ids.read_text().splitlines() if line.strip()}
+        gt_paths = [path for path in gt_paths if path.stem in wanted]
     if args.limit:
         gt_paths = gt_paths[: args.limit]
 
     all_rows: list[dict] = []
+    failures: list[dict[str, str]] = []
     exact_system_match = 0
     total_systems_compared = 0
     system_count_mismatches = []
@@ -188,24 +244,49 @@ def main() -> None:
         systems_path = args.systems / f"{score_id}.yaml"
         if not systems_path.exists():
             print(f"{score_id}: no detected systems file, skipping")
+            failures.append({"score_id": score_id, "reason": "no detected systems file"})
             continue
         ground_truth = json.loads(gt_path.read_text(encoding="utf-8"))
         systems_doc = yaml.safe_load(systems_path.read_text(encoding="utf-8"))
+        # Both PNG roots can hold a directory for the same score under *different*
+        # file naming - imslp_pngs uses "IMSLP621830-001-000.png", imslp_pngs_new uses
+        # "IMSLP621830-p002.png".  Choosing the first root that merely has a directory
+        # named for the score picked the wrong one for IMSLP621830 and IMSLP622484,
+        # which then failed with a misleading "file format is not supported" for a
+        # file that simply was not there.  Require the root to actually hold the pages
+        # the systems file names.
+        page_images = [systems_doc["pages"][k]["image"] for k in sorted(systems_doc["pages"])]
+        png_dir = next(
+            (
+                path
+                for path in args.pngs
+                if page_images and (path / page_images[0]).exists()
+            ),
+            None,
+        )
+        if png_dir is None:
+            print(f"{score_id}: no PNG root holds this score's pages, skipping")
+            failures.append(
+                {"score_id": score_id, "reason": "no PNG root holds this score's pages"}
+            )
+            continue
 
         try:
             rows, total_system_count_matched = compare_one_score(
-                score_id, ground_truth, systems_doc, args.pngs
+                score_id, ground_truth, systems_doc, png_dir
             )
         except Exception as e:  # noqa: BLE001
             print(f"{score_id}: FAILED ({e})")
+            failures.append({"score_id": score_id, "reason": str(e)})
             continue
 
         if not total_system_count_matched:
             system_count_mismatches.append(score_id)
 
-        score_exact = sum(1 for row in rows if row["detected"] == row["ground_truth"])
-        score_total = len(rows)
-        diffs = [row["detected"] - row["ground_truth"] for row in rows]
+        comparable = [row for row in rows if row["ground_truth"] is not None]
+        score_exact = sum(1 for row in comparable if row["detected"] == row["ground_truth"])
+        score_total = len(comparable)
+        diffs = [row["detected"] - row["ground_truth"] for row in comparable]
         all_rows.extend(rows)
         total_systems_compared += score_total
         exact_system_match += score_exact
@@ -215,12 +296,22 @@ def main() -> None:
             )
         print(f"{score_id}: {score_exact}/{score_total} systems exact")
 
+    if args.failed_out:
+        args.failed_out.parent.mkdir(parents=True, exist_ok=True)
+        args.failed_out.write_text(json.dumps(failures, indent=2), encoding="utf-8")
+
     if args.rows_out:
-        args.rows_out.parent.mkdir(parents=True, exist_ok=True)
-        args.rows_out.write_text(json.dumps(all_rows, indent=2), encoding="utf-8")
+        if all_rows:
+            args.rows_out.parent.mkdir(parents=True, exist_ok=True)
+            args.rows_out.write_text(json.dumps(all_rows, indent=2), encoding="utf-8")
+        else:
+            # Never leave a two-byte "[]" behind: downstream merges glob for this file
+            # and cannot tell an empty shard from a shard that never ran.
+            print(f"no rows produced - refusing to write {args.rows_out}")
 
     print()
-    print(f"scores compared: {len(gt_paths)}")
+    print(f"scores compared: {len(gt_paths) - len(failures)}")
+    print(f"scores failed: {len(failures)}")
     print(f"total-system-count mismatches: {len(system_count_mismatches)} ({system_count_mismatches})")
     print(
         f"systems compared: {total_systems_compared}, "
@@ -230,7 +321,11 @@ def main() -> None:
         else "no systems compared"
     )
     if all_rows:
-        diffs = [row["detected"] - row["ground_truth"] for row in all_rows]
+        diffs = [
+            row["detected"] - row["ground_truth"]
+            for row in all_rows
+            if row["ground_truth"] is not None
+        ]
         print(f"diff (detected - ground truth) mean: {statistics.mean(diffs):+.2f}, "
               f"median: {statistics.median(diffs):+.1f}")
         print(f"mean absolute diff: {statistics.mean(abs(x) for x in diffs):.2f}")
@@ -240,6 +335,12 @@ def main() -> None:
     worst_scores.sort(key=lambda row: row[1] / row[2])
     for score_id, exact, total, mean_abs_diff in worst_scores[:20]:
         print(f"  {score_id}: {exact}/{total} exact, mean abs diff {mean_abs_diff:.2f}")
+
+    if failures:
+        # A shard that dropped scores must not exit 0.  Callers merge these shards'
+        # rows files by glob; a silent partial run turns into an under-covered
+        # alignment that reads as conservatism rather than as lost data.
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

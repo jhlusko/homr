@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OMR Label Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#FAFAF8; --card:#FFFFFF; --code-bg:#F1F3F2;
+  --fg:#191C1B; --fg-soft:#4C5551; --fg-faint:#767F7B;
+  --line:#E0E4E2; --line-strong:#C4CBC7;
+  --acc:#0E6E5E; --acc-bg:#E4F2EE;
+  --warn:#8A5A16; --warn-bg:#FAF0DF;
+  --good:#0E6E5E; --bad:#9A3F2C;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1211; --card:#151A19; --code-bg:#111715;
+    --fg:#E6EAE8; --fg-soft:#A6B0AC; --fg-faint:#77837E;
+    --line:#232A28; --line-strong:#36403C;
+    --acc:#54C6AC; --acc-bg:#10221E;
+    --warn:#D9A855; --warn-bg:#241C0E;
+    --good:#54C6AC; --bad:#E28E76;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1211; --card:#151A19; --code-bg:#111715;
+  --fg:#E6EAE8; --fg-soft:#A6B0AC; --fg-faint:#77837E;
+  --line:#232A28; --line-strong:#36403C;
+  --acc:#54C6AC; --acc-bg:#10221E;
+  --warn:#D9A855; --warn-bg:#241C0E;
+  --good:#54C6AC; --bad:#E28E76;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+}
+img{max-width:100%}
+.wrap{max-width:88rem;margin:0 auto;padding:1.5rem 1.5rem 5rem}
+
+header.top{
+  display:flex;flex-wrap:wrap;gap:1rem;align-items:baseline;
+  justify-content:space-between;padding-bottom:1rem;
+  border-bottom:1px solid var(--line);margin-bottom:1.4rem;
+}
+h1{font-weight:600;font-size:1.25rem;letter-spacing:-.02em;margin:0}
+.mono{font-family:"IBM Plex Mono",monospace}
+.sets{display:flex;flex-wrap:wrap;gap:.5rem}
+button{
+  font-family:inherit;font-size:.85rem;padding:.42rem .85rem;border-radius:4px;
+  border:1px solid var(--line-strong);background:var(--card);color:var(--fg);
+  cursor:pointer;
+}
+button:hover{border-color:var(--acc)}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+button.on:hover{border-color:var(--acc)}
+
+.qbar{
+  background:var(--acc-bg);border:1px solid var(--line);border-left:3px solid var(--acc);
+  border-radius:4px;padding:.85rem 1.1rem;margin-bottom:1.1rem;font-size:.92rem;
+}
+.qbar strong{color:var(--acc)}
+
+.meta{
+  display:flex;flex-wrap:wrap;gap:1.2rem;align-items:baseline;
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--fg-faint);
+  margin-bottom:.7rem;
+}
+.tag{
+  display:inline-block;padding:.1rem .45rem;border-radius:3px;font-size:.7rem;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.tag.suspect{background:var(--warn-bg);color:var(--warn)}
+.tag.control{background:var(--acc-bg);color:var(--acc)}
+.tag.beam{background:var(--acc-bg);color:var(--acc)}
+
+figure.scan{
+  margin:0 0 1rem;background:var(--code-bg);border:1px solid var(--line);
+  border-radius:4px;padding:.6rem;
+}
+figure.scan img{width:100%;height:auto;display:block;border-radius:2px;background:#fff}
+figure.scan figcaption{
+  margin-top:.45rem;font-family:"IBM Plex Mono",monospace;font-size:.68rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--fg-faint);
+}
+iframe.cmp{
+  width:100%;height:660px;border:1px solid var(--line-strong);
+  border-radius:4px;background:#fff;display:block;margin-bottom:1.1rem;
+}
+.review-progress{
+  display:grid;grid-template-columns:auto minmax(8rem,1fr) auto;gap:.9rem;align-items:center;
+  padding:.7rem .85rem;margin-bottom:1rem;border:1px solid var(--line);border-radius:4px;
+  background:var(--card);font-family:"IBM Plex Mono",monospace;font-size:.78rem;
+}
+.progress-stat{display:flex;gap:.4rem;align-items:baseline;white-space:nowrap;color:var(--fg-soft)}
+.progress-stat strong{font-size:.92rem;color:var(--fg);font-variant-numeric:tabular-nums}
+.progress-track{height:.42rem;overflow:hidden;border-radius:999px;background:var(--code-bg)}
+.progress-track span{display:block;height:100%;border-radius:inherit;background:var(--acc)}
+.verdicts{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem}
+.verdicts button{font-size:.9rem;padding:.55rem 1rem}
+.notes{margin-bottom:1rem}
+.notes label{
+  display:block;margin-bottom:.35rem;font-size:.82rem;font-weight:500;color:var(--fg-soft);
+}
+.notes textarea{
+  width:100%;min-height:6rem;resize:vertical;padding:.65rem .75rem;
+  border:1px solid var(--line-strong);border-radius:4px;background:var(--card);color:var(--fg);
+  font:inherit;line-height:1.45;
+}
+.notes textarea:focus{outline:2px solid var(--acc);outline-offset:2px;border-color:var(--acc)}
+.nav{
+  display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;
+  padding-top:1rem;border-top:1px solid var(--line);
+}
+.spacer{flex:1}
+.progress{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--fg-soft)}
+.done{color:var(--good);font-weight:500}
+.hint{font-size:.78rem;color:var(--fg-faint);margin-top:.6rem}
+.err{background:var(--warn-bg);border-left:3px solid var(--warn);padding:1rem 1.2rem;border-radius:4px}
+.list-head{
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;align-items:end;
+  margin-bottom:1rem;
+}
+.list-head h2{margin:0;font-size:1.15rem;font-weight:600}
+.list-head p{margin:.2rem 0 0;color:var(--fg-soft);font-size:.88rem}
+.list-total{font-family:"IBM Plex Mono",monospace;color:var(--fg-soft);font-size:.82rem}
+.list-total strong{color:var(--fg);font-size:1rem}
+.item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(18rem,1fr));gap:.8rem}
+.list-item{
+  min-width:0;padding:0;overflow:hidden;text-align:left;border-color:var(--line);
+  background:var(--card);color:var(--fg);
+}
+.list-item:hover{border-color:var(--acc);transform:translateY(-1px)}
+.list-item.current{box-shadow:0 0 0 2px var(--acc)}
+.list-item img{
+  width:100%;height:8.5rem;display:block;object-fit:contain;background:#fff;
+  border-bottom:1px solid var(--line);
+}
+.list-item-body{display:block;padding:.7rem .75rem .8rem}
+.list-item-top{display:flex;justify-content:space-between;gap:.7rem;align-items:baseline}
+.list-item-id{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:"IBM Plex Mono",monospace;font-size:.76rem;font-weight:500;
+}
+.list-index{color:var(--fg-faint);font-family:"IBM Plex Mono",monospace;font-size:.68rem;white-space:nowrap}
+.list-item-meta{display:block;margin-top:.25rem;color:var(--fg-faint);font-size:.72rem}
+.list-status{
+  display:inline-block;margin-top:.5rem;padding:.12rem .42rem;border-radius:3px;
+  background:var(--code-bg);color:var(--fg-soft);font-size:.72rem;
+}
+.list-status.truncated,.list-status.wrong,.list-status.auto{background:var(--warn-bg);color:var(--bad)}
+.list-status.complete,.list-status.ours{background:var(--acc-bg);color:var(--good)}
+.list-note{
+  display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  margin-top:.45rem;color:var(--fg-soft);font-size:.74rem;font-style:italic;
+}
+@media (max-width:42rem){
+  .wrap{padding:1rem 1rem 4rem}
+  .review-progress{grid-template-columns:1fr 1fr}
+  .progress-track{grid-column:1 / -1;grid-row:2}
+  .progress-stat:last-child{justify-content:flex-end}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>OMR Label Review</h1>
+  <div class="sets">
+    <button id="set-eval" onclick="switchSet('eval')">1 &middot; Eval set</button>
+    <button id="set-arbitrated" onclick="switchSet('arbitrated')">2 &middot; Arbitrated</button>
+    <button id="set-rejected" onclick="switchSet('rejected')">2b &middot; Rejected</button>
+    <button id="set-pseudo" onclick="switchSet('pseudo')">3 &middot; Pseudo-labels</button>
+    <button id="set-phantom" onclick="switchSet('phantom')">4 &middot; Phantom systems</button>
+    <button id="set-octave" onclick="switchSet('octave')">5 &middot; Octave shift</button>
+    <button id="set-alignment" onclick="switchSet('alignment')">Rebuilt alignment</button>
+    <button id="set-truncation" onclick="switchSet('truncation')">Truncation (labels)</button>
+    <button id="set-beam" onclick="switchSet('beam')">Beaming (model)</button>
+    <button id="show-list" onclick="showList()">Full list <span class="mono">Esc</span></button>
+  </div>
+</header>
+
+<div id="app"><p class="mono">Loading…</p></div>
+
+</div>
+<script>
+const SETS = {
+  // Each set is one experiment with one null hypothesis. Keep the questions
+  // disjoint: a set that asks two things at once cannot answer either.
+  eval: {
+    dir: "review-data/sets/eval",
+    left: "left", right: null,
+    leftLabel: "Consensus label", rightLabel: "",
+    question: "H1 &mdash; Does this label match the scan <strong>exactly</strong>?",
+    detail: "Both methods independently placed this system on the same measures. This is the proposed EVALUATION set, so a failure here is critical: it means agreement between two independent methods is still not enough. Judge against the scan only.",
+    verdicts: [
+      ["complete",  "Correct \u2014 exactly the scan line"],
+      ["truncated", "TRUNCATED \u2014 scan has more"],
+      ["wrong",     "WRONG passage or extra bars"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  arbitrated: {
+    dir: "review-data/sets/arbitrated",
+    left: "left", right: "right",
+    leftLabel: "Bar-count label (kept)", rightLabel: "Content label (discarded)",
+    question: "H2 &mdash; Did <strong>arbitration</strong> keep the right label?",
+    detail: "The two methods chose different measures. The bar-count label (left) is the one kept for training; the content label (right) was discarded. Earlier review of 33 such cases put bar-count right 28 times and content 5, so this measures how often the rule is wrong \u2014 and these pairs never enter the evaluation set.",
+    verdicts: [
+      ["left-ok",    "LEFT correct \u2014 arbitration right"],
+      ["right-ok",   "RIGHT correct \u2014 arbitration wrong"],
+      ["right-call", "NEITHER correct \u2014 should be dropped"],
+      ["unclear",    "Unclear"]
+    ]
+  },
+  rejected: {
+    dir: "review-data/sets/rejected",
+    left: "left", right: null,
+    leftLabel: "Discarded label", rightLabel: "",
+    question: "H2b &mdash; Was <strong>discarding</strong> this pair right?",
+    detail: "Consensus threw this pair out entirely \u2014 it trains on nothing and evaluates nothing. If the label actually matches the scan, we are losing usable data.",
+    verdicts: [
+      ["right-call", "Rightly discarded \u2014 label is wrong"],
+      ["usable",     "Label is CORRECT \u2014 wrongly discarded"],
+      ["unclear",    "Unclear"]
+    ]
+  },
+  pseudo: {
+    dir: "review-data/sets/pseudo",
+    left: "left", right: null,
+    leftLabel: "Model-derived label", rightLabel: "",
+    question: "H3 &mdash; Is this <strong>model-derived</strong> label good enough to train on?",
+    detail: "Content alignment placed this system; bar counts could not. Nothing here has ever been checked by a human or confirmed by a second method. These are training-only pseudo-labels and never admissible for evaluation.",
+    verdicts: [
+      ["complete",  "Correct \u2014 trainable"],
+      ["truncated", "TRUNCATED \u2014 scan has more"],
+      ["wrong",     "WRONG passage"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  phantom: {
+    dir: "review-data/sets/phantom",
+    left: "left", right: null, cropOnly: true,
+    leftLabel: "", rightLabel: "",
+    question: "H4 &mdash; Does this crop contain <strong>any music</strong> at all?",
+    detail: "Bar-count alignment assigned real measures to this system; content alignment says it holds nothing. Judge the CROP alone \u2014 no label comparison, that is the whole question. One of these took measures 0\u20132 of IMSLP637441 at the highest margin in the score and displaced ten later systems by exactly -3.",
+    verdicts: [
+      ["no-music", "No music \u2014 ornament, text or blank"],
+      ["music",    "Real system of music \u2014 wrongly emptied"],
+      ["partial",  "Partial / fragment"],
+      ["unclear",  "Unclear"]
+    ]
+  },
+  octave: {
+    dir: "review-data/sets/octave",
+    left: "left", right: null,
+    leftLabel: "Label from the recovered parser", rightLabel: "",
+    question: "H5 &mdash; Are the pitches at the <strong>printed octave</strong>?",
+    detail: "These scores were recovered by teaching the parser about 8va/8vb brackets and octave-transposing clefs. MusicXML stores SOUNDING pitch; the label must carry what is PRINTED. The sign of that correction is asserted from spec convention and has never been checked against a scan \u2014 only ~1% of notes are affected, so no aggregate metric can see it. Compare octaves, not just note names.",
+    verdicts: [
+      ["octaves-ok",    "Octaves correct"],
+      ["octaves-wrong", "OCTAVE WRONG \u2014 shifted up or down"],
+      ["other-wrong",   "Wrong for another reason"],
+      ["unclear",       "Unclear"]
+    ]
+  },
+  alignment: {
+    dir: "review-data/alignment",
+    left: "corrected", right: "old",
+    leftLabel: "Rebuilt complete label", rightLabel: "Old label (when available)",
+    question: "Does the <strong>rebuilt label</strong> account for exactly the complete scan line?",
+    detail: "The left pane comes from whole-score, many-to-many line alignment. The old ordinal/recovered label is shown on the right when one existed. Judge only against the scan: no missing bars, extra bars, or wrong passage.",
+    verdicts: [
+      ["complete",  "Rebuilt label is complete and correct"],
+      ["truncated", "Rebuilt label is TRUNCATED"],
+      ["wrong",     "Rebuilt label is otherwise WRONG"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  truncation: {
+    dir: "review-data/truncation",
+    left: "reference", right: "baseline",
+    leftLabel: "Reference (our label)", rightLabel: "Upstream homr reading",
+    question: "Does the <strong>reference label</strong> account for everything in the scan above?",
+    detail: "Left is the label we train and score against. Right is upstream homr reading the same crop. Where upstream reads bars the label does not have, either upstream hallucinated them or <em>our label is truncated</em>. The scan is the arbiter.",
+    verdicts: [
+      ["truncated", "Label is TRUNCATED — scan has more"],
+      ["complete",  "Label is complete"],
+      ["wrong",     "Label is otherwise WRONG"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  beam: {
+    dir: "review-data/beam",
+    left: "without", right: "with",
+    leftLabel: "Automatic beaming (= upstream)", rightLabel: "Our predicted beams",
+    question: "Which beaming matches the scan above?",
+    detail: "Upstream homr emits no &lt;beam&gt; elements at all, so its renders fall back to the engraver's automatic beaming — that is the left pane. The right pane is our structured beam prediction. A win for the left pane is a regression we introduced.",
+    verdicts: [
+      ["ours",     "Ours (right) is better"],
+      ["auto",     "Automatic (left) is better — REGRESSION"],
+      ["same",     "No real difference"],
+      ["unclear",  "Unclear"]
+    ]
+  }
+};
+
+let setName = localStorage.getItem("omr-review-set") || "truncation";
+let items = [];
+let idx = 0;
+let viewMode = "detail";
+
+function key(){ return "omr-review-verdicts-" + setName; }
+function notesKey(){ return "omr-review-notes-" + setName; }
+function loadVerdicts(){ try { return JSON.parse(localStorage.getItem(key())) || {}; } catch(e){ return {}; } }
+function loadNotes(){ try { return JSON.parse(localStorage.getItem(notesKey())) || {}; } catch(e){ return {}; } }
+function saveVerdict(id, v){
+  const all = loadVerdicts(); all[id] = v;
+  localStorage.setItem(key(), JSON.stringify(all));
+}
+function saveNotes(id, value){
+  const all = loadNotes();
+  if (value) all[id] = value;
+  else delete all[id];
+  localStorage.setItem(notesKey(), JSON.stringify(all));
+}
+
+async function switchSet(name){
+  setName = name;
+  localStorage.setItem("omr-review-set", name);
+  idx = 0;
+  await loadSet();
+}
+
+async function loadSet(){
+  for (const n of Object.keys(SETS)) {
+    const b = document.getElementById("set-" + n);
+    if (b) b.classList.toggle("on", n === setName);
+  }
+  const cfg = SETS[setName];
+  try {
+    const res = await fetch(cfg.dir + "/manifest.json");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    items = await res.json();
+  } catch (e) {
+    document.getElementById("app").innerHTML =
+      '<div class="err"><strong>Could not load ' + cfg.dir + '/manifest.json.</strong><br>' +
+      'This page must be served over HTTP from <code>docs/writeups/</code> — run ' +
+      '<code>python3 -m http.server 8899</code> there and open ' +
+      '<code>http://127.0.0.1:8899/review.html</code>. (' + e.message + ')</div>';
+    return;
+  }
+  // Resume at the first unjudged item.
+  const v = loadVerdicts();
+  const first = items.findIndex(it => !v[it.id]);
+  idx = first === -1 ? 0 : first;
+  render();
+}
+
+function render(){
+  const cfg = SETS[setName];
+  if (!items.length){ document.getElementById("app").innerHTML = "<p>No items.</p>"; return; }
+  idx = Math.max(0, Math.min(idx, items.length - 1));
+  if (viewMode === "list") { renderList(); return; }
+  const it = items[idx];
+  const v = loadVerdicts();
+  const notes = loadNotes();
+  const chosen = v[it.id];
+  const nDone = items.filter(x => v[x.id]).length;
+  const percentDone = Math.round(100 * nDone / items.length);
+
+  // make_alignment_review copies the corrected score into the right pane when no old
+  // label exists, to keep the compare view functional.  Say so loudly: two identical
+  // panes otherwise read as "the rebuild changed nothing" rather than "there was
+  // nothing to compare against".
+  const noOldLabel = it.old_bars === null && it.corrected_bars !== undefined;
+
+  // Three display modes, because the sets ask three different kinds of question:
+  //  - crop only   : the question is about the IMAGE, so showing a label would only
+  //                  invite judging the wrong thing (phantom systems).
+  //  - single pane : there is exactly one label and nothing to compare it with.
+  //                  Showing it twice in a compare view reads as agreement.
+  //  - compare     : two candidate labels genuinely disagree.
+  const scoreUrl = (side) =>
+    "/" + cfg.dir + "/scores/" + it.id + "__" + side + ".musicxml";
+  const cropOnly = cfg.cropOnly === true;
+  const singlePane = !cropOnly && !cfg.right;
+  let url = "";
+  if (singlePane) {
+    url = "/score-editor/index.html?score=" + encodeURIComponent(scoreUrl(cfg.left))
+        + "&embed=player&playerId=" + encodeURIComponent(it.id);
+  } else if (!cropOnly) {
+    url = "/score-editor/index.html"
+      + "?compareLeft="  + encodeURIComponent(scoreUrl(cfg.left))
+      + "&compareRight=" + encodeURIComponent(scoreUrl(cfg.right))
+      + "&leftLabel="    + encodeURIComponent(cfg.leftLabel)
+      + "&rightLabel="   + encodeURIComponent(noOldLabel ? "No prior label existed (left copied)" : cfg.rightLabel);
+  }
+
+  let metaBits = '<span class="tag ' + it.kind + '">' + it.kind + '</span>'
+    + '<span>' + it.id + '</span>';
+  if (it.ref_bars !== undefined) {
+    metaBits += '<span>bars — label: <strong>' + it.ref_bars + '</strong>'
+      + ' &middot; upstream: <strong>' + it.base_bars + '</strong>'
+      + ' &middot; ours: <strong>' + it.ours_bars + '</strong></span>';
+  }
+  if (it.n_beams !== undefined) {
+    metaBits += '<span>beam elements: <strong>' + it.n_beams + '</strong></span>';
+  }
+  if (it.left_bars !== undefined) {
+    metaBits += '<span>bars &mdash; label: <strong>' + it.left_bars + '</strong>'
+      + (it.has_right
+          ? ' &middot; other: <strong>' + (it.right_bars === null ? "none" : it.right_bars) + '</strong>'
+          : '')
+      + '</span>';
+  }
+  if (it.corrected_bars !== undefined) {
+    metaBits += '<span>bars — rebuilt: <strong>' + it.corrected_bars + '</strong>'
+      + ' &middot; old: <strong>' + (it.old_bars === null ? "unavailable" : it.old_bars) + '</strong></span>'
+      + '<span>alignment margin: <strong>' + it.margin + '</strong> &middot; ' + it.split + '</span>';
+  }
+
+  const btns = cfg.verdicts.map(([val, label], i) =>
+    '<button class="' + (chosen === val ? "on" : "") + '" onclick="judge(\'' + val + '\')">'
+    + (i + 1) + ' &middot; ' + label + '</button>').join("");
+
+  document.getElementById("app").innerHTML =
+      '<div class="review-progress">'
+    + '<span class="progress-stat">Item <strong>' + (idx + 1) + ' / ' + items.length + '</strong></span>'
+    + '<span class="progress-track" role="progressbar" aria-label="Items judged" aria-valuemin="0"'
+    + ' aria-valuemax="' + items.length + '" aria-valuenow="' + nDone + '"><span style="width:' + percentDone + '%"></span></span>'
+    + '<span class="progress-stat">Judged <strong>' + nDone + ' / ' + items.length + '</strong></span>'
+    + '</div>'
+    + '<div class="qbar">' + cfg.question + '<br><span style="font-size:.86rem;color:var(--fg-soft)">' + cfg.detail + '</span></div>'
+    + '<div class="meta">' + metaBits + '</div>'
+    + (noOldLabel
+        ? '<div class="err">No prior label existed for this system, so both panes below show'
+          + ' the <strong>same</strong> rebuilt score. They are identical by construction —'
+          + ' that is not evidence of agreement. Judge the left pane against the scan alone.</div>'
+        : '')
+    + '<figure class="scan"><img src="' + cfg.dir + '/crops/' + it.id + '.png" alt="Scan crop">'
+    + '<figcaption>The scan — the arbiter</figcaption></figure>'
+    + (cropOnly
+        ? '<div class="err">Judge the scan crop above. No label is shown for this set '
+          + 'on purpose &mdash; the question is whether the image contains music.</div>'
+        : '<iframe class="cmp" src="' + url + '" title="'
+          + (singlePane ? "label" : "comparison") + '" loading="lazy"></iframe>')
+    + '<div class="verdicts">' + btns + '</div>'
+    + '<div class="notes"><label for="review-notes">Notes</label>'
+    + '<textarea id="review-notes" placeholder="Add notes about this item…"></textarea></div>'
+    + '<div class="nav">'
+    + '<button onclick="go(-1)">&larr; Prev</button>'
+    + '<button onclick="go(1)">Next &rarr;</button>'
+    + '<span class="spacer"></span>'
+    + '<span class="progress">' + (idx + 1) + ' / ' + items.length
+    + ' &nbsp;·&nbsp; <span class="' + (nDone === items.length ? "done" : "") + '">'
+    + nDone + ' judged</span></span>'
+    + '<button onclick="exportJson()">Export JSON</button>'
+    + '<button onclick="if(confirm(\'Clear all verdicts and notes for this set?\'))resetSet()">Reset</button>'
+    + '</div>'
+    + '<p class="hint">Keys: <span class="mono">1</span>–<span class="mono">'
+    + cfg.verdicts.length + '</span> to judge (auto-advances), '
+    + '<span class="mono">←</span>/<span class="mono">→</span> to move, '
+    + '<span class="mono">Esc</span> for the full list.</p>';
+
+  const notesField = document.getElementById("review-notes");
+  notesField.value = notes[it.id] || "";
+  notesField.addEventListener("input", () => saveNotes(it.id, notesField.value));
+}
+
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function renderList(){
+  const cfg = SETS[setName];
+  const verdicts = loadVerdicts();
+  const notes = loadNotes();
+  const nDone = items.filter(item => verdicts[item.id]).length;
+  const cards = items.map((item, itemIndex) => {
+    const verdict = verdicts[item.id];
+    const verdictEntry = cfg.verdicts.find(([value]) => value === verdict);
+    const statusLabel = verdictEntry ? verdictEntry[1] : "Unjudged";
+    let detail = item.kind;
+    if (item.ref_bars !== undefined) {
+      detail += " · bars: label " + item.ref_bars + ", upstream " + item.base_bars + ", ours " + item.ours_bars;
+    } else if (item.n_beams !== undefined) {
+      detail += " · " + item.n_beams + " beam elements";
+    } else if (item.corrected_bars !== undefined) {
+      detail += " · rebuilt bars " + item.corrected_bars + " · margin " + item.margin;
+    }
+    const note = notes[item.id]
+      ? '<span class="list-note">' + escapeHtml(notes[item.id]) + '</span>'
+      : "";
+    return '<button class="list-item ' + (itemIndex === idx ? "current" : "")
+      + '" onclick="openItem(' + itemIndex + ')">'
+      + '<img src="' + cfg.dir + '/crops/' + encodeURIComponent(item.id) + '.png" alt="" loading="lazy">'
+      + '<span class="list-item-body"><span class="list-item-top">'
+      + '<span class="list-item-id">' + escapeHtml(item.id) + '</span>'
+      + '<span class="list-index">' + (itemIndex + 1) + ' / ' + items.length + '</span></span>'
+      + '<span class="list-item-meta">' + escapeHtml(detail) + '</span>'
+      + '<span class="list-status ' + (verdict || "") + '">' + escapeHtml(statusLabel) + '</span>'
+      + note + '</span></button>';
+  }).join("");
+
+  document.getElementById("app").innerHTML =
+      '<div class="list-head"><div><h2>All ' + items.length + ' items</h2>'
+    + '<p>Select an item to open its scan and score comparison.</p></div>'
+    + '<span class="list-total"><strong>' + nDone + ' / ' + items.length + '</strong> judged</span></div>'
+    + '<div class="item-grid">' + cards + '</div>';
+}
+
+function showList(){ viewMode = "list"; render(); }
+function openItem(itemIndex){ idx = itemIndex; viewMode = "detail"; render(); window.scrollTo(0, 0); }
+
+function judge(v){
+  saveVerdict(items[idx].id, v);
+  if (idx < items.length - 1) idx++;
+  render();
+}
+function go(d){ idx += d; render(); }
+function resetSet(){
+  localStorage.removeItem(key());
+  localStorage.removeItem(notesKey());
+  idx = 0;
+  render();
+}
+
+function exportJson(){
+  const v = loadVerdicts();
+  const notes = loadNotes();
+  const out = items.map(it => Object.assign({}, it, {
+    verdict: v[it.id] || null,
+    notes: notes[it.id] || null
+  }));
+  const blob = new Blob([JSON.stringify({set: setName, reviewed: out}, null, 1)],
+                        {type: "application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "omr-review-" + setName + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && viewMode === "detail") {
+    showList();
+    e.preventDefault();
+    return;
+  }
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (viewMode === "list") return;
+  const cfg = SETS[setName];
+  if (e.key === "ArrowLeft")  { go(-1); e.preventDefault(); return; }
+  if (e.key === "ArrowRight") { go(1);  e.preventDefault(); return; }
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= cfg.verdicts.length) { judge(cfg.verdicts[n-1][0]); e.preventDefault(); }
+});
+
+loadSet();
+</script>
+</body>
+</html>
