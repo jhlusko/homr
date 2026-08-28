@@ -36,6 +36,36 @@ distribution, which spans four distributions rather than resting on a margin.
 **Protocol from here.** A corpus comparison needs several seeds per condition and a
 comparison of means. A single run is a draw, not a measurement.
 
+## The signal the aggregate was hiding
+
+Noise on OSSQ is strongly inhomogeneous, and stratifying by staff density separates a
+real effect from the variance that was burying it. Same-corpus seed pairs give the
+yardstick in each bucket.
+
+| bucket | staves | 447 | 455 (v6 s42) | 456 (v6 s7) | **same-corpus seed noise** |
+|---|---|---|---|---|---|
+| < 15 symbols | 23 | −1.78 | −0.02 | −1.79 | **1.77** |
+| 30+ symbols | 446 | +2.41 | +0.60 | +1.22 | **0.62** |
+| **45+ symbols** | 148 | **+2.65** | **+2.75** | **+3.05** | **0.29** |
+| **60+ symbols** | 45 | **+3.30** | **+3.43** | **+3.62** | **0.19** |
+
+All figures against the 426 baseline.
+
+**On dense staves the fine-tuning gain is real and replicated** - three independently
+trained checkpoints across two corpora, all gaining 2.7 to 3.6pp, against a noise
+yardstick an order of magnitude smaller. On sparse staves nothing is measurable: two
+runs of the *same* corpus differ by 1.77pp there, which is larger than any effect.
+
+The reason is mechanical. A sparse staff holds few tokens, so a single error moves its
+accuracy several points; a dense staff averages over many. The 792-staff headline mixes
+both and the sparse tail contributes variance out of all proportion to its token count.
+
+**Consequence.** The aggregate is the wrong statistic for comparing checkpoints, and
+most of this document's earlier conclusions were drawn from it. A dense-staff cut, or
+any weighting that reflects tokens rather than staves, is both more stable and more
+informative. **Always include a same-corpus seed pair in a stratified comparison** - it
+is the only thing that says whether a bucket can resolve the effect being claimed.
+
 ## How these numbers are produced
 
 `training/transformer/base_predictions.py` scores a checkpoint to a `.jsonl` of per-staff
