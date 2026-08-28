@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two Methods, One Corpus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F6F7F9; --card:#FFFFFF; --code-bg:#EDEFF3; --rail:#FBFCFD;
+  --fg:#12151C; --fg-soft:#4A515F; --fg-faint:#7A8394;
+  --line:#E1E5EC; --line-strong:#C3CAD6;
+  --acc:#2F4A8C; --acc-bg:#E8ECF7;
+  --good:#1F7A5A; --good-bg:#E4F1EB;
+  --bad:#A8382C; --bad-bg:#F8E9E6;
+  --warn:#8A6118; --warn-bg:#FAF2E2;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1017; --card:#141924; --code-bg:#10141D; --rail:#111621;
+    --fg:#E4E8EF; --fg-soft:#A2ABBC; --fg-faint:#737D90;
+    --line:#212836; --line-strong:#333C4E;
+    --acc:#8CA6E8; --acc-bg:#151C2E;
+    --good:#4FBF95; --good-bg:#0F2019;
+    --bad:#E3897C; --bad-bg:#241413;
+    --warn:#D6AC63; --warn-bg:#241E10;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1017; --card:#141924; --code-bg:#10141D; --rail:#111621;
+  --fg:#E4E8EF; --fg-soft:#A2ABBC; --fg-faint:#737D90;
+  --line:#212836; --line-strong:#333C4E;
+  --acc:#8CA6E8; --acc-bg:#151C2E;
+  --good:#4FBF95; --good-bg:#0F2019;
+  --bad:#E3897C; --bad-bg:#241413;
+  --warn:#D6AC63; --warn-bg:#241E10;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+img{max-width:100%}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:"Public Sans",system-ui,-apple-system,sans-serif;
+  font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:62rem;margin:0 auto;padding:0 1.5rem 6rem}
+
+header.top{padding:4.5rem 0 0}
+.kicker{
+  font-family:"JetBrains Mono",monospace;font-size:.7rem;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--acc);margin:0 0 1.3rem;
+}
+h1{
+  font-family:"Fraunces",Georgia,serif;font-weight:600;
+  font-size:clamp(2.4rem,6.5vw,4rem);line-height:1.02;
+  letter-spacing:-.025em;margin:0 0 1.2rem;text-wrap:balance;
+}
+.lede{
+  font-size:clamp(1.08rem,2vw,1.3rem);line-height:1.5;
+  color:var(--fg-soft);max-width:43rem;margin:0 0 1.6rem;
+}
+.meta{font-family:"JetBrains Mono",monospace;font-size:.74rem;color:var(--fg-faint)}
+
+hr.div{border:0;height:1px;background:var(--line);margin:3.4rem 0}
+hr.div.staff{
+  height:13px;
+  background:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px 4px);
+}
+
+h2{
+  font-family:"Fraunces",Georgia,serif;font-weight:600;
+  font-size:clamp(1.5rem,3vw,2.05rem);line-height:1.16;
+  letter-spacing:-.018em;margin:0 0 .95rem;text-wrap:balance;
+}
+h3{font-weight:600;font-size:1.07rem;letter-spacing:-.005em;margin:2.3rem 0 .6rem}
+h4{
+  font-family:"JetBrains Mono",monospace;font-weight:500;font-size:.75rem;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--fg-faint);
+  margin:2rem 0 .6rem;
+}
+p{margin:0 0 1.1rem;max-width:41rem}
+a{color:var(--acc)}
+code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em;
+  background:var(--code-bg);padding:.12em .38em;border-radius:3px;
+  border:1px solid var(--line);
+}
+pre{
+  background:var(--code-bg);border:1px solid var(--line);border-radius:4px;
+  padding:1rem 1.1rem;overflow-x:auto;margin:1.2rem 0 1.6rem;max-width:46rem;
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.8rem;line-height:1.6;
+}
+pre code{background:none;border:0;padding:0;font-size:1em}
+.cmt{color:var(--fg-faint)}
+ul,ol{max-width:41rem;padding-left:1.2rem;margin:0 0 1.1rem}
+li{margin-bottom:.5rem}
+strong{font-weight:600}
+
+.tldr{
+  background:var(--card);border:1px solid var(--line);border-radius:5px;
+  padding:1.5rem 1.7rem;margin:2.6rem 0 0;max-width:46rem;
+}
+.tldr h2{
+  font-family:"JetBrains Mono",monospace;font-size:.74rem;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin:0 0 1rem;
+}
+.tldr ul{margin:0;padding-left:1.1rem}
+.tldr li{margin-bottom:.6rem;font-size:.95rem}
+.tldr li:last-child{margin-bottom:0}
+
+.callout{
+  margin:1.7rem 0;padding:1.15rem 1.35rem;border-radius:4px;max-width:41rem;
+  background:var(--warn-bg);border:1px solid var(--line);border-left:3px solid var(--warn);
+}
+.callout .lbl{
+  font-family:"JetBrains Mono",monospace;font-size:.68rem;font-weight:500;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--warn);
+  display:block;margin-bottom:.45rem;
+}
+.callout p{margin:0;font-size:.93rem}
+.callout p + p{margin-top:.7rem}
+.callout.tip{background:var(--acc-bg);border-left-color:var(--acc)}
+.callout.tip .lbl{color:var(--acc)}
+
+/* The verdict pair. The recurring device of this page: the same checkpoint judged by
+   our own labels on the left and by a corpus we never touched on the right. It is a
+   two-cell grid because the finding is literally a disagreement between two measurements. */
+.verdict{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:6px;overflow:hidden;margin:2rem 0 1.4rem;max-width:46rem;
+}
+.verdict > div{background:var(--card);padding:1.4rem 1.5rem 1.5rem}
+.verdict .src{
+  font-family:"JetBrains Mono",monospace;font-size:.67rem;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);margin:0 0 .8rem;
+}
+.verdict .fig{
+  font-family:"Fraunces",Georgia,serif;font-size:2.5rem;font-weight:600;
+  line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin:0 0 .5rem;
+}
+.verdict .fig.up{color:var(--good)}
+.verdict .fig.down{color:var(--bad)}
+.verdict .ci{
+  font-family:"JetBrains Mono",monospace;font-size:.74rem;color:var(--fg-soft);
+  margin:0 0 .75rem;
+}
+.verdict .split{font-size:.86rem;color:var(--fg-soft);margin:0}
+.verdict .tag{
+  display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.64rem;
+  font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+  padding:.2em .55em;border-radius:3px;margin-bottom:.75rem;
+}
+.tag.ns{background:var(--warn-bg);color:var(--warn)}
+.tag.sig{background:var(--bad-bg);color:var(--bad)}
+.tag.sigup{background:var(--good-bg);color:var(--good)}
+
+.stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:6px;overflow:hidden;margin:1.8rem 0;max-width:46rem;
+}
+.stats > div{background:var(--card);padding:1.2rem 1.3rem 1.3rem}
+.stats .fig{
+  font-family:"Fraunces",Georgia,serif;font-size:2rem;font-weight:600;line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--acc);margin:0 0 .4rem;
+}
+.stats .lbl{font-size:.82rem;color:var(--fg-soft);margin:0;line-height:1.35}
+
+.tablewrap{overflow-x:auto;margin:1.4rem 0 1.9rem;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.87rem;min-width:30rem}
+caption{
+  caption-side:top;text-align:left;font-family:"JetBrains Mono",monospace;
+  font-size:.69rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--fg-faint);padding-bottom:.7rem;
+}
+th{
+  text-align:left;font-weight:500;font-size:.7rem;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--fg-faint);
+  border-bottom:1px solid var(--line-strong);padding:0 .85rem .45rem 0;
+}
+td{padding:.48rem .85rem .48rem 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;
+  font-family:"JetBrains Mono",monospace;font-size:.83rem}
+tr:last-child td{border-bottom:none}
+.win{color:var(--good);font-weight:500}
+.bad{color:var(--bad);font-weight:500}
+.mark td{background:var(--acc-bg)}
+
+footer{
+  margin-top:1rem;padding-top:1.9rem;border-top:1px solid var(--line);
+  font-size:.84rem;color:var(--fg-faint);max-width:41rem;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="kicker">homr · lieder corpus rebuild</p>
+  <h1>Two Methods, One Corpus</h1>
+  <p class="lede">We built a training corpus two independent ways and kept only what both
+  agreed on. Then the same discipline that produced the corpus caught our newest
+  checkpoint regressing — on the one benchmark our own labels could not see.</p>
+  <p class="meta">Engineering write-up · checkpoints 426 → 447 → 448 · every figure paired and reproducible</p>
+</header>
+
+<div class="tldr">
+  <h2>TL;DR</h2>
+  <ul>
+    <li><strong>The corpus grew 43% and got stricter at the same time</strong> — 3,214 → 4,587 clean pairs, 165 → 234 scores, while the evaluation set shrank to only what two independent construction methods agree on.</li>
+    <li><strong>Checkpoint 447 is a large, real win</strong>: +8.56pp on Lieder and <em>+2.32pp on an independent corpus it was never trained for</em>. Both intervals exclude zero.</li>
+    <li><strong>Checkpoint 448 is not.</strong> Our own labels say +0.88pp; a paired test says that is noise, and an untouched corpus says <span class="bad">−1.23pp</span>. We are not shipping it.</li>
+    <li><strong>The last write-up reported ~+3% for a regression.</strong> This one is built so that cannot happen again — the method that would have caught it is described below and is now a committed tool.</li>
+    <li><strong>Human review overturned four automated decisions, every one of them in the same direction:</strong> the machine was throwing away good data.</li>
+    <li><strong>One known blind spot and one open problem</strong>, both stated rather than buried.</li>
+  </ul>
+</div>
+
+<hr class="div staff">
+
+<section>
+<h2>The number that would have been the headline</h2>
+
+<p>Checkpoint 448 scores <strong>92.69%</strong> on our held-out Lieder split against 447's
+91.81%. Read as a single pair of aggregates — which is how every previous number in this
+project was read — that is a +0.88pp improvement and the run was a success.</p>
+
+<p>It is not. Here is the same checkpoint judged twice: once by the labels this project
+built for itself, and once by a corpus this work never touched.</p>
+
+<div class="verdict">
+  <div>
+    <p class="src">Our own rebuilt labels · 292 staves</p>
+    <span class="tag ns">not significant</span>
+    <p class="fig up">+0.88</p>
+    <p class="ci">95% CI −0.61 to +2.68</p>
+    <p class="split">16 staves better · <strong>24 worse</strong> · 252 unchanged</p>
+  </div>
+  <div>
+    <p class="src">Independent corpus · 792 staves</p>
+    <span class="tag sig">significant</span>
+    <p class="fig down">−1.23</p>
+    <p class="ci">95% CI −1.89 to −0.52</p>
+    <p class="split">67 staves better · <strong>116 worse</strong> · 609 unchanged</p>
+  </div>
+</div>
+
+<p>The apparent gain does not survive a paired test. Its confidence interval straddles
+zero, and on the staves that moved at all, <strong>more got worse than got better</strong>
+— the positive aggregate is a handful of staves improving a lot, not the model improving.
+Meanwhile the independent corpus shows a clear, significant regression in the opposite
+direction.</p>
+
+<p>Two aggregate percentages cannot express any of that. They were what we had, and they
+were enough to report a regression as a +3% win once already.</p>
+
+<div class="callout">
+  <span class="lbl">The actual lesson</span>
+  <p>A benchmark built from labels you rebuilt yourself measures your labels as much as
+  your model. When the training corpus and the evaluation corpus improve together, the
+  honest question is not <em>how much did we gain</em> but <em>would we be able to tell
+  if we had lost</em>.</p>
+</div>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Apples to apples, three ways</h2>
+
+<p>Every checkpoint is now scored on three benchmarks with different exposure to this
+work, and the comparison is <strong>paired</strong>: the same staves, per-staff
+differences, a bootstrap interval over staves, and an explicit better/worse/unchanged
+split. The tool is <code>training/transformer/compare_checkpoints.py</code>.</p>
+
+<div class="tablewrap">
+<table>
+<caption>Overall token accuracy, identical staves, padded so a length disagreement counts as a miss</caption>
+<tr>
+  <th>Benchmark</th><th>Exposure to this work</th>
+  <th class="n">426 <span style="font-weight:400">base</span></th>
+  <th class="n">447</th><th class="n">448</th><th class="n">448 vs 447</th>
+</tr>
+<tr>
+  <td><strong>Lieder held-out</strong><br><span class="meta">292 staves</span></td>
+  <td>Labels rebuilt by this project</td>
+  <td class="n">83.25</td><td class="n">91.81</td><td class="n">92.69</td>
+  <td class="n">+0.88 <span class="meta">ns</span></td>
+</tr>
+<tr class="mark">
+  <td><strong>OSSQ</strong><br><span class="meta">792 staves</span></td>
+  <td><strong>None.</strong> Never trained on, never relabelled</td>
+  <td class="n">91.70</td><td class="n">94.03</td><td class="n">92.80</td>
+  <td class="n bad">−1.23</td>
+</tr>
+<tr>
+  <td><strong>PDMX held-out</strong><br><span class="meta">3,349 staves</span></td>
+  <td>Public corpus, split predates this work</td>
+  <td class="n" colspan="4" style="text-align:left;color:var(--fg-faint)">scoring in progress — see note below</td>
+</tr>
+</table>
+</div>
+
+<p>The middle row is the one that matters, and it is also the one that makes 447 worth
+being pleased about: <strong>+2.32pp (95% CI +1.36 to +3.25) on a corpus it was never
+tuned for.</strong> A Lieder-only fine-tune improving general-music recognition is not
+something we assumed would happen, and it is the strongest single result here. 448 gives
+back half of it.</p>
+
+<div class="callout tip">
+  <span class="lbl">Why a third benchmark</span>
+  <p>OSSQ is independent but small and stylistically narrow. PDMX is a large public
+  corpus whose validation split predates all of this, so it tests whether the OSSQ
+  regression is a property of the model or of one repertoire. Its result is pending
+  and will be added here as measured, whichever way it falls.</p>
+  <p>One caveat is already known and stated up front: replay sampling for these runs
+  drew from an index that contained the PDMX validation rows, so roughly 3.6% of that
+  benchmark is contaminated. It inflates all three checkpoints equally, so the
+  <em>comparison</em> holds while the <em>absolute</em> figure does not. The bug is
+  fixed; no clean absolute PDMX number will be quoted until a checkpoint trains
+  without it.</p>
+</div>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>How the corpus is built, and why it can disagree with itself</h2>
+
+<p>The training pairs are staff-image crops with symbolic labels. Producing them means
+deciding which measures of a digital transcription correspond to which crop of a scanned
+page — and getting that wrong produces labels that look perfectly well-formed while
+describing different music from the image.</p>
+
+<p>So the alignment is computed twice, by methods that share no evidence:</p>
+
+<div class="tablewrap">
+<table>
+<tr><th>Method</th><th>Evidence used</th><th>Failure mode</th></tr>
+<tr>
+  <td><strong>Bar-count alignment</strong></td>
+  <td>Physical barlines detected in the image, matched to transcription measure counts by dynamic programming</td>
+  <td>Blind to content — a range with the right number of bars is accepted whatever is in them</td>
+</tr>
+<tr>
+  <td><strong>Reverse fingerprinting</strong></td>
+  <td>The model's own reading of each crop, segmented against the transcription</td>
+  <td>Model-derived, so it agrees with the model by construction</td>
+</tr>
+</table>
+</div>
+
+<p>Neither is trustworthy alone, and the second is <em>circular</em> for evaluation
+purposes. The rule that follows is the load-bearing idea of the whole rebuild:</p>
+
+<blockquote style="margin:1.6rem 0;padding-left:1.2rem;border-left:3px solid var(--acc);color:var(--fg-soft);max-width:41rem;font-family:'Fraunces',Georgia,serif;font-size:1.12rem;line-height:1.5">
+  Where the two methods agree, the label is admissible as evaluation data. Where they
+  disagree, it may still be used for training — but never to judge the model.
+</blockquote>
+
+<div class="tablewrap">
+<table>
+<caption>Consensus classification of every aligned system</caption>
+<tr><th>Verdict</th><th>Meaning</th><th class="n">Pairs</th><th>Used for</th></tr>
+<tr class="mark"><td><code>consensus</code></td><td>Both methods chose the same measures</td><td class="n">3,968</td><td><strong>Evaluation</strong> + training</td></tr>
+<tr><td><code>arbitrated</code></td><td>They disagreed; bar-count label kept</td><td class="n">258</td><td>Training only</td></tr>
+<tr><td><code>reverse</code></td><td>Only content alignment placed it</td><td class="n">3,656</td><td>Training only</td></tr>
+<tr><td><code>unarbitrated</code></td><td>Content alignment abstained</td><td class="n">308</td><td>Training only</td></tr>
+<tr><td><code>phantom</code></td><td>Read notes and still placed it nowhere</td><td class="n">68</td><td>Neither</td></tr>
+<tr><td><code>rejected</code></td><td>No usable range</td><td class="n">391</td><td>Neither</td></tr>
+</table>
+</div>
+
+<p>That yields <strong>3,964 evaluation-admissible pairs and 8,175 training pairs</strong>.
+Filtering an evaluation set by agreement <em>with the model</em> would measure the model
+against itself; this is why the reverse method is firewalled out of the evaluation path
+even though it is the more accurate of the two.</p>
+
+<h3>A parser bug was hiding a quarter of the corpus</h3>
+
+<p>The MusicXML parser raised on <code>&lt;octave-shift&gt;</code> (86 scores) and
+<code>&lt;clef-octave-change&gt;</code> (11), discarding those scores whole — for a
+routine piano engraving mark. Handling both recovers <strong>94 of 111 scores: 3,214 →
+4,587 clean pairs, 165 → 234 scores.</strong></p>
+
+<p>The subtlety is that MusicXML <code>&lt;pitch&gt;</code> is the <em>sounding</em> pitch
+while the label must carry the <em>written</em> one, so the correction is
+<code>written − sounding</code> — and 8va is exported as <code>type="down"</code>. Only
+~1% of notes are affected, which means <strong>no aggregate metric can see the sign</strong>:
+running it both ways gave byte-identical corpus statistics. Human review settled it at
+22/25 octaves correct with zero octave errors.</p>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>What human review overturned</h2>
+
+<p>Four automated judgements were checked against a human reviewer. All four were wrong,
+and all four were wrong <strong>in the same direction — discarding good data</strong>.
+That consistency is itself the finding: an automated pipeline that errs conservatively
+looks healthy from the inside, because the evidence it would need to notice is precisely
+what it discarded.</p>
+
+<ol>
+  <li><strong>Rejecting on disagreement was wrong 32 times out of 33.</strong> Disagreement
+  means one method is right, not that both are wrong — bar-count correct 28, content 5,
+  neither 1. No score threshold separates the cases, so the rule became: prefer the
+  bar-count label, mark it <code>arbitrated</code>, keep it out of evaluation.</li>
+
+  <li><strong>"No content found" actually meant "no pitched notes".</strong> The
+  fingerprinter dropped rests, so a rest-heavy system produced no tokens, scored 0.0 for
+  every candidate span, and lost to the empty move. Reviewed at <strong>30 of 30
+  wrong</strong>. This single bug produced most of the disagreements in the corpus:
+  fixing it moved 822 arbitrated → 258 and 3,376 consensus → 3,968, and of 45 pairs the
+  reviewer flagged as wrongly rejected, <strong>40 became plain consensus and none stayed
+  discarded</strong>.</li>
+
+  <li><strong>Stratifying the split by score alone left validation unable to see the
+  defect.</strong> All 113 many-to-many and reference-line-split pairs landed in train,
+  making validation 100% one-to-one — structurally incapable of detecting the exact
+  problem the rebuild exists to remove. Strata must be derived from the manifest being
+  split, per rare topology.</li>
+
+  <li><strong>The review generator silently produced two empty review sets</strong> after
+  the verdict vocabulary changed under it. Same class of quiet failure as an
+  under-covered corpus: no error, no output, no alarm.</li>
+</ol>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>The blind spot we can name</h2>
+
+<p>Consensus cannot detect the case where <strong>both methods agree and both are
+wrong</strong>. This is confirmed, not hypothetical.</p>
+
+<p><code>IMSLP183806-sys1-v1</code> is a densely written piano grand staff. Its bar-count
+label reads <code>R R | R R | R R</code> — three measures of pure rests. Its content
+label has notes, but five measures for a three-measure crop. The reviewer judged neither
+correct. The pipeline classifies the pair <code>consensus</code>, which would admit it to
+the evaluation set.</p>
+
+<p>The mechanism is specific and worth stating precisely: consensus is decided from the
+voice-0 reading and applied to every staff in the system, so <strong>a system-level
+agreement does not validate each voice's label.</strong> Nothing currently checks
+per-voice content. That is the next thing to build, and until it exists the evaluation
+set carries an unmeasured error floor of this kind.</p>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Open problem: 417 pairs of implied tuplets</h2>
+
+<p>An <em>implied tuplet</em> is engraved with no bracket and no numeral — the performer
+infers it. Neither the transcription nor the model records one, so the bar comes out
+longer than the staff's prevailing metre. Training on it teaches the model to write
+overfull bars, so the builder skips those pairs.</p>
+
+<div class="stats">
+  <div><p class="fig">417</p><p class="lbl">pairs discarded</p></div>
+  <div><p class="fig">144</p><p class="lbl">scores affected</p></div>
+  <div><p class="fig">546</p><p class="lbl">offending bars</p></div>
+  <div><p class="fig">~10%</p><p class="lbl">of the clean corpus</p></div>
+</div>
+
+<p>The loss is asymmetric in two ways. First, <strong>546 bad bars cost 417 whole staff
+crops</strong> — roughly one offending bar per discarded pair, with every other bar in
+that crop perfectly good. Second, implied tuplets concentrate in the densest and most
+interesting writing, so the rule quietly trains the model on the easy half of the
+repertoire.</p>
+
+<p>These pairs are now <strong>quarantined rather than deleted</strong> — written to their
+own directory with images, tokens, and per-bar detail — so they can be reviewed and, if a
+representation is found, recovered. Previously they were dropped without ever being
+written, which is why nobody had looked at one.</p>
+</section>
+
+<hr class="div">
+
+<section>
+<h2>Reproducing any number on this page</h2>
+
+<p>Each checkpoint is scored to a <code>.jsonl</code> of per-staff reference and
+prediction vectors, then compared pairwise:</p>
+
+<pre><code><span class="cmt"># score one checkpoint on one benchmark</span>
+python -m training.transformer.base_predictions \
+  --index datasets/pdmx/index_valid.txt \
+  --checkpoint &lt;path&gt; --out pdmx_new.jsonl
+
+<span class="cmt"># paired comparison, bootstrap interval, win/loss split</span>
+python -m training.transformer.compare_checkpoints \
+  --name "OSSQ" \
+  --run 447=general_mid.jsonl \
+  --run 448=general_new.jsonl</code></pre>
+
+<p>Three properties are deliberate. Reference and prediction are <strong>padded to a
+common width</strong>, so a free-running model that diverges in length is penalised
+rather than scored on the overlap it happened to get right. Only staves scored by
+<strong>every</strong> run are compared, so a checkpoint that failed on some crop is not
+credited with an easier subset. And both <code>overall</code> (positions pooled) and
+<code>macro</code> (branches averaged) are printed, because they answer different
+questions and are allowed to disagree in public.</p>
+</section>
+
+<hr class="div staff">
+
+<footer>
+  <p>Checkpoints 426 (base), 447, 448. Lieder and OSSQ figures measured 2026-08-28 on
+  792 and 292 staves respectively; PDMX pending. Bootstrap intervals are 2,000
+  resamples over staves, seed 0.</p>
+  <p>447 is the current best checkpoint. 448 is not being shipped, and the run that
+  produced it is being ablated to find out which change caused the regression.</p>
+</footer>
+
+</div>
+</body>
+</html>
