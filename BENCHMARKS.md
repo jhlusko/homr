@@ -61,6 +61,70 @@ OSSQ staves:
 * **459 confirms the grand-staff result independently**: +3 exact staves against 456's
   +15, from the same corpus minus its grand staves.
 
+## PDMX: nothing has improved since checkpoint 448
+
+Scored on the PDMX dense cut (2,492 of 3,349 staves, 45+ symbols), baselined on 448 - the
+last checkpoint anything had scored there before this session:
+
+| checkpoint | PDMX dense | vs 448 |
+|---|---|---|
+| 426 base | 83.91 | −1.78 *(significant)* |
+| 447 | 85.79 | +0.11 *(ns)* |
+| 448 | 85.68 | — |
+| **456 (v6, our best on OSSQ)** | **85.52** | **−0.17 *(ns)*** |
+| 459 (single-staff) | 82.36 | −3.33 *(significant)* |
+
+**456 is statistically indistinguishable from 448 on PDMX, and nominally below it.** Eight
+checkpoints of corpus work produced no measurable movement on 3,349 staves of different
+repertoire. Calling 456 "the best checkpoint" is an OSSQ-only claim and should be stated
+that way.
+
+456 is also **worse than 448 on PDMX structural errors** - 135 staves against 121 - despite
+carrying 7 more exact. Whatever the OSSQ gain is, it did not bring the bar grid with it.
+
+## The grand-staff effect holds on every corpus
+
+Removing grand staves from the training corpus, matched seed where possible:
+
+| corpus (dense cut) | grand staves in | grand staves out | delta |
+|---|---|---|---|
+| OSSQ (148) | 94.37 / 93.68 | 92.46 / 92.32 | **−1.9 to −2.1pp** |
+| PDMX (2,492) | 85.52 | 82.36 | **−3.16pp** *(CI −4.34 to −2.01)* |
+| Lieder (122) | 90.52 | 75.35 / 74.39 | −15.2 to −16.1pp |
+
+Larger on PDMX than on OSSQ, and largest on Lieder - which is piano/voice repertoire and
+so the most grand-staff-dependent. The Lieder row pairs different checkpoints as well as
+different corpora and rests on 14 scores, so read it as direction, not measurement.
+
+OSSQ carries two training seeds per arm, which pins the noise directly: within-corpus
+dense spread 0.69pp (v6) and 0.14pp (single-staff), against a smallest cross-corpus gap of
+1.22pp, with both single-staff seeds below both v6 seeds. That seed replication is what
+licenses treating the single-seed PDMX gap as real.
+
+**The aggregate would have said the opposite.** v6's own two seeds are 92.65 and 88.28 - a
+4.37pp within-corpus spread straddling both single-staff runs - and `compare_checkpoints`
+calls that same-corpus pair "significant". The dense cut is what makes the finding visible
+at all.
+
+## The end-on-a-divider constraint: structural fix, no correct transcriptions
+
+Checkpoint 456, same index, decode-only difference:
+
+| | structural | length | exact | overall |
+|---|---|---|---|---|
+| off | 63 | 67 | 389 | 92.65 |
+| on | **41** | 89 | **389** | 92.35 |
+
+It repairs 22 of 23 invariant violations and never damages a correct grid - but the
+structural-to-length movement is exactly 1:1 and **not one staff becomes exact**. Producing
+those 22 barlines took 90 extra tokens, 68 of them spurious, including time and key
+signatures at the end of a system where they are nonsense. Accuracy fell 0.31pp against a
+predicted 0.03pp: the simulation appended exactly one divider, where the real model needs
+~3.9 tokens to reach one.
+
+Left **off by default**. It converts a broken grid into a correct grid plus noise, and
+whether that is a win depends on what consumes the output.
+
 ## Use the dense-staff cut, not the aggregate
 
 Six checkpoints, five of them seeded replicates, on 792 staves and on the 148 holding

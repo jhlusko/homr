@@ -108,13 +108,29 @@ class Config:
         #: Do not let greedy decoding stop mid-bar. A scanned system is cut AT a
         #: barline, so every reference in the benchmark ends on a measure divider -
         #: 792 of 792 - and a prediction that stops without one has lost the bar grid.
-        #: That is the failure class no corpus change has moved, and token accuracy is
-        #: blind to it: enforcing this halves the bar-count mismatches on the dense cut
-        #: (6 -> 3) while moving accuracy by -0.03pp.
+        #:
+        #: OFF by default, because measuring it did not support switching it on. It
+        #: delivers the structural fix as predicted (bar-count mismatches 63 -> 41
+        #: across the benchmark, 22 of the 23 violations repaired, and it never damages
+        #: a correct grid) but **zero staves become exact**. The structural-to-length
+        #: movement is exactly 1:1: it converts "wrong bar count" into "right bar count
+        #: with about three invented symbols at the end".
+        #:
+        #: The model does emit junk when denied EOS. Producing those 22 barlines took 90
+        #: extra tokens, of which 68 were spurious - 31 notes, 24 time-signature tokens,
+        #: 4 chord separators, 2 key signatures - and a key or time signature at the end
+        #: of a system is nonsense. Accuracy fell 0.31pp, ten times the 0.03pp the
+        #: post-hoc simulation predicted, because that simulation appended exactly one
+        #: divider where the real model needs ~3.9 tokens to reach one.
+        #:
+        #: Whether trading a broken grid for a correct grid plus noise is a win is a
+        #: judgement about what downstream consumes it, not something these numbers
+        #: settle - so the default stays at the behaviour every existing scored file
+        #: was produced with.
         #: Env-overridable so an A/B can run alongside other scoring. Rewriting this
         #: file between arms would silently change the setting for any process that
         #: starts in the window, which is a race the env var removes.
-        self.enforce_final_divider = os.environ.get("HOMR_ENFORCE_FINAL_DIVIDER", "1") != "0"
+        self.enforce_final_divider = os.environ.get("HOMR_ENFORCE_FINAL_DIVIDER", "0") != "0"
         #: How many times EOS may be suppressed before the model is allowed to stop
         #: anyway. Without a cap, a model that will not emit a divider trades one
         #: missing barline for a page of invented notes.
