@@ -194,6 +194,29 @@ was never valid on a grand staff - but the pairs it was removing are bad for som
 reason, so v6 keeps them out of the training index while no longer pretending the rule
 justified it. The fix that is actually carried into training is the numerator one.
 
+## What the v6 training index actually is
+
+Stated because I described it as "452's corpus plus the numerator fix", and it is not.
+
+| | pairs |
+|---|---|
+| 452's index | 3,548 |
+| v6 index | 3,880 |
+| shared | 3,548 |
+| only in 452 | **0** |
+| only in v6 | **332** |
+
+A strict superset. The 332 extra are clean v6 pairs the consensus build had dropped -
+its `rejected`, `phantom` and `unarbitrated` verdicts never reached the v8 clean subset,
+while the v6 index is built from the raw clean manifest minus validation scores and
+minus the originally-overfull stems.
+
+So the v6 runs vary **two** things against 452: 332 more pairs and the numerator fix.
+With a 4.06pp noise floor neither is separable from the other or from chance in a single
+run, which is why these are being run at three seeds and reported as a mean. A matched
+one-variable comparison would need 452's index re-run at the same three seeds - about
+another two hours of GPU, and worth it only if the means differ by more than the floor.
+
 ## Rule for choosing the next arm
 
 Vary one thing that **447 actually had** and 448/449 do not, or vice versa. Check this
