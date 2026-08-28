@@ -186,6 +186,19 @@ iframe.cmp{
   border:1px solid var(--line);border-left:3px solid var(--line-strong);
   border-radius:3px;padding:.5rem .7rem;margin:0 0 .5rem;
 }
+.correction{
+  border:1px solid var(--line);border-left:3px solid var(--acc,#2563eb);
+  border-radius:4px;padding:.8rem 1rem;margin:1rem 0;background:var(--card,#fff);
+}
+.correction-head{font-weight:600;font-size:.92rem;margin-bottom:.4rem}
+.correction-badge{
+  font-family:ui-monospace,Menlo,monospace;font-size:.66rem;text-transform:uppercase;
+  letter-spacing:.06em;margin-left:.6rem;padding:.15em .45em;border-radius:3px;
+  background:#e8f0e8;color:#2c6b3f;
+}
+.correction p{font-size:.83rem;color:var(--fg-soft,#555);margin:0 0 .6rem}
+.correction-row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.correction-status{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;margin:.5rem 0 0}
 </style>
 </head>
 <body>
@@ -511,6 +524,7 @@ async function loadSet(){
     if (b) b.classList.toggle("on", n === setName);
   }
   const cfg = SETS[setName];
+  await loadCorrected();
   try {
     const res = await fetch(cfg.dir + "/manifest.json");
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -676,6 +690,7 @@ function render(){
           + '<figcaption>The scan &mdash; the arbiter</figcaption></figure>'
         : '')
     + '<div class="verdicts">' + btns + '</div>'
+    + (cropOnly ? '' : correctionPanel(it))
     + '<div class="notes"><label for="review-notes">Notes</label>'
     + '<textarea id="review-notes" placeholder="Add notes about this item…"></textarea></div>'
     + '<div class="nav">'
@@ -784,6 +799,78 @@ async function renderEngraving(){
     host.innerHTML = '<p class="vrv-note">Could not engrave this label ('
       + escapeHtml(e.message) + '). The editor below shows the same score.</p>';
   }
+}
+
+// ---------------------------------------------------------------------------
+// Write-back. The editor has no API for handing over its current score - no global,
+// no inbound postMessage - so the route is the one the editor already supports: save
+// from the editor, then hand that file to this page, which posts it to
+// review_server.py. Nothing patches the corpus from here; that is
+// apply_corrections.py, deliberately.
+let correctedIds = new Set();
+
+async function loadCorrected(){
+  try {
+    const res = await fetch("/api/corrections?set=" + encodeURIComponent(setName));
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    correctedIds = new Set((await res.json()).corrected || []);
+  } catch (e) {
+    // Served by plain http.server, so there is no write path at all. Say so once, in
+    // the panel, rather than failing on every save attempt.
+    correctedIds = null;
+  }
+}
+
+async function saveCorrection(){
+  const it = items[idx];
+  const input = document.getElementById("correction-file");
+  const status = document.getElementById("correction-status");
+  const file = input && input.files && input.files[0];
+  if (!file) { status.textContent = "Choose the MusicXML you saved from the editor first."; return; }
+  status.textContent = "Saving…";
+  try {
+    const musicxml = await file.text();
+    const res = await fetch("/api/correction", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        set: setName, id: it.id, musicxml,
+        note: (document.getElementById("review-notes") || {}).value || ""
+      })
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || ("HTTP " + res.status));
+    if (correctedIds) correctedIds.add(it.id);
+    status.textContent = "Saved \u2014 " + body.measures + " measures, "
+      + body.bytes + " bytes. Apply with apply_corrections.py.";
+    input.value = "";
+  } catch (e) {
+    status.textContent = "Not saved: " + e.message;
+  }
+}
+
+function correctionPanel(it){
+  if (correctedIds === null) {
+    return '<div class="correction"><strong>Corrections are disabled.</strong> '
+      + 'This page is being served by <code>python3 -m http.server</code>, which has no '
+      + 'write path. Run <code>python3 review_server.py</code> from '
+      + '<code>docs/writeups/</code> instead.</div>';
+  }
+  const already = correctedIds.has(it.id);
+  return '<div class="correction">'
+    + '<div class="correction-head">Correct this label'
+    + (already ? '<span class="correction-badge">a correction is already stored</span>' : '')
+    + '</div>'
+    + '<p>Fix the score in the editor above, save it as MusicXML from the editor\'s own '
+    + 'menu, then hand that file over here. It is stored with its hash and never '
+    + 'overwrites an earlier correction; nothing touches the corpus until '
+    + '<code>apply_corrections.py</code> is run.</p>'
+    + '<div class="correction-row">'
+    + '<input type="file" id="correction-file" accept=".musicxml,.xml,text/xml,application/xml">'
+    + '<button onclick="saveCorrection()">Save correction</button>'
+    + '</div>'
+    + '<p class="correction-status" id="correction-status"></p>'
+    + '</div>';
 }
 
 function renderList(){
