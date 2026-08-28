@@ -4,6 +4,38 @@ Every paired comparison run during the Lieder corpus work, in one place. Compani
 `CORPUS_CHANGELOG.md`, which traces what changed in the corpus; this records what those
 changes scored.
 
+## Read this first: the noise floor is 4.06pp
+
+Two runs of the **same corpus**, same recipe, differing only in the trainer seed:
+
+| | final `eval_accuracy` | final `train_loss` | OSSQ |
+|---|---|---|---|
+| 452, seed 42 | 0.99684 | 1.0868 | **93.12** |
+| 454, seed 1234 | 0.99669 | 1.0919 | **89.06** |
+
+Both runs are healthy and indistinguishable in-corpus - 0.00015 apart on
+`eval_accuracy` - and **4.06pp apart on OSSQ**.
+
+**Every corpus effect in this document is smaller than that.** Removing the
+model-derived half (+0.69), restoring the overfull pairs (−1.31), 447 over 449 (−1.60),
+448 eroding 447 (−1.23), even 447 over the baseline (+2.32): all inside the range two
+identical runs produce by chance. The monotonic "smaller corpus scores better" pattern
+- 3,548 > 6,989 > 7,369 pairs - is three points, each step under 1.3pp, and is
+consistent with three draws from a distribution this wide.
+
+**The confidence intervals below do not license those claims, and saying they did was
+an error.** They bootstrap over *staves*, which is the right uncertainty for "would
+this difference hold on other staves" and the wrong one for "was this difference caused
+by the corpus". The second question needs replication over training runs, which nothing
+here had until 454.
+
+What survives the floor: 450's −26.82pp collapse and its epoch bisect; 450's +5.56pp on
+PDMX; and the qualitative pattern that every checkpoint wins on its own training
+distribution, which spans four distributions rather than resting on a margin.
+
+**Protocol from here.** A corpus comparison needs several seeds per condition and a
+comparison of means. A single run is a draw, not a measurement.
+
 ## How these numbers are produced
 
 `training/transformer/base_predictions.py` scores a checkpoint to a `.jsonl` of per-staff

@@ -8,6 +8,10 @@ tests a recipe 447 never had, and a null result would have proved nothing.
 Every corpus version, what produced it, and what it scored. Independent = OSSQ, 792
 staves, never relabelled by this project. Ours = the Lieder held-out split.
 
+**The noise floor on OSSQ is 4.06pp** (same corpus, two seeds), which is larger than
+every corpus effect below. Treat the score column as indicative, not as evidence, and
+read the floor section of `BENCHMARKS.md` before drawing a conclusion from any gap here.
+
 Scores quoted here are from `BENCHMARKS.md`, which holds every paired comparison
 with its confidence interval and better/worse/tied split.
 
