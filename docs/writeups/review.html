@@ -178,20 +178,9 @@ iframe.cmp{
 <header class="top">
   <h1>OMR Label Review</h1>
   <div class="sets">
-    <button id="set-checkpoint" onclick="switchSet('checkpoint')">0 &middot; Checkpoint diff</button>
-    <button id="set-metre" onclick="switchSet('metre')">0b &middot; Note values</button>
-    <button id="set-eval" onclick="switchSet('eval')">1 &middot; Eval set</button>
-    <button id="set-voices" onclick="switchSet('voices')">1b &middot; Other staves</button>
-    <button id="set-silent" onclick="switchSet('silent')">1c &middot; Silent staves</button>
-    <button id="set-abstained" onclick="switchSet('abstained')">1d &middot; Abstained</button>
-    <button id="set-arbitrated" onclick="switchSet('arbitrated')">2 &middot; Arbitrated</button>
-    <button id="set-rejected" onclick="switchSet('rejected')">2b &middot; Rejected</button>
-    <button id="set-pseudo" onclick="switchSet('pseudo')">3 &middot; Pseudo-labels</button>
-    <button id="set-phantom" onclick="switchSet('phantom')">4 &middot; Phantom systems</button>
-    <button id="set-octave" onclick="switchSet('octave')">5 &middot; Octave shift</button>
-    <button id="set-alignment" onclick="switchSet('alignment')">Rebuilt alignment</button>
-    <button id="set-truncation" onclick="switchSet('truncation')">Truncation (labels)</button>
-    <button id="set-beam" onclick="switchSet('beam')">Beaming (model)</button>
+    <!-- Buttons are generated from SETS in buildNav(). Two sets were added to
+         SETS with no button here, so they existed in the config and were
+         unreachable in the UI - the list must not be maintained twice. -->
     <button id="show-list" onclick="showList()">Full list <span class="mono">Esc</span></button>
   </div>
 </header>
@@ -201,42 +190,8 @@ iframe.cmp{
 </div>
 <script>
 const SETS = {
-  // The pairs the builder discards for holding an overfull bar. The discard comment
-  // calls all 417 "implied tuplets"; classifying the 546 offending bars says only 161
-  // are tuplet-shaped, and 371 of the 417 pairs are GRAND STAVES - where the duration
-  // arithmetic behind the whole rule is unsound. So the split is by staff type first:
-  // on a single staff the question "is this a tuplet?" is answerable, and on a grand
-  // staff it is not.
-  "overfull-single": {
-    dir: "review-data/sets/overfull-single",
-    left: "left", right: null,
-    leftLabel: "Label (renders overfull)", rightLabel: "",
-    question: "H10 &mdash; Why is the marked bar <strong>longer</strong> than the rest?",
-    detail: "Single-staff crops only, where bar durations are trustworthy \u2014 all 46 of them, complete coverage rather than a sample. Each item names the offending bar and the classifier's guess: <em>tuplet</em> (the overflow is exactly what an unbracketed triplet or sextuplet would add), <em>missing-barline</em> (the bar is an exact 2x or 3x, which no tuplet produces), <em>metre-change</em>, or <em>unexplained</em>. Confirm or reject that guess against the scan. IGNORE THE PRINTED TIME SIGNATURES \u2014 they are inferred from durations, not read.",
-    verdicts: [
-      ["tuplet",         "Unmarked tuplet on the page \u2014 recoverable"],
-      ["marked-tuplet",  "Tuplet IS marked \u2014 the label dropped it"],
-      ["missing-barline","A barline is missing \u2014 label misaligned"],
-      ["metre-change",   "The metre changes here \u2014 rule is a false positive"],
-      ["label-wrong",    "Label is the wrong passage entirely"],
-      ["unclear",        "Unclear"]
-    ]
-  },
-  "overfull-grandstaff": {
-    dir: "review-data/sets/overfull-grandstaff",
-    left: "left", right: null,
-    leftLabel: "Label (renders overfull)", rightLabel: "",
-    question: "H11 &mdash; Is this label <strong>right</strong>? (the overfull test is unsound here)",
-    detail: "371 of the 417 discarded pairs are grand staves \u2014 89%, against 44.9% of the corpus that is kept, so a grand staff is discarded at 8.4 times the rate of a single staff. That is not how tuplets are distributed. On a grand staff group_into_chords takes the MINIMUM duration across a chord, so a bar where the hands play different rhythms is neither their sum nor either hand's own length, and the corpus audit already refuses to run any duration check on one. The discard reason is therefore not evidence here. The question is only whether the label matches the scan \u2014 if it does, these pairs should go back into the corpus.",
-    verdicts: [
-      ["label-ok",     "Label matches the scan \u2014 recover this pair"],
-      ["tuplet",       "Genuinely an unmarked tuplet"],
-      ["truncated",    "TRUNCATED \u2014 scan has more"],
-      ["label-wrong",  "Label is the wrong passage or has extra bars"],
-      ["unclear",      "Unclear"]
-    ]
-  },
   checkpoint: {
+    label: "0 &middot; Checkpoint diff",
     dir: "review-data/sets/checkpoint",
     left: "left", right: "right",
     leftLabel: "Old checkpoint (426)", rightLabel: "New checkpoint (447)",
@@ -258,6 +213,7 @@ const SETS = {
     ]
   },
   metre: {
+    label: "0b &middot; Note values",
     dir: "review-data/sets/metre",
     left: "left", right: "right",
     leftLabel: "Label", rightLabel: "Model reading of the page",
@@ -273,6 +229,7 @@ const SETS = {
   // Each set is one experiment with one null hypothesis. Keep the questions
   // disjoint: a set that asks two things at once cannot answer either.
   eval: {
+    label: "1 &middot; Eval set",
     dir: "review-data/sets/eval",
     left: "left", right: null,
     leftLabel: "Consensus label", rightLabel: "",
@@ -286,6 +243,7 @@ const SETS = {
     ]
   },
   voices: {
+    label: "1b &middot; Other staves",
     dir: "review-data/sets/voices",
     left: "left", right: null,
     leftLabel: "Label for THIS staff", rightLabel: "",
@@ -299,6 +257,7 @@ const SETS = {
     ]
   },
   silent: {
+    label: "1c &middot; Silent staves",
     dir: "review-data/sets/silent",
     left: "left", right: null,
     leftLabel: "Label (all rests)", rightLabel: "",
@@ -311,6 +270,7 @@ const SETS = {
     ]
   },
   abstained: {
+    label: "1d &middot; Abstained",
     dir: "review-data/sets/abstained",
     left: "left", right: null,
     leftLabel: "Bar-count label (unchecked)", rightLabel: "",
@@ -324,6 +284,7 @@ const SETS = {
     ]
   },
   arbitrated: {
+    label: "2 &middot; Arbitrated",
     dir: "review-data/sets/arbitrated",
     left: "left", right: "right",
     leftLabel: "Bar-count label (kept)", rightLabel: "Content label (discarded)",
@@ -337,6 +298,7 @@ const SETS = {
     ]
   },
   rejected: {
+    label: "2b &middot; Rejected",
     dir: "review-data/sets/rejected",
     left: "left", right: null,
     leftLabel: "Discarded label", rightLabel: "",
@@ -349,6 +311,7 @@ const SETS = {
     ]
   },
   pseudo: {
+    label: "3 &middot; Pseudo-labels",
     dir: "review-data/sets/pseudo",
     left: "left", right: null,
     leftLabel: "Model-derived label", rightLabel: "",
@@ -362,6 +325,7 @@ const SETS = {
     ]
   },
   phantom: {
+    label: "4 &middot; Phantom systems",
     dir: "review-data/sets/phantom",
     left: "left", right: null, cropOnly: true,
     leftLabel: "", rightLabel: "",
@@ -375,6 +339,7 @@ const SETS = {
     ]
   },
   octave: {
+    label: "5 &middot; Octave shift",
     dir: "review-data/sets/octave",
     left: "left", right: null,
     leftLabel: "Label from the recovered parser", rightLabel: "",
@@ -387,7 +352,45 @@ const SETS = {
       ["unclear",       "Unclear"]
     ]
   },
+  // The pairs the builder discards for holding an overfull bar. The discard comment
+  // calls all 417 "implied tuplets"; classifying the 546 offending bars says only 161
+  // are tuplet-shaped, and 371 of the 417 pairs are GRAND STAVES - where the duration
+  // arithmetic behind the whole rule is unsound. So the split is by staff type first:
+  // on a single staff the question "is this a tuplet?" is answerable, and on a grand
+  // staff it is not.
+  "overfull-single": {
+    label: "6 &middot; Overfull (single staff)",
+    dir: "review-data/sets/overfull-single",
+    left: "left", right: null,
+    leftLabel: "Label (renders overfull)", rightLabel: "",
+    question: "H10 &mdash; Why is the marked bar <strong>longer</strong> than the rest?",
+    detail: "Single-staff crops only, where bar durations are trustworthy \u2014 all 46 of them, complete coverage rather than a sample. Each item names the offending bar and the classifier's guess: <em>tuplet</em> (the overflow is exactly what an unbracketed triplet or sextuplet would add), <em>missing-barline</em> (the bar is an exact 2x or 3x, which no tuplet produces), <em>metre-change</em>, or <em>unexplained</em>. Confirm or reject that guess against the scan. IGNORE THE PRINTED TIME SIGNATURES \u2014 they are inferred from durations, not read.",
+    verdicts: [
+      ["tuplet",         "Unmarked tuplet on the page \u2014 recoverable"],
+      ["marked-tuplet",  "Tuplet IS marked \u2014 the label dropped it"],
+      ["missing-barline","A barline is missing \u2014 label misaligned"],
+      ["metre-change",   "The metre changes here \u2014 rule is a false positive"],
+      ["label-wrong",    "Label is the wrong passage entirely"],
+      ["unclear",        "Unclear"]
+    ]
+  },
+  "overfull-grandstaff": {
+    label: "6b &middot; Overfull (grand staff)",
+    dir: "review-data/sets/overfull-grandstaff",
+    left: "left", right: null,
+    leftLabel: "Label (renders overfull)", rightLabel: "",
+    question: "H11 &mdash; Is this label <strong>right</strong>? (the overfull test is unsound here)",
+    detail: "371 of the 417 discarded pairs are grand staves \u2014 89%, against 44.9% of the corpus that is kept, so a grand staff is discarded at 8.4 times the rate of a single staff. That is not how tuplets are distributed. On a grand staff group_into_chords takes the MINIMUM duration across a chord, so a bar where the hands play different rhythms is neither their sum nor either hand's own length, and the corpus audit already refuses to run any duration check on one. The discard reason is therefore not evidence here. The question is only whether the label matches the scan \u2014 if it does, these pairs should go back into the corpus.",
+    verdicts: [
+      ["label-ok",     "Label matches the scan \u2014 recover this pair"],
+      ["tuplet",       "Genuinely an unmarked tuplet"],
+      ["truncated",    "TRUNCATED \u2014 scan has more"],
+      ["label-wrong",  "Label is the wrong passage or has extra bars"],
+      ["unclear",      "Unclear"]
+    ]
+  },
   alignment: {
+    label: "Rebuilt alignment",
     dir: "review-data/alignment",
     left: "corrected", right: "old",
     leftLabel: "Rebuilt complete label", rightLabel: "Old label (when available)",
@@ -401,6 +404,7 @@ const SETS = {
     ]
   },
   truncation: {
+    label: "Truncation (labels)",
     dir: "review-data/truncation",
     left: "reference", right: "baseline",
     leftLabel: "Reference (our label)", rightLabel: "Upstream homr reading",
@@ -414,6 +418,7 @@ const SETS = {
     ]
   },
   beam: {
+    label: "Beaming (model)",
     dir: "review-data/beam",
     left: "without", right: "with",
     leftLabel: "Automatic beaming (= upstream)", rightLabel: "Our predicted beams",
@@ -453,6 +458,13 @@ async function switchSet(name){
   localStorage.setItem("omr-review-set", name);
   idx = 0;
   await loadSet();
+}
+
+function buildNav(){
+  document.querySelector(".nav").innerHTML = Object.entries(SETS).map(
+    ([n, cfg]) => '<button id="set-' + n + '" onclick="switchSet(\'' + n + '\')">'
+      + (cfg.label || n) + '</button>'
+  ).join("");
 }
 
 async function loadSet(){
@@ -732,6 +744,7 @@ document.addEventListener("keydown", e => {
   if (n >= 1 && n <= cfg.verdicts.length) { judge(cfg.verdicts[n-1][0]); e.preventDefault(); }
 });
 
+buildNav();
 loadSet();
 </script>
 </body>
