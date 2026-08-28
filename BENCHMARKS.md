@@ -47,6 +47,8 @@ Overall token accuracy. Dashes are runs not scored on that benchmark.
 | **449** | v8 corpus + replay (arbitration ablation) | 92.43 | — | **94.53** |
 | **450** | PDMX only, 12 epochs | 64.89 | **90.27** | 41.06 |
 | **451** | v8 corpus, 2 epochs | 91.83 | — | 87.86 |
+| **452** | v8 clean only, model-derived removed (3,548) | 93.12 | — | 91.67 |
+| **453** | v8 + 380 overfull pairs restored (7,369) | 91.12 | — | 93.94 |
 
 **Every checkpoint is best on its own training distribution.** 447 is the only one that
 improved on all three.
@@ -81,6 +83,29 @@ improved on all three.
 Note 448: our own metric reported +0.88pp, and a paired test says that is noise **with
 more staves worse than better**. The same checkpoint lost 1.23pp on OSSQ. An earlier
 write-up reported roughly +3% for exactly this shape of result.
+
+### The corpus bisect
+
+Both arms vary the corpus and hold the recipe fixed - warm start, ~8k samples, 12
+epochs, replay 1300, same validation index.
+
+| comparison | OSSQ | Lieder |
+|---|---|---|
+| 452 vs 449 - remove the model-derived half | **+0.69** *(ns, CI −0.20 to +1.67)* | **−2.86** *(sig, CI −5.41 to −0.76)* |
+| 453 vs 449 - restore the overfull pairs | **−1.31** | +... *(see table above)* |
+| 452 vs 426 | +1.42 *(sig, CI +0.53 to +2.33)* | — |
+| 453 vs 426 | −0.58 *(ns, CI −4.70 to +2.10)* | — |
+
+Two independent additions to the corpus, the same direction each time: **more pairs,
+worse on the independent corpus, better on ours.**
+
+| pairs trained on | OSSQ |
+|---|---|
+| 3,548 (452, clean only) | **93.12** |
+| 6,989 (449, + model-derived) | 92.43 |
+| 7,369 (453, + overfull) | 91.12 |
+
+453 falls below the 426 baseline of 91.70.
 
 ### PDMX, against 426
 

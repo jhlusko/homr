@@ -137,6 +137,38 @@ corpus could be the displaced one and the rebuild the correction. 447 scoring hi
 cannot settle it, because that comparison is confounded by the overfull exclusion.
 Treat the displacement as an open question, not a known defect of the rebuild.
 
+## Bisect results - the leading suspect was wrong
+
+**Arm A (452): remove the model-derived half.** OSSQ 92.43 -> 93.12, Lieder
+94.53 -> 91.67. Dropping 3,441 reverse pairs cost 2.86pp on our own labels
+(significant) and returned 0.69pp on the independent corpus (not individually
+significant). They were inflating our headline number by nearly three points while
+contributing nothing demonstrable to real performance.
+
+**Arm B (453): restore the 417 overfull pairs.** OSSQ 92.43 -> **91.12**, below the
+426 baseline of 91.70. **This refutes the leading hypothesis.** Excluding those pairs
+is not what cost 447 its advantage; putting them back makes the corpus worse.
+
+The argument that the rule is unsound still holds - `group_into_chords` really does
+take the minimum duration across a chord, and that really is invalid on a grand staff.
+But the pairs it removes are bad in practice regardless, so the overfull flag is
+apparently *correlated* with some other defect rather than producing false positives.
+Being right about the mechanism did not make the conclusion right.
+
+**What both arms agree on.** Two independent additions to the corpus, the same
+direction each time: more pairs, worse on the corpus that can see us, better on the
+one that cannot.
+
+| pairs | OSSQ |
+|---|---|
+| 3,548 | **93.12** |
+| 6,989 | 92.43 |
+| 7,369 | 91.12 |
+
+447 remains unexplained at 94.03, still 0.91 above the best variant. Its corpus, v6,
+was built from `clean_v2` and `reverse_v2` - pair sets no later corpus uses - so the
+remaining difference lives in those, not in any rule since changed.
+
 ## Rule for choosing the next arm
 
 Vary one thing that **447 actually had** and 448/449 do not, or vice versa. Check this
