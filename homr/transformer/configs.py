@@ -105,6 +105,17 @@ class Config:
         self.max_height = 256
         self.max_width = 1280
         self.max_seq_len = 608
+        #: Do not let greedy decoding stop mid-bar. A scanned system is cut AT a
+        #: barline, so every reference in the benchmark ends on a measure divider -
+        #: 792 of 792 - and a prediction that stops without one has lost the bar grid.
+        #: That is the failure class no corpus change has moved, and token accuracy is
+        #: blind to it: enforcing this halves the bar-count mismatches on the dense cut
+        #: (6 -> 3) while moving accuracy by -0.03pp.
+        self.enforce_final_divider = True
+        #: How many times EOS may be suppressed before the model is allowed to stop
+        #: anyway. Without a cap, a model that will not emit a divider trades one
+        #: missing barline for a page of invented notes.
+        self.max_forced_continuations = 8
         self.pad_token = 0
         self.bos_token = 1
         self.eos_token = 2

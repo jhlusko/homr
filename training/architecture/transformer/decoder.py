@@ -298,6 +298,13 @@ _PROFILE_BATCH_FIELDS = (
 )
 
 
+#: Every glyph that closes a measure. Kept here rather than imported from the corpus
+#: tooling so the decoder does not depend on the training package.
+MEASURE_DIVIDER_NAMES = frozenset(
+    {"barline", "doublebarline", "bolddoublebarline", "repeatStart", "repeatEnd", "repeatBoth"}
+)
+
+
 class ScoreDecoder(nn.Module):
     def __init__(self, transformer: ScoreTransformerWrapper, config: Config):
         super().__init__()
@@ -311,6 +318,17 @@ class ScoreDecoder(nn.Module):
         self.eos_token = config.eos_token
 
         self.inv_rhythm_vocab = {v: k for k, v in config.rhythm_vocab.items()}
+        #: Rhythm ids that close a measure. A scanned system is cut AT a barline, so
+        #: every reference in the benchmark ends on one - 792 of 792 - and a prediction
+        #: that stops mid-bar has lost the grid, which is the failure that makes a
+        #: transcription unusable rather than merely wrong. Predictions violate the
+        #: invariant 23 times for checkpoint 456 against the base model's 6, so
+        #: fine-tuning has been eroding it.
+        self.divider_ids = frozenset(
+            token_id
+            for token_id, name in self.inv_rhythm_vocab.items()
+            if name in MEASURE_DIVIDER_NAMES
+        )
         self.inv_pitch_vocab = {v: k for k, v in config.pitch_vocab.items()}
         self.inv_lift_vocab = {v: k for k, v in config.lift_vocab.items()}
         self.inv_articulation_vocab = {v: k for k, v in config.articulation_vocab.items()}
@@ -481,6 +499,8 @@ class ScoreDecoder(nn.Module):
 
         cache = init_cache(0, self.device)[0]
 
+        last_rhythm_id: int | None = None
+        forced_continuations = 0
         for step in range(self.max_seq_len):
             x_lift = out_lift[:, -1:]
             x_pitch = out_pitch[:, -1:]
@@ -533,8 +553,34 @@ class ScoreDecoder(nn.Module):
             position_token = detokenize(position_sample, self.inv_position_vocab)
 
             if rhythm_sample[0][0] == self.eos_token:
-                break
+                # Refuse to stop mid-bar. Greedy decoding will happily emit EOS after a
+                # note, leaving a system whose last measure has no closing barline - and
+                # a bar count one short is a structural failure, not a token-level one:
+                # appending the divider afterwards halves those mismatches (6 -> 3 on the
+                # dense cut) while changing token accuracy by -0.03pp, so the metric that
+                # ranks checkpoints is blind to it.
+                #
+                # Suppressing EOS lets the model emit the divider itself rather than
+                # having one bolted on. Capped, because a model that will not produce a
+                # divider must still be able to stop; without the cap this trades a
+                # missing barline for a page of invented notes.
+                last_is_divider = (
+                    last_rhythm_id is not None and last_rhythm_id in self.divider_ids
+                )
+                if (
+                    self.config.enforce_final_divider
+                    and not last_is_divider
+                    and forced_continuations < self.config.max_forced_continuations
+                ):
+                    suppressed = rhythmsp[:, -1, :].clone()
+                    suppressed[:, self.eos_token] = float("-inf")
+                    rhythm_sample = suppressed.argmax(dim=-1, keepdim=True)
+                    rhythm_token = detokenize(rhythm_sample, self.inv_rhythm_vocab)
+                    forced_continuations += 1
+                else:
+                    break
 
+            last_rhythm_id = int(rhythm_sample[0][0])
             symbol = EncodedSymbol(
                 rhythm=rhythm_token[0],
                 pitch=pitch_token[0],
