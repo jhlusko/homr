@@ -111,7 +111,10 @@ class Config:
         #: That is the failure class no corpus change has moved, and token accuracy is
         #: blind to it: enforcing this halves the bar-count mismatches on the dense cut
         #: (6 -> 3) while moving accuracy by -0.03pp.
-        self.enforce_final_divider = True
+        #: Env-overridable so an A/B can run alongside other scoring. Rewriting this
+        #: file between arms would silently change the setting for any process that
+        #: starts in the window, which is a race the env var removes.
+        self.enforce_final_divider = os.environ.get("HOMR_ENFORCE_FINAL_DIVIDER", "1") != "0"
         #: How many times EOS may be suppressed before the model is allowed to stop
         #: anyway. Without a cap, a model that will not emit a divider trades one
         #: missing barline for a page of invented notes.
