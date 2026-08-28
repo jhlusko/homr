@@ -15,6 +15,13 @@ import yaml
 from PIL import Image
 
 from homr.circle_of_fifths import strip_naturals
+from homr.music_xml_generator import (
+    add_tuplet_start_stop,
+    group_into_chords,
+    modal_measure_duration,
+    stated_numerator_contradicts_bars,
+)
+from homr.transformer.vocabulary import TIME_SIGNATURE_BEATS_PREFIX
 from training.omr_datasets.convert_lieder import (
     contains_only_supported_clefs,
     is_grandstaff,
@@ -35,7 +42,7 @@ from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
 from training.omr_datasets.audit_clean_stage2_pairs import MEASURE_DIVIDERS
-from training.omr_datasets.audit_label_consistency import overfull_bars
+from training.omr_datasets.audit_label_consistency import is_single_staff, overfull_bars
 from training.omr_datasets.system_count_alignment import aligned_ranges
 from training.transformer.training_vocabulary import calc_ratio_of_tuplets, token_lines_to_str
 
@@ -113,6 +120,7 @@ def main() -> None:
     audit = []
     manifest_lines = []
     inconsistent = 0
+    stale_numerators = 0
     overfull_skipped = 0
     overfull_lines: list[str] = []
     overfull_detail: list[dict] = []
@@ -171,6 +179,25 @@ def main() -> None:
                 if not contains_only_supported_clefs(measures):
                     continue
                 cleaned = strip_naturals(measures)
+                # A `timeSignatureBeats_n` the label's own bars contradict is a FALSE
+                # TRAINING TARGET, not just a rendering nuisance. IMSLP405017 changes
+                # metre mid-score and the cutter carries the earlier numerator forward,
+                # so a system whose every bar holds three quarters states 4. The
+                # renderer already refuses to print it; the token stays in the label and
+                # teaches the model to emit it. 6.0% of the labels that state a
+                # numerator at all contradict their own bars this way.
+                #
+                # Dropped rather than corrected. The inferred value is what the renderer
+                # falls back to, but writing it into the label as if the page stated it
+                # would fabricate evidence - and a stated numerator is exactly the thing
+                # the vocabulary was extended to learn from the page.
+                modal = modal_measure_duration(add_tuplet_start_stop(group_into_chords(cleaned)))
+                if stated_numerator_contradicts_bars(cleaned, modal):
+                    cleaned = [
+                        symbol for symbol in cleaned
+                        if not symbol.rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX)
+                    ]
+                    stale_numerators += 1
                 # A pair whose own label carries a different number of measure
                 # dividers than its assigned span is internally inconsistent - the
                 # exact class of defect this rebuild exists to exclude.  Seven of
@@ -184,7 +211,17 @@ def main() -> None:
                 # out longer than the staff's prevailing one. Training on it teaches the
                 # model to write overfull bars. 45 across 25 scores; reviewed examples
                 # ran 1.062 and 1.125 whole notes against a 4/4 bar.
-                overfull = overfull_bars(cleaned)
+                # ...but ONLY where the arithmetic behind it is valid. On a grand staff
+                # `group_into_chords` takes the MINIMUM duration across a chord, so a bar
+                # whose hands play different rhythms is neither their sum nor either
+                # hand's own length; `audit_label_consistency` refuses every
+                # duration-dependent check on a grand staff for exactly that reason and
+                # this call had no such guard. Measured: 371 of the 417 quarantined pairs
+                # are grand staves - a 16.5% discard rate against 2.0% for single staves,
+                # 8.4x - which is not how implied tuplets are distributed. 334 of those
+                # 417 were in the corpus behind our best checkpoint on an independent
+                # benchmark, and 0 in the corpus behind our worst.
+                overfull = overfull_bars(cleaned) if is_single_staff(cleaned) else []
                 if overfull:
                     # Quarantined, not discarded. 417 pairs is ~10% of the corpus and
                     # the loss is asymmetric: implied tuplets are concentrated in the
@@ -258,6 +295,7 @@ def main() -> None:
                 "pairs": len(manifest_lines),
                 "span_inconsistent_pairs_skipped": inconsistent,
                 "overfull_bar_pairs_skipped": overfull_skipped,
+                "stale_numerator_tokens_dropped": stale_numerators,
                 "overfull_detail": overfull_detail,
                 "quarantined_recovered_pairs": quarantine_count,
                 "scores": audit,
@@ -268,7 +306,8 @@ def main() -> None:
     )
     print(f"{len(manifest_lines)} clean pairs written")
     print(f"{inconsistent} pair(s) skipped: divider count disagreed with aligned span")
-    print(f"{overfull_skipped} pair(s) skipped: overfull bar (implied tuplet)")
+    print(f"{overfull_skipped} pair(s) skipped: overfull bar (implied tuplet, single staff only)")
+    print(f"{stale_numerators} pair(s) had a stated numerator their own bars contradict, dropped")
     if args.overfull_manifest:
         args.overfull_manifest.write_text(
             "\n".join(overfull_lines) + ("\n" if overfull_lines else ""), encoding="utf-8"

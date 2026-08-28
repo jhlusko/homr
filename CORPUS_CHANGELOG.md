@@ -109,6 +109,34 @@ agree, and the pair is stamped `consensus`.
 Consensus validates *which measures a crop gets*. It cannot validate *the crop set*.
 Every guard in the pipeline sits downstream of the one thing that is wrong.
 
+## Structural checks that came back clean
+
+Run while looking for the cause of the displacement. All negative, and worth recording
+so the same ground is not covered twice.
+
+- **Tiling.** Consecutive aligned systems should satisfy `end[i] == start[i+1]`.
+  2,232 of 2,237 consecutive pairs do; 5 scores carry a gap. Not a mechanism for
+  displacement, which tiles perfectly and merely shifts.
+- **Degenerate detections.** 55 detected "systems" across 38 scores show two or more
+  independent signs of not being music (typically a title block: under 35% of the
+  score's median width and zero barlines). **All 55 are already `skipped` by
+  `align_lieder_systems`'s narrow-detection filter and consumed zero measures.** The
+  guard works; this is not a live defect.
+- **Span against the image.** Assigned measures equal detected barlines for all 2,595
+  aligned systems - but this is **circular**, since the alignment is constructed to
+  match those counts. It is not evidence of anything.
+- **Phantom geometry at the displacement onsets.** If a spurious system caused the
+  constant offsets, the system at or before each onset should look anomalous. It does
+  not: widths and barline counts at the onsets are indistinguishable from their
+  neighbours in 5 of the 6 scores checked.
+
+**Consequence for the displacement finding.** The comparison against the pre-rebuild
+corpus shows 100 of 364 changed labels equal a neighbouring system's old label, but
+nothing here identifies a mechanism, and **the direction is not established** - the old
+corpus could be the displaced one and the rebuild the correction. 447 scoring higher
+cannot settle it, because that comparison is confounded by the overfull exclusion.
+Treat the displacement as an open question, not a known defect of the rebuild.
+
 ## Rule for choosing the next arm
 
 Vary one thing that **447 actually had** and 448/449 do not, or vice versa. Check this
