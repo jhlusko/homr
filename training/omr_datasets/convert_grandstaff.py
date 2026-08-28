@@ -11,6 +11,7 @@ from homr.type_definitions import NDArray
 from training.omr_datasets.humdrum_kern_parser import convert_kern_to_tokens
 from training.omr_datasets.musescore_svg import SvgValidationError
 from training.transformer.training_vocabulary import (
+    max_tuplet_ratio,
     calc_ratio_of_tuplets,
     token_lines_to_str,
 )
@@ -81,7 +82,7 @@ def _kern_to_tokens(path: str, basename: str) -> str:
     with open(path) as text_file:
         result = convert_kern_to_tokens(text_file.readlines())
 
-    if calc_ratio_of_tuplets(result) > 0.2:
+    if calc_ratio_of_tuplets(result) > max_tuplet_ratio():
         return ""
 
     with open(basename + ".tokens", "w") as f:

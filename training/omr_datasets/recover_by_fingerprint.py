@@ -60,7 +60,7 @@ from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
-from training.transformer.training_vocabulary import calc_ratio_of_tuplets, token_lines_to_str
+from training.transformer.training_vocabulary import max_tuplet_ratio, calc_ratio_of_tuplets, token_lines_to_str
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -290,7 +290,7 @@ def main() -> None:
                     continue
 
                 measures = slice_voice_measures(voices[p["voice"]], start, end)
-                if not measures or calc_ratio_of_tuplets(measures) > 0.2:
+                if not measures or calc_ratio_of_tuplets(measures) > max_tuplet_ratio():
                     records.append({**record, "outcome": "unusable measure slice"})
                     continue
                 if not contains_only_supported_clefs(measures):

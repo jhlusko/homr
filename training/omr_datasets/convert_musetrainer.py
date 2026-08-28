@@ -30,6 +30,7 @@ from training.omr_datasets.convert_lieder import (
 )
 from training.omr_datasets.music_xml_parser import Measure, music_xml_string_to_tokens
 from training.transformer.training_vocabulary import (
+    max_tuplet_ratio,
     calc_ratio_of_tuplets,
     check_token_lines,
     token_lines_to_str,
@@ -273,7 +274,7 @@ def _convert_file_impl(path: Path) -> list[str]:
 
             tokens = cutter.extract_measures(len(window_measures), always_include_time=True)
 
-            if calc_ratio_of_tuplets(tokens) <= 0.2 and contains_only_supported_clefs(tokens):
+            if calc_ratio_of_tuplets(tokens) <= max_tuplet_ratio() and contains_only_supported_clefs(tokens):
                 tokens = strip_naturals(tokens)
                 try:
                     if len(tokens) > default_config.max_seq_len - 2:

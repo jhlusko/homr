@@ -44,7 +44,7 @@ from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
 from training.omr_datasets.audit_clean_stage2_pairs import MEASURE_DIVIDERS
 from training.omr_datasets.audit_label_consistency import is_single_staff, overfull_bars
 from training.omr_datasets.system_count_alignment import aligned_ranges
-from training.transformer.training_vocabulary import calc_ratio_of_tuplets, token_lines_to_str
+from training.transformer.training_vocabulary import max_tuplet_ratio, calc_ratio_of_tuplets, token_lines_to_str
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -174,7 +174,7 @@ def main() -> None:
 
             for voice_index, box in enumerate(groups):
                 measures = slice_voice_measures(voices[voice_index], start, end)
-                if not measures or calc_ratio_of_tuplets(measures) > 0.2:
+                if not measures or calc_ratio_of_tuplets(measures) > max_tuplet_ratio():
                     continue
                 if not contains_only_supported_clefs(measures):
                     continue

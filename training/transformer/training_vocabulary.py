@@ -2,6 +2,7 @@ import json
 import re
 from collections import defaultdict
 
+import os
 import torch
 
 from homr.transformer.configs import default_config
@@ -144,6 +145,41 @@ def _chord_to_str(chord: list[EncodedSymbol]) -> str:
 def calc_ratio_of_tuplets(symbols: list[EncodedSymbol]) -> float:
     tuplets = [s for s in symbols if s.is_tuplet()]
     return float(len(tuplets)) / len(symbols)
+
+
+#: Pairs above this share of tuplet symbols are discarded by every converter -
+#: convert_grandstaff, convert_musetrainer, convert_lieder, build_clean_stage2_pairs,
+#: recover_by_fingerprint and recover_excluded_pairs all compare against 0.2, and not one
+#: of them says why.
+#:
+#: The cost is measurable. Reading a triplet as a plain note is the model's single largest
+#: error class - 348 of 415 rhythm errors for the best checkpoint, with 12 -> 8 alone
+#: accounting for 243 - and fine-tuning halves beam errors while moving tuplets not at all.
+#: OSSQ asks for tuplets in 6.58% of its notes; the Lieder corpus supplies 1.78%. The rule
+#: removes exactly the material that could teach the symbol: 107 Lieder pairs at a median
+#: 29% tuplet ratio, about 900 tuplet notes against the 1,314 the corpus contains.
+#:
+#: NOT the same as the overfull exclusion, which drops pairs whose labels write PLAIN
+#: values where the page shows an unmarked tuplet. Those teach wrong durations, and
+#: restoring them made tuplet errors worse (324 -> 352). These are pairs where the
+#: transcription marks the tuplet correctly.
+DEFAULT_MAX_TUPLET_RATIO = 0.2
+
+
+def max_tuplet_ratio() -> float:
+    """The threshold, overridable via HOMR_MAX_TUPLET_RATIO.
+
+    One function rather than six literals, for the same reason the naturals switch lives
+    inside strip_naturals: a corpus built to one threshold and mixed with corpora built to
+    another gives the model an inconsistent view of which music is worth learning.
+    """
+    raw = os.environ.get("HOMR_MAX_TUPLET_RATIO", "").strip()
+    if not raw:
+        return DEFAULT_MAX_TUPLET_RATIO
+    try:
+        return float(raw)
+    except ValueError:
+        return DEFAULT_MAX_TUPLET_RATIO
 
 
 def token_lines_to_str(symbols: list[EncodedSymbol]) -> str:

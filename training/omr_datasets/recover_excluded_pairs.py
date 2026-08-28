@@ -58,7 +58,7 @@ from training.omr_datasets.fingerprint_measures import align_to_ground_truth, no
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
-from training.transformer.training_vocabulary import calc_ratio_of_tuplets, token_lines_to_str
+from training.transformer.training_vocabulary import max_tuplet_ratio, calc_ratio_of_tuplets, token_lines_to_str
 
 #: How far either side of the expected position an alignment may land, in measures.
 #: Wide enough to absorb real drift from a miscounted neighbour, narrow enough that
@@ -327,7 +327,7 @@ def main() -> None:
                     if not measures:
                         untrusted += 1
                         continue
-                    if calc_ratio_of_tuplets(measures) > 0.2:
+                    if calc_ratio_of_tuplets(measures) > max_tuplet_ratio():
                         continue
                     if not contains_only_supported_clefs(measures):
                         continue
