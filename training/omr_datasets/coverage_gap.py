@@ -27,11 +27,20 @@ the time signature. Asked for `rest_1` the base model answers `rest_2` 105 times
 note values. The examples are visually identical and differ only in a context the model
 does not read.
 
-The first run of this found naturals: the corpus contains ZERO `N` lifts because
-`build_clean_stage2_pairs` calls `strip_naturals`, which converts every one to empty
-unconditionally, while OSSQ's references carry 879 (3.25% of lift tokens). No checkpoint
-has ever predicted a natural - the base model included - so the lift branch has a hard
-ceiling of 96.75% and naturals are roughly 40% of its remaining error.
+The first run of this found naturals, and the follow-up shows why a gap must be checked
+across corpora before it is called a defect. The corpus contains ZERO `N` lifts, because
+`build_clean_stage2_pairs` calls `strip_naturals` unconditionally, while OSSQ's references
+carry 879 - and no checkpoint has ever predicted one, the base model included.
+
+But **PDMX and the Lieder held-out set contain zero naturals too**. OSSQ is the only
+corpus in this project that records them; everything else, training and benchmark alike,
+shares the stripping convention. So this is not a symbol the model is blind to - it is a
+label-convention mismatch between one benchmark and the whole pipeline, putting a uniform
+~0.54% ceiling on OSSQ token accuracy that cancels out of every checkpoint comparison.
+
+Restoring naturals in the Lieder corpus would also have taught two conventions for one
+visual mark, since the PDMX replay mixed into every run has none. The experiment was
+cancelled before it trained.
 """
 
 # flake8: noqa: T201
