@@ -1,3 +1,4 @@
+import os
 import abc
 from abc import ABC
 
@@ -178,6 +179,27 @@ def maintain_accidentals_during_measure(
 def strip_naturals(
     symbols: list[EncodedSymbol],
 ) -> list[EncodedSymbol]:
+    """Discard the natural sign, unless HOMR_KEEP_NATURALS says otherwise.
+
+    A natural is ink on the page and the vocabulary has a token for it - `build_lift`
+    lists `N` - but four of the five corpus converters call this, so no training corpus
+    contains one and **no checkpoint has ever predicted one**: 0 against OSSQ's 879
+    references, the base model included. `convert_ossq.py` is the only converter that
+    does not strip, which is why OSSQ is the only corpus that records naturals and why
+    every checkpoint carries a uniform ~0.54% ceiling on its token accuracy.
+
+    Stripping does not change the music - the sounding pitch is carried elsewhere, and
+    rendering 400 natural-bearing pairs with and without produced identical pitches. What
+    it discards is the printed mark, which is precisely what an OMR model reads. No
+    rationale for it appears in any docstring or commit.
+
+    The switch lives here rather than at the call sites because consistency is the whole
+    point: labelling a natural `N` in one corpus and `empty` in another gives the model
+    contradictory supervision on identical pixels, which is likely worse than either
+    convention alone.
+    """
+    if os.environ.get("HOMR_KEEP_NATURALS", "0") != "0":
+        return list(symbols)
     results = []
     for symbol in symbols:
         if symbol.lift == "N":
