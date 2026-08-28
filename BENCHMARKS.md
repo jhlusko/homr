@@ -36,6 +36,31 @@ distribution, which spans four distributions rather than resting on a margin.
 **Protocol from here.** A corpus comparison needs several seeds per condition and a
 comparison of means. A single run is a draw, not a measurement.
 
+## What kind of errors, not how many
+
+`error_taxonomy.py` partitions each staff by the *kind* of its worst error, because
+token accuracy scores a dropped barline and a wrong pitch identically. On the 148 dense
+OSSQ staves:
+
+| checkpoint | exact | pitch-only | rhythm | **length** | **structural** |
+|---|---|---|---|---|---|
+| 426 base | 50.7% | 2.7% | 29.7% | 13.5% | 3.4% |
+| 447 | 60.1% | 1.4% | 25.0% | 10.1% | 3.4% |
+| **456 (v6)** | **60.8%** | 2.0% | 26.4% | **6.8%** | 4.1% |
+| 459 (single-staff only) | 52.7% | 2.7% | 28.4% | 12.8% | 3.4% |
+
+* **Fine-tuning buys exactly-correct staves**: 50.7% to 60.8%, a fifth more transcriptions
+  needing no correction. That is the figure a user would notice.
+* **The gain is concentrated in length errors** - notes invented or dropped inside a
+  correct bar grid. 456 more than halves them, 20 staves to 10. Rhythm and pitch hardly
+  move.
+* **Structural errors are untouched by everything.** 5 staves at baseline and 5-6 after
+  every fine-tune. Losing the bar grid is what makes a transcription unusable rather
+  than merely wrong, and no corpus change made here has moved it. That points at
+  alignment or architecture, not at data quantity or label quality.
+* **459 confirms the grand-staff result independently**: +3 exact staves against 456's
+  +15, from the same corpus minus its grand staves.
+
 ## Use the dense-staff cut, not the aggregate
 
 Six checkpoints, five of them seeded replicates, on 792 staves and on the 148 holding
