@@ -170,6 +170,22 @@ iframe.cmp{
   .progress-track{grid-column:1 / -1;grid-row:2}
   .progress-stat:last-child{justify-content:flex-end}
 }
+.engraving{
+  background:#fff;border:1px solid var(--line-strong);border-radius:4px;
+  padding:.6rem .8rem;margin:0 0 1rem;overflow-x:auto;
+}
+.engraving svg{width:100%;height:auto;display:block}
+/* Behind the glyphs, so the bar is picked out without dimming what is being read. */
+.engraving .vrv-hl{fill:#ffd54f;fill-opacity:.34}
+.vrv-note{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;
+  color:var(--fg-faint);margin:.45rem 0 0;
+}
+.editor-hint{
+  font-size:.8rem;color:var(--fg-soft);background:var(--code-bg);
+  border:1px solid var(--line);border-left:3px solid var(--line-strong);
+  border-radius:3px;padding:.5rem .7rem;margin:0 0 .5rem;
+}
 </style>
 </head>
 <body>
@@ -188,6 +204,7 @@ iframe.cmp{
 <div id="app"><p class="mono">Loading…</p></div>
 
 </div>
+<script src="vendor/verovio-toolkit-wasm.js"></script>
 <script>
 const SETS = {
   checkpoint: {
@@ -628,7 +645,18 @@ function render(){
     + (cropOnly
         ? '<div class="err">Judge the scan crop above. No label is shown for this set '
           + 'on purpose &mdash; the question is whether the image contains music.</div>'
-        : '<div class="cmp-caption">' + (cfg.firstCaption || "") + '</div>'
+        : (it.overfull_bars
+             ? '<div class="cmp-caption">The label, engraved &mdash; the bar in question is shaded</div>'
+               + '<div id="engraving" class="engraving"></div>'
+             : '')
+          + '<div class="cmp-caption">' + (it.overfull_bars
+              ? 'Full editor &mdash; correct the label here'
+              : (cfg.firstCaption || "")) + '</div>'
+          + (it.overfull_bars
+              ? '<div class="editor-hint">Edits are local to this editor. Use its own '
+                + 'export to save a corrected MusicXML, and say in the notes below what '
+                + 'you changed &mdash; nothing here writes back to the corpus.</div>'
+              : '')
           + '<iframe class="cmp" src="' + url + '" title="'
           + (singlePane ? "label" : "comparison") + '" loading="lazy"></iframe>')
     + (second
@@ -668,12 +696,94 @@ function render(){
   const notesField = document.getElementById("review-notes");
   notesField.value = notes[it.id] || "";
   notesField.addEventListener("input", () => saveNotes(it.id, notesField.value));
+
+  // After the markup exists: the engraving measures its own container, and
+  // getBBox() only returns a box for an element that is in the document.
+  renderEngraving();
 }
 
 function escapeHtml(value){
   return String(value).replace(/[&<>"']/g, char => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[char]);
+}
+
+// ---------------------------------------------------------------------------
+// Engraved render with the affected bar highlighted.
+//
+// The player renders a score but gives no handle on an individual measure, so a set
+// whose whole question is "look at bar 5" could only say so in words and leave the
+// reviewer counting barlines. Verovio emits one <g class="measure"> per measure in
+// document order, so the bar the classifier flagged can be pointed at directly.
+// It also renders as static SVG - no audio engine, no layout worker - which is what
+// makes it usable as the FIRST thing on the page, with the editor kept below for
+// actually changing the label.
+let vrvToolkit = null;
+let vrvReady = false;
+
+function initVerovio(){
+  if (typeof verovio === "undefined") return;
+  verovio.module.onRuntimeInitialized = () => {
+    vrvToolkit = new verovio.toolkit();
+    vrvReady = true;
+    // A render may have been requested before the wasm finished loading.
+    if (viewMode === "detail") renderEngraving();
+  };
+}
+
+function highlightMeasures(svgHost, bars){
+  const measures = svgHost.querySelectorAll("g.measure");
+  for (const bar of bars) {
+    const el = measures[bar];
+    if (!el) continue;
+    let box;
+    try { box = el.getBBox(); } catch (e) { continue; }
+    if (!box || !box.width) continue;
+    const pad = 200;
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", box.x - pad);
+    rect.setAttribute("y", box.y - pad);
+    rect.setAttribute("width", box.width + 2 * pad);
+    rect.setAttribute("height", box.height + 2 * pad);
+    rect.setAttribute("class", "vrv-hl");
+    // Behind the notes, not over them - a translucent overlay still greys the very
+    // glyphs the reviewer is being asked to read.
+    el.parentNode.insertBefore(rect, el);
+  }
+}
+
+async function renderEngraving(){
+  const host = document.getElementById("engraving");
+  if (!host) return;
+  const it = items[idx];
+  const cfg = SETS[setName];
+  if (!vrvReady) { host.innerHTML = '<p class="mono vrv-note">Loading engraver…</p>'; return; }
+  try {
+    const res = await fetch(scoreUrl(cfg.left));
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const xml = await res.text();
+    vrvToolkit.setOptions({
+      scale: 40, adjustPageHeight: true, breaks: "none",
+      pageWidth: Math.max(1600, Math.round(host.clientWidth * 2.6)),
+      pageMarginTop: 100, pageMarginBottom: 100,
+      pageMarginLeft: 100, pageMarginRight: 100,
+      header: "none", footer: "none", svgViewBox: true
+    });
+    if (!vrvToolkit.loadData(xml)) throw new Error("could not parse the MusicXML");
+    host.innerHTML = vrvToolkit.renderToSVG(1);
+    const bars = (it.overfull_bars || []).slice();
+    if (bars.length) {
+      highlightMeasures(host, bars);
+      host.insertAdjacentHTML("beforeend",
+        '<p class="vrv-note">Shaded: bar ' + bars.map(b => b + 1).join(", ")
+        + ' &mdash; the bar this item is about.</p>');
+    }
+  } catch (e) {
+    // Fall back rather than showing an empty box: the editor below still renders the
+    // same label, so a failure here costs the highlight, not the review.
+    host.innerHTML = '<p class="vrv-note">Could not engrave this label ('
+      + escapeHtml(e.message) + '). The editor below shows the same score.</p>';
+  }
 }
 
 function renderList(){
@@ -766,6 +876,7 @@ document.addEventListener("keydown", e => {
 });
 
 buildNav();
+initVerovio();
 loadSet();
 </script>
 </body>

@@ -70,3 +70,6 @@ _build/
 # score-editor/ is a ~33MB vendored static build from OTS_Web (npm run build:embed).
 docs/writeups/review-data/
 docs/writeups/score-editor/
+# Verovio, fetched by docs/writeups/fetch-vendor.sh - a 7.3MB build, vendored the
+# same way score-editor is rather than committed.
+docs/writeups/vendor/
