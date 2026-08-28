@@ -37,6 +37,29 @@ Three commits, all on 08-27, between v6 (14:02) and v7 (21:24).
 Plus the pair sets themselves were rebuilt: `clean_v2` → `clean_v5`, `reverse_v2` →
 `reverse_v3`.
 
+## The exclusion accounts for almost the whole difference
+
+Measured after the table above was written, and it narrows the search sharply.
+
+| corpus | overfull pairs present | independent (OSSQ) |
+|---|---|---|
+| v6 -> **447** | **334** of 417 | **94.03** |
+| v7 -> 448 | 28 | 92.80 |
+| v8 -> 449 | **0** | 92.43 |
+
+Monotonic: as the implied-tuplet pairs left the corpus, independent performance fell.
+
+More decisive than the correlation is the set arithmetic. **v6 holds 355 stems that v8
+does not, and 334 of them - 94% - are the overfull pairs.** v8 holds only 71 stems v6
+lacks. So the corpora behind our best and our worst independent scores are near
+identical in *which systems they contain*; the exclusion is the only change that
+removed data in quantity.
+
+That also demotes the displacement finding as an explanation for 447 vs 449. Phantom
+systems displacing later labels is real, and worth fixing, but it alters labels *within*
+stems both corpora share - so it cannot be what separates two checkpoints whose stem
+sets differ almost entirely by this one exclusion.
+
 ## Ranked suspects, and what is already ruled out
 
 **Ruled out — do not spend a run on these:**
