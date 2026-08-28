@@ -14,6 +14,19 @@ Four corpus fixes have now each removed a real defect of under 1% of tokens and 
 nothing measurable, so the useful question has stopped being "what is wrong with the
 labels" and become "what is missing from them".
 
+**Read the ratio with care: it normalises by ALL tokens on the branch.** `rest_1` came out
+4.4x undersupplied at 26% recall, which looked like a third gap - but as a share of RESTS
+it is 10.3% in the corpus against 9.7% on OSSQ, a near-perfect match. The ratio was
+flagging that this corpus holds more notes per rest, not that the symbol is unfamiliar.
+
+That case is worth keeping because its real cause is different in kind and no amount of
+data touches it. A whole-measure rest is the same glyph in every metre - a rectangle
+hanging from the fourth line - so its duration is not visible and must be inferred from
+the time signature. Asked for `rest_1` the base model answers `rest_2` 105 times and
+`rest_2.` 100 times against 83 correct: it is guessing bar length from the surrounding
+note values. The examples are visually identical and differ only in a context the model
+does not read.
+
 The first run of this found naturals: the corpus contains ZERO `N` lifts because
 `build_clean_stage2_pairs` calls `strip_naturals`, which converts every one to empty
 unconditionally, while OSSQ's references carry 879 (3.25% of lift tokens). No checkpoint
