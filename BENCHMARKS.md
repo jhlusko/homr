@@ -61,6 +61,37 @@ OSSQ staves:
 * **459 confirms the grand-staff result independently**: +3 exact staves against 456's
   +15, from the same corpus minus its grand staves.
 
+## Four corpus fixes, all correct, none consequential
+
+Each was a real defect, established from the data and verified in the built pairs. None
+moved the model measurably.
+
+| fix | size | effect |
+|---|---|---|
+| overfull rule guarded to single staves | 371 pairs restored | neutral (dense mean 94.04 vs 94.19) |
+| stale numerator tokens dropped | 41 pairs | folded into the above, neutral |
+| unison duplicate notes removed | **490 tokens, 0.31%** | **null, and the targeted metric moved against it** |
+| overfull pairs restored (arm B) | 380 pairs | **worse** - OSSQ 92.43 -> 91.12 |
+
+The duplicate result is the sharpest, because it had a mechanism and a prediction. The
+corpus writes two note tokens for one notehead where parts are in unison - verified
+against double-stemmed noteheads in the crops - which is a direct instruction to
+over-emit, and over-emission inside a correct bar grid is the dominant failure. Removing
+them should have cut length errors.
+
+| dense cut | exact | length |
+|---|---|---|
+| v6, two seeds | 91, 90 | **10, 10** |
+| dedup, two seeds | 88, 92 | **11, 12** |
+
+Length errors rose in both draws. Aggregate 92.15 -> 92.30, inside noise.
+
+**The pattern is the conclusion.** This corpus's label defects are real, individually
+under 1% of tokens, and individually too small to move a model measured at 0.23-0.69pp of
+dense-cut noise. Hunting further sub-1% defects is not where the remaining accuracy is;
+the one lever found with a large enough mechanism is tuplet SUPPLY, where the corpus
+carries 1.78% tuplet notes against OSSQ's 6.58%.
+
 ## PDMX: nothing has improved since checkpoint 448
 
 Scored on the PDMX dense cut (2,492 of 3,349 staves, 45+ symbols), baselined on 448 - the
