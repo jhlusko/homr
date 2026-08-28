@@ -139,6 +139,7 @@ def train_transformer(
     validation_index: str | None = None,
     checkpoint: str | None = None,
     seed: int | None = None,
+    checkpoint_folder: str = "current_training",
 ) -> None:
     """`warm_start` starts from the pretrained checkpoint with *every* parameter
     trainable - unlike `fine_tune`, which loads the same checkpoint but freezes
@@ -165,7 +166,12 @@ def train_transformer(
             number_of_epochs = 15
     resume_from_checkpoint = None
 
-    checkpoint_folder = "current_training"
+    # Parameterised so runs can go in PARALLEL. Nothing physical forces them to queue:
+    # one run holds 6.5GB of 49GB and 26 of 128 cores. The only thing that did was this
+    # folder being a fixed name that startup rmtree()s, so a second run silently deleted
+    # the first one's checkpoints - which made every two-seed experiment twice as slow as
+    # it needed to be. The name now arrives as a parameter; the caller is responsible for
+    # making it unique when running concurrently.
     if resume:
         resume_from_checkpoint = os.path.join(git_root, checkpoint_folder, resume)
     elif os.path.exists(os.path.join(git_root, checkpoint_folder)):

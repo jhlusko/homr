@@ -58,6 +58,12 @@ def main() -> None:
     parser.add_argument("--replay-count", type=int, default=PDMX_REPLAY_COUNT)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument(
+        "--checkpoint-folder",
+        help="Where the trainer keeps per-epoch checkpoints. Defaults to a name derived "
+             "from the seed so concurrent runs cannot delete each other's; pass "
+             "current_training explicitly to reproduce the old single-run behaviour.",
+    )
+    parser.add_argument(
         "--seed", type=int,
         help="Trainer seed. Repeating a corpus at two seeds measures the noise floor, "
              "without which a 1pp corpus difference cannot be called a result.",
@@ -85,6 +91,8 @@ def main() -> None:
         number_of_epochs=args.epochs,
         validation_index=args.val_index,
         seed=args.seed,
+        checkpoint_folder=args.checkpoint_folder
+        or (f"current_training_s{args.seed}" if args.seed is not None else "current_training"),
     )
 
 
