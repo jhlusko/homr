@@ -579,8 +579,12 @@ function render(){
   const second = cfg.second || null;
   let url = "";
   if (singlePane) {
-    url = "/score-editor/index.html?score=" + encodeURIComponent(scoreUrl(cfg.left))
-        + "&embed=player&playerId=" + encodeURIComponent(it.id);
+    // No `embed` parameter, deliberately. The editor's page selects the compact
+    // PLAYER when embed is "player" or "1" and the full ScoreEditor otherwise, and
+    // this passed embed=player - so the pane offered as the place to correct a label
+    // was a viewer with no editing in it. The engraving above is now what the compact
+    // read is for; this pane is the editor.
+    url = "/score-editor/index.html?score=" + encodeURIComponent(scoreUrl(cfg.left));
   } else if (!cropOnly) {
     url = "/score-editor/index.html"
       + "?compareLeft="  + encodeURIComponent(scoreUrl(cfg.left))
