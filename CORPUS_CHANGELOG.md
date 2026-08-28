@@ -8,6 +8,9 @@ tests a recipe 447 never had, and a null result would have proved nothing.
 Every corpus version, what produced it, and what it scored. Independent = OSSQ, 792
 staves, never relabelled by this project. Ours = the Lieder held-out split.
 
+Scores quoted here are from `BENCHMARKS.md`, which holds every paired comparison
+with its confidence interval and better/worse/tied split.
+
 ## Lineage
 
 | index | built | pairs | composition | checkpoint | independent | ours |
