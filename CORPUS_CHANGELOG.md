@@ -217,6 +217,37 @@ run, which is why these are being run at three seeds and reported as a mean. A m
 one-variable comparison would need 452's index re-run at the same three seeds - about
 another two hours of GPU, and worth it only if the means differ by more than the floor.
 
+## Corpus profile: a structural mismatch with the benchmark
+
+From `profile_corpus.py`, and visible without any training run.
+
+| | v6 training | OSSQ benchmark | Lieder validation |
+|---|---|---|---|
+| pairs | 3,880 | 792 | 292 |
+| scores | 220 | **792** | **14** |
+| **grand staff** | **1,749 (45%)** | **0** | 124 (42%) |
+| single staff | 2,131 (55%) | 792 (100%) | 168 |
+| median bars/pair | 4 | ~6 | 4 |
+| symbols p75 / max | 90 / 332 | 34 / 108 | 93 / 255 |
+| distinct labels | 96.7% | 99.9% | 97.9% |
+
+**45% of the training corpus is a staff type the benchmark never contains.** OSSQ is
+string quartets, so every crop is one staff; Lieder is voice-and-piano, and the piano is
+a grand staff. Nearly half the training signal targets a shape OSSQ cannot reward, which
+explains far more about the flat transfer than any label-quality story does - and unlike
+those stories it needs no training run to establish.
+
+Two further mismatches: our crops are systematically **shorter** (median 4 bars against
+~6), and the dense grand-staff tail (332 symbols) has no counterpart in OSSQ (max 108).
+
+**The Lieder validation set is 292 pairs from 14 scores**, half of them from 5. OSSQ is
+792 pairs from 792 distinct scores. Our held-out set has roughly 14 effective independent
+units, which is a large part of why its intervals are wide and why in-corpus movements
+have been so easy to over-read.
+
+Nothing alarming in duplication or triviality: 96.7% distinct labels, 0.9% trivial, no
+all-rest labels, none unreadable.
+
 ## Rule for choosing the next arm
 
 Vary one thing that **447 actually had** and 448/449 do not, or vice versa. Check this
