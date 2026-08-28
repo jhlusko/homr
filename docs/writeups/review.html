@@ -461,10 +461,17 @@ async function switchSet(name){
 }
 
 function buildNav(){
-  document.querySelector(".nav").innerHTML = Object.entries(SETS).map(
+  // The container is `.sets` in the header - `.nav` is the per-item prev/next bar,
+  // which does not exist until render() runs. And the buttons go BEFORE the existing
+  // "Full list" control rather than replacing the container's contents, which would
+  // delete it.
+  const host = document.querySelector(".sets");
+  const showList = document.getElementById("show-list");
+  const html = Object.entries(SETS).map(
     ([n, cfg]) => '<button id="set-' + n + '" onclick="switchSet(\'' + n + '\')">'
       + (cfg.label || n) + '</button>'
   ).join("");
+  showList.insertAdjacentHTML("beforebegin", html);
 }
 
 async function loadSet(){
