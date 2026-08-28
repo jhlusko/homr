@@ -14,11 +14,19 @@ the architecture is exonerated and the problem is upstream of it, in what we fee
 Only pdmx is built on this machine, so `--index` takes whichever of the five exist and
 defaults to pdmx alone.
 
+**This is a fine-tune, matched to the runs it is a control for.** 447 and 448 warm
+started from the pinned checkpoint, mixed ~8,300 samples and ran 12 epochs. So does
+this - same start, same size, same schedule. The only thing that differs is where the
+data comes from: theirs is our rebuilt Lieder corpus, this is PDMX. That is what makes
+the comparison mean something. Training from scratch instead would answer a different
+question at ten times the cost, and would confound "is our data the problem" with "is
+one corpus enough to train from nothing".
+
 **Read a weak result carefully.** PDMX alone is one fifth of the original mix, so a
-run that underperforms the pinned checkpoint has two available explanations - the
-architecture, or simply less and less varied data - and this experiment cannot separate
-them. A run that MATCHES or BEATS the pinned checkpoint has only one, which is why the
-informative outcome here is the positive one.
+run that underperforms has two available explanations - the data quantity or the
+architecture - and this design cannot separate them. A run that holds up on the
+independent benchmarks where 448 regressed has one: our corpus is what hurt. That is
+the informative outcome.
 """
 
 # flake8: noqa: T201
@@ -29,9 +37,11 @@ from pathlib import Path
 from training.omr_datasets.convert_pdmx import pdmx_train_index, pdmx_valid_index
 from training.transformer.train import train_transformer
 
-#: From scratch, so the default is train.py's own from-scratch epoch count rather than
-#: the short schedule the fine-tunes use. Early stopping still applies.
-EPOCHS = 35
+#: Matched to the Lieder fine-tunes this controls for: 12 epochs, and the same total
+#: sample count they mixed (6,989 Lieder + 1,300 replay). Early stopping, patience 5,
+#: still applies.
+EPOCHS = 12
+MATCHED_SAMPLES = 8289
 
 
 def main() -> None:
@@ -42,12 +52,13 @@ def main() -> None:
                         help="sampling weights; default is equal")
     parser.add_argument("--val-index", default=pdmx_valid_index)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
-    parser.add_argument("--number-of-files", type=int, default=-1,
-                        help="-1 uses every row; a small value is for smoke tests")
-    parser.add_argument("--warm-start", action="store_true",
-                        help="start from the pinned checkpoint instead of from scratch. "
-                             "Off by default: a warm start inherits the pinned model's "
-                             "own data history, which is the thing being controlled for.")
+    parser.add_argument("--number-of-files", type=int, default=MATCHED_SAMPLES,
+                        help="samples per epoch; the default matches the Lieder runs. "
+                             "-1 uses every row.")
+    parser.add_argument("--from-scratch", action="store_true",
+                        help="train from random init instead of warm starting. Answers a "
+                             "different question - whether the architecture can learn from "
+                             "one corpus alone - and costs roughly ten times as much.")
     args = parser.parse_args()
 
     missing = [p for p in args.index if not Path(p).is_file()]
@@ -71,12 +82,12 @@ def main() -> None:
             )
         print(f"train {Path(path).name}: {len(train_rows):,} rows, 0 shared with validation")
     print(f"valid {Path(args.val_index).name}: {len(val_rows):,} rows")
-    print(f"{'warm start from pinned' if args.warm_start else 'FROM SCRATCH'}, "
-          f"{args.epochs} epochs max")
+    print(f"{'FROM SCRATCH' if args.from_scratch else 'warm start from the pinned checkpoint'}, "
+          f"{args.epochs} epochs max, {args.number_of_files} samples per epoch")
     print("none of our rebuilt Lieder data is in this mix - that is the point")
 
     train_transformer(
-        warm_start=args.warm_start,
+        warm_start=not args.from_scratch,
         dataset_index=list(args.index),
         dataset_weights=args.weights or [1.0] * len(args.index),
         number_of_files=args.number_of_files,
