@@ -36,6 +36,44 @@ distribution, which spans four distributions rather than resting on a margin.
 **Protocol from here.** A corpus comparison needs several seeds per condition and a
 comparison of means. A single run is a draw, not a measurement.
 
+## Use the dense-staff cut, not the aggregate
+
+Six checkpoints, five of them seeded replicates, on 792 staves and on the 148 holding
+45+ symbols:
+
+| checkpoint | aggregate | **dense 45+** | dense vs 426 |
+|---|---|---|---|
+| 426 base | 91.70 | 91.32 | — |
+| 447 | **94.03** | 93.97 | +2.65 |
+| 452 (v8 clean, s42) | 93.12 | 94.08 | +2.76 |
+| 454 (v8 clean, s1234) | **89.06** | **94.31** | +2.99 |
+| 455 (v6, s42) | 91.64 | 94.07 | +2.75 |
+| **456 (v6, s7)** | 92.65 | **94.37** | **+3.05** |
+| 457 (v6, s99) | **88.28** | 93.68 | +2.36 |
+
+| corpus | aggregate mean | spread | dense mean | spread |
+|---|---|---|---|---|
+| v6, 3 seeds | 90.86 | **4.37** | 94.04 | **0.69** |
+| v8 clean, 2 seeds | 91.09 | **4.06** | 94.19 | **0.23** |
+
+**The dense cut is six to nineteen times more precise on 19% of the staves.** The
+aggregate has been measuring seed noise; the dense cut measures the model.
+
+Three consequences:
+
+1. **Every fine-tune is a real improvement** - +2.4 to +3.1pp over baseline, six for
+   six, against spreads under 0.7. 454 scores 89.06 on the aggregate and **94.31**
+   dense, second best of all; the run that looked like a disaster is one of the better
+   models.
+2. **447's lead was a fortunate draw.** On the reliable metric it is 93.97, mid-pack,
+   below 452, 454 and 456. Much of this document's earlier narrative exists to explain
+   a gap that was noise.
+3. **The corpus fixes are neutral, and that is now a measurement.** v6 dense mean 94.04
+   against v8 clean's 94.19, a 0.15 difference against spreads of 0.23 to 0.69. The
+   fixes are correct and verified in the data; they do not move the model.
+
+**Best checkpoint by the metric that can resolve one: 456**, v6 corpus at seed 7, 94.37.
+
 ## The signal the aggregate was hiding
 
 Noise on OSSQ is strongly inhomogeneous, and stratifying by staff density separates a
