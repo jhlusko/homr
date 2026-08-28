@@ -568,8 +568,7 @@ function render(){
   //  - single pane : there is exactly one label and nothing to compare it with.
   //                  Showing it twice in a compare view reads as agreement.
   //  - compare     : two candidate labels genuinely disagree.
-  const scoreUrl = (side) =>
-    "/" + cfg.dir + "/scores/" + it.id + "__" + side + ".musicxml";
+  const scoreUrl = (side) => scoreUrlFor(cfg, it, side);
   const cropOnly = cfg.cropOnly === true;
   const singlePane = !cropOnly && !cfg.right;
   // A set may declare a SECOND comparison. On the checkpoint diff the first pane pair
@@ -727,6 +726,13 @@ function escapeHtml(value){
   })[char]);
 }
 
+// Score paths are needed both while render() builds the markup and later by
+// renderEngraving(), which runs after render() has returned. Defining it inside
+// render() put it out of scope for the second caller.
+function scoreUrlFor(cfg, it, side){
+  return "/" + cfg.dir + "/scores/" + it.id + "__" + side + ".musicxml";
+}
+
 // ---------------------------------------------------------------------------
 // Engraved render with the affected bar highlighted.
 //
@@ -778,7 +784,7 @@ async function renderEngraving(){
   const cfg = SETS[setName];
   if (!vrvReady) { host.innerHTML = '<p class="mono vrv-note">Loading engraver…</p>'; return; }
   try {
-    const res = await fetch(scoreUrl(cfg.left));
+    const res = await fetch(scoreUrlFor(cfg, it, cfg.left));
     if (!res.ok) throw new Error("HTTP " + res.status);
     const xml = await res.text();
     vrvToolkit.setOptions({
