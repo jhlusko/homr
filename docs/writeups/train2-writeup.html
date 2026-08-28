@@ -216,7 +216,8 @@ footer{
     <li><strong>Checkpoint 448 is not.</strong> Our own labels say +0.88pp; a paired test says that is noise, and an untouched corpus says <span class="bad">−1.23pp</span>. We are not shipping it.</li>
     <li><strong>The last write-up reported ~+3% for a regression.</strong> This one is built so that cannot happen again — the method that would have caught it is described below and is now a committed tool.</li>
     <li><strong>Human review overturned four automated decisions, every one of them in the same direction:</strong> the machine was throwing away good data.</li>
-    <li><strong>One known blind spot and one open problem</strong>, both stated rather than buried.</li>
+    <li><strong>The rule that discards 10% of the corpus is measuring the wrong thing.</strong> It calls all 417 pairs implied tuplets; only 161 of 546 bars are tuplet-shaped, and 89% of the pairs are grand staves — discarded at 8.4&times; the rate of single staves by arithmetic this codebase already documents as invalid for them.</li>
+    <li><strong>One known blind spot</strong>, stated rather than buried: consensus cannot catch the case where both methods agree and both are wrong. We have a confirmed example.</li>
   </ul>
 </div>
 
@@ -456,30 +457,79 @@ set carries an unmeasured error floor of this kind.</p>
 <hr class="div">
 
 <section>
-<h2>Open problem: 417 pairs of implied tuplets</h2>
+<h2>Open problem: a discard rule that measures the wrong thing</h2>
 
 <p>An <em>implied tuplet</em> is engraved with no bracket and no numeral — the performer
-infers it. Neither the transcription nor the model records one, so the bar comes out
-longer than the staff's prevailing metre. Training on it teaches the model to write
-overfull bars, so the builder skips those pairs.</p>
+infers it. Neither the transcription nor the model records one, so the bar sums to more
+than its metre holds. Training on it teaches the model to write overfull bars, so the
+builder discards any pair containing such a bar: <strong>417 pairs across 144 scores,
+roughly 10% of the clean corpus.</strong></p>
+
+<p>Those pairs had never been written to disk, so nobody had looked at one. Quarantining
+rather than deleting them made two things visible, and both say the rule is not doing
+what its name claims.</p>
+
+<h3>First: most of them are not tuplets</h3>
+
+<p>Classifying the 546 offending bars by <em>how much</em> they overflow separates causes
+that the single rule had been treating alike:</p>
 
 <div class="stats">
-  <div><p class="fig">417</p><p class="lbl">pairs discarded</p></div>
-  <div><p class="fig">144</p><p class="lbl">scores affected</p></div>
-  <div><p class="fig">546</p><p class="lbl">offending bars</p></div>
-  <div><p class="fig">~10%</p><p class="lbl">of the clean corpus</p></div>
+  <div><p class="fig">161</p><p class="lbl">tuplet-shaped — excess is exactly what an unbracketed tuplet adds</p></div>
+  <div><p class="fig">80</p><p class="lbl">exactly 2× or 3× the bar — a barline nobody placed</p></div>
+  <div><p class="fig">76</p><p class="lbl">a second metre — the crop changes time signature</p></div>
+  <div><p class="fig">229</p><p class="lbl">unexplained by any of the above</p></div>
 </div>
 
-<p>The loss is asymmetric in two ways. First, <strong>546 bad bars cost 417 whole staff
-crops</strong> — roughly one offending bar per discarded pair, with every other bar in
-that crop perfectly good. Second, implied tuplets concentrate in the densest and most
-interesting writing, so the rule quietly trains the model on the easy half of the
-repertoire.</p>
+<p>So the rule is doing two opposite jobs at once. On the tuplet bars it discards good
+music over a notation the label cannot express. On the integer-multiple bars it is
+<em>correctly</em> rejecting a misaligned label, and recovering those would poison the
+corpus. <strong>"Recover the 417" would have been the wrong instruction</strong>, and a
+single review set asking whether to keep them would have averaged the two into an
+unanswerable question.</p>
 
-<p>These pairs are now <strong>quarantined rather than deleted</strong> — written to their
-own directory with images, tokens, and per-bar detail — so they can be reviewed and, if a
-representation is found, recovered. Previously they were dropped without ever being
-written, which is why nobody had looked at one.</p>
+<h3>Second, and worse: the test is unsound for 89% of them</h3>
+
+<p>371 of the 417 discarded pairs are grand staves. The corpus that is <em>kept</em> is
+44.9% grand staff. Put as a rate:</p>
+
+<div class="tablewrap">
+<table>
+<caption>Discard rate by staff type</caption>
+<tr><th>Staff type</th><th class="n">Kept</th><th class="n">Discarded</th><th class="n">Discard rate</th></tr>
+<tr><td>Single staff</td><td class="n">2,299</td><td class="n">46</td><td class="n">2.0%</td></tr>
+<tr class="mark"><td>Grand staff</td><td class="n">1,873</td><td class="n">371</td><td class="n bad">16.5%</td></tr>
+</table>
+</div>
+
+<p><strong>A grand staff is discarded at 8.4 times the rate of a single staff.</strong>
+Implied tuplets are not distributed that way. The mechanism is already documented
+elsewhere in this codebase: <code>group_into_chords</code> takes the <em>minimum</em>
+duration across a chord, so on a grand staff a bar where the hands play different
+rhythms is neither their sum nor either hand's own length. The corpus audit refuses to
+run any duration-dependent check on a grand staff for exactly this reason — and the
+discard rule calls the same arithmetic with no such guard.</p>
+
+<p>The result is a comparison of two equally distorted numbers. Bars where the hands
+happen to align keep their true length while the modal bar is pulled short by the ones
+that do not, so the aligned bars read as overfull. That is a plausible mechanism for a
+pure artefact, and the 8.4× enrichment is what it would look like.</p>
+
+<div class="callout">
+  <span class="lbl">Stated, not fixed</span>
+  <p>This is not being silently corrected. The evidence says the rule is unsound on
+  grand staves, but an unknown fraction of those 371 pairs have real problems that the
+  broken test happened to catch, and the corpus cannot tell the two apart. Two review
+  sets are built instead — 46 single-staff pairs at complete coverage where the
+  arithmetic holds and the tuplet question is answerable, and a sample of the 371 grand
+  staves asking only whether the label matches the scan. What comes back decides the
+  rule.</p>
+</div>
+
+<p>The general shape is the same one that produced the checkpoint result at the top of
+this page: <strong>a measurement that was never valid, reported for long enough to
+become a fact.</strong> In both cases the number looked reasonable, moved in a plausible
+direction, and nothing in the pipeline was in a position to contradict it.</p>
 </section>
 
 <hr class="div">

@@ -202,77 +202,38 @@ iframe.cmp{
 <script>
 const SETS = {
   // The pairs the builder discards for holding an overfull bar. The discard comment
-  // calls all 417 "implied tuplets"; classifying the 546 offending bars by how much
-  // they overflow says only 161 are tuplet-shaped, so these are five separate
-  // questions and not one. Each set states the diagnosis the classifier made and asks
-  // the reviewer to confirm or reject THAT - a set asking "should we keep these?"
-  // across all five causes could not be answered.
-  "overfull-tuplet": {
-    dir: "review-data/sets/overfull-tuplet",
+  // calls all 417 "implied tuplets"; classifying the 546 offending bars says only 161
+  // are tuplet-shaped, and 371 of the 417 pairs are GRAND STAVES - where the duration
+  // arithmetic behind the whole rule is unsound. So the split is by staff type first:
+  // on a single staff the question "is this a tuplet?" is answerable, and on a grand
+  // staff it is not.
+  "overfull-single": {
+    dir: "review-data/sets/overfull-single",
     left: "left", right: null,
     leftLabel: "Label (renders overfull)", rightLabel: "",
-    question: "H10 &mdash; Is the long bar an <strong>unmarked tuplet</strong>?",
-    detail: "The label's bar is longer than this staff's prevailing bar by exactly the amount an unbracketed tuplet would account for, and there is a real run of equal note values to carry it. If the scan shows a triplet or sextuplet written without a bracket or numeral, the diagnosis is right and the pair is recoverable by marking the run as a tuplet. Check the bar index named in the metadata.",
+    question: "H10 &mdash; Why is the marked bar <strong>longer</strong> than the rest?",
+    detail: "Single-staff crops only, where bar durations are trustworthy \u2014 all 46 of them, complete coverage rather than a sample. Each item names the offending bar and the classifier's guess: <em>tuplet</em> (the overflow is exactly what an unbracketed triplet or sextuplet would add), <em>missing-barline</em> (the bar is an exact 2x or 3x, which no tuplet produces), <em>metre-change</em>, or <em>unexplained</em>. Confirm or reject that guess against the scan. IGNORE THE PRINTED TIME SIGNATURES \u2014 they are inferred from durations, not read.",
     verdicts: [
-      ["tuplet",     "Yes \u2014 unmarked tuplet on the page"],
-      ["marked",     "Tuplet IS marked on the page \u2014 the label dropped it"],
-      ["not-tuplet", "NOT a tuplet \u2014 something else is wrong"],
-      ["label-wrong","Label is the wrong passage entirely"],
-      ["unclear",    "Unclear"]
+      ["tuplet",         "Unmarked tuplet on the page \u2014 recoverable"],
+      ["marked-tuplet",  "Tuplet IS marked \u2014 the label dropped it"],
+      ["missing-barline","A barline is missing \u2014 label misaligned"],
+      ["metre-change",   "The metre changes here \u2014 rule is a false positive"],
+      ["label-wrong",    "Label is the wrong passage entirely"],
+      ["unclear",        "Unclear"]
     ]
   },
-  "overfull-missing-barline": {
-    dir: "review-data/sets/overfull-missing-barline",
+  "overfull-grandstaff": {
+    dir: "review-data/sets/overfull-grandstaff",
     left: "left", right: null,
     leftLabel: "Label (renders overfull)", rightLabel: "",
-    question: "H11 &mdash; Is a <strong>barline</strong> missing here?",
-    detail: "This bar is an exact integer multiple \u2014 2x or 3x \u2014 of the prevailing bar, which no tuplet produces. The expected cause is a barline the alignment did not place, so the label has run two or three printed bars together. If so these pairs are NOT recoverable as-is: the label is misaligned and keeping it would poison the corpus. Confirming that is as valuable as recovering them.",
+    question: "H11 &mdash; Is this label <strong>right</strong>? (the overfull test is unsound here)",
+    detail: "371 of the 417 discarded pairs are grand staves \u2014 89%, against 44.9% of the corpus that is kept, so a grand staff is discarded at 8.4 times the rate of a single staff. That is not how tuplets are distributed. On a grand staff group_into_chords takes the MINIMUM duration across a chord, so a bar where the hands play different rhythms is neither their sum nor either hand's own length, and the corpus audit already refuses to run any duration check on one. The discard reason is therefore not evidence here. The question is only whether the label matches the scan \u2014 if it does, these pairs should go back into the corpus.",
     verdicts: [
-      ["missing-barline", "Yes \u2014 a barline is missing"],
-      ["repeat",          "A repeat or volta the label mishandled"],
-      ["genuinely-long",  "The bar really is that long on the page"],
-      ["label-wrong",     "Label is the wrong passage entirely"],
-      ["unclear",         "Unclear"]
-    ]
-  },
-  "overfull-metre-change": {
-    dir: "review-data/sets/overfull-metre-change",
-    left: "left", right: null,
-    leftLabel: "Label (renders overfull)", rightLabel: "",
-    question: "H12 &mdash; Does the <strong>metre change</strong> inside this crop?",
-    detail: "Two bar lengths are both well represented here, so \u201cprevailing\u201d is ambiguous and the \u201coverfull\u201d bars may simply belong to the second metre. IGNORE THE PRINTED TIME SIGNATURES \u2014 they are inferred from durations, not read. Judge whether the page changes metre part-way through the system. If it does, these pairs are sound and the overfull rule is producing a false positive.",
-    verdicts: [
-      ["metre-change", "Yes \u2014 the metre changes on the page"],
-      ["one-metre",    "No \u2014 one metre throughout, so a bar is wrong"],
-      ["label-wrong",  "Label is the wrong passage entirely"],
+      ["label-ok",     "Label matches the scan \u2014 recover this pair"],
+      ["tuplet",       "Genuinely an unmarked tuplet"],
+      ["truncated",    "TRUNCATED \u2014 scan has more"],
+      ["label-wrong",  "Label is the wrong passage or has extra bars"],
       ["unclear",      "Unclear"]
-    ]
-  },
-  "overfull-mixed": {
-    dir: "review-data/sets/overfull-mixed",
-    left: "left", right: null,
-    leftLabel: "Label (renders overfull)", rightLabel: "",
-    question: "H13 &mdash; More than one cause: what is actually wrong?",
-    detail: "The classifier found different causes in different bars of this same crop, so it has no single diagnosis to offer. These are the pairs most likely to be genuinely misaligned rather than merely under-notated.",
-    verdicts: [
-      ["recoverable",  "Notation only \u2014 recoverable"],
-      ["misaligned",   "Label is misaligned \u2014 discard"],
-      ["mixed",        "Both problems present"],
-      ["unclear",      "Unclear"]
-    ]
-  },
-  "overfull-unexplained": {
-    dir: "review-data/sets/overfull-unexplained",
-    left: "left", right: null,
-    leftLabel: "Label (renders overfull)", rightLabel: "",
-    question: "H14 &mdash; Why is this bar overfull?",
-    detail: "No tuplet arithmetic, no integer multiple, no second metre. This is the largest bucket (180 pairs) and the one with no hypothesis attached \u2014 the point of the set is to find out what the remaining cause actually is, so the note field matters more here than the verdict.",
-    verdicts: [
-      ["notation",    "A notation the label cannot express"],
-      ["misaligned",  "Label is misaligned \u2014 discard"],
-      ["label-error", "Transcription error in the source"],
-      ["engraving",   "The printed page is itself wrong"],
-      ["unclear",     "Unclear"]
     ]
   },
   checkpoint: {
