@@ -62,10 +62,15 @@ lacks. So the corpora behind our best and our worst independent scores are near
 identical in *which systems they contain*; the exclusion is the only change that
 removed data in quantity.
 
-That also demotes the displacement finding as an explanation for 447 vs 449. Phantom
-systems displacing later labels is real, and worth fixing, but it alters labels *within*
-stems both corpora share - so it cannot be what separates two checkpoints whose stem
-sets differ almost entirely by this one exclusion.
+That also demotes the displacement finding as an explanation for 447 vs 449: it alters
+labels *within* stems both corpora share, so it cannot separate two checkpoints whose
+stem sets differ almost entirely by this one exclusion.
+
+**This paragraph previously called the phantom-system displacement "real, and worth
+fixing".** That was written before the structural checks below, which found no
+mechanism and could not establish which corpus is the displaced one. Nothing has been
+fixed, because nothing was shown to be broken - see "Consequence for the displacement
+finding".
 
 ## Ranked suspects, and what is already ruled out
 
@@ -134,12 +139,33 @@ so the same ground is not covered twice.
   not: widths and barline counts at the onsets are indistinguishable from their
   neighbours in 5 of the 6 scores checked.
 
-**Consequence for the displacement finding.** The comparison against the pre-rebuild
-corpus shows 100 of 364 changed labels equal a neighbouring system's old label, but
-nothing here identifies a mechanism, and **the direction is not established** - the old
-corpus could be the displaced one and the rebuild the correction. 447 scoring higher
-cannot settle it, because that comparison is confounded by the overfull exclusion.
-Treat the displacement as an open question, not a known defect of the rebuild.
+**Direction, resolved by reading the crops.** 126 stems in the current corpus carry a
+label identical to a neighbouring system's pre-rebuild label, offsets skewing negative
+98 to 28.
+
+Two metrics were tried and rejected before inspection:
+
+* **Ink.** Calibrating dark-pixel count against symbol count on the 1,311 pairs both
+  corpora label identically gives a median error of 31% and a p90 of 92% - wider than
+  the difference between the candidate labels. Its 59-45 split is a coin flip.
+* **Structural glyphs.** A mid-system clef change or time signature is unambiguous, but
+  115 of the 126 disputed pairs carry identical glyphs and the remaining 11 split 4-5.
+
+So the crops were read directly:
+
+| stem | what the scan shows | verdict |
+|---|---|---|
+| `IMSLP624193-sys6-v1` | a bass-clef change and a 3/8 time signature; **only the rebuilt label has either** | rebuild correct |
+| `IMSLP227283-sys8-v1` | 3 barlines; rebuilt says 3 bars, old says 2 | rebuild correct |
+| `IMSLP83314-sys10-v0` | 5 bars `[5,1,5,1,8]`; rebuilt over-extends by one, old truncates by one | neither exact |
+
+**The pre-rebuild corpus is the displaced one**, erring short - which is the truncation
+defect the rebuild was built to fix. No inspected case had the old label right and the
+rebuilt one displaced. The rebuild over-reaches occasionally, a different and milder
+fault than the one suspected.
+
+**Nothing required fixing on the rebuild side.** `displaced` is now a review set of all
+126 in `review.html` if a larger sample than these three is wanted.
 
 ## Bisect results - the leading suspect was wrong
 

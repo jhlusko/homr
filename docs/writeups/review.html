@@ -431,6 +431,21 @@ const SETS = {
       ["unclear",      "Unclear"]
     ]
   },
+  displaced: {
+    label: "7 &middot; Displaced labels",
+    dir: "review-data/sets/displaced",
+    left: "left", right: "right",
+    leftLabel: "Rebuilt label (current corpus)", rightLabel: "Pre-rebuild label",
+    question: "H15 &mdash; Which label is the <strong>music in this crop</strong>?",
+    detail: "126 stems in the current corpus carry a label identical to a NEIGHBOURING system's label in the pre-rebuild corpus \u2014 offsets skew negative 98 to 28, so the rebuilt labels tend to hold music from EARLIER in the score. One of the two corpora is displaced and no structural check can say which: the alignment is built to match the detected barline counts, so every model-free arbiter agrees with the rebuild by construction. The scan is the only independent evidence. The metadata names the offset and which old system the rebuilt label matches.",
+    verdicts: [
+      ["left-ok",   "LEFT (rebuilt) matches the scan"],
+      ["right-ok",  "RIGHT (pre-rebuild) matches \u2014 the rebuild is displaced"],
+      ["neither",   "NEITHER matches this crop"],
+      ["wrong-key", "Wrong KEY SIGNATURE"],
+      ["unclear",   "Unclear"]
+    ]
+  },
   alignment: {
     label: "Rebuilt alignment",
     dir: "review-data/alignment",
@@ -594,6 +609,11 @@ function render(){
 
   const kindLabel = it.kind || it.diagnosis || "";
   let metaBits = '<span class="tag ' + kindLabel + '">' + escapeHtml(kindLabel) + '</span>';
+  if (it.offset !== undefined) {
+    metaBits += '<span>offset <strong>' + (it.offset > 0 ? '+' : '') + it.offset
+      + '</strong> \u2014 the rebuilt label is identical to old system '
+      + '<strong>' + escapeHtml(it.matches_old_system) + '</strong></span>';
+  }
   if (it.findings) {
     // Name the bar. "This crop has an overfull bar" is not reviewable; "bar 3 runs
     // 3/2 of the prevailing length, which a triplet would explain" is.
@@ -893,7 +913,10 @@ function renderList(){
     const verdictEntry = cfg.verdicts.find(([value]) => value === verdict);
     const statusLabel = verdictEntry ? verdictEntry[1] : "Unjudged";
     let detail = item.kind || "";
-    if (item.findings) {
+    if (item.offset !== undefined) {
+      detail = "offset " + (item.offset > 0 ? "+" : "") + item.offset
+        + " \u00b7 rebuilt label equals old " + item.matches_old_system;
+    } else if (item.findings) {
       detail = item.diagnosis + " \u00b7 bar(s) "
         + item.findings.map(f => f.bar + 1).join(", ")
         + " \u00b7 " + item.findings.map(f => f.detail).join("; ");
