@@ -18,11 +18,14 @@ Each set here is a separate experiment with its own null hypothesis:
              of the 2394-pair eval set against the 3214 it replaced.
 ``pseudo``   Reverse-only pairs, model-derived, never human-checked.  H: they are
              good enough to train on.  These have had no scrutiny of any kind.
-``phantom``  Systems count-alignment filled and reverse says hold no music.  H: the
-             crop contains no music at all.  Judged from the crop alone - no label
-             comparison - because that is the whole question.  This is the failure
-             that displaced ten systems in IMSLP637441 at the highest margin in the
-             score, so the detector's precision matters on its own terms.
+``phantom``  Systems where reverse fingerprinting READ NOTES off the crop and still
+             placed them nowhere.  H: the bar-count label is nonetheless right.  This
+             set previously asked whether the crop contained any music, which the
+             classifier guarantees it does - `crop_had_notes` must be true to reach
+             this verdict at all - so the answer was yes for every item and the review
+             could learn nothing.  The answerable question is why the content aligner
+             failed: either it missed, or this system holds music absent from the
+             transcription (an ossia, a written-out repeat, a differing edition).
 ``voices``   Consensus pairs on a staff OTHER than voice 0.  H: the label matches
              this staff.  Consensus is decided from the voice-0 crop reading and
              applied to every staff in the system, so 2079 of 3964 evaluation pairs

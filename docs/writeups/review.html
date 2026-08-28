@@ -366,15 +366,16 @@ const SETS = {
   phantom: {
     label: "4 &middot; Phantom systems",
     dir: "review-data/sets/phantom",
-    left: "left", right: null, cropOnly: true,
-    leftLabel: "", rightLabel: "",
-    question: "H4 &mdash; Does this crop contain <strong>any music</strong> at all?",
-    detail: "Bar-count alignment assigned real measures to this system; content alignment says it holds nothing. Judge the CROP alone \u2014 no label comparison, that is the whole question. One of these took measures 0\u20132 of IMSLP637441 at the highest margin in the score and displaced ten later systems by exactly -3.",
+    left: "left", right: null,
+    leftLabel: "Bar-count label", rightLabel: "",
+    question: "H4 &mdash; Is the <strong>bar-count label</strong> right for this crop?",
+    detail: "PHANTOM does NOT mean the crop is empty \u2014 the classifier reaches this verdict only when reverse fingerprinting DID read notes off the crop and still could not place them anywhere in the score. Asking whether there is music here has the answer yes for all 60 items by construction, which is what this set asked until 2026-08-28. The real question is why the content aligner failed: the label shown is the one bar-count alignment assigned, and it is either right (the aligner simply missed) or this system holds music that is not in the transcription at all \u2014 an ossia, a repeat written out, a differing edition.",
     verdicts: [
-      ["no-music", "No music \u2014 ornament, text or blank"],
-      ["music",    "Real system of music \u2014 wrongly emptied"],
-      ["partial",  "Partial / fragment"],
-      ["unclear",  "Unclear"]
+      ["label-ok",   "Label matches the scan \u2014 the aligner just missed it"],
+      ["not-in-score","Music here is NOT in the transcription (ossia, repeat, edition)"],
+      ["label-wrong", "Label does not match this crop"],
+      ["wrong-key",   "Wrong KEY SIGNATURE"],
+      ["unclear",     "Unclear"]
     ]
   },
   octave: {
