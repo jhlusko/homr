@@ -57,6 +57,11 @@ def main() -> None:
     )
     parser.add_argument("--replay-count", type=int, default=PDMX_REPLAY_COUNT)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument(
+        "--seed", type=int,
+        help="Trainer seed. Repeating a corpus at two seeds measures the noise floor, "
+             "without which a 1pp corpus difference cannot be called a result.",
+    )
     args = parser.parse_args()
 
     # Paths are arguments rather than constants so a rebuilt corpus can be trained on
@@ -79,6 +84,7 @@ def main() -> None:
         number_of_files=total,
         number_of_epochs=args.epochs,
         validation_index=args.val_index,
+        seed=args.seed,
     )
 
 

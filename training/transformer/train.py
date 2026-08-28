@@ -138,6 +138,7 @@ def train_transformer(
     number_of_files: int = -1,
     validation_index: str | None = None,
     checkpoint: str | None = None,
+    seed: int | None = None,
 ) -> None:
     """`warm_start` starts from the pretrained checkpoint with *every* parameter
     trainable - unlike `fine_tune`, which loads the same checkpoint but freezes
@@ -263,6 +264,11 @@ def train_transformer(
         report_to=["tensorboard"],
         logging_dir=os.path.join("logs", f"run{run_id}"),
         label_names=label_names,
+        # Nothing has ever measured the run-to-run variance of this recipe, and corpus
+        # differences of ~1pp on an independent benchmark have been read as causal
+        # throughout. Two runs of the SAME corpus at different seeds put a floor under
+        # that: a difference smaller than the floor is not evidence about the data.
+        **({"seed": seed} if seed is not None else {}),
         bf16=not fp32,
         dataloader_pin_memory=True,
         dataloader_num_workers=12,
