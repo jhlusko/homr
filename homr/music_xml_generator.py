@@ -2,7 +2,7 @@
 
 import math
 import xml.etree.ElementTree as ET
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from fractions import Fraction
 
@@ -45,6 +45,16 @@ class ConversionState:
         #: silently dropped by any consumer.  The same collision broke two overlapping
         #: slurs on one staff, since both took that staff's number.
         self.open_slurs: list[int] = []
+        #: The staff's modal measure duration, and whether a numerator the label
+        #: STATES contradicts it.  A `timeSignatureBeats_n` token is metadata and can
+        #: go stale - IMSLP405017 changes metre mid-score and the cutter carried the
+        #: earlier 4 forward, so a system whose every bar holds exactly three quarters
+        #: states 4 and, because stated wins over inferred, renders as 4/4 over music
+        #: plainly in 3.  A reviewer then spends their attention on a contradiction
+        #: that is not in the music.  6.0% of the labels that state a numerator at all
+        #: (11 of 184) contradict their own bars this way.
+        self.modal_bar: Fraction | None = None
+        self.distrust_stated = False
         self.tremolo_state = "stop"
         self.volta_number = 1
         self.last_volta_measure = -10
@@ -193,6 +203,8 @@ def build_measures(
     groups = add_tuplet_start_stop(group_into_chords(voice))
     division, nominator = find_division_and_time_signature_nominator(groups)
     state = ConversionState(division, nominator)
+    state.modal_bar = modal_measure_duration(groups)
+    state.distrust_stated = stated_numerator_contradicts_bars(voice, state.modal_bar)
     measures: list[ET.Element] = []
     current_measure = ET.Element("measure", number=str(measure_number))
     first_attributes = build_or_get_attributes(current_measure, None)
@@ -295,7 +307,7 @@ def build_measures(
         time_el = ET.SubElement(first_attributes, "time")
         beats = (
             state.first_stated_beats
-            if state.first_stated_beats is not None
+            if state.first_stated_beats is not None and not state.distrust_stated
             else max(int(state.nominator * 4), 1)
         )
         ET.SubElement(time_el, "beats").text = str(beats)
@@ -484,10 +496,14 @@ def build_time_signature(
     denominator = model_time_signature.rhythm.split("/")[1]
     if state.first_denominator is None:
         state.first_denominator = denominator
-    if state.stated_beats is not None:
+    if state.stated_beats is not None and not state.distrust_stated:
         beats = state.stated_beats
         state.stated_beats = None
     else:
+        # A stated numerator the label's own bars contradict is not evidence; fall
+        # back to the value inferred from those bars rather than printing a metre the
+        # music does not have.
+        state.stated_beats = None
         beats = max(int(state.nominator * int(denominator)), 1)
     ET.SubElement(time, "beats").text = str(beats)
     ET.SubElement(time, "beat-type").text = denominator
@@ -945,6 +961,64 @@ def find_division_and_time_signature_nominator(voice: list[SymbolChord]) -> tupl
     nominator: Fraction = np.median(measure_duration)  # type: ignore
 
     return find_common_division(durations), nominator
+
+
+def modal_measure_duration(voice: list[SymbolChord]) -> Fraction | None:
+    """The most common bar length, or None if there are too few bars to have one."""
+    lengths: list[Fraction] = []
+    current = Fraction(0)
+    for chord in voice:
+        if chord.is_barline():
+            if current > 0:
+                lengths.append(current)
+            current = Fraction(0)
+        else:
+            duration = chord.get_duration()
+            if duration > 0:
+                current += duration
+    if current > 0:
+        lengths.append(current)
+    if len(lengths) < 3:
+        # Two bars would let one anomaly define the norm and hide itself.
+        return None
+    length, count = Counter(lengths).most_common(1)[0]
+    if count * 2 <= len(lengths):
+        # No strict majority means there is no single prevailing bar to speak for the
+        # staff. IMSLP632171-sys17-v0 runs 3/4, 3/4, 2/4, 2/4 - a real metre change
+        # with a 2-2 tie, where `most_common` picks whichever was seen first and a
+        # rule resting on it would contradict a correct label half the time.
+        return None
+    return length
+
+
+def stated_numerator_contradicts_bars(
+    voice: list[EncodedSymbol], modal: Fraction | None
+) -> bool:
+    """Whether the ONE numerator this label states disagrees with what it writes.
+
+    Deliberately narrow. Only a voice stating a single numerator is judged: where a
+    label states several, the metre genuinely changes inside the crop and there is no
+    single modal bar for them all to be checked against, so any of them would be
+    flagged against the dominant one and the rule would fire on correct labels.
+    """
+    if modal is None:
+        return False
+    stated = {
+        int(symbol.rhythm.split("_")[1])
+        for symbol in voice
+        if symbol.rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX)
+    }
+    if len(stated) != 1:
+        return False
+    denominators = {
+        int(symbol.rhythm.split("/")[1])
+        for symbol in voice
+        if symbol.rhythm.startswith("timeSignature/")
+    }
+    if len(denominators) != 1:
+        return False
+    denominator = next(iter(denominators))
+    return next(iter(stated)) != modal * denominator
 
 
 def group_into_chords(voice: list[EncodedSymbol]) -> list[SymbolChord]:
