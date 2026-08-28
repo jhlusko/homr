@@ -169,6 +169,27 @@ one that cannot.
 was built from `clean_v2` and `reverse_v2` - pair sets no later corpus uses - so the
 remaining difference lives in those, not in any rule since changed.
 
+## v6: the two fixes, applied
+
+Built 2026-08-28 05:34 with the overfull rule guarded to single staves and stale
+numerators dropped.
+
+| | v5 | v6 |
+|---|---|---|
+| clean pairs | 4,172 | **4,543** |
+| quarantined as overfull | 417 | **46** |
+| pairs with a stale numerator token dropped | — | 41 |
+| skipped, divider count disagreed with span | — | 6 |
+
+The 371 restored are exactly the grand staves; the 46 remaining are the single-staff
+cases where the duration arithmetic is valid and the bar really is long.
+
+**The restored pairs are NOT being trained on.** Arm B measured that directly and OSSQ
+fell to 91.12, below baseline. The guard is still correct - the arithmetic it removes
+was never valid on a grand staff - but the pairs it was removing are bad for some other
+reason, so v6 keeps them out of the training index while no longer pretending the rule
+justified it. The fix that is actually carried into training is the numerator one.
+
 ## Rule for choosing the next arm
 
 Vary one thing that **447 actually had** and 448/449 do not, or vice versa. Check this
