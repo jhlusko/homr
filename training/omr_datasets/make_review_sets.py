@@ -146,6 +146,7 @@ def build_set(
     scores.mkdir(parents=True, exist_ok=True)
 
     manifest = []
+    unrenderable: list[dict] = []
     for stem in chosen:
         parsed = parse_stem(stem)
         if parsed is None or stem not in left:
@@ -154,14 +155,25 @@ def build_set(
         left_image, left_tokens = (Path(p) for p in left[stem].split(",", 1))
         if not left_image.is_file() or not left_tokens.is_file():
             continue
+        # One unrenderable pair must not take the set with it. A ConversionState
+        # field stranded after a `return` made every label carrying a tremolo or a
+        # volta raise, and the whole set failed to build rather than that pair being
+        # skipped - the same shape as a shard dying on one bad score.
+        try:
+            left_bars = write_xml(left_tokens, scores / f"{stem}__left.musicxml")
+        except Exception as exc:  # noqa: BLE001
+            unrenderable.append({"stem": stem, "side": "left", "error": str(exc)})
+            continue
         shutil.copy2(left_image, crops / f"{stem}.png")
-        left_bars = write_xml(left_tokens, scores / f"{stem}__left.musicxml")
 
         right_bars = None
         if right is not None and stem in right:
             right_tokens = Path(right[stem].split(",", 1)[1])
             if right_tokens.is_file():
-                right_bars = write_xml(right_tokens, scores / f"{stem}__right.musicxml")
+                try:
+                    right_bars = write_xml(right_tokens, scores / f"{stem}__right.musicxml")
+                except Exception as exc:  # noqa: BLE001
+                    unrenderable.append({"stem": stem, "side": "right", "error": str(exc)})
         if right is not None and right_bars is None:
             # Keep the compare view functional, but the manifest records that there
             # is nothing to compare - the UI must say so rather than show two
@@ -184,7 +196,15 @@ def build_set(
         )
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"{name:9s} {len(manifest):4d} items from {len(stems)} candidates")
-    return {"set": name, "items": len(manifest), "candidates": len(stems)}
+    if unrenderable:
+        # Named, not merely counted: a pair that will not render is a defect to chase,
+        # and a bare count reads as acceptable attrition.
+        (out / "unrenderable.json").write_text(
+            json.dumps(unrenderable, indent=2), encoding="utf-8"
+        )
+        print(f"{'':9s} {len(unrenderable):4d} skipped, unrenderable -> {out}/unrenderable.json")
+    return {"set": name, "items": len(manifest), "candidates": len(stems),
+            "unrenderable": len(unrenderable)}
 
 
 def main() -> None:

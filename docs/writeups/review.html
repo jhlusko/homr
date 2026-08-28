@@ -201,6 +201,80 @@ iframe.cmp{
 </div>
 <script>
 const SETS = {
+  // The pairs the builder discards for holding an overfull bar. The discard comment
+  // calls all 417 "implied tuplets"; classifying the 546 offending bars by how much
+  // they overflow says only 161 are tuplet-shaped, so these are five separate
+  // questions and not one. Each set states the diagnosis the classifier made and asks
+  // the reviewer to confirm or reject THAT - a set asking "should we keep these?"
+  // across all five causes could not be answered.
+  "overfull-tuplet": {
+    dir: "review-data/sets/overfull-tuplet",
+    left: "left", right: null,
+    leftLabel: "Label (renders overfull)", rightLabel: "",
+    question: "H10 &mdash; Is the long bar an <strong>unmarked tuplet</strong>?",
+    detail: "The label's bar is longer than this staff's prevailing bar by exactly the amount an unbracketed tuplet would account for, and there is a real run of equal note values to carry it. If the scan shows a triplet or sextuplet written without a bracket or numeral, the diagnosis is right and the pair is recoverable by marking the run as a tuplet. Check the bar index named in the metadata.",
+    verdicts: [
+      ["tuplet",     "Yes \u2014 unmarked tuplet on the page"],
+      ["marked",     "Tuplet IS marked on the page \u2014 the label dropped it"],
+      ["not-tuplet", "NOT a tuplet \u2014 something else is wrong"],
+      ["label-wrong","Label is the wrong passage entirely"],
+      ["unclear",    "Unclear"]
+    ]
+  },
+  "overfull-missing-barline": {
+    dir: "review-data/sets/overfull-missing-barline",
+    left: "left", right: null,
+    leftLabel: "Label (renders overfull)", rightLabel: "",
+    question: "H11 &mdash; Is a <strong>barline</strong> missing here?",
+    detail: "This bar is an exact integer multiple \u2014 2x or 3x \u2014 of the prevailing bar, which no tuplet produces. The expected cause is a barline the alignment did not place, so the label has run two or three printed bars together. If so these pairs are NOT recoverable as-is: the label is misaligned and keeping it would poison the corpus. Confirming that is as valuable as recovering them.",
+    verdicts: [
+      ["missing-barline", "Yes \u2014 a barline is missing"],
+      ["repeat",          "A repeat or volta the label mishandled"],
+      ["genuinely-long",  "The bar really is that long on the page"],
+      ["label-wrong",     "Label is the wrong passage entirely"],
+      ["unclear",         "Unclear"]
+    ]
+  },
+  "overfull-metre-change": {
+    dir: "review-data/sets/overfull-metre-change",
+    left: "left", right: null,
+    leftLabel: "Label (renders overfull)", rightLabel: "",
+    question: "H12 &mdash; Does the <strong>metre change</strong> inside this crop?",
+    detail: "Two bar lengths are both well represented here, so \u201cprevailing\u201d is ambiguous and the \u201coverfull\u201d bars may simply belong to the second metre. IGNORE THE PRINTED TIME SIGNATURES \u2014 they are inferred from durations, not read. Judge whether the page changes metre part-way through the system. If it does, these pairs are sound and the overfull rule is producing a false positive.",
+    verdicts: [
+      ["metre-change", "Yes \u2014 the metre changes on the page"],
+      ["one-metre",    "No \u2014 one metre throughout, so a bar is wrong"],
+      ["label-wrong",  "Label is the wrong passage entirely"],
+      ["unclear",      "Unclear"]
+    ]
+  },
+  "overfull-mixed": {
+    dir: "review-data/sets/overfull-mixed",
+    left: "left", right: null,
+    leftLabel: "Label (renders overfull)", rightLabel: "",
+    question: "H13 &mdash; More than one cause: what is actually wrong?",
+    detail: "The classifier found different causes in different bars of this same crop, so it has no single diagnosis to offer. These are the pairs most likely to be genuinely misaligned rather than merely under-notated.",
+    verdicts: [
+      ["recoverable",  "Notation only \u2014 recoverable"],
+      ["misaligned",   "Label is misaligned \u2014 discard"],
+      ["mixed",        "Both problems present"],
+      ["unclear",      "Unclear"]
+    ]
+  },
+  "overfull-unexplained": {
+    dir: "review-data/sets/overfull-unexplained",
+    left: "left", right: null,
+    leftLabel: "Label (renders overfull)", rightLabel: "",
+    question: "H14 &mdash; Why is this bar overfull?",
+    detail: "No tuplet arithmetic, no integer multiple, no second metre. This is the largest bucket (180 pairs) and the one with no hypothesis attached \u2014 the point of the set is to find out what the remaining cause actually is, so the note field matters more here than the verdict.",
+    verdicts: [
+      ["notation",    "A notation the label cannot express"],
+      ["misaligned",  "Label is misaligned \u2014 discard"],
+      ["label-error", "Transcription error in the source"],
+      ["engraving",   "The printed page is itself wrong"],
+      ["unclear",     "Unclear"]
+    ]
+  },
   checkpoint: {
     dir: "review-data/sets/checkpoint",
     left: "left", right: "right",
@@ -490,7 +564,18 @@ function render(){
       + "&rightLabel="   + encodeURIComponent(noOldLabel ? "No prior label existed (left copied)" : cfg.rightLabel);
   }
 
-  let metaBits = '<span class="tag ' + it.kind + '">' + it.kind + '</span>'
+  const kindLabel = it.kind || it.diagnosis || "";
+  let metaBits = '<span class="tag ' + kindLabel + '">' + escapeHtml(kindLabel) + '</span>';
+  if (it.findings) {
+    // Name the bar. "This crop has an overfull bar" is not reviewable; "bar 3 runs
+    // 3/2 of the prevailing length, which a triplet would explain" is.
+    metaBits += '<span>diagnosis: <strong>' + escapeHtml(it.diagnosis) + '</strong></span>';
+    for (const f of it.findings) {
+      metaBits += '<span>bar <strong>' + (f.bar + 1) + '</strong> \u2014 '
+        + escapeHtml(f.detail) + ' (ratio ' + escapeHtml(f.ratio) + ')</span>';
+    }
+  }
+  metaBits += ''
     + '<span>' + it.id + '</span>';
   if (it.ref_bars !== undefined) {
     metaBits += '<span>bars — label: <strong>' + it.ref_bars + '</strong>'
@@ -606,8 +691,12 @@ function renderList(){
     const verdict = verdicts[item.id];
     const verdictEntry = cfg.verdicts.find(([value]) => value === verdict);
     const statusLabel = verdictEntry ? verdictEntry[1] : "Unjudged";
-    let detail = item.kind;
-    if (item.ref_bars !== undefined) {
+    let detail = item.kind || "";
+    if (item.findings) {
+      detail = item.diagnosis + " \u00b7 bar(s) "
+        + item.findings.map(f => f.bar + 1).join(", ")
+        + " \u00b7 " + item.findings.map(f => f.detail).join("; ");
+    } else if (item.ref_bars !== undefined) {
       detail += " · bars: label " + item.ref_bars + ", upstream " + item.base_bars + ", ours " + item.ours_bars;
     } else if (item.n_beams !== undefined) {
       detail += " · " + item.n_beams + " beam elements";

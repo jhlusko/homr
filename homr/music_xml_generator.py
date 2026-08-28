@@ -45,6 +45,9 @@ class ConversionState:
         #: silently dropped by any consumer.  The same collision broke two overlapping
         #: slurs on one staff, since both took that staff's number.
         self.open_slurs: list[int] = []
+        self.tremolo_state = "stop"
+        self.volta_number = 1
+        self.last_volta_measure = -10
 
     def open_slur(self) -> int:
         """Claim the lowest free slur number."""
@@ -63,9 +66,6 @@ class ConversionState:
         # A stop with nothing open: emit a number anyway rather than dropping the
         # element, so the defect stays visible in the output instead of vanishing.
         return 1
-        self.tremolo_state = "stop"
-        self.volta_number = 1
-        self.last_volta_measure = -10
 
     def start_volta(self, measure_no: int) -> int:
         if measure_no == self.last_volta_measure + 1:
