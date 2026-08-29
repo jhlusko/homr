@@ -12163,8 +12163,15 @@ anything HOMR wrote, which is the distinction that document exists to enforce.
 **A trained checkpoint can now be exported without overwriting the release graphs**
 (`HOMR_MODEL_NAME`), which is what kept IV.8's tuplet confirmation open. The v4 seed-7
 checkpoint was exported and `homr.main` ran end to end on real scans under both
-`HOMR_TUPLET_REPAIR` settings. Repair was a no-op on every page tried, correctly - none
-carried an overfull bar - so the integration is confirmed sound on a current checkpoint
-and firing is still not confirmed. Same gap as IV.8 named, for a better reason.
+`HOMR_TUPLET_REPAIR` settings: valid MusicXML from both, on 8 scanned pages, byte
+identical on all 8. So the integration is confirmed sound on a current checkpoint, and
+firing is still not confirmed - correctly, since none of those pages carried an overfull
+bar. The same gap IV.8 named, now for a better reason.
+
+Randomly sampled pages are the wrong way to close it. The offline harness already knows
+which OSSQ staves have an overfull bar - that is how the +3/+4/+7/+6 exact-stave result
+was measured - so the decisive run is to take those specific staves' pages rather than
+hope one turns up. Left for whoever picks this up; the blocker that made it impossible
+is gone, the search strategy is the remaining work.
 
 **The rare numerators are a supply gap** - IV.15.1.
