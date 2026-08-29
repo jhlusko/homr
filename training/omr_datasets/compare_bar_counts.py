@@ -223,6 +223,11 @@ def main() -> None:
         "the per-score handler below, and two shards wrote an empty rows file and "
         "exited 0 - indistinguishable from success until the logs were read by hand.",
     )
+    parser.add_argument(
+        "--coverage-out", type=Path,
+        help="Write expected, completed, and failed score IDs as JSON. Use this as "
+        "the machine-readable completion record before merging shard rows.",
+    )
     args = parser.parse_args()
 
     gt_paths = sorted(args.ground_truth.glob("*.json"))
@@ -234,6 +239,7 @@ def main() -> None:
 
     all_rows: list[dict] = []
     failures: list[dict[str, str]] = []
+    completed_score_ids: list[str] = []
     exact_system_match = 0
     total_systems_compared = 0
     system_count_mismatches = []
@@ -283,6 +289,8 @@ def main() -> None:
         if not total_system_count_matched:
             system_count_mismatches.append(score_id)
 
+        completed_score_ids.append(score_id)
+
         comparable = [row for row in rows if row["ground_truth"] is not None]
         score_exact = sum(1 for row in comparable if row["detected"] == row["ground_truth"])
         score_total = len(comparable)
@@ -299,6 +307,20 @@ def main() -> None:
     if args.failed_out:
         args.failed_out.parent.mkdir(parents=True, exist_ok=True)
         args.failed_out.write_text(json.dumps(failures, indent=2), encoding="utf-8")
+
+    if args.coverage_out:
+        args.coverage_out.parent.mkdir(parents=True, exist_ok=True)
+        args.coverage_out.write_text(
+            json.dumps(
+                {
+                    "expected_score_ids": [path.stem for path in gt_paths],
+                    "completed_score_ids": completed_score_ids,
+                    "failed_score_ids": [failure["score_id"] for failure in failures],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     if args.rows_out:
         if all_rows:

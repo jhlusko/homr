@@ -3,7 +3,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from training.omr_datasets.align_lieder_systems import build_alignment_document
+from training.omr_datasets.align_lieder_systems import (
+    build_alignment_document,
+    validate_score_coverage,
+)
 
 
 class TestBuildAlignmentDocument(unittest.TestCase):
@@ -47,6 +50,16 @@ class TestBuildAlignmentDocument(unittest.TestCase):
             [(item["start_measure"], item["end_measure"]) for item in systems[1:]],
             [(0, 3), (3, 7)],
         )
+
+
+class TestScoreCoverage(unittest.TestCase):
+    def test_rejects_missing_score_from_merged_rows(self) -> None:
+        with self.assertRaisesRegex(ValueError, "missing 1 score\\(s\\): B"):
+            validate_score_coverage([{"score_id": "A"}], {"A", "B"})
+
+    def test_rejects_unexpected_score_from_merged_rows(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unexpected 1 score\\(s\\): B"):
+            validate_score_coverage([{"score_id": "A"}, {"score_id": "B"}], {"A"})
 
 
 if __name__ == "__main__":

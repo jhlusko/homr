@@ -82,12 +82,40 @@ def build_alignment_document(
     }
 
 
+def read_score_ids(path: Path) -> set[str]:
+    return {line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()}
+
+
+def validate_score_coverage(rows: list[dict], expected_score_ids: set[str]) -> None:
+    """Reject a partial or contaminated shard merge before it becomes an alignment.
+
+    The old recount handler continued after a per-score ONNX failure.  A merged
+    rows JSON therefore needs an explicit expected ID list: merely aligning the
+    IDs present in it makes every dropped score invisible.
+    """
+    observed_score_ids = {str(row["score_id"]) for row in rows}
+    missing = sorted(expected_score_ids - observed_score_ids)
+    unexpected = sorted(observed_score_ids - expected_score_ids)
+    if missing or unexpected:
+        details = []
+        if missing:
+            details.append(f"missing {len(missing)} score(s): {', '.join(missing)}")
+        if unexpected:
+            details.append(f"unexpected {len(unexpected)} score(s): {', '.join(unexpected)}")
+        raise ValueError("rows score-ID coverage mismatch: " + "; ".join(details))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--rows", type=Path, required=True)
     parser.add_argument("--ground-truth", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--score-ids", type=Path)
+    parser.add_argument(
+        "--require-score-ids", type=Path,
+        help="Require the rows file to contain exactly these score IDs before alignment. "
+        "Use after merging recount shards so dropped scores cannot be invisible.",
+    )
     parser.add_argument("--max-group", type=int, default=4)
     parser.add_argument("--min-margin", type=float, default=DEFAULT_MIN_MARGIN)
     parser.add_argument(
@@ -98,7 +126,9 @@ def main() -> None:
     rows = json.loads(args.rows.read_text(encoding="utf-8"))
     wanted = None
     if args.score_ids:
-        wanted = {line.strip() for line in args.score_ids.read_text().splitlines() if line.strip()}
+        wanted = read_score_ids(args.score_ids)
+    if args.require_score_ids:
+        validate_score_coverage(rows, read_score_ids(args.require_score_ids))
     document = build_alignment_document(
         rows,
         args.ground_truth,

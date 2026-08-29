@@ -11632,7 +11632,7 @@ head this session got a true generalization check on before promotion:
 Negligible generalization gap on every well-supported class; ~42k trainable head
 parameters against 3.5M scored positions makes memorization implausible. **Promoted.**
 
-## IV.5 Three renderer bugs found by a ground-truth roundtrip check
+## IV.5 Six renderer bugs found by a ground-truth roundtrip check
 
 Built `training/omr_datasets/roundtrip_fidelity.py` (Lieder) and
 `roundtrip_fidelity_corpora.py` (PDMX/OSSQ): real ground-truth tokens → `generate_xml` →
@@ -11662,11 +11662,19 @@ is a tokenizer/renderer bug, provable directly.
    value, wired into both converters); full corpora reconverted. **PDMX roundtrip exact-
    match: 15.3% → 91.9%** (confirmed on the live, reconverted corpus, not just the
    validation scratch tree).
+6. **A trailing `repeatStart` at a crop boundary was silently dropped, not phantom-
+   measured** — a side effect of the phantom-measure fix above: dropping the doomed
+   trailing measure (correct) also dropped the repeat mark it was carrying (not
+   correct). Found on `IMSLP16883` via a fresh roundtrip pass after the phantom-measure
+   fix landed. Fixed by attaching the repeat barline to the measure already closing
+   instead of opening a new one that only gets dropped (`homr/music_xml_generator.py`,
+   the `repeatStart` branch in `build_measures`). Lieder roundtrip: 90.7% → 92.8% exact
+   on the same 60-score sample.
 
-Lieder roundtrip now sits at **92.0% exact** (231/251 crops), up from 84.1% at the start
-of the session. Remaining gap: one confirmed, twice-attempted-and-reverted open bug (below)
-plus a handful of documented representational limits (chorded rests can't be represented
-in MusicXML at all; a trailing repeat token at a crop edge grows a phantom measure).
+Lieder roundtrip now sits at **92.8% exact** (90/97 crops on a 60-score sample), up from
+84.1% at the start of the session. Remaining gap: every mismatch left in that sample now
+traces to the one confirmed, twice-attempted-and-reverted open bug below - no new,
+un-root-caused category remains.
 
 **Open, not fixed: `TupletParser.add_tuplets` can stitch two unrelated same-ratio
 triplets from different hands into one bogus bracket** (confirmed on `IMSLP435041`). A
@@ -11814,3 +11822,172 @@ training-recipe or architecture change.
   proceed - gated only on falling back to the min-duration rule (not blocking on it) for
   the handful of gap classes with n<100 in this eval, where the head has not been shown
   to beat the rule. Full report: `/workspace/b0/lieder-rebuild/advance_promote/holdout_eval.json`.
+
+## IV.9 Lieder recount recovered, coverage-gated, and aligned
+
+The 12-way recount failure described in IV.7 was real, but the later state is now
+reconstructed and verified rather than inferred from stale shard logs. The first four
+safe-concurrency v3 shards covered 330 requested score IDs; their three failed scores
+(`IMSLP323995`, `IMSLP621830`, and `IMSLP622484`) were separately rerun successfully in
+v3 shards 04--05. The completed row set contains **exactly 330/330 expected IDs** and
+has no remaining failures.
+
+The tooling now makes this condition enforceable:
+
+- `compare_bar_counts.py` can write a coverage manifest (`expected_score_ids`,
+  `completed_score_ids`, and `failed_score_ids`) as well as the per-score failure JSON;
+  a failed score exits non-zero and an all-failed shard cannot write a misleading empty
+  rows file.
+- `align_lieder_systems.py --require-score-ids` rejects a merged rows file whose score
+  IDs are missing or unexpected. A partial recount can no longer silently become a
+  smaller-looking conservative alignment.
+
+The instance alignment was run against the current
+`/workspace/b0/olimpic-probe/imslp_lieder_ground_truth` (not the stale path initially
+tried during recovery) with the explicit coverage gate. It produced an alignment for
+all **330 scores**: **2,595 aligned**, **2,147 ambiguous**, **390 count-mismatch**, and
+**2,478 skipped** systems. These are intentionally conservative candidates, not yet a
+training corpus. The authoritative instance artifacts are
+`/workspace/b0/lieder-rebuild/{v3_expected_score_ids.txt,bar_count_rows_v3_complete.json,bar_count_coverage_v3_complete.json,alignment_v3_complete.json}`;
+the same four files were synced locally to `lieder-rebuild/` (SHA-256 checked).
+
+Targeted regression tests: 12 passed in the local ONNX environment. Next: build clean
+pairs only from `alignment_v3_complete.json`, audit provenance/overlap, then generate
+the stratified 100-item alignment review; do not train vocal data before that review is
+adjudicated.
+
+## IV.10 Human review found a grouped-boundary displacement bug
+
+The first 33 judgments from the fresh v6 alignment review found 24 `wrong`, one
+`truncated`, and eight `complete`. This was deliberately a difficult stratified sample,
+not an error-rate estimate, but the six explicit shift/truncation notes all exposed the
+same implementation defect. Each had been emitted from a multi-scan DP match where the
+scan and source **group totals** were equal while their internal cumulative counts were
+not. For example, `IMSLP626307` matched scan counts `[3, 2]` to source counts `[2, 3]`:
+the DP correctly knows both groups contain five measures, but the old code then invented
+the individual 3/2 cut and called it `aligned`. The same shape occurred in
+`IMSLP154059`, `IMSLP580179`, `IMSLP589118`, `IMSLP632177`, and `IMSLP637441`.
+
+This also explains why the reverse pass appeared not to help: it *did* flag all six as
+`arbitrated` (content and count ranges disagree), but the raw v6 clean manifest and its
+review set were built directly from count alignment rather than the evidence-aware
+consensus classifications. Do not use that raw v6 manifest as a clean/evaluation corpus.
+
+Fixed `system_count_alignment.py` conservatively: a one-scan crop covering several
+reference lines remains admissible because the complete crop count validates its whole
+range; any match containing multiple scan systems is now `boundary_ambiguous` unless a
+separate boundary source validates it. It cannot emit a fabricated individual cut.
+All six human-confirmed shifted examples now receive that quarantine status. Full
+coverage-gated rerun on the instance (`alignment_v4_boundary_safe.json`): **2,371
+aligned**, **480 boundary-ambiguous**, 1,891 ordinary ambiguous, 390 count-mismatch,
+and 2,478 skipped (330 scores). The v3/v6 artifacts were preserved; v4 is synced to
+local `lieder-rebuild/`. Targeted regression suite: 21 passed.
+
+Next correction: rebuild any candidate corpus only from v4 `aligned` ranges, then use
+reverse content alignment to triage the 480 newly quarantined cases into a separate,
+human-reviewable training-only set. This is a safety correction, not a claim that reverse
+labels are model-free.
+
+## IV.11 Boundary-safe rebuild and reverse-only triage complete
+
+Rebuilt the corpus from `alignment_v4_boundary_safe.json` into isolated v4 paths; no
+v3/v6 output was overwritten. The v4-safe raw manifest contains **4,343** pairs and its
+audit passes: zero recovered-file overlap and zero structural problems. The existing
+reverse reports then classified the combined pool into 3,922 model-free consensus pairs
+(evaluation-admissible), 3,846 reverse-only pairs, 98 remaining arbitrated, 231
+unarbitrated, 62 phantom, and 408 rejected (score-level source exclusions remain
+separate). This classification is provenance, not a licence to use model-derived labels
+for evaluation.
+
+Of the **480 boundary-ambiguous systems**, reverse confidently places **169 systems / 333
+voice pairs**. They are isolated in
+`stage2_boundary_ambiguous_v4_reverse_manifest.txt` with a JSON report declaring
+`training-only; never evaluation`. A 100-item human review set was generated from that
+manifest, all `boundary_ambiguous` (79 many-to-many and 21 reference-line-split), and
+synced to `docs/writeups/review-data/boundary-ambiguous-reverse-v4/`. It is exposed as
+**Boundary-ambiguous reverse** in `review.html`; the explicit human gate remains in
+place before adding this model-derived material to any training index.
+
+`BENCHMARKS.md` now records the provenance boundary: OSSQ/PDMX values are unchanged
+historical observations, whereas existing Lieder numbers and v6 corpus claims do not
+validate the v4-safe labels. A fresh replicated v4 training comparison is required for
+any performance claim.
+
+That next gate is now complete. The existing v6 clean build was confirmed to have used
+the byte-identical full alignment (the earlier artifact was named
+`system_alignment_v2.json`); it yielded **4,543** clean candidates. A fresh audit of
+that v6 manifest against `alignment_v3_complete.json` passed with **0** recovered-file
+overlap, **0** structural problems, and 458 systems deliberately rebuilt over a
+historical recovered stem (informational, not leakage). Generated a fresh, separately
+named 100-item review set from v6: 36 many-to-many, 28 reference-line-split, and 36
+one-to-one candidates; 10 also have an old label to compare. It is synced locally at
+`docs/writeups/review-data/alignment-v6/` and exposed in `docs/writeups/review.html` as
+**Rebuilt alignment v6**. Human adjudication is now the only gate before this candidate
+set can become vocal training or evaluation data.
+
+## IV.12 First boundary-safe fine-tune launched
+
+Built a deterministic score-disjoint split from the 3,922 model-free consensus v4
+manifest: **3,622 pairs / 202 scores** for training and **300 pairs / 13 scores** for
+selection validation, with zero score overlap. The consensus-only selection manifest
+contains no non-one-to-one topology: those systems are intentionally still quarantined,
+not silently treated as clean through this split.
+
+Launched `current_training_v4_boundary_safe_s42` on the instance from the pinned base
+checkpoint, with the historical 12-epoch recipe and **1,300 PDMX `index_train.txt`**
+replay pairs. No reverse-derived boundary labels are included. This is the first
+preliminary v4 draw, not a corpus comparison: after the trainer selects its checkpoint,
+score it on independent OSSQ, held-out PDMX `index_valid.txt`, and the new v4 Lieder
+holdout; then repeat at matched seeds before interpreting a corpus effect.
+
+## IV.13 First boundary-reverse review: strong content signal, two known failures, and slur-rendering scope
+
+The first 50 adjudicated items in `omr-review-boundaryreverse.json` are **47 complete,
+one wrong, and two truncated**. This is materially better than the deliberately difficult
+raw-v6 alignment review, but it is a review of the reverse-derived, training-only pool;
+it does not promote that pool to evaluation material.
+
+The content failures are actionable at the *system* level, not only the marked voice:
+
+- `IMSLP515921-sys2-v0` is shifted (the label's second bar begins the crop). Its paired
+  voice shares the same reverse-selected source range, so both voices of system 2 must be
+  excluded from any later human-approved training subset.
+- `IMSLP617593-sys26-v0` and `-v2` are truncated. This is independent confirmation of a
+  pre-existing warning: the old v6 alignment review already marked `-v0` and `-v1` wrong,
+  while earlier arbitration presented competing 4- and 6-bar candidates. Exclude all
+  three voices of system 26; do not use a confident reverse verdict to override this
+  repeated human evidence.
+
+Several `complete` comments correctly call out crossed/broken slurs, notably
+`IMSLP154059-sys3-v1`. They are **not evidence that the note/bar alignment is wrong**.
+The first review export mistakenly read only the six-field token text and discarded the
+optional notation sidecar. `make_alignment_review.py` now attaches the complete sidecar
+before engraving, and the same deterministic 100-item set was regenerated and synced:
+beams, stems, slur slots/placement, ties, dynamics, and advance metadata are all present
+on the symbols; the current MusicXML writer consumes its beam/slur fields (and the legacy
+tie field) where it has a visual representation.
+
+This exposed a remaining, narrower representation question rather than a reason to
+discard the content labels. The existing sidecar canonicalizes slur slots per voice.
+In a piano part with two simultaneous independent upper/lower slurs, both can therefore
+become slot 0 even though their original MusicXML numbers differ; in a genuine cross-staff
+slur, the same slot number is desirable. The current sidecar alone cannot distinguish
+those two cases once the source number has been discarded. Record any residual slur-only
+engraving problem in Notes, but do not use it as an alignment verdict; a future
+source-identity-preserving slur sidecar is a distinct structured-notation fix.
+
+## IV.14 Boundary-reverse review complete: 86 strict human-approved pairs
+
+The completed `omr-review-boundaryreverse (1).json` contains **96 complete, two wrong,
+and two truncated** judgments. A `complete` button is not by itself a clean-label
+acceptance: ten accompanying notes identify either slur-only engraving caveats or actual
+metre/accidental defects. `approve_reviewed_pairs.py` converts review exports into a
+traceable whitelist using the deliberately strict policy **complete verdict + empty note**.
+
+Applied to the 333-pair boundary-reverse manifest, it produced **86 explicitly clean,
+human-reviewed, training-only pairs** in
+`lieder-rebuild/stage2_boundary_ambiguous_v4_reverse_reviewed_clean_manifest.txt`, with
+all other reviewed items listed by verdict/note in the adjacent JSON report. No unreviewed
+pair is promoted, and no reverse-derived pair is admitted to evaluation. The failures
+remain system-level exclusions for any future broader promotion: `IMSLP515921-sys2`
+(shifted), `IMSLP617593-sys26` (truncated), and `IMSLP617004-sys10` (implicit tuplets).

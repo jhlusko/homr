@@ -62,7 +62,9 @@ class TestFailuresAreNotSilent(unittest.TestCase):
         )
         return gt_dir, systems_dir, png_dir
 
-    def _run(self, root: Path, rows_out: Path, failed_out: Path) -> int:
+    def _run(
+        self, root: Path, rows_out: Path, failed_out: Path, coverage_out: Path | None = None
+    ) -> int:
         gt_dir, systems_dir, png_dir = self._fixture(root)
         argv = [
             "compare_bar_counts",
@@ -72,6 +74,8 @@ class TestFailuresAreNotSilent(unittest.TestCase):
             "--rows-out", str(rows_out),
             "--failed-out", str(failed_out),
         ]
+        if coverage_out:
+            argv.extend(["--coverage-out", str(coverage_out)])
         with mock.patch.object(sys, "argv", argv), mock.patch.object(
             compare_bar_counts, "compare_one_score", side_effect=RuntimeError("pthread_create failed")
         ):
@@ -97,6 +101,16 @@ class TestFailuresAreNotSilent(unittest.TestCase):
             rows_out = root / "rows.json"
             self._run(root, rows_out, root / "failed.json")
             self.assertFalse(rows_out.exists())
+
+    def test_coverage_records_the_failed_score(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            coverage_out = root / "coverage.json"
+            self._run(root, root / "rows.json", root / "failed.json", coverage_out)
+            coverage = json.loads(coverage_out.read_text(encoding="utf-8"))
+            self.assertEqual(coverage["expected_score_ids"], ["IMSLP1"])
+            self.assertEqual(coverage["completed_score_ids"], [])
+            self.assertEqual(coverage["failed_score_ids"], ["IMSLP1"])
 
 
 if __name__ == "__main__":

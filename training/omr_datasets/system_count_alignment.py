@@ -36,6 +36,7 @@ class SystemAssignment:
     source_system_start: int
     source_system_end: int
     count_exact: bool = True
+    boundary_certified: bool = True
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,7 @@ def _move_assignments(
                 source_system_start=j,
                 source_system_end=j + b,
                 count_exact=False,
+                boundary_certified=False,
             ),
         )
     cursor = source_prefix[j]
@@ -103,6 +105,14 @@ def _move_assignments(
                 source_system_start=j,
                 source_system_end=j + b,
                 count_exact=True,
+                # One scan crop may safely cover several source systems: its complete
+                # physical count independently validates the whole emitted range.  The
+                # converse is not true.  When several scan systems merely match a
+                # source *group total*, splitting that total at their detected counts
+                # invents internal boundaries.  A one-bar counting error then shifts
+                # every member while the DP still calls the group exact (the six v6
+                # human-confirmed displacement cases all had this shape).
+                boundary_certified=a == 1,
             )
         )
         cursor += count
@@ -233,9 +243,15 @@ def align_system_counts(
         margin = alternative.cost - best.cost if alternative.cost < inf else inf
         status = (
             "aligned"
-            if assignment.count_exact and margin >= min_margin
+            if (
+                assignment.count_exact
+                and assignment.boundary_certified
+                and margin >= min_margin
+            )
             else "count_mismatch"
             if not assignment.count_exact
+            else "boundary_ambiguous"
+            if not assignment.boundary_certified
             else "ambiguous"
         )
         systems.append(
@@ -249,6 +265,8 @@ def align_system_counts(
                     if status == "aligned"
                     else "physical and source measure counts disagree"
                     if status == "count_mismatch"
+                    else "multi-scan group has no independently certified internal boundaries"
+                    if status == "boundary_ambiguous"
                     else "equally plausible global alignment"
                 ),
             }

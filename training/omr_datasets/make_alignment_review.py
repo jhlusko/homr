@@ -11,6 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from homr.music_xml_generator import XmlGeneratorArguments, generate_xml
+from training.omr_datasets.notation_sidecar import attach_sidecar
 from training.omr_datasets.stage2_pair_review_server import parse_stem
 from training.transformer.training_vocabulary import read_tokens
 
@@ -74,6 +75,12 @@ def _manifest_map(paths: list[Path]) -> dict[str, tuple[Path, Path]]:
 
 def _write_xml(tokens: Path, destination: Path) -> int:
     symbols = read_tokens(str(tokens))
+    # The six legacy token fields intentionally omit structured notation.  Review
+    # engraving must use the optional sidecar when it exists: it preserves beam levels,
+    # stem direction, slur span slots/placement, ties, dynamics, and advance metadata.
+    # Without it, a perfectly valid pair of simultaneous upper/lower slurs is rebuilt
+    # through the generator's necessarily ambiguous fallback stack and can look crossed.
+    attach_sidecar(tokens, symbols)
     xml = generate_xml(XmlGeneratorArguments(None, None, None), [symbols], "")
     ET.ElementTree(xml).write(destination, encoding="unicode", xml_declaration=True)
     return sum(symbol.rhythm == "barline" for symbol in symbols)
@@ -87,6 +94,11 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--split", default="validation-candidate")
+    parser.add_argument(
+        "--statuses", nargs="+", default=["aligned"],
+        help="Alignment statuses eligible for review (default: aligned). Quarantined "
+        "statuses are reviewable only when an explicitly separate label manifest is supplied.",
+    )
     args = parser.parse_args()
 
     clean = _manifest_map([args.manifest])
@@ -104,7 +116,7 @@ def main() -> None:
         system_item = next(
             (item for item in report["systems"] if item["system"] == system), None
         )
-        if system_item is None or system_item["status"] != "aligned":
+        if system_item is None or system_item["status"] not in args.statuses:
             continue
         topologies = topology_by_system(report)
         candidates.append(
@@ -116,6 +128,7 @@ def main() -> None:
                 "system": system,
                 "voice": voice,
                 "split": args.split,
+                "alignment_status": system_item["status"],
                 "has_old_label": stem in old,
             }
         )

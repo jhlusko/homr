@@ -36,6 +36,38 @@ distribution, which spans four distributions rather than resting on a margin.
 **Protocol from here.** A corpus comparison needs several seeds per condition and a
 comparison of means. A single run is a draw, not a measurement.
 
+## Alignment-provenance correction (2026-08-29)
+
+The historical v6 clean manifest accepted a multi-scan measure-count group when only
+its **total** matched the reference total, then fabricated individual system boundaries
+by cumulatively splitting that total. Human review found six explicit shifted/truncated
+labels of this form; every one had already disagreed with reverse fingerprinting. The
+coverage-safe v4 alignment now quarantines these as `boundary_ambiguous` rather than
+emitting them as `aligned`: 2,371 model-free aligned systems remain and 480 are
+quarantined. Its rebuilt manifest has 4,343 pairs (versus v6's 4,543), and the
+reverse-aware consensus manifest has 3,922 evaluation-admissible pairs. A separate
+333-pair reverse-derived manifest is explicitly **training-only**, never evaluation.
+
+No table below has been retroactively changed: OSSQ and PDMX scores are still correct
+historical observations because neither uses these Lieder labels. The old Lieder column,
+however, is not evidence that a checkpoint handles this corrected corpus: it measures
+project-built labels, and v6-trained checkpoints were trained on the raw manifest that
+contained this now-quarantined class. Do not claim a performance effect for v4 until a
+fresh, replicated training comparison uses its manifest and reports OSSQ as the primary
+independent outcome.
+
+### First v4-boundary-safe arm (in progress)
+
+The first clean replication is running on the instance as
+`current_training_v4_boundary_safe_s42`: **3,622** model-free consensus pairs from
+202 score-disjoint training scores, plus **1,300** PDMX `index_train.txt` replay pairs,
+for 12 epochs from the pinned checkpoint (seed 42). Its selection validation is a new,
+disjoint **300-pair / 13-score** v4 consensus split. It includes **none** of the 333
+reverse-derived boundary-ambiguous pairs; those remain pending human review and are not
+eligible for evaluation. Once training selects a checkpoint, score it on OSSQ,
+`index_valid.txt` PDMX, and this v4 Lieder holdout, then add the resulting row below as
+a single preliminary draw—not a corpus-effect claim until matched seeds replicate it.
+
 ## What kind of errors, not how many
 
 `error_taxonomy.py` partitions each staff by the *kind* of its worst error, because

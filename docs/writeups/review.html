@@ -462,6 +462,36 @@ const SETS = {
       ["unclear",   "Unclear"]
     ]
   },
+  alignmentv6: {
+    label: "Rebuilt alignment v6",
+    dir: "review-data/alignment-v6",
+    left: "corrected", right: "old",
+    leftLabel: "Rebuilt complete label (v6)", rightLabel: "Old label (when available)",
+    question: "Does the <strong>rebuilt label</strong> account for exactly the complete scan line?",
+    detail: "This is the fresh, coverage-gated 100-item sample from the 4,543-pair v6 rebuild. It is stratified across one-to-one, reference-line-split, and many-to-many alignments. Judge only against the scan: no missing bars, extra bars, or wrong passage.",
+    verdicts: [
+      ["complete",  "Rebuilt label is complete and correct"],
+      ["truncated", "Rebuilt label is TRUNCATED"],
+      ["wrong",     "Rebuilt label is otherwise WRONG"],
+      ["wrong-key", "Wrong KEY SIGNATURE"],
+      ["unclear",   "Unclear"]
+    ]
+  },
+  boundaryreverse: {
+    label: "Boundary-ambiguous reverse",
+    dir: "review-data/boundary-ambiguous-reverse-v4",
+    left: "corrected", right: "old",
+    leftLabel: "Reverse-derived label", rightLabel: "Old label (when available)",
+    question: "Does the <strong>reverse-derived label</strong> account for exactly the complete scan line?",
+    detail: "These scan systems were deliberately excluded from model-free alignment: only a multi-scan group total matched, so individual boundaries were not certified. The left label is reverse-fingerprint/model-derived and is training-only even if correct; never use this set for evaluation. The engraving now attaches every available notation sidecar (beams, stems, slur slots/placement, ties, dynamics, and advance metadata). Judge notes, rhythms, and bars; record any remaining engraving-only issue in Notes rather than treating it as an alignment error.",
+    verdicts: [
+      ["complete",  "Reverse-derived label is complete and correct"],
+      ["truncated", "Reverse-derived label is TRUNCATED"],
+      ["wrong",     "Reverse-derived label is otherwise WRONG"],
+      ["wrong-key", "Wrong KEY SIGNATURE"],
+      ["unclear",   "Unclear"]
+    ]
+  },
   truncation: {
     label: "Truncation (labels)",
     dir: "review-data/truncation",
@@ -493,7 +523,10 @@ const SETS = {
   }
 };
 
-let setName = localStorage.getItem("omr-review-set") || "truncation";
+const requestedSet = new URLSearchParams(window.location.search).get("set");
+let setName = requestedSet && SETS[requestedSet]
+  ? requestedSet
+  : localStorage.getItem("omr-review-set") || "truncation";
 let items = [];
 let idx = 0;
 let viewMode = "detail";
@@ -516,6 +549,9 @@ function saveNotes(id, value){
 async function switchSet(name){
   setName = name;
   localStorage.setItem("omr-review-set", name);
+  const url = new URL(window.location.href);
+  url.searchParams.set("set", name);
+  window.history.replaceState(null, "", url);
   idx = 0;
   await loadSet();
 }

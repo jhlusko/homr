@@ -15,10 +15,17 @@ The replacement path is deliberately model-independent:
 1. `compare_bar_counts.py` counts physical measures as supported interior barline
    clusters plus one. Edge closures, isolated stems, and narrow illustration
    detections do not consume score music.
+   Each recount shard must write `--failed-out` and `--coverage-out`; any failed
+   score is a failed shard, not a partial success. After rows are merged,
+   `align_lieder_systems.py --require-score-ids EXPECTED_IDS` requires exact
+   score-ID coverage before it writes an alignment.
 2. `align_lieder_systems.py` aligns the two complete score sequences with
-   one-to-one, one-to-many, many-to-one, and many-to-many moves. Small counter
+    one-to-one, one-to-many, many-to-one, and many-to-many moves. Small counter
    errors may anchor the path but are quarantined; only exact, globally
-   unambiguous assignments are emitted.
+   unambiguous assignments with an independently certified crop boundary are
+   emitted. In particular, one scan crop may safely cover several reference lines,
+   but a multi-scan group whose total alone matches must not invent the internal
+   scan-to-measure cuts: it is marked `boundary_ambiguous`.
 3. `build_clean_stage2_pairs.py` slices the source MusicXML using those explicit
    ranges. It cannot read the recovered manifest as input and copies that manifest
    to quarantine without deleting its files.

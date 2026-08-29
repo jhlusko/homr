@@ -22,7 +22,20 @@ class TestSystemCountAlignment(unittest.TestCase):
     def test_two_scan_lines_can_split_one_reference_line(self) -> None:
         report = align_system_counts([3, 2, 2, 4], [3, 4, 4])
 
-        self.assertEqual(aligned_ranges(report), {0: (0, 3), 1: (3, 5), 2: (5, 7), 3: (7, 11)})
+        # The grouped total proves the two scan lines contain four measures together,
+        # but it does not independently prove their internal 2+2 boundary.  A one-bar
+        # detector error here formerly emitted two shifted labels as ``aligned``.
+        self.assertEqual(aligned_ranges(report), {0: (0, 3), 3: (7, 11)})
+        self.assertEqual(report["systems"][1]["status"], "boundary_ambiguous")
+        self.assertEqual(report["systems"][2]["status"], "boundary_ambiguous")
+
+    def test_equal_group_total_does_not_certify_shifted_internal_boundaries(self) -> None:
+        report = align_system_counts([3, 2], [2, 3], min_margin=0)
+
+        self.assertEqual(aligned_ranges(report), {})
+        self.assertTrue(
+            all(item["status"] == "boundary_ambiguous" for item in report["systems"])
+        )
 
     def test_false_positive_scan_system_is_skipped_without_shifting_the_score(self) -> None:
         report = align_system_counts([8, 3, 4], [3, 4])
