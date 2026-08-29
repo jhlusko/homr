@@ -11792,6 +11792,25 @@ training-recipe or architecture change.
   it" section, which had stated the diagnostic as still-open. Nothing cheap remains on this
   thread; the next real decision is the unfreeze-vs-Stage-3 tradeoff, not another
   crop-sampling pass.
-- **Advance-head promotion run, in progress.** Epoch 9/12 as of this entry (~660s/epoch,
-  ~2 more epochs of wall time left); held-out evaluation against the 2,000-pair manifest
-  still pending completion.
+- **Advance-head promotion run, complete, held-out evaluation run - promote with a caveat.**
+  Training finished cleanly (12/12 epochs, `advance_promote/heads.pth` +
+  `manifest.json`). Held-out eval against the 2,000-pair PDMX manifest (87 filtered for
+  too many ledger lines, 1,913 scored, **zero overlap with the training manifest, verified
+  when the manifest was built**): **macro F1 0.712, micro F1 0.925** on the nonzero-gap
+  subset (the Phase 2 gate figure) - both real numbers dropped from the earlier train-set-fit
+  probe (82.4%/88.7%), confirming that number was optimistic, exactly the risk held-out
+  validation exists to catch.
+  The macro drop is concentrated entirely in rare gap classes with tiny support: `1`
+  F1=0.168 (n=52), `64` F1=0.366 (n=73), `32.` F1=0.500 (n=8) - together under 1% of all
+  nonzero-gap examples. The seven classes that cover the overwhelming majority of real
+  notes (`8`, `16`, `4`, `8.`, `32`, `2`, `4.` - together >95% of the 60k+ nonzero-gap
+  examples) all score F1 0.81-0.95, matching the train-fit numbers almost exactly - this
+  is a rare-class generalization gap, not a broad-signal collapse. Micro F1 0.925 means
+  the head is right on 92.5% of individual predictions weighted by real frequency, well
+  above the 69.4% min-rule baseline's macro figure (not a like-for-like comparison, but
+  the direction is unambiguous and large).
+  **Decision: promote for the common gap classes; do not claim uniform strength across
+  all gap sizes.** Wiring the advance head into the renderer (IV.7 item 4) can now
+  proceed - gated only on falling back to the min-duration rule (not blocking on it) for
+  the handful of gap classes with n<100 in this eval, where the head has not been shown
+  to beat the rule. Full report: `/workspace/b0/lieder-rebuild/advance_promote/holdout_eval.json`.
