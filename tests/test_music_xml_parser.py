@@ -562,3 +562,48 @@ barline . . . . ."""
                 return f"{name}()"
 
         return recurse(xml)
+
+    def test_a_tie_and_a_slur_of_the_same_type_collapse_to_one_marker(self) -> None:
+        """A note that both starts a tie and starts a phrase slur must not produce
+        "slurStart_slurStart" - homr's base vocabulary deliberately collapses <tied>
+        and <slur> into the same string space (see TieState's docstring), and an
+        undeduplicated join there crashes homr.music_xml_generator.build_slurs
+        ("Unsupported slur slurStart_slurStart"), confirmed on real corpus data via
+        training/omr_datasets/roundtrip_fidelity.py."""
+        example = """<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>1</divisions>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>1</duration>
+        <type>quarter</type>
+        <notations>
+          <tied type="start"/>
+          <slur type="start" number="1"/>
+        </notations>
+      </note>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>1</duration>
+        <type>quarter</type>
+        <notations>
+          <tied type="stop"/>
+        </notations>
+      </note>
+      <barline><bar-style>light-heavy</bar-style></barline>
+    </measure>
+  </part>
+</score-partwise>"""
+        result = music_xml_string_to_tokens(example)
+        first_note = next(s for part in result for measure in part for s in measure
+                          if s.rhythm.startswith("note"))
+        self.assertEqual(first_note.slur, "slurStart")
+
+        from homr.music_xml_generator import XmlGeneratorArguments, generate_xml
+        voice = [symbol for measure in result[0] for symbol in measure]
+        generate_xml(XmlGeneratorArguments(True), [voice], "")  # must not raise

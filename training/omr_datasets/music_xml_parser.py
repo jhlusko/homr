@@ -230,7 +230,7 @@ class TokensMeasure:
                 art = str.join("_", sorted(art_parts))
                 sym.articulation = art
 
-    def complete_measure(self) -> Measure:  # noqa: C901
+    def complete_measure(self, divisions: int | None = None) -> Measure:  # noqa: C901
         self._fill_in_arpeggiate(self.symbols)
         result_staff: list[list[EncodedSymbolWithPos]] = [[], []]
         grouped_symbols: dict[int, list[EncodedSymbolWithPos]] = {}
@@ -253,7 +253,7 @@ class TokensMeasure:
             for symbol_in_group in group_pos:
                 result_staff[self._get_staff_no(symbol_in_group)].append(symbol_in_group)
 
-        result_measure = Measure(merge_upper_and_lower_staff(result_staff))
+        result_measure = Measure(merge_upper_and_lower_staff(result_staff, divisions=divisions))
         result_measure.new_page = self.new_page
         return result_measure
 
@@ -409,7 +409,9 @@ class TokensPart:
         self._ensure_current_measure().append_position_change(duration)
 
     def on_end_of_measure(self) -> None:
-        self.measures.append(self._ensure_current_measure().complete_measure())
+        self.measures.append(
+            self._ensure_current_measure().complete_measure(divisions=self.divisions)
+        )
         self.current_measure = TokensMeasure()
         self.pending_clefs.update(self.queued_clefs)
         self.queued_clefs = {}
@@ -605,6 +607,18 @@ def _collect_articulation(note: ET.Element, part: TokensPart, staff: int) -> tup
     if part.tremolo:
         articulations.append("tremolo")
 
+    # A note commonly carries BOTH a <tied> and a <slur> of the same type at once (a
+    # tied note that is also a phrase-slur endpoint - 741 of 800 notes in a sample
+    # carried both, per TieState's own docstring in structured_notation.py) and both
+    # map to the identical "slur" + type.capitalize() string, since homr's base
+    # six-branch vocabulary deliberately collapses ties and slurs into one field. Left
+    # undeduplicated, that produces "slurStart_slurStart" - a value build_slurs cannot
+    # render (`raise ValueError("Unsupported slur " + slurs)`), confirmed as the cause
+    # of a real crash on ~8% of sampled crops via
+    # training/omr_datasets/roundtrip_fidelity.py. `articulations` already dedupes two
+    # lines below for the same reason (a note can equally carry a duplicate
+    # articulation source); slurs never did.
+    slurs = list(set(slurs))
     articulations = list(set(articulations))
     if len(articulations) == 0 and len(slurs) == 0:
         return empty, empty

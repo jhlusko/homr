@@ -140,7 +140,9 @@ def _estimated_measures(crop_tokens: list[str]) -> int:
     return max(1, len(crop_tokens) // 2)
 
 
-def slice_voice_measures(voice: list, start: int, end: int) -> list:
+def slice_voice_measures(
+    voice: list, start: int, end: int, always_include_time: bool = False
+) -> list:
     """The token sequence for measures `[start, end)` of one voice, with the
     clef/key/time-signature continuity `MeasureCutter` exists to maintain.
 
@@ -149,13 +151,21 @@ def slice_voice_measures(voice: list, start: int, end: int) -> list:
     running clef/key/time state forward, so jumping straight to `start` would
     produce a slice with the wrong (or missing) preamble. `voice` is deep-copied
     because the cutter pops from it.
+
+    `always_include_time` is forwarded to the FINAL `extract_measures` call only - the
+    discarded preamble never needs one, and forwarding it there too would do nothing but
+    cost cycles. Default False preserves every existing caller's behaviour exactly; pass
+    True to match what `music_xml_generator.generate_xml` itself does on a fresh render
+    (it always draws a courtesy time signature - `build_add_time_direction`), so a slice
+    meant to be compared against a render is comparing like with like rather than being
+    penalised for a source that simply did not restate the metre here.
     """
     if start < 0 or end > len(voice) or end <= start:
         return []
     cutter = MeasureCutter(copy.deepcopy(voice))
     if start:
         cutter.extract_measures(start)
-    return cutter.extract_measures(end - start)
+    return cutter.extract_measures(end - start, always_include_time=always_include_time)
 
 
 _LOGGED_SCORE_RE = re.compile(r"^(IMSLP[0-9]+): (?:recovered \d+ pair|FAILED)", re.MULTILINE)

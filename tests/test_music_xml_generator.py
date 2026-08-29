@@ -238,3 +238,138 @@ barline . . . . ."""
         v = note.findtext("voice")
         self.assertIsNotNone(v)
         return str(v)
+
+
+class TestTupletParserAcrossInterleavedVoices(unittest.TestCase):
+    """A grand-staff measure interleaves both hands' groups by onset
+    (group_into_chords), so a hand NOT in a tuplet can land its own extra onset in the
+    middle of the tuplet's span. That group must not break the bracket - see
+    TupletParser.add_tuplets' docstring, and roundtrip_fidelity.py's real Lieder finding
+    (note_12 reading back as note_8) that motivated this fix."""
+
+    def _note(self, rhythm: str, position: str = "upper") -> EncodedSymbol:
+        return EncodedSymbol(rhythm, "C4", nonote, nonote, nonote, position)
+
+    def test_an_unrelated_group_inside_the_span_does_not_break_the_bracket(self) -> None:
+        from homr.music_xml_generator import TupletParser
+
+        groups = [
+            SymbolChord([self._note("note_12")]),   # triplet note 1
+            SymbolChord([self._note("note_4", "lower")]),  # other hand, no tuplet shape
+            SymbolChord([self._note("note_12")]),   # triplet note 2
+            SymbolChord([self._note("note_12")]),   # triplet note 3
+        ]
+        self.assertTrue(TupletParser.add_tuplets(groups))
+        self.assertEqual(groups[0].tuplet_mark, "start")
+        self.assertEqual(groups[1].tuplet_mark, "")
+        self.assertEqual(groups[2].tuplet_mark, "")
+        self.assertEqual(groups[3].tuplet_mark, "stop")
+
+    def test_a_genuinely_mismatched_ratio_still_fails(self) -> None:
+        from homr.music_xml_generator import TupletParser
+
+        groups = [
+            SymbolChord([self._note("note_12")]),  # 3:2 triplet
+            SymbolChord([self._note("note_20")]),  # 5:4 quintuplet - a real mismatch
+            SymbolChord([self._note("note_12")]),
+        ]
+        self.assertFalse(TupletParser.add_tuplets(groups))
+
+    def test_running_out_of_groups_still_fails(self) -> None:
+        from homr.music_xml_generator import TupletParser
+
+        groups = [
+            SymbolChord([self._note("note_12")]),
+            SymbolChord([self._note("note_4", "lower")]),
+        ]
+        self.assertFalse(TupletParser.add_tuplets(groups))
+
+
+class TestMultiCharacterClefSign(unittest.TestCase):
+    """`clef_TAB5` is the only vocabulary clef whose sign is more than one letter.
+
+    Splitting the token by character position wrote `<sign>T</sign><line>A</line>`, which
+    is not a MusicXML clef and reparses as `clef_TA` - so every TAB staff homr renders,
+    from a prediction or from ground truth, came out silently wrong.  PDMX carries enough
+    of them that a 50-file roundtrip sample hit it (roundtrip_fidelity_corpora.py).
+    """
+
+    def _clef(self, rhythm: str) -> ET.Element:
+        tokens = read_token_lines(
+            [f"{rhythm} . . . . upper", "keySignature_0 . . . . .", "note_4 C4 _ _ _ upper"]
+        )
+        xml = generate_xml(XmlGeneratorArguments(), [tokens], "")
+        clef = xml.find(".//clef")
+        assert clef is not None
+        return clef
+
+    def test_tab_clef_keeps_its_whole_sign(self) -> None:
+        clef = self._clef("clef_TAB5")
+        self.assertEqual(clef.findtext("sign"), "TAB")
+        self.assertEqual(clef.findtext("line"), "5")
+
+    def test_single_letter_clefs_are_unchanged(self) -> None:
+        for rhythm, sign, line in (("clef_G2", "G", "2"), ("clef_F4", "F", "4")):
+            clef = self._clef(rhythm)
+            self.assertEqual(clef.findtext("sign"), sign)
+            self.assertEqual(clef.findtext("line"), line)
+
+
+class TestTrailingRepeatDoesNotGrowAPhantomMeasure(unittest.TestCase):
+    """A token stream ending on a bare repeatStart - a real crop-boundary shape, the
+    source cut right where a repeat begins - used to render an extra empty measure
+    holding only a forward-repeat barline on its RIGHT edge, a shape real engraving
+    never produces. Confirmed on real PDMX crops via roundtrip_fidelity_corpora.py
+    (1.6% of mismatched crops)."""
+
+    def test_trailing_repeat_start_grows_no_extra_measure(self) -> None:
+        tokens = """clef_G2 . . . . upper
+keySignature_0 . . . . .
+timeSignature/4 . . . . .
+note_4 C4 _ _ _ upper
+note_4 D4 _ _ _ upper
+note_4 E4 _ _ _ upper
+note_4 F4 _ _ _ upper
+repeatStart . . . . ."""
+        tokens_parsed = read_token_lines(tokens.splitlines())
+
+        xml = generate_xml(XmlGeneratorArguments(), [tokens_parsed], "")
+
+        measures = xml.find("part").findall("measure")
+        self.assertEqual(len(measures), 1)
+        self.assertEqual(len(_notes(measures[0])), 4)
+
+    def test_an_ordinary_final_barline_still_grows_no_extra_measure(self) -> None:
+        # The common case this change must not touch: a normal ending already left the
+        # post-loop current_measure genuinely empty (0 children), not barline-only.
+        tokens = """clef_G2 . . . . upper
+keySignature_0 . . . . .
+timeSignature/4 . . . . .
+note_4 C4 _ _ _ upper
+note_4 D4 _ _ _ upper
+note_4 E4 _ _ _ upper
+note_4 F4 _ _ _ upper
+barline . . . . ."""
+        tokens_parsed = read_token_lines(tokens.splitlines())
+
+        xml = generate_xml(XmlGeneratorArguments(), [tokens_parsed], "")
+
+        measures = xml.find("part").findall("measure")
+        self.assertEqual(len(measures), 1)
+
+    def test_a_trailing_measure_with_real_content_is_kept(self) -> None:
+        # A repeatStart followed by a real note must still get its own measure - only a
+        # BARLINE-ONLY trailing measure is dropped.
+        tokens = """clef_G2 . . . . upper
+keySignature_0 . . . . .
+timeSignature/4 . . . . .
+note_4 C4 _ _ _ upper
+repeatStart . . . . .
+note_4 D4 _ _ _ upper"""
+        tokens_parsed = read_token_lines(tokens.splitlines())
+
+        xml = generate_xml(XmlGeneratorArguments(), [tokens_parsed], "")
+
+        measures = xml.find("part").findall("measure")
+        self.assertEqual(len(measures), 2)
+        self.assertEqual(len(_notes(measures[1])), 1)

@@ -189,6 +189,27 @@ def build_part(
     return part
 
 
+def _measure_has_real_content(measure: ET.Element) -> bool:
+    """Whether this measure is worth emitting, as opposed to a trailing artefact.
+
+    A token stream ending on a bare `repeatStart` (a real, if unusual, crop-boundary
+    shape - a repeat mark right where the source was cut) closes the PREVIOUS measure
+    and opens a fresh one to hold the forward-repeat barline, exactly like every other
+    mid-piece repeat. But nothing follows to fill that new measure, so the post-loop
+    "is there anything left to close" check used to count the bare `<barline>` as real
+    content and emit a phantom measure containing only
+    `<barline location="right"><repeat direction="forward"/></barline>` - an empty bar
+    with a forward repeat on its RIGHT edge, which is not a shape real engraving
+    produces (a forward repeat belongs at the start of the section it opens). Confirmed
+    on real PDMX crops via `training/omr_datasets/roundtrip_fidelity_corpora.py` (1.6%
+    of mismatched crops, all attributable to this).
+
+    A measure holding only barline elements - no note, no attributes, no direction, no
+    print - has nothing a reader needs from it, so it is dropped rather than emitted.
+    """
+    return any(child.tag != "barline" for child in measure)
+
+
 def build_measures(
     args: XmlGeneratorArguments,
     voice: list[EncodedSymbol],
@@ -250,6 +271,21 @@ def build_measures(
         elif rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX):
             # Emitted immediately before its `timeSignature/{d}` partner; it carries
             # no engraving of its own, it just tells the next one what to print.
+            #
+            # `attributes` MUST still be carried forward to `last_attributes` here, even
+            # though this branch writes nothing. Leaving it None (as every other
+            # non-attribute branch does, which is fine for THEM since nothing after
+            # relies on it) breaks the very next iteration: `timeSignature/{d}` sees
+            # `last_attributes=None` and creates a THIRD <attributes> block instead of
+            # reusing the one clef/key just wrote into - and since that leaves
+            # `first_attributes` (measure 1's very first block) still lacking a <time>
+            # of its own, build_measures' end-of-voice fallback then adds a FOURTH,
+            # wholly redundant one. Reparsing that MusicXML back through
+            # music_xml_string_to_tokens re-emits a duplicated, out-of-order time
+            # signature - confirmed with training/omr_datasets/roundtrip_fidelity.py,
+            # where it was the single largest source of "insert" mismatches between a
+            # ground-truth slice and its own render+reparse roundtrip.
+            attributes = last_attributes
             try:
                 state.stated_beats = int(rhythm.split("_", 1)[1])
                 if state.first_stated_beats is None:
@@ -301,9 +337,19 @@ def build_measures(
         else:
             eprint("Symbol isn't supported yet ", symbol)
 
-    if len(list(current_measure)) > 0:
+    if _measure_has_real_content(current_measure):
         close_current_measure()
-    if first_attributes.find("time") is None:
+    # `first_attributes.find("time") is None` used to gate this - wrong, because a real
+    # timeSignature token does not necessarily land IN first_attributes: clef/key/time
+    # share one <attributes> block that build_or_get_attributes creates fresh (see the
+    # `clef` branch's force_new=True above), which is a DIFFERENT element than the one
+    # captured as `first_attributes` at measure-1 setup. That mismatch made this
+    # fallback fire even when a time signature had already been written, producing a
+    # second, redundant <time> - confirmed with training/omr_datasets/roundtrip_fidelity.py
+    # against real ground truth. `state.first_denominator` is set exactly once, inside
+    # build_time_signature itself, so it is the direct record of whether a real one was
+    # ever written - not a guess about which XML element it should have ended up in.
+    if state.first_denominator is None:
         time_el = ET.SubElement(first_attributes, "time")
         beats = (
             state.first_stated_beats
@@ -475,10 +521,19 @@ def rebalance_measure_voices(measure: ET.Element) -> None:
 
 
 def build_clef(model_clef: EncodedSymbol, attributes: ET.Element) -> None:
+    """Write `<clef>` for a `clef_<sign><line>` token.
+
+    The sign is taken as everything before the trailing digits rather than as a single
+    character.  `clef_TAB5` is the one vocabulary entry whose sign is longer than one
+    letter, and character indexing split it as sign `T`, line `A` - not a MusicXML clef
+    at all, and it reparses as `clef_TA`.  Found by roundtripping PDMX ground truth,
+    where TAB staves are common enough to appear in a 50-file sample.
+    """
     sign_and_line = model_clef.rhythm.split("_")[1]
+    sign = sign_and_line.rstrip("0123456789")
     clef = ET.SubElement(attributes, "clef", number=str(get_staff(model_clef)))
-    ET.SubElement(clef, "sign").text = sign_and_line[0]
-    ET.SubElement(clef, "line").text = sign_and_line[1]
+    ET.SubElement(clef, "sign").text = sign
+    ET.SubElement(clef, "line").text = sign_and_line[len(sign) :]
 
 
 def build_time_signature(
@@ -1060,6 +1115,59 @@ class TupletParser:
 
     @staticmethod
     def add_tuplets(groups: list[SymbolChord]) -> bool:
+        """Mark the start/stop of every tuplet run in a measure's groups.
+
+        A group with no tuplet-shaped member at all is skipped rather than treated as a
+        break: on a grand staff, the two hands' groups are interleaved by onset
+        (`group_into_chords`), so a hand NOT in this tuplet can have an extra onset the
+        tuplet hand does not share, landing as its own group in the middle of the
+        tuplet's span. That group has nothing to do with this bracket - it is not part
+        of it, but it does not interrupt it either. Before this, any such group made
+        `get_tuplet_duration` return None and failed the WHOLE measure (`TupletParser.parse`
+        reverts every mark in a measure on a `False` return), silently dropping a real
+        tuplet bracket the source had. Confirmed on real Lieder ground truth via
+        `training/omr_datasets/roundtrip_fidelity.py` (`note_12` reading back as
+        `note_8`, `timeSignatureBeats_N` mismatches downstream of the corrupted bar
+        total) - this was the dominant remaining cause of roundtrip mismatches once the
+        slur-collapse crash was fixed (25→5 failed crops in a 251-crop sample).
+
+        A group whose tuplet-shaped member has a DIFFERENT ratio still fails the whole
+        measure, unchanged - that is a genuine mismatch, not an interleaving artefact.
+
+        TWO stricter variants were tried and reverted; both are documented here rather
+        than silently lost, because the underlying bug they were chasing
+        (IMSLP435041: a lower-hand triplet's missing members can be "found" in an
+        unrelated, later upper-hand triplet that merely shares the same (3, 2) ratio,
+        stitching two independent triplets into one bogus bracket) is real and still
+        unfixed - it is a known, open gap, not a solved one.
+
+        Attempt 1 - require a continuation's tuplet-shaped member to come from the SAME
+        hand (`position`) as the run's first match. Fixed IMSLP435041 but was a net
+        regression measured on real ground truth: field mismatches 83 -> 226 across a
+        251-crop sample, dominated by IMSLP83318 breaking badly - a DIFFERENT score with
+        continuous, simultaneous (3, 2) triplet figuration in BOTH hands at once (one
+        group can hold 3 upper `note_12`s and 3 lower `note_12`s together). A single run
+        locked to one hand cannot represent two hands progressing through their own
+        triplets at the same time without stalling one to serve the other.
+
+        Attempt 2 - track one independent run PER HAND simultaneously (a dict of open
+        runs keyed by `position`, advanced together in one pass), instead of one global
+        run locked to a single hand. This handles IMSLP83318's simultaneous-both-hands
+        texture correctly. But tracing IMSLP435041 under it revealed the true shape of
+        that bug: the lower hand's own tuplet-shaped groups near the failure are
+        genuinely INCOMPLETE by strict per-hand counting (2 matching members present,
+        not 3, with nothing else lower-handed nearby) - and the same "short by exactly
+        one" pattern recurs in IMSLP83318 itself, in a different measure. A design that
+        requires strict per-hand completion correctly refuses to bracket an incomplete
+        run, but "refuses" means the whole measure reverts, losing brackets that WERE
+        complete and correct in that same measure. Net effect measured on the same
+        251-crop sample: 165 total field mismatches - better than attempt 1, still worse
+        than the lenient version below. Whether "short by exactly one" is a genuine
+        source-data property, a slice-boundary artefact of
+        `training/omr_datasets/roundtrip_fidelity.py`'s crop extraction, or something in
+        how `group_into_chords` assembles these groups was not established before this
+        was reverted - that is the open question a future attempt needs to answer.
+        """
         cursor = 0
         while cursor < len(groups):
             duration = TupletParser.get_tuplet_duration(groups[cursor])
@@ -1068,23 +1176,29 @@ class TupletParser:
                 cursor += 1
                 continue
 
-            start = cursor
             tuplet_format = (duration.actual_notes, duration.normal_notes)
             tuplet_size = duration.actual_notes
+            first = cursor
+            last = cursor
+            found = 1
+            cursor += 1
 
-            while cursor - start < tuplet_size:
+            while found < tuplet_size:
                 if cursor >= len(groups):
                     return False
                 current_duration = TupletParser.get_tuplet_duration(groups[cursor])
                 if current_duration is None:
-                    return False
+                    cursor += 1
+                    continue
                 current_format = (current_duration.actual_notes, current_duration.normal_notes)
                 if current_format != tuplet_format:
                     return False
+                last = cursor
+                found += 1
                 cursor += 1
 
-            groups[start].tuplet_mark = "start"
-            groups[cursor - 1].tuplet_mark = "stop"
+            groups[first].tuplet_mark = "start"
+            groups[last].tuplet_mark = "stop"
 
         return True
 

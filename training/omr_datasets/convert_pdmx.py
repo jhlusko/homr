@@ -217,11 +217,14 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
             end = min(window_start + _WINDOW_SIZE, n_measures)
             window_measures = voice[window_start:end]
 
-            clefs, key, time_sym = _context_at_measure(voice, window_start, n_staffs)
+            clefs, key, time_sym, time_beats = _context_at_measure(
+                voice, window_start, n_staffs
+            )
             cutter = MeasureCutter(list(window_measures))
             cutter.clefs = clefs
             cutter.key = key
             cutter.time = time_sym
+            cutter.time_beats = time_beats
 
             tokens = cutter.extract_measures(len(window_measures), always_include_time=True)
 

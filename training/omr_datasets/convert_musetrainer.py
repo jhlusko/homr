@@ -20,7 +20,7 @@ from homr.music_xml_generator import XmlGeneratorArguments, generate_xml, xml_to
 from homr.simple_logging import eprint
 from homr.staff_parsing import add_image_into_tr_omr_canvas
 from homr.transformer.configs import default_config
-from homr.transformer.vocabulary import EncodedSymbol, empty
+from homr.transformer.vocabulary import TIME_SIGNATURE_BEATS_PREFIX, EncodedSymbol, empty
 from homr.type_definitions import NDArray
 from training.omr_datasets.convert_lieder import (
     MeasureCutter,
@@ -66,7 +66,18 @@ def _read_mxl(path: Path) -> str:
 
 def _context_at_measure(
     voice: list[Measure], measure_idx: int, n_staffs: int
-) -> tuple[list[EncodedSymbol], EncodedSymbol, EncodedSymbol]:
+) -> tuple[list[EncodedSymbol], EncodedSymbol, EncodedSymbol, EncodedSymbol]:
+    """The clef, key and whole time signature in effect at the start of a window.
+
+    The numerator is carried as well as the denominator.  MeasureCutter already keeps
+    `time_beats` across the measures of one cutter, but pdmx and musetrainer build a
+    fresh cutter per window and seed its context from here - so a numerator stated
+    before the window began was simply never handed over, and every window after the
+    first emitted a bare `timeSignature/4`.  Measured over the shipped corpora that was
+    92.4% of pdmx token files (29,976 of 32,451) and 89.2% of musetrainer's, each paired
+    with an image that DOES show a full signature: `musicxml_window._ensure_context`
+    injects the prevailing `<time>`, beats and all, into the window's first measure.
+    """
     if n_staffs >= 2:
         clefs: list[EncodedSymbol] = [
             EncodedSymbol("clef_G2", empty, empty, empty, empty, "upper"),
@@ -76,6 +87,9 @@ def _context_at_measure(
         clefs = [EncodedSymbol("clef_G2", empty, empty, empty, empty, "upper")]
     key: EncodedSymbol = EncodedSymbol("keySignature_0")
     time_sym: EncodedSymbol = EncodedSymbol("timeSignature/4")
+    # Paired with the denominator default above, so a window opening before the score
+    # states any metre still describes a whole signature rather than half of one.
+    time_beats: EncodedSymbol = EncodedSymbol(f"{TIME_SIGNATURE_BEATS_PREFIX}4")
 
     for i in range(measure_idx):
         for symbol in voice[i]:
@@ -84,10 +98,14 @@ def _context_at_measure(
                 clefs[idx] = symbol
             elif "keySignature" in symbol.rhythm:
                 key = symbol
+            elif symbol.rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX):
+                # Checked before the substring test below, which matches this token too
+                # - the trap MeasureCutter.time_beats documents from the other side.
+                time_beats = symbol
             elif "timeSignature" in symbol.rhythm:
                 time_sym = symbol
 
-    return clefs, key, time_sym
+    return clefs, key, time_sym, time_beats
 
 
 _DYNAMICS = ("pp", "p", "mp", "mf", "f", "ff", "fff", "sf", "sfz", "fp")
@@ -266,11 +284,14 @@ def _convert_file_impl(path: Path) -> list[str]:
             end = min(window_start + _WINDOW_SIZE, n_measures)
             window_measures = voice[window_start:end]
 
-            clefs, key, time_sym = _context_at_measure(voice, window_start, n_staffs)
+            clefs, key, time_sym, time_beats = _context_at_measure(
+                voice, window_start, n_staffs
+            )
             cutter = MeasureCutter(list(window_measures))
             cutter.clefs = clefs
             cutter.key = key
             cutter.time = time_sym
+            cutter.time_beats = time_beats
 
             tokens = cutter.extract_measures(len(window_measures), always_include_time=True)
 
