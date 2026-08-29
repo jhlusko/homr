@@ -18,7 +18,12 @@ import music21.spanner
 import music21.stream
 
 from homr.circle_of_fifths import strip_naturals
-from homr.transformer.vocabulary import EncodedSymbol, empty
+from homr.transformer.vocabulary import (
+    TIME_SIGNATURE_BEATS_PREFIX,
+    VALID_TIME_SIGNATURE_NUMERATORS,
+    EncodedSymbol,
+    empty,
+)
 
 _DTYPE_TO_KERN: dict[str, int] = {
     "breve": 0,
@@ -138,6 +143,21 @@ def _get_articulations(note: object) -> tuple[str, str]:
 
 
 _DEFAULT_CLEF_LINE: dict[str, int] = {"G": 2, "F": 4, "C": 3}
+
+
+def _time_signature_symbols(numerator: object, denominator: object) -> list[EncodedSymbol]:
+    """The stated numerator first, then the denominator - as `music_xml_parser` writes it.
+
+    `validation/smb.py` defaults to this parser for the kern side while the prediction
+    side is parsed as MusicXML, so a numerator missing here is charged to the tool as a
+    recognition error it could not have avoided. Same numerator guard as the other
+    converters: one outside the vocabulary is dropped, not invented.
+    """
+    result: list[EncodedSymbol] = []
+    if isinstance(numerator, int) and numerator in VALID_TIME_SIGNATURE_NUMERATORS:
+        result.append(EncodedSymbol(f"{TIME_SIGNATURE_BEATS_PREFIX}{numerator}"))
+    result.append(EncodedSymbol(f"timeSignature/{denominator}"))
+    return result
 
 
 def _clef_to_symbol(clef_el: object) -> EncodedSymbol:
@@ -275,7 +295,11 @@ def _convert_m21_staff_group(
         if key_sig is not None:
             tokens.append(EncodedSymbol(f"keySignature_{getattr(key_sig, 'sharps', 0)}"))
         if time_sig is not None:
-            tokens.append(EncodedSymbol(f"timeSignature/{getattr(time_sig, 'denominator', 4)}"))
+            tokens.extend(
+                _time_signature_symbols(
+                    getattr(time_sig, "numerator", None), getattr(time_sig, "denominator", 4)
+                )
+            )
 
         by_offset: dict[float, list[object]] = {}
         for staff_measures in all_measures:
@@ -323,7 +347,7 @@ def _convert_m21_part(part: object, ignore_tuplets: bool = False) -> list[Encode
             elif isinstance(el, m21.key.KeySignature):
                 tokens.append(EncodedSymbol(f"keySignature_{el.sharps}"))
             elif isinstance(el, m21.meter.TimeSignature):
-                tokens.append(EncodedSymbol(f"timeSignature/{el.denominator}"))
+                tokens.extend(_time_signature_symbols(el.numerator, el.denominator))
 
         # Collect notes/rests from all voices, grouped by time offset.
         by_offset: dict[float, list[object]] = {}
