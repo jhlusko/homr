@@ -82,6 +82,7 @@ class TestStructuredHeadsWiring(unittest.TestCase):
         self.assertEqual(
             sorted(grown["structured_logits"]),
             [
+                "advance.delta",
                 "beam.level.1",
                 "beam.level.2",
                 "dynamic.mark",

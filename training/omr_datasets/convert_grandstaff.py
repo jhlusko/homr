@@ -10,6 +10,7 @@ from homr.simple_logging import eprint
 from homr.type_definitions import NDArray
 from training.omr_datasets.humdrum_kern_parser import convert_kern_to_tokens
 from training.omr_datasets.musescore_svg import SvgValidationError
+from training.omr_datasets.notation_sidecar import write_sidecar
 from training.transformer.training_vocabulary import (
     max_tuplet_ratio,
     calc_ratio_of_tuplets,
@@ -85,9 +86,15 @@ def _kern_to_tokens(path: str, basename: str) -> str:
     if calc_ratio_of_tuplets(result) > max_tuplet_ratio():
         return ""
 
-    with open(basename + ".tokens", "w") as f:
+    tokens_path = basename + ".tokens"
+    with open(tokens_path, "w") as f:
         f.write(token_lines_to_str(result))
-    return basename + ".tokens"
+    # Notation attached during parsing (currently just `advance` - see
+    # `humdrum_kern_parser._blank_notation`) dies with this function's return unless
+    # it is written out too; read_tokens rebuilds a symbol from its six token fields
+    # alone and does not carry it.
+    write_sidecar(tokens_path, result)
+    return tokens_path
 
 
 def _convert_file(path: Path, ony_recreate_token_files: bool = False) -> str:  # noqa: PLR0911

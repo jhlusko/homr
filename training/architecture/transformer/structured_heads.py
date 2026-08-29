@@ -26,6 +26,7 @@ import torch
 from torch import nn
 
 from homr.transformer.structured_notation import (
+    ADVANCE_CLASSES,
     BEAM_LEVEL_CLASSES,
     DYNAMIC_CLASSES,
     SLUR_EVENT_CLASSES,
@@ -40,6 +41,7 @@ BEAM_HEAD = "beam.level.{level}"
 STEM_HEAD = "stem.direction"
 TIE_HEAD = "tie.state"
 DYNAMIC_HEAD = "dynamic.mark"
+ADVANCE_HEAD = "advance.delta"
 SLUR_EVENT_HEAD = "slur.slot.{slot}.event"
 SLUR_SIDE_HEAD = "slur.slot.{slot}.side"
 
@@ -57,6 +59,7 @@ def head_names(
     names.append(STEM_HEAD)
     names.append(TIE_HEAD)
     names.append(DYNAMIC_HEAD)
+    names.append(ADVANCE_HEAD)
     for slot in range(1, slur_slots + 1):
         names.append(SLUR_EVENT_HEAD.format(slot=slot))
         names.append(SLUR_SIDE_HEAD.format(slot=slot))
@@ -87,6 +90,9 @@ class StructuredNotationHeads(nn.Module):
         # Also no slot: a note carries at most one dynamic mark by construction (the
         # attachment rule claims the single pending mark per staff, 27.97/27.94).
         self.dynamic = nn.Linear(dim, len(DYNAMIC_CLASSES))
+        # No slot either: a simultaneity has exactly one gap to the next one, stamped
+        # onto its canonical (last) member - see structured_notation.AdvanceClass.
+        self.advance = nn.Linear(dim, len(ADVANCE_CLASSES))
         self.slur_event = nn.ModuleList(
             [nn.Linear(dim, len(SLUR_EVENT_CLASSES)) for _ in range(slur_slots)]
         )
@@ -109,6 +115,7 @@ class StructuredNotationHeads(nn.Module):
         logits[STEM_HEAD] = self.stem(hidden)
         logits[TIE_HEAD] = self.tie(hidden)
         logits[DYNAMIC_HEAD] = self.dynamic(hidden)
+        logits[ADVANCE_HEAD] = self.advance(hidden)
         for index in range(self.slur_slots):
             logits[SLUR_EVENT_HEAD.format(slot=index + 1)] = self.slur_event[index](hidden)
             logits[SLUR_SIDE_HEAD.format(slot=index + 1)] = self.slur_side[index](hidden)

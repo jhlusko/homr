@@ -24,12 +24,14 @@ from collections.abc import Sequence
 import torch
 
 from homr.transformer.structured_notation import (
+    ADVANCE_CLASSES,
     BEAM_LEVEL_CLASSES,
     DYNAMIC_CLASSES,
     SLUR_EVENT_CLASSES,
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
     TIE_CLASSES,
+    AdvanceClass,
     BeamLevelState,
     NoteNotation,
     SlurSide,
@@ -38,6 +40,7 @@ from homr.transformer.structured_notation import (
 )
 from homr.transformer.vocabulary import EncodedSymbol
 from training.architecture.transformer.structured_heads import (
+    ADVANCE_HEAD,
     BEAM_HEAD,
     DYNAMIC_HEAD,
     SLUR_EVENT_HEAD,
@@ -53,6 +56,7 @@ _EVENT_INDEX = {state: index for index, state in enumerate(SLUR_EVENT_CLASSES)}
 _SIDE_INDEX = {state: index for index, state in enumerate(SLUR_SIDE_CLASSES)}
 _TIE_INDEX = {state: index for index, state in enumerate(TIE_CLASSES)}
 _DYNAMIC_INDEX = {state: index for index, state in enumerate(DYNAMIC_CLASSES)}
+_ADVANCE_INDEX = {state: index for index, state in enumerate(ADVANCE_CLASSES)}
 
 
 def build_targets(
@@ -85,6 +89,7 @@ def _target_names(beam_levels: int, slur_slots: int) -> list[str]:
     names.append(STEM_HEAD)
     names.append(TIE_HEAD)
     names.append(DYNAMIC_HEAD)
+    names.append(ADVANCE_HEAD)
     for slot in range(1, slur_slots + 1):
         names.append(SLUR_EVENT_HEAD.format(slot=slot))
         names.append(SLUR_SIDE_HEAD.format(slot=slot))
@@ -120,6 +125,13 @@ def _fill_note(
     # the head's own vocabulary is the phase16-measured trained subset (28.1), smaller
     # than the full representation NoteNotation carries.
     targets[DYNAMIC_HEAD][row, column] = _DYNAMIC_INDEX[trained_dynamic_mark(notation.dynamic)]
+
+    # Unlike tie/dynamic, NOT_APPLICABLE here is a real "no question was asked" state
+    # (not the last symbol of a simultaneity, or the last simultaneity of its measure -
+    # see staff_merging.py) and must stay unscored, the same reasoning as a beam level
+    # the note's own duration cannot carry.
+    if notation.advance != AdvanceClass.NOT_APPLICABLE:
+        targets[ADVANCE_HEAD][row, column] = _ADVANCE_INDEX[notation.advance]
 
     for slot in range(1, slur_slots + 1):
         event, side = notation.slurs[slot - 1]

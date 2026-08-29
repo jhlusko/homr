@@ -33,6 +33,7 @@ class TestHeadNames(unittest.TestCase):
                 "stem.direction",
                 "tie.state",
                 "dynamic.mark",
+                "advance.delta",
                 "slur.slot.1.event",
                 "slur.slot.1.side",
             ],
@@ -85,7 +86,7 @@ class TestStructuredNotationHeads(unittest.TestCase):
         # per-slot, so they remain.
         self.assertEqual(
             list(heads(torch.zeros(1, 2, 8))),
-            ["stem.direction", "tie.state", "dynamic.mark"],
+            ["stem.direction", "tie.state", "dynamic.mark", "advance.delta"],
         )
 
     def test_negative_configuration_is_rejected(self) -> None:

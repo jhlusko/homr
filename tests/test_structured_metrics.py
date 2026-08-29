@@ -2,6 +2,7 @@ import unittest
 
 from homr.transformer.structured_notation import (
     BeamLevelState,
+    DynamicMark,
     NoteNotation,
     SlurEvent,
     SlurSide,
@@ -14,6 +15,7 @@ from training.transformer.structured_metrics import (
     Evaluation,
     PerClassReport,
     beam_level_report,
+    dynamic_report,
     exact_vector_accuracy,
     hook_report,
     slur_endpoint_pairs,
@@ -357,6 +359,19 @@ class TestTies(unittest.TestCase):
 
         self.assertEqual(sum(m.support for m in report.classes.values()), 1)
 
+    def test_unknown_masked_positions_are_not_counted(self) -> None:
+        """UNKNOWN is decode_reference's sentinel for a masked decoder position
+        (padding, BOS/EOS, a non-note token) - not a real NONE answer. Before this
+        exclusion, every masked position scored as a free correct NONE prediction,
+        inflating tie support 9.2x in a real eval and creating a ~0.10 macro-F1 floor
+        for dynamics (docs/private/DYNAMICS_HEAD_FINDINGS.md)."""
+        notes = [self._tied(TieState.UNKNOWN)] * 100 + [self._tied(TieState.START)]
+
+        report = tie_report(notes, notes)
+
+        self.assertEqual(sum(m.support for m in report.classes.values()), 1)
+        self.assertNotIn("unknown", report.classes)
+
     def test_a_head_predicting_none_everywhere_is_caught_by_the_macro(self) -> None:
         predicted = [self._tied(TieState.NONE)] * 100
         actual = [self._tied(TieState.NONE)] * 99 + [self._tied(TieState.START)]
@@ -378,6 +393,42 @@ class TestTies(unittest.TestCase):
         evaluation.observe([self._tied(TieState.START)], [self._tied(TieState.START)])
 
         self.assertIn("ties:", evaluation.describe())
+
+
+class TestDynamicReport(unittest.TestCase):
+    """dynamic_report mirrors tie_report exactly - same UNKNOWN-masking bug, same fix."""
+
+    def _marked(self, dynamic: DynamicMark) -> NoteNotation:
+        return NoteNotation(
+            beam_levels=empty_beam_levels(),
+            stem=StemDirection.UNKNOWN,
+            slurs=empty_slur_slots(),
+            dynamic=dynamic,
+        )
+
+    def test_a_correct_mark_scores(self) -> None:
+        marked = [self._marked(DynamicMark.P)]
+
+        self.assertEqual(dynamic_report(marked, marked).macro_f1, 1.0)
+
+    def test_unmarked_notes_are_counted(self) -> None:
+        notes = [self._marked(DynamicMark.NONE)]
+
+        report = dynamic_report(notes, notes)
+
+        self.assertEqual(sum(m.support for m in report.classes.values()), 1)
+
+    def test_unknown_masked_positions_are_not_counted(self) -> None:
+        """This is the head the scoring-floor bug actually damaged: dynamics' real
+        none-accuracy is nowhere near tie's ~0.998, so scoring millions of masked
+        positions as free correct NONE predictions created a macro-F1 floor of ~0.10
+        for a 10-class vocabulary regardless of what the head learned."""
+        notes = [self._marked(DynamicMark.UNKNOWN)] * 1000 + [self._marked(DynamicMark.P)]
+
+        report = dynamic_report(notes, notes)
+
+        self.assertEqual(sum(m.support for m in report.classes.values()), 1)
+        self.assertNotIn("unknown", report.classes)
 
 
 if __name__ == "__main__":

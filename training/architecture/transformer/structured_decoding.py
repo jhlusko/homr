@@ -23,6 +23,7 @@ from typing import TypeVar
 import torch
 
 from homr.transformer.structured_notation import (
+    ADVANCE_CLASSES,
     BEAM_LEVEL_CLASSES,
     DYNAMIC_CLASSES,
     MAX_BEAM_LEVELS,
@@ -31,6 +32,7 @@ from homr.transformer.structured_notation import (
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
     TIE_CLASSES,
+    AdvanceClass,
     BeamLevelState,
     DynamicMark,
     NoteNotation,
@@ -40,6 +42,7 @@ from homr.transformer.structured_notation import (
     TieState,
 )
 from training.architecture.transformer.structured_heads import (
+    ADVANCE_HEAD,
     BEAM_HEAD,
     DYNAMIC_HEAD,
     SLUR_EVENT_HEAD,
@@ -149,8 +152,13 @@ def _note(
         beam_levels=tuple(beams),
         stem=_lookup(indices, STEM_HEAD, row, column, STEM_CLASSES, StemDirection.UNKNOWN),
         slurs=tuple(slurs),
-        tie=_lookup(indices, TIE_HEAD, row, column, TIE_CLASSES, TieState.NONE),
-        dynamic=_lookup(indices, DYNAMIC_HEAD, row, column, DYNAMIC_CLASSES, DynamicMark.NONE),
+        tie=_lookup(indices, TIE_HEAD, row, column, TIE_CLASSES, TieState.UNKNOWN),
+        dynamic=_lookup(
+            indices, DYNAMIC_HEAD, row, column, DYNAMIC_CLASSES, DynamicMark.UNKNOWN
+        ),
+        advance=_lookup(
+            indices, ADVANCE_HEAD, row, column, ADVANCE_CLASSES, AdvanceClass.NOT_APPLICABLE
+        ),
     )
 
 

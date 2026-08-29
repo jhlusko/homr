@@ -27,11 +27,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from homr.transformer.structured_notation import (
+    AdvanceClass,
     BeamLevelState,
+    DynamicMark,
     NoteNotation,
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
 )
 
 
@@ -177,15 +180,25 @@ def stem_report(
 def tie_report(
     predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
 ) -> PerClassReport:
-    """Tie state over every note, including the ones with no tie.
+    """Tie state over every SUPERVISED note, including the ones with no tie.
 
     NONE is scored here, unlike UNSPECIFIED for a slur side, because it is a real
     prediction rather than a silent source: the engraving says plainly whether a note is
     tied. That makes the classes extremely unbalanced - roughly 67,000 tie events against
     a million notes - which is exactly what the macro average is for.
+
+    UNKNOWN is excluded - it is the sentinel `decode_reference`/`decode_predictions`
+    decode a masked decoder position to (padding, BOS/EOS, a non-note token), not a real
+    answer. Before this exclusion existed, every masked position scored as a free correct
+    NONE prediction: measured tie support was `607 x n_sequences` (every decoder
+    position) instead of the true target count, a 9.2x inflation. Tie's real none-
+    accuracy is high enough (~0.998) that the distortion was small (~0.001 macro-F1); see
+    docs/private/DYNAMICS_HEAD_FINDINGS.md for a head where the same bug was not small.
     """
     report = PerClassReport()
     for left, right in zip(predicted, actual, strict=True):
+        if right.tie == TieState.UNKNOWN:
+            continue
         report.observe(str(left.tie), str(right.tie))
     return report
 
@@ -193,16 +206,62 @@ def tie_report(
 def dynamic_report(
     predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
 ) -> PerClassReport:
-    """Dynamic mark over every note, including the ones with none attached.
+    """Dynamic mark over every SUPERVISED note, including the ones with none attached.
 
     NONE is scored here, the same reasoning as tie_report: it is a real prediction (a
     note plainly carries no dynamic) rather than a silent source, so the classes are
     extremely unbalanced by construction (27.97: 3.35% of notes carry one) - exactly what
     the macro average is for.
+
+    UNKNOWN is excluded for the same reason tie_report excludes it - see that docstring.
+    Dynamics is where this bug actually mattered: `none` accuracy there is nowhere near
+    tie's, so scoring ~2.7M masked positions as free correct NONE predictions created a
+    macro-F1 floor of ~0.10 for a 10-class vocabulary regardless of what the head learned.
     """
     report = PerClassReport()
     for left, right in zip(predicted, actual, strict=True):
+        if right.dynamic == DynamicMark.UNKNOWN:
+            continue
         report.observe(str(left.dynamic), str(right.dynamic))
+    return report
+
+
+def advance_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
+) -> PerClassReport:
+    """Onset-delta class, over positions that actually asked the question.
+
+    NOT_APPLICABLE is excluded, unlike tie/dynamic's NONE - it does not mean "the answer
+    is nothing", it means no target was ever attached here (not the canonical symbol of
+    a simultaneity, or the last simultaneity of its measure - see `staff_merging.py`).
+    Scoring it would let the head look accurate for reproducing a mask position it was
+    never asked to predict, the same reasoning `beam_level_report` uses for a level a
+    note's own duration cannot carry.
+    """
+    report = PerClassReport()
+    for left, right in zip(predicted, actual, strict=True):
+        if right.advance == AdvanceClass.NOT_APPLICABLE:
+            continue
+        report.observe(str(left.advance), str(right.advance))
+    return report
+
+
+def advance_nontrivial_report(
+    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
+) -> PerClassReport:
+    """Advance class, restricted to the informative subset: a real, NONZERO gap.
+
+    ZERO is the trivial case (nothing to wait for) and is excluded here for the same
+    reason ONSET_REPRESENTATION_RESEARCH.md's Phase 2 gate asks for it: a head that only
+    ever reproduces the short/common answers is not distinguishable, on the plain
+    `advance_report` figure above, from one that has actually learned to read a gap the
+    old min-duration rule gets wrong. This is the figure that gate is checked against.
+    """
+    report = PerClassReport()
+    for left, right in zip(predicted, actual, strict=True):
+        if right.advance in (AdvanceClass.NOT_APPLICABLE, AdvanceClass.ZERO):
+            continue
+        report.observe(str(left.advance), str(right.advance))
     return report
 
 
@@ -289,6 +348,8 @@ class Evaluation:
     slur_sides: PerClassReport = field(default_factory=PerClassReport)
     ties: PerClassReport = field(default_factory=PerClassReport)
     dynamics: PerClassReport = field(default_factory=PerClassReport)
+    advances: PerClassReport = field(default_factory=PerClassReport)
+    advances_nontrivial: PerClassReport = field(default_factory=PerClassReport)
     vectors_matching: int = 0
     vectors_total: int = 0
     sequences: int = 0
@@ -312,6 +373,10 @@ class Evaluation:
             _merge(self.ties.classes.setdefault(name, ClassMetrics()), metrics)
         for name, metrics in dynamic_report(predicted, actual).classes.items():
             _merge(self.dynamics.classes.setdefault(name, ClassMetrics()), metrics)
+        for name, metrics in advance_report(predicted, actual).classes.items():
+            _merge(self.advances.classes.setdefault(name, ClassMetrics()), metrics)
+        for name, metrics in advance_nontrivial_report(predicted, actual).classes.items():
+            _merge(self.advances_nontrivial.classes.setdefault(name, ClassMetrics()), metrics)
         for name, metrics in stem_report(predicted, actual).classes.items():
             _merge(self.stems.classes.setdefault(name, ClassMetrics()), metrics)
 
@@ -377,6 +442,17 @@ class Evaluation:
             name != "none" and metrics.support for name, metrics in self.dynamics.classes.items()
         ):
             lines.append(f"dynamics: {self.dynamics.describe()}")
+        # An untrained advance head predicts NOT_APPLICABLE-equivalent junk everywhere it
+        # is asked, and this head has no supervised-elsewhere position to fall back on
+        # the way ties/dynamics do - so report only when something in this batch actually
+        # carried a real (non-excluded) target.
+        if self.advances.classes:
+            lines.append(f"advance (all real gaps): {self.advances.describe()}")
+        if self.advances_nontrivial.classes:
+            lines.append(
+                f"advance (nonzero gaps only - the Phase 2 gate figure): "
+                f"{self.advances_nontrivial.describe()}"
+            )
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, object]:
@@ -417,5 +493,15 @@ class Evaluation:
                 "support": sum(
                     m.support for name, m in self.dynamics.classes.items() if name != "none"
                 ),
+            },
+            "advance": {
+                "macro_f1": self.advances.macro_f1,
+                "micro": self.advances.micro_accuracy,
+                "support": sum(m.support for m in self.advances.classes.values()),
+            },
+            "advance_nontrivial": {
+                "macro_f1": self.advances_nontrivial.macro_f1,
+                "micro": self.advances_nontrivial.micro_accuracy,
+                "support": sum(m.support for m in self.advances_nontrivial.classes.values()),
             },
         }

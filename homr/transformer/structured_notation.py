@@ -85,6 +85,69 @@ class TieState(StrEnum):
     STOP = "stop"
     #: A note in the middle of a chain of tied notes both ends one and begins the next.
     START_AND_STOP = "start_and_stop"
+    #: Sentinel for "this decoder position was never supervised" (padding, BOS/EOS, a
+    #: non-note token) - never a real label, never an inference class (excluded from
+    #: TIE_CLASSES below, mirroring StemDirection.UNKNOWN). Distinct from NONE, which IS
+    #: a real, scoreable prediction ("this note is plainly not tied"). Before this
+    #: existed, `structured_decoding.py::_lookup` decoded a masked position to NONE - the
+    #: same class as a real "not tied" answer - so `tie_report`/`dynamic_report` scored
+    #: every padding/BOS/EOS/non-note position as a free correct prediction. Measured
+    #: impact: tie's `none` support was inflated 9.2x (607 x n_sequences instead of the
+    #: true target count); because tie's real none-accuracy is already ~0.998 the
+    #: distortion was small there, but the same mechanism creates a ~0.10 macro-F1 floor
+    #: for the dynamics head, whose none-accuracy is nowhere near that high - see
+    #: docs/private/DYNAMICS_HEAD_FINDINGS.md.
+    UNKNOWN = "unknown"
+
+
+class AdvanceClass(StrEnum):
+    """How much time passes before the NEXT simultaneity in this staff/voice.
+
+    Exists because the renderer's fallback rule - a simultaneity's duration is the
+    MINIMUM among its members (`SymbolChord.get_duration`) - is exact only when the two
+    hands of a grand staff share every onset. Measured on the rebuilt Lieder corpus:
+    25.5% of grand-staff simultaneities hold notes of different lengths (46.4% where both
+    hands sound at once), and on 10.3% of grand-staff bars the min-rule's own total
+    disagrees with the bar's own modal length. That is not recoverable from the label
+    after the fact - see `training.omr_datasets.staff_merging` for where it is still
+    available and computed. See docs/private/ONSET_REPRESENTATION_RESEARCH.md.
+
+    Values name a duration exactly like a rhythm token's own value string (`4`, `8.`,
+    ...), deliberately reusing that vocabulary rather than inventing a second one -
+    `homr.tuplet_repair.duration` parses both alike.
+    """
+
+    #: No question was asked here: not the canonical (last) symbol of a simultaneity, not
+    #: a note-bearing symbol at all, or the last simultaneity of its measure with no
+    #: following one available to compute a delta against (see the module docstring in
+    #: `staff_merging.py` for why a delta is not carried across a measure boundary).
+    NOT_APPLICABLE = "not_applicable"
+    #: The next simultaneity starts at the SAME true onset as this one - typically a
+    #: grace note or an inserted attribute change sharing a moment with a real note. A
+    #: real, informative answer ("nothing to wait for"), not an absence of one.
+    ZERO = "zero"
+    #: A real, nonzero gap that does not quantize exactly to a notated duration - most
+    #: often a tuplet-derived ratio the fixed class list below does not carry a slot for.
+    OTHER = "other"
+    WHOLE = "1"
+    DOTTED_HALF = "2."
+    HALF = "2"
+    DOTTED_QUARTER = "4."
+    QUARTER = "4"
+    DOTTED_EIGHTH = "8."
+    EIGHTH = "8"
+    DOTTED_16TH = "16."
+    SIXTEENTH = "16"
+    DOTTED_32ND = "32."
+    THIRTY_SECOND = "32"
+    DOTTED_64TH = "64."
+    SIXTY_FOURTH = "64"
+
+
+#: Classes the advance head predicts. Declared here, not derived from a "trained subset"
+#: the way DYNAMIC_CLASSES is, because the vocabulary is already small (15 classes) and
+#: every value is meaningful on its own - there is no long tail of rare tags to fold away.
+ADVANCE_CLASSES: tuple[AdvanceClass, ...] = tuple(AdvanceClass)
 
 
 class DynamicMark(StrEnum):
@@ -144,6 +207,11 @@ class DynamicMark(StrEnum):
     S = "s"
     Z = "z"
     N = "n"
+    #: Sentinel for "this decoder position was never supervised" - see
+    #: `TieState.UNKNOWN`'s docstring for the full rationale (same bug, same fix, applied
+    #: here too). Never in `TRAINED_DYNAMIC_MARKS`, so it is automatically excluded from
+    #: `DYNAMIC_CLASSES` - never a real label, never an inference class.
+    UNKNOWN = "unknown"
 
 
 class SlurSide(StrEnum):
@@ -207,9 +275,11 @@ STEM_CLASSES: tuple[StemDirection, ...] = tuple(
     state for state in StemDirection if state != StemDirection.UNKNOWN
 )
 
-#: Classes a tie head would predict, if one is ever trained. Declared here so the label
-#: schema and any future head cannot disagree about the vocabulary.
-TIE_CLASSES: tuple[TieState, ...] = tuple(TieState)
+#: Classes the tie head predicts. UNKNOWN excluded for the same reason STEM_CLASSES
+#: excludes it - a masked-position sentinel, never a real label. Filtering (not
+#: reordering) the first four `TieState` members leaves their indices unchanged, so this
+#: is safe against every checkpoint already trained on the 4-class TIE_CLASSES.
+TIE_CLASSES: tuple[TieState, ...] = tuple(state for state in TieState if state != TieState.UNKNOWN)
 
 #: MusicXML <dynamics> child tag -> DynamicMark, for every tag the enum recognises.
 _DYNAMIC_TAG_VALUES = {mark.value for mark in DynamicMark if mark != DynamicMark.NONE}
@@ -303,6 +373,12 @@ class NoteNotation:
     #: Defaulted for the same reason as `tie` - a sidecar written before dynamics were
     #: extracted decodes as "no dynamic recorded" rather than failing.
     dynamic: DynamicMark = DynamicMark.NONE
+    #: Defaulted for the same reason as `tie` and `dynamic` - a sidecar written before
+    #: advances were extracted decodes as NOT_APPLICABLE, which is also the correct
+    #: value on every symbol that is not the last of its simultaneity (see
+    #: `staff_merging.create_chord_over_two_staffs`), so an old sidecar and a new one
+    #: agree on every position they don't both speak to.
+    advance: AdvanceClass = AdvanceClass.NOT_APPLICABLE
 
     def active_beam_levels(self) -> int:
         return sum(1 for state in self.beam_levels if state != BeamLevelState.NOT_APPLICABLE)

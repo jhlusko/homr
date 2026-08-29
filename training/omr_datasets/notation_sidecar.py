@@ -23,6 +23,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from homr.transformer.structured_notation import (
+    AdvanceClass,
     BeamLevelState,
     DynamicMark,
     NoteNotation,
@@ -33,13 +34,18 @@ from homr.transformer.structured_notation import (
 )
 from homr.transformer.vocabulary import EncodedSymbol
 
-SCHEMA_VERSION = "homr.notation-sidecar.v3"
+SCHEMA_VERSION = "homr.notation-sidecar.v4"
 
-#: Schemas this reader still understands. v1 predates tie extraction and v2 predates
-#: dynamics extraction, so their records decode with no tie / no dynamic respectively -
-#: which is correct for them: the field was not merely absent from the file, it was
-#: absent from the pipeline that wrote it.
-READABLE_SCHEMAS = (SCHEMA_VERSION, "homr.notation-sidecar.v2", "homr.notation-sidecar.v1")
+#: Schemas this reader still understands. v1 predates tie extraction, v2 predates
+#: dynamics extraction, and v3 predates advance extraction, so their records decode with
+#: no tie / no dynamic / no advance respectively - which is correct for them: the field
+#: was not merely absent from the file, it was absent from the pipeline that wrote it.
+READABLE_SCHEMAS = (
+    SCHEMA_VERSION,
+    "homr.notation-sidecar.v3",
+    "homr.notation-sidecar.v2",
+    "homr.notation-sidecar.v1",
+)
 
 SIDECAR_SUFFIX = ".notation.json"
 
@@ -59,6 +65,7 @@ def _encode(notation: NoteNotation) -> dict:
         "slurs": [[str(event), str(side)] for event, side in notation.slurs],
         "tie": str(notation.tie),
         "dynamic": str(notation.dynamic),
+        "advance": str(notation.advance),
     }
 
 
@@ -69,6 +76,7 @@ def _decode(record: dict) -> NoteNotation:
         slurs=tuple((SlurEvent(event), SlurSide(side)) for event, side in record["slurs"]),
         tie=TieState(record.get("tie", TieState.NONE)),
         dynamic=DynamicMark(record.get("dynamic", DynamicMark.NONE)),
+        advance=AdvanceClass(record.get("advance", AdvanceClass.NOT_APPLICABLE)),
     )
 
 

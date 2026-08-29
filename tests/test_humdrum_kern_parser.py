@@ -2,6 +2,12 @@
 
 import unittest
 
+from homr.transformer.structured_notation import (
+    BeamLevelState,
+    NoteNotation,
+    StemDirection,
+    TieState,
+)
 from training.omr_datasets.humdrum_kern_parser import convert_kern_to_tokens
 from training.transformer.training_vocabulary import token_lines_to_str
 
@@ -508,3 +514,171 @@ note_16 G4 # _ _ upper
 barline . . . . ."""
         self.maxDiff = None
         self.assertEqual(tokens, expected)
+
+
+def _notes(kern: str) -> list[tuple[str, str, NoteNotation]]:
+    """Every note/rest symbol of a kern snippet, with the notation extracted for it."""
+    return [
+        (symbol.rhythm, symbol.pitch, symbol.notation)
+        for symbol in convert_kern_to_tokens(kern.splitlines())
+        if symbol.notation is not None
+    ]
+
+
+def _levels(notation: NoteNotation, count: int) -> list[BeamLevelState]:
+    return list(notation.beam_levels[:count])
+
+
+_HEADER = """**kern
+*clefG2
+*k[]
+*M2/4
+=-
+"""
+
+
+class TestHumdrumKernBeams(unittest.TestCase):
+    """Beam, stem and tie extraction from the markup the note tokens already carry.
+
+    These assert on `EncodedSymbol.notation`, which is deliberately outside the token's
+    __eq__/__str__, so none of it shows up in the token strings the tests above pin down.
+    """
+
+    def test_beamed_run_of_sixteenths(self) -> None:
+        notes = _notes(_HEADER + "16ccLL\n16dd\n16ee\n16ffJJ\n*-\n")
+        self.assertEqual(
+            [_levels(n, 2) for _, _, n in notes],
+            [
+                [BeamLevelState.BEGIN, BeamLevelState.BEGIN],
+                [BeamLevelState.CONTINUE, BeamLevelState.CONTINUE],
+                [BeamLevelState.CONTINUE, BeamLevelState.CONTINUE],
+                [BeamLevelState.END, BeamLevelState.END],
+            ],
+        )
+        # A 16th engages exactly two levels; the rest of the representation stays absent.
+        for _, _, notation in notes:
+            self.assertEqual(
+                list(notation.beam_levels[2:]), [BeamLevelState.NOT_APPLICABLE] * 4
+            )
+
+    def test_inner_level_opens_and_closes_inside_an_eighth_beam(self) -> None:
+        """The second beam of a 16th pair nested inside a beamed run of eighths."""
+        notes = _notes(_HEADER + "8ccL\n16ddL\n16eeJ\n8ffJ\n*-\n")
+        self.assertEqual(_levels(notes[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(_levels(notes[1][2], 2), [BeamLevelState.CONTINUE, BeamLevelState.BEGIN])
+        self.assertEqual(_levels(notes[2][2], 2), [BeamLevelState.CONTINUE, BeamLevelState.END])
+        self.assertEqual(_levels(notes[3][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE])
+
+    def test_partial_beams_become_hooks(self) -> None:
+        """`k`/`K` are the stub beams a dotted eighth's partner draws back or forward."""
+        backward = _notes(_HEADER + "8.ccL\n16ddJk\n*-\n")
+        self.assertEqual(_levels(backward[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(
+            _levels(backward[1][2], 2), [BeamLevelState.END, BeamLevelState.BACKWARD_HOOK]
+        )
+
+        forward = _notes(_HEADER + "16ccLK\n8.ddJ\n*-\n")
+        self.assertEqual(
+            _levels(forward[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.FORWARD_HOOK]
+        )
+        self.assertEqual(_levels(forward[1][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE])
+
+    def test_unbeamed_note_carries_flags_not_beams(self) -> None:
+        notes = _notes(_HEADER + "8cc\n16dd\n4ee\n2ff\n*-\n")
+        self.assertEqual(_levels(notes[0][2], 2), [BeamLevelState.FLAG, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(_levels(notes[1][2], 2), [BeamLevelState.FLAG, BeamLevelState.FLAG])
+        self.assertEqual(_levels(notes[2][2], 2), [BeamLevelState.NOT_APPLICABLE] * 2)
+        self.assertEqual(_levels(notes[3][2], 2), [BeamLevelState.NOT_APPLICABLE] * 2)
+
+    def test_triplet_duration_beams_like_the_note_it_is_drawn_as(self) -> None:
+        """A `12` is drawn as an eighth and a `24` as a 16th, so that is what they beam."""
+        notes = _notes(_HEADER + "12ccL\n12dd\n12eeJ\n24ffLL\n24gg\n24aaJJ\n*-\n")
+        self.assertEqual(_levels(notes[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(_levels(notes[2][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(_levels(notes[3][2], 2), [BeamLevelState.BEGIN, BeamLevelState.BEGIN])
+        self.assertEqual(_levels(notes[5][2], 2), [BeamLevelState.END, BeamLevelState.END])
+
+    def test_beam_does_not_survive_a_barline(self) -> None:
+        """An unclosed beam is a broken source, not a licence to beam into the next bar."""
+        notes = _notes(_HEADER + "8ccL\n8dd\n=\n8eeL\n8ffJ\n*-\n")
+        self.assertEqual(_levels(notes[2][2], 1), [BeamLevelState.BEGIN])
+        self.assertEqual(_levels(notes[3][2], 1), [BeamLevelState.END])
+
+    def test_chord_members_share_one_beam(self) -> None:
+        """Kern writes a chord's beaming once, on one member; it belongs to all of them."""
+        notes = _notes(_HEADER + "8cc 8ee 8ggL\n8dd 8ff 8aaJ\n*-\n")
+        self.assertEqual([_levels(n, 1) for _, _, n in notes[:3]], [[BeamLevelState.BEGIN]] * 3)
+        self.assertEqual([_levels(n, 1) for _, _, n in notes[3:]], [[BeamLevelState.END]] * 3)
+
+    def test_a_second_voice_on_the_staff_keeps_its_own_beams(self) -> None:
+        """`8ccL 8ee` is two voices, not a chord: only the first of them is beamed."""
+        kern = """**kern
+*^
+*clefG2\t*clefG2
+*k[]\t*k[]
+*M2/4\t*M2/4
+=-\t=-
+8ccL\t4ee
+8ddJ\t.
+*-\t*-
+"""
+        notes = _notes(kern)
+        by_pitch = {pitch: notation for _, pitch, notation in notes}
+        self.assertEqual(_levels(by_pitch["C5"], 1), [BeamLevelState.BEGIN])
+        self.assertEqual(_levels(by_pitch["D5"], 1), [BeamLevelState.END])
+        self.assertEqual(_levels(by_pitch["E5"], 1), [BeamLevelState.NOT_APPLICABLE])
+
+    def test_rest_inside_a_beam_carries_no_beam_of_its_own(self) -> None:
+        notes = _notes(_HEADER + "8ccL\n8r\n8ddJ\n*-\n")
+        rest = next(n for rhythm, _, n in notes if rhythm.startswith("rest"))
+        self.assertEqual(list(rest.beam_levels), [BeamLevelState.NOT_APPLICABLE] * 6)
+        self.assertEqual(rest.stem, StemDirection.NOT_APPLICABLE)
+        # ...but the beam still runs across it and closes on the note after.
+        self.assertEqual(_levels(notes[2][2], 1), [BeamLevelState.END])
+
+
+class TestHumdrumKernStemsAndTies(unittest.TestCase):
+
+    def test_explicit_stem_direction(self) -> None:
+        notes = _notes(_HEADER + "4cc/\n4dd\\\n4ee\n*-\n")
+        self.assertEqual([n.stem for _, _, n in notes], [
+            StemDirection.UP, StemDirection.DOWN, StemDirection.UNKNOWN
+        ])
+
+    def test_stem_markup_does_not_disturb_the_tokens(self) -> None:
+        with_stems = token_lines_to_str(
+            convert_kern_to_tokens((_HEADER + "4cc/\n4dd\\\n*-\n").splitlines())
+        )
+        without = token_lines_to_str(
+            convert_kern_to_tokens((_HEADER + "4cc\n4dd\n*-\n").splitlines())
+        )
+        self.assertEqual(with_stems, without)
+
+    def test_tied_pair(self) -> None:
+        notes = _notes(_HEADER + "4cc[\n4cc]\n4dd\n*-\n")
+        self.assertEqual([n.tie for _, _, n in notes], [
+            TieState.START, TieState.STOP, TieState.NONE
+        ])
+
+    def test_tie_continue_is_start_and_stop(self) -> None:
+        """`_` is the middle of a chain; so is a `[` and `]` written onto one token."""
+        notes = _notes(_HEADER + "4cc[\n4cc_\n4cc]\n*-\n")
+        self.assertEqual([n.tie for _, _, n in notes], [
+            TieState.START, TieState.START_AND_STOP, TieState.STOP
+        ])
+        both = _notes(_HEADER + "4cc[]\n*-\n")
+        self.assertEqual(both[0][2].tie, TieState.START_AND_STOP)
+
+    def test_angle_brackets_are_not_ties(self) -> None:
+        """The GrandStaff paper calls `<`/`>` tie ends, but no tie is engraved for them."""
+        notes = _notes(_HEADER + "4cc<\n4cc>\n*-\n")
+        self.assertEqual([n.tie for _, _, n in notes], [TieState.NONE, TieState.NONE])
+
+    def test_ties_are_per_note_inside_a_chord(self) -> None:
+        notes = _notes(_HEADER + "4cc[ 4ee 4gg[\n4cc] 4ff 4gg]\n*-\n")
+        self.assertEqual([n.tie for _, _, n in notes[:3]], [
+            TieState.START, TieState.NONE, TieState.START
+        ])
+        self.assertEqual([n.tie for _, _, n in notes[3:]], [
+            TieState.STOP, TieState.NONE, TieState.STOP
+        ])

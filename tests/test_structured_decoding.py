@@ -7,9 +7,11 @@ from homr.transformer.structured_notation import (
     SLUR_EVENT_CLASSES,
     STEM_CLASSES,
     BeamLevelState,
+    DynamicMark,
     NoteNotation,
     SlurEvent,
     StemDirection,
+    TieState,
     empty_beam_levels,
     empty_slur_slots,
 )
@@ -77,6 +79,19 @@ class TestReferenceRoundTrip(unittest.TestCase):
 
         self.assertEqual(decoded[0].beam_levels[0], BeamLevelState.NOT_APPLICABLE)
         self.assertEqual(decoded[0].stem, StemDirection.UNKNOWN)
+
+    def test_a_masked_position_decodes_tie_and_dynamic_to_unknown_not_none(self) -> None:
+        # Before this, a masked position decoded to NONE - the same class as a real "not
+        # tied"/"no dynamic" answer - so tie_report/dynamic_report scored every
+        # padding/BOS/EOS position as a free correct prediction. See UNKNOWN's own
+        # docstring in structured_notation.py.
+        decoded = decode_reference(_targets(_notation()), LEVELS, SLOTS)[0]
+
+        self.assertEqual(decoded[0].tie, TieState.UNKNOWN)
+        self.assertEqual(decoded[0].dynamic, DynamicMark.UNKNOWN)
+        # The real note (index 1) is still a genuine NONE, not masked away.
+        self.assertEqual(decoded[1].tie, TieState.NONE)
+        self.assertEqual(decoded[1].dynamic, DynamicMark.NONE)
 
     def test_a_level_the_note_cannot_carry_stays_unscoreable(self) -> None:
         # An eighth note has one flag, so level 2 was never supervised.
