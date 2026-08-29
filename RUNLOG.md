@@ -12218,12 +12218,32 @@ positive and significant, so the direction is solid; the size is not pinned down
 | nat42 (90.66) | +2.55pp | +2.53pp |
 | nat7 (92.12) | +1.09pp | +1.08pp |
 
-So the defensible claim is narrower than IV.15's table suggested, and it is the claim on
-the two corpora the project does not build: **the v4 boundary-safe corpus beats a
-vocabulary-matched baseline on OSSQ at every seed pairing, by somewhere between +1.1 and
-+2.6pp, and on PDMX by +1.4-1.5pp. On its own domain it is not distinguishable from the
-corpus it replaced.** The v4 seeds themselves sit 0.02pp apart (93.21 / 93.19); the
-uncertainty here is all in the baseline.
+**With both baseline seeds scored, all four pairings per benchmark:**
+
+| benchmark | baseline spread (nat7 - nat42) | v4_s42 / v4_s7 vs nat42 | v4_s42 / v4_s7 vs nat7 |
+| --- | --- | --- | --- |
+| PDMX | **-0.05pp** | +1.54 / +1.39 | +1.59 / +1.44 |
+| OSSQ | +1.46pp | +2.55 / +2.53 | +1.09 / +1.08 |
+| Lieder v4 | +0.70pp | +0.51 / +0.56 (ns) | **-0.20 / -0.14 (ns)** |
+
+**PDMX is the clean result.** Its two baseline seeds land 0.05pp apart, so there is no
+baseline noise to hide behind: all four pairings are significant with tight intervals, and
+the effect is +1.4 to +1.6pp. That is the number to quote for the v4 corpus.
+
+**OSSQ is positive at every pairing but its size is not pinned down**, because the
+baseline's own seeds differ by 1.46pp - `nat42` is simply the low one.
+
+**Lieder settles the other way.** `nat7` scores 95.58, *above* both v4 seeds (95.38,
+95.44), so against the better baseline seed v4 is marginally negative and against the
+worse one marginally positive - it straddles them, every interval spans zero, and 222 of
+300 staves are tied. There is no corpus effect on the Lieder holdout to find.
+
+So the defensible claim is narrower than IV.15's table suggested, and it is a claim about
+the two corpora the project does not build: **the v4 boundary-safe corpus is worth +1.4 to
++1.6pp on PDMX and +1.1 to +2.6pp on OSSQ against a vocabulary-matched baseline. On its
+own domain it is indistinguishable from the corpus it replaced.** The v4 seeds sit 0.02pp
+apart on OSSQ; every bit of the uncertainty here lives in the baseline, which is the
+argument for scoring both seeds of a control rather than one.
 
 That last sentence is not a reason to revert v4 - it was built to remove fabricated
 boundary labels, and IV.10 documents six human-confirmed displacement cases it

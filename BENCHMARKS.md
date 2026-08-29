@@ -459,8 +459,15 @@ on the older Lieder corpus, so vocabulary is roughly held fixed and the corpus v
 Read the second column, not the first, for any claim about the corpus. The Lieder gain is
 a vocabulary gap once controlled; the OSSQ and PDMX gains are real and replicate.
 
-The OSSQ column depends on which baseline seed it is measured against: `nat42` scores
-90.66 and `nat7` 92.12, a 1.46pp baseline spread comparable to the effect. Against `nat7`
-the v4 gain is +1.09 / +1.08pp rather than +2.55 / +2.53. Every pairing is positive and
-significant, so quote OSSQ as **+1.1 to +2.6pp**, not as a point estimate. See RUNLOG
-IV.17.
+Both baseline seeds are scored, and the spread differs sharply by benchmark:
+
+| benchmark | baseline spread | v4 vs nat42 | v4 vs nat7 |
+| --- | --- | --- | --- |
+| PDMX | -0.05pp | +1.54 / +1.39 | +1.59 / +1.44 |
+| OSSQ | +1.46pp | +2.55 / +2.53 | +1.09 / +1.08 |
+| Lieder v4 | +0.70pp | +0.51 / +0.56 (ns) | -0.20 / -0.14 (ns) |
+
+Quote **PDMX +1.4 to +1.6pp** (stable baseline, all four pairings significant) and **OSSQ
++1.1 to +2.6pp** (baseline noisy, positive everywhere). Quote **no effect on the Lieder
+holdout**: `nat7` outscores both v4 seeds, so v4 straddles the baseline seeds there. See
+RUNLOG IV.17.
