@@ -154,12 +154,19 @@ element it was never trained to attend to.
 
 ## What would actually fix it (revised)
 
-**Do the cheap diagnostic RUNLOG already identified as the next step before touching
-architecture at all.** RUNLOG's diagnostic pass found `mf`/`mp`/`ppp` specifically behave
-like an "unmarked" detector (87-92% predicted `NONE`) rather than a misclassifier, and
-proposed - but never did - looking at the actual visual crops at those positions: mark
-size, position within the crop relative to the note, rendering artifacts. That is strictly
-cheaper than any of the below and was the planned next move before this thread stalled.
+**Correction: the cheap crop diagnostic was already run - it is not an open next step.**
+RUNLOG §24 (lines ~3345-3387) found `mf`/`mp`/`ppp` behave like an "unmarked" detector
+(87-92% predicted `NONE`) and hand-checked 13 crops against their ground-truth positions
+(9 `mf`/`mp`/`ppp`, 4 `p`/`f` control, drawn from real converted train/valid sidecars,
+scores never seen earlier in that investigation): **7 of 9 `mf`/`mp`/`ppp` positions are
+printed exactly as labelled; 4 of 4 controls are.** The ~2-in-9 miss rate is real
+(both misses landed on `mf`/`mp`, none on the well-scoring marks - plausibly MuseScore
+keeping an invisible direction's data after the visible mark was deleted/replaced) but
+"nowhere near large enough to explain an 87-92% predicts-none rate by itself." RUNLOG's
+own conclusion: **most of the collapse is a genuine model limitation, not a corpus
+artifact**, and further crop-sampling wasn't worth a fifth training run without a new
+idea. Nothing cheap remains on this thread; the next real move is the unfreeze-vs-Stage-3
+tradeoff below, not another diagnostic pass.
 
 **Given Stage 3 already solves the practical problem, weigh whether the inline structured
 head is worth further investment at all before reaching for unfreezing specifically.**
