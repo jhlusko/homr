@@ -12206,10 +12206,24 @@ OSSQ *grows*, from +1.71 to +2.55, because `nat42` is itself slightly worse than
 (90.66 against 91.49): the naturals fine-tune cost a little OSSQ accuracy, and the v4
 corpus recovers it and then some.
 
+**And the OSSQ magnitude does not survive the second baseline seed.** `nat7` scores 92.12
+on OSSQ against `nat42`'s 90.66 - the *baseline's own* seed spread is 1.46pp, comparable
+to the effect being measured. Against `nat7` instead, v4 is +1.09 / +1.08pp (CI +0.32 to
++1.95, +0.37 to +1.84) rather than +2.5pp. All four v4-against-nat comparisons are
+positive and significant, so the direction is solid; the size is not pinned down, and
+`nat42` looks like the low seed rather than v4 being 2.5pp better. Quote a range.
+
+| baseline | v4_s42 | v4_s7 |
+| --- | --- | --- |
+| nat42 (90.66) | +2.55pp | +2.53pp |
+| nat7 (92.12) | +1.09pp | +1.08pp |
+
 So the defensible claim is narrower than IV.15's table suggested, and it is the claim on
-the two corpora the project does not build: **the v4 boundary-safe corpus is worth roughly
-+2.5pp on OSSQ and +1.4-1.5pp on PDMX against a vocabulary-matched baseline, replicated at
-two seeds. On its own domain it is not distinguishable from the corpus it replaced.**
+the two corpora the project does not build: **the v4 boundary-safe corpus beats a
+vocabulary-matched baseline on OSSQ at every seed pairing, by somewhere between +1.1 and
++2.6pp, and on PDMX by +1.4-1.5pp. On its own domain it is not distinguishable from the
+corpus it replaced.** The v4 seeds themselves sit 0.02pp apart (93.21 / 93.19); the
+uncertainty here is all in the baseline.
 
 That last sentence is not a reason to revert v4 - it was built to remove fabricated
 boundary labels, and IV.10 documents six human-confirmed displacement cases it
