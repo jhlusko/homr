@@ -12123,3 +12123,48 @@ absolute, so resolving them against the working directory silently skipped every
 returned a confident empty Counter. The script now resolves against the repo root and
 prints how many token files it could not open, because a corpus analysis that quietly
 measures nothing looks exactly like a corpus analysis that measures zero.
+
+## IV.16 Working the open list from IV.15
+
+Six threads left open by the numerator investigation, worked in one pass.
+
+**Three training recipes were reading stale corpora.** `train_scans.py` named
+`phase7fix`, two builds behind - no clef repair, no numerator.
+`train_scans_continue.py` and `train_scans_with_synthetic.py` named `phase7clef`, which
+has the clef repair and no numerator. All three mix OSSQ scans with Lieder and PDMX,
+which state the numerator throughout, so every one taught the model to state and to omit
+the same token for the same notation. All now read `phase7num`: the same 34,510 staves,
+the same clef repair, verified with 0 missing files over a 3,000-row sample, 3,000 of
+3,000 retaining their leading clef, and 607 of 3,000 stating a numerator against 0 in
+`phase7clef`. `train_scans.py` had no test pinning its corpus, which is how it drifted
+furthest; it has one now.
+
+**The 86 reviewed pairs are promoted.** `imslp_train_index_v4_plus_reviewed86.txt`,
+3,708 pairs, built only after confirming that none of the whitelist's 35 scores appear in
+the 13-score selection split. They stay training-only.
+
+**The music21 kern fix is verified end to end**, not just in isolation: with music21
+installed both backends state `timeSignatureBeats_3` on the same input. The regression
+test skips where music21 is absent, which is the condition on the GPU instance and how the
+defect survived there in the first place. The smb dataset is not on the instance, so the
+benchmark itself still has not been run.
+
+**The residual OSSQ tail is 5 reference defects and 20 model errors.** Comparing the
+opening of each collapsed staff with the numerator stripped - the first attempt compared
+raw tokens, which the numerator itself shifts, and misfiled agreement as disagreement -
+5 of 25 have both checkpoints agreeing against the reference. Three are the same defect:
+a missing key signature. `sq8806881:0012:0001` is Haydn in E-flat major, both checkpoints
+open `keySignature_-3`, and the segment's `<attributes>` carries `<divisions>` and
+`<time>` and no `<key>` element at all. Across the split, 7 of 792 staves open with no key
+signature and on 6 of those both checkpoints say otherwise. Written up in
+`OSSQ_GROUND_TRUTH_ERRORS.md` - against the corpus's own segment files, never against
+anything HOMR wrote, which is the distinction that document exists to enforce.
+
+**A trained checkpoint can now be exported without overwriting the release graphs**
+(`HOMR_MODEL_NAME`), which is what kept IV.8's tuplet confirmation open. The v4 seed-7
+checkpoint was exported and `homr.main` ran end to end on real scans under both
+`HOMR_TUPLET_REPAIR` settings. Repair was a no-op on every page tried, correctly - none
+carried an overfull bar - so the integration is confirmed sound on a current checkpoint
+and firing is still not confirmed. Same gap as IV.8 named, for a better reason.
+
+**The rare numerators are a supply gap** - IV.15.1.
