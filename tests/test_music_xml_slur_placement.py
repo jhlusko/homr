@@ -10,8 +10,10 @@ evaluated, and silently discarded on the way to MusicXML.
 
 import unittest
 import xml.etree.ElementTree as ET
+from fractions import Fraction
 
-from homr.music_xml_generator import build_slurs
+from homr import constants
+from homr.music_xml_generator import ConversionState, build_slurs
 from homr.transformer.structured_notation import NoteNotation, SlurEvent, SlurSide
 from homr.transformer.vocabulary import EncodedSymbol
 
@@ -22,9 +24,18 @@ def _note_with(slur: str, notation: NoteNotation | None) -> EncodedSymbol:
     return symbol
 
 
-def _slurs(symbol: EncodedSymbol, slur_number: int = 1) -> list[ET.Element]:
+def _slurs(symbol: EncodedSymbol, already_open: tuple[int, ...] = ()) -> list[ET.Element]:
+    """`build_slurs` numbers a span from the conversion state's open-slur stack.
+
+    A note with no notation sidecar has no slot to prefer, so it falls back to that
+    stack - which is why this helper must hand over a real state.  `already_open` seeds
+    the spans a caller should imagine still open, so the fallback numbering can be
+    exercised rather than assumed.
+    """
     note = ET.Element("note")
-    build_slurs(note, symbol, slur_number)
+    state = ConversionState(constants.duration_of_quarter, Fraction(4))
+    state.open_slurs = list(already_open)
+    build_slurs(note, symbol, state)
     return note.find("notations").findall("slur")
 
 
@@ -114,9 +125,10 @@ class TestSlurPlacement(unittest.TestCase):
         self.assertEqual(_slurs(symbol), [])
 
     def test_the_slur_number_is_still_written(self) -> None:
+        # With span 1 already open, the next start must claim 2 rather than collide.
         symbol = _note_with("slurStart", None)
 
-        slurs = _slurs(symbol, slur_number=2)
+        slurs = _slurs(symbol, already_open=(1,))
 
         self.assertEqual(slurs[0].get("number"), "2")
 

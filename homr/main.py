@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
-from homr import color_adjust, download_utils
+from homr import color_adjust, download_utils, text_detector_config
 from homr.autocrop import autocrop
 from homr.bar_line_detection import (
     detect_bar_lines,
@@ -423,6 +423,13 @@ def download_weights(segnet_use_gpu: bool, transformer_use_gpu: bool, coreml_enc
     # still pick up an optional model it doesn't have yet - e.g. after upgrading to a
     # version that ships structured heads for the first time.
     download_optional_model(default_config.filepaths.structured_heads_path, base_url)
+    # Both text detectors, for the same reason.  `text_detector_config` documents these
+    # as fetched by `download_weights` so they are on disk once inference wiring lands;
+    # until this, only the structured heads were actually fetched and that statement was
+    # not true of either detector.  There are two because which one is correct depends on
+    # whether the page has lyrics - neither is a default for the other.
+    download_optional_model(text_detector_config.detector_vocal_path, base_url)
+    download_optional_model(text_detector_config.detector_instrumental_path, base_url)
 
 
 def download_optional_model(model: str, base_url: str) -> None:
