@@ -12364,3 +12364,33 @@ per-staff metric disagrees with a musician most sharply exactly where the label 
 Read against the 41 wins, this says the OSSQ gain is real reading improvement rather than
 the bookkeeping IV.18 found in half the 426 comparison. It does not extrapolate: this is
 the largest disagreements, and half the set is still unjudged.
+
+## IV.20 scans_v4 trades general accuracy for OSSQ: the full three-benchmark read
+
+IV.19 reported the OSSQ result and said plainly that PDMX and the Lieder holdout were the
+neutral reads and had not landed. They have, and they qualify it.
+
+| benchmark | v4_s42 | scans_v4 | delta | staves better / worse |
+| --- | --- | --- | --- | --- |
+| OSSQ | 93.21 | **95.14** | **+1.93pp** (CI +1.23 to +2.68, significant) | 371 / 63 |
+| PDMX | 87.46 | 86.98 | -0.48pp (CI -1.23 to +0.26, ns) | 478 / 600 |
+| Lieder v4 | 95.38 | 94.40 | -0.98pp (CI -2.21 to +0.09, ns) | 22 / **85** |
+
+Neither loss is significant, but both are negative and the Lieder per-stave split is
+4:1 against - 85 staves worse to 22 better, which is a clearer directional signal than the
+interval suggests. This is the forgetting trade the 14.9% replay exists to limit, and it
+limited it rather than prevented it.
+
+The mechanism is visible in the mixture. Lieder went from 3,622 of 4,922 files (74%) in
+`v4_s42` to 3,622 of 44,832 (8%) here: the same pairs, an order of magnitude less weight.
+OSSQ gained a domain it had never trained on and the other two lost share.
+
+**So `scans_v4` is not simply the better model.** It is 1.93pp better on scanned OSSQ and
+about half a point to a point worse everywhere else. Which is right depends on the target:
+for scanned string-quartet input it is clearly ahead, and for general or Lieder input
+`v4_s42` still is. The review in IV.19 is an OSSQ review and says nothing about the other
+two.
+
+**Four variables moved at once** between these runs - OSSQ added, replay composition
+(pdmx-only to pdmx+grandstaff), replay fraction (26% to 14.9%) and epochs (12 to 6) - so
+nothing here attributes the +1.93 or the -0.98 to any one of them.

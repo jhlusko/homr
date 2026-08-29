@@ -471,3 +471,19 @@ Quote **PDMX +1.4 to +1.6pp** (stable baseline, all four pairings significant) a
 +1.1 to +2.6pp** (baseline noisy, positive everywhere). Quote **no effect on the Lieder
 holdout**: `nat7` outscores both v4 seeds, so v4 straddles the baseline seeds there. See
 RUNLOG IV.17.
+
+
+## scans_v4: OSSQ gain, general cost (2026-08-29)
+
+Numerator-neutral, against `v4_s42`:
+
+| benchmark | v4_s42 | scans_v4 | delta |
+| --- | --- | --- | --- |
+| OSSQ | 93.21 | **95.14** | **+1.93pp** (significant) |
+| PDMX | 87.46 | 86.98 | -0.48pp (not significant) |
+| Lieder v4 | 95.38 | 94.40 | -0.98pp (not significant, 85 staves worse / 22 better) |
+
+Do not quote `scans_v4` as "the best model" without a domain. It is the best on scanned
+OSSQ by a wide margin and slightly behind on the other two. Four variables differ between
+these runs (OSSQ added, replay composition, replay fraction, epochs), so no single one is
+attributed. See RUNLOG IV.20.
