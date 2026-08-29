@@ -31,13 +31,43 @@ from pathlib import Path
 BRANCHES = ("pitch", "rhythm", "lift", "articulation", "slur", "position")
 
 
-def load(path: Path) -> dict[str, dict[str, tuple[int, int]]]:
+def drop_rhythm_classes(row: dict, prefixes: tuple[str, ...]) -> dict:
+    """Remove every position whose rhythm token starts with one of `prefixes`.
+
+    Removed from reference and prediction alike, and from *every* branch at the same
+    index, because the branches are position-aligned and dropping one side or one branch
+    would introduce the very shift this exists to remove.
+
+    Comparing across a vocabulary change needs this. A checkpoint predating a token emits
+    it nowhere while the reference carries it everywhere, so each occurrence is a deletion
+    that shifts the rest of the staff: on PDMX that put the pinned base at 28.29% against
+    the newer checkpoint's 86.72%, a 58pp "gain" that was almost entirely the token. With
+    `timeSignatureBeats_` dropped from both, the same pair reads 84.84 against 87.49.
+    """
+    if not prefixes:
+        return row
+    out = dict(row)
+    for side in ("reference", "predicted"):
+        rhythm = row.get(f"rhythm_{side}")
+        if rhythm is None:
+            continue
+        keep = [i for i, t in enumerate(rhythm) if not t.startswith(prefixes)]
+        for branch in BRANCHES:
+            values = row.get(f"{branch}_{side}")
+            if values is not None:
+                out[f"{branch}_{side}"] = [values[i] for i in keep if i < len(values)]
+    return out
+
+
+def load(
+    path: Path, ignore_rhythm_prefixes: tuple[str, ...] = ()
+) -> dict[str, dict[str, tuple[int, int]]]:
     """staff id -> branch -> (correct, total)."""
     out: dict[str, dict[str, tuple[int, int]]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
-        row = json.loads(line)
+        row = drop_rhythm_classes(json.loads(line), ignore_rhythm_prefixes)
         per_branch = {}
         for branch in BRANCHES:
             want = row.get(f"{branch}_reference")
@@ -151,12 +181,62 @@ def unscorable_classes(path: Path) -> dict[str, dict[str, int]]:
     }
 
 
+def never_predicted_classes(path: Path) -> dict[str, dict[str, int]]:
+    """Reference classes a run never predicts even once - the mirror of the above.
+
+    Both shapes shift a staff by the same mechanism, and only this one catches a
+    checkpoint that predates a token: it emits nothing unusual, so nothing looks wrong,
+    while the reference carries the token on staff after staff. That is what hid a 58pp
+    artifact on PDMX, where every one of 3,349 references states a numerator and the base
+    checkpoint states none.
+    """
+    reference_counts: dict[str, dict[str, int]] = {b: {} for b in BRANCHES}
+    predicted_seen: dict[str, set[str]] = {b: set() for b in BRANCHES}
+    staves = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        staves += 1
+        for branch in BRANCHES:
+            want = row.get(f"{branch}_reference")
+            got = row.get(f"{branch}_predicted")
+            if want is None or got is None:
+                continue
+            predicted_seen[branch].update(got)
+            for token in set(want):
+                if token.startswith(_PAD_SENTINEL):
+                    continue
+                reference_counts[branch][token] = reference_counts[branch].get(token, 0) + 1
+    if not staves:
+        return {}
+    floor = max(UNSCORABLE_MIN_STAVES, int(UNSCORABLE_MIN_SHARE * staves))
+    return {
+        branch: {
+            token: count
+            for token, count in sorted(counts.items(), key=lambda kv: -kv[1])
+            if count >= floor and token not in predicted_seen[branch]
+        }
+        for branch, counts in reference_counts.items()
+        if any(
+            count >= floor and token not in predicted_seen[branch]
+            for token, count in counts.items()
+        )
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--name", required=True, help="benchmark name, for the report")
     parser.add_argument(
         "--run", action="append", required=True, metavar="LABEL=PATH",
         help="a scored .jsonl; repeat. The first is the baseline every other is paired against.",
+    )
+    parser.add_argument(
+        "--ignore-rhythm-prefix", action="append", default=[], metavar="PREFIX",
+        help="Drop every position whose rhythm token starts with PREFIX, from both sides "
+        "and every branch. Use when the runs straddle a vocabulary change, so the "
+        "comparison measures recognition rather than which checkpoint knows the token.",
     )
     parser.add_argument("--bootstrap", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=0)
@@ -168,7 +248,7 @@ def main() -> None:
         label, _, path = spec.partition("=")
         if not path:
             parser.error(f"--run wants LABEL=PATH, got {spec!r}")
-        runs.append((label, load(Path(path))))
+        runs.append((label, load(Path(path), tuple(args.ignore_rhythm_prefix))))
 
     # Only staves every run scored. A checkpoint that failed on some crop would
     # otherwise be compared on an easier subset than the one it is measured against.
@@ -184,12 +264,18 @@ def main() -> None:
 
     for spec in args.run:
         label, _, path = spec.partition("=")
-        gaps = unscorable_classes(Path(path))
-        for branch, tokens in gaps.items():
+        for branch, tokens in unscorable_classes(Path(path)).items():
             listed = ", ".join(f"{t} x{n}" for t, n in list(tokens.items())[:4])
             print(
                 f"  WARNING {label} predicts {branch} classes the reference never uses: "
                 f"{listed} - a stale reference corpus scores these staves near zero"
+            )
+        for branch, tokens in never_predicted_classes(Path(path)).items():
+            listed = ", ".join(f"{t} x{n}" for t, n in list(tokens.items())[:4])
+            print(
+                f"  WARNING {label} never predicts {branch} classes the reference relies on: "
+                f"{listed} - a checkpoint predating a token is shifted on every such staff; "
+                f"consider --ignore-rhythm-prefix"
             )
 
     report = {"benchmark": args.name, "staves": len(ids), "runs": {}}
