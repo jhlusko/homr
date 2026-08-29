@@ -1,0 +1,1740 @@
+{
+  "staves": 346,
+  "median": 1.0,
+  "tenth_percentile": 0.9474,
+  "below_0.9": 25,
+  "below_0.5": 12,
+  "circularity_warning": "A ranking for human attention, not a filter. Selecting evaluation labels by agreement with the model measures the model against itself.",
+  "rows": [
+    {
+      "stem": "IMSLP621832-sys5-v0",
+      "agreement": 0.069,
+      "notes": 29
+    },
+    {
+      "stem": "IMSLP405017-sys21-v1",
+      "agreement": 0.1628,
+      "notes": 43
+    },
+    {
+      "stem": "IMSLP405017-sys41-v0",
+      "agreement": 0.2105,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys17-v2",
+      "agreement": 0.2278,
+      "notes": 79
+    },
+    {
+      "stem": "IMSLP578231-sys5-v1",
+      "agreement": 0.2588,
+      "notes": 170
+    },
+    {
+      "stem": "IMSLP557088-sys15-v1",
+      "agreement": 0.3015,
+      "notes": 136
+    },
+    {
+      "stem": "IMSLP578231-sys7-v1",
+      "agreement": 0.3259,
+      "notes": 135
+    },
+    {
+      "stem": "IMSLP405017-sys19-v1",
+      "agreement": 0.3537,
+      "notes": 82
+    },
+    {
+      "stem": "IMSLP557088-sys13-v1",
+      "agreement": 0.3553,
+      "notes": 76
+    },
+    {
+      "stem": "IMSLP578231-sys6-v1",
+      "agreement": 0.4565,
+      "notes": 138
+    },
+    {
+      "stem": "IMSLP578231-sys4-v1",
+      "agreement": 0.4682,
+      "notes": 173
+    },
+    {
+      "stem": "IMSLP89797-sys6-v1",
+      "agreement": 0.4762,
+      "notes": 105
+    },
+    {
+      "stem": "IMSLP578231-sys2-v1",
+      "agreement": 0.6012,
+      "notes": 163
+    },
+    {
+      "stem": "IMSLP405017-sys43-v1",
+      "agreement": 0.6202,
+      "notes": 129
+    },
+    {
+      "stem": "IMSLP578231-sys3-v1",
+      "agreement": 0.6216,
+      "notes": 148
+    },
+    {
+      "stem": "IMSLP405017-sys18-v1",
+      "agreement": 0.6267,
+      "notes": 75
+    },
+    {
+      "stem": "IMSLP89797-sys8-v1",
+      "agreement": 0.64,
+      "notes": 150
+    },
+    {
+      "stem": "IMSLP89797-sys7-v1",
+      "agreement": 0.6687,
+      "notes": 166
+    },
+    {
+      "stem": "IMSLP405017-sys29-v1",
+      "agreement": 0.6866,
+      "notes": 134
+    },
+    {
+      "stem": "IMSLP183800-sys5-v1",
+      "agreement": 0.8408,
+      "notes": 157
+    },
+    {
+      "stem": "IMSLP405017-sys16-v1",
+      "agreement": 0.8571,
+      "notes": 42
+    },
+    {
+      "stem": "IMSLP154086-sys15-v0",
+      "agreement": 0.8621,
+      "notes": 29
+    },
+    {
+      "stem": "IMSLP22647-sys18-v1",
+      "agreement": 0.869,
+      "notes": 84
+    },
+    {
+      "stem": "IMSLP578231-sys1-v1",
+      "agreement": 0.8841,
+      "notes": 138
+    },
+    {
+      "stem": "IMSLP154086-sys10-v1",
+      "agreement": 0.8909,
+      "notes": 55
+    },
+    {
+      "stem": "IMSLP154110-sys2-v0",
+      "agreement": 0.92,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP44341-sys4-v2",
+      "agreement": 0.9247,
+      "notes": 93
+    },
+    {
+      "stem": "IMSLP154086-sys9-v1",
+      "agreement": 0.9273,
+      "notes": 55
+    },
+    {
+      "stem": "IMSLP44341-sys6-v0",
+      "agreement": 0.9286,
+      "notes": 14
+    },
+    {
+      "stem": "IMSLP557088-sys8-v0",
+      "agreement": 0.9333,
+      "notes": 15
+    },
+    {
+      "stem": "IMSLP405017-sys0-v1",
+      "agreement": 0.9351,
+      "notes": 77
+    },
+    {
+      "stem": "IMSLP578231-sys19-v0",
+      "agreement": 0.9355,
+      "notes": 31
+    },
+    {
+      "stem": "IMSLP44341-sys5-v0",
+      "agreement": 0.9412,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP154110-sys9-v1",
+      "agreement": 0.9444,
+      "notes": 54
+    },
+    {
+      "stem": "IMSLP44341-sys6-v1",
+      "agreement": 0.9474,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys10-v1",
+      "agreement": 0.9474,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys8-v1",
+      "agreement": 0.95,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP598858-sys0-v1",
+      "agreement": 0.9512,
+      "notes": 123
+    },
+    {
+      "stem": "IMSLP405017-sys29-v0",
+      "agreement": 0.9565,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP578231-sys8-v0",
+      "agreement": 0.9615,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP621832-sys9-v1",
+      "agreement": 0.9634,
+      "notes": 82
+    },
+    {
+      "stem": "IMSLP44341-sys19-v2",
+      "agreement": 0.9681,
+      "notes": 94
+    },
+    {
+      "stem": "IMSLP154110-sys0-v1",
+      "agreement": 0.9706,
+      "notes": 136
+    },
+    {
+      "stem": "IMSLP621832-sys4-v1",
+      "agreement": 0.9712,
+      "notes": 104
+    },
+    {
+      "stem": "IMSLP44341-sys3-v2",
+      "agreement": 0.9737,
+      "notes": 76
+    },
+    {
+      "stem": "IMSLP61117-sys11-v1",
+      "agreement": 0.9744,
+      "notes": 78
+    },
+    {
+      "stem": "IMSLP598858-sys1-v1",
+      "agreement": 0.9758,
+      "notes": 124
+    },
+    {
+      "stem": "IMSLP621832-sys10-v1",
+      "agreement": 0.9758,
+      "notes": 124
+    },
+    {
+      "stem": "IMSLP44341-sys6-v2",
+      "agreement": 0.9759,
+      "notes": 83
+    },
+    {
+      "stem": "IMSLP405017-sys30-v1",
+      "agreement": 0.9762,
+      "notes": 84
+    },
+    {
+      "stem": "IMSLP183800-sys15-v1",
+      "agreement": 0.98,
+      "notes": 150
+    },
+    {
+      "stem": "IMSLP183800-sys6-v1",
+      "agreement": 0.9813,
+      "notes": 107
+    },
+    {
+      "stem": "IMSLP183800-sys3-v1",
+      "agreement": 0.9823,
+      "notes": 113
+    },
+    {
+      "stem": "IMSLP557088-sys16-v1",
+      "agreement": 0.9837,
+      "notes": 123
+    },
+    {
+      "stem": "IMSLP16369-sys28-v1",
+      "agreement": 0.9852,
+      "notes": 135
+    },
+    {
+      "stem": "IMSLP16369-sys18-v1",
+      "agreement": 0.9853,
+      "notes": 136
+    },
+    {
+      "stem": "IMSLP557088-sys10-v1",
+      "agreement": 0.9855,
+      "notes": 69
+    },
+    {
+      "stem": "IMSLP44341-sys9-v2",
+      "agreement": 0.9877,
+      "notes": 81
+    },
+    {
+      "stem": "IMSLP405017-sys15-v1",
+      "agreement": 0.9884,
+      "notes": 86
+    },
+    {
+      "stem": "IMSLP405017-sys47-v1",
+      "agreement": 0.9884,
+      "notes": 173
+    },
+    {
+      "stem": "IMSLP405017-sys44-v1",
+      "agreement": 0.9889,
+      "notes": 90
+    },
+    {
+      "stem": "IMSLP405017-sys14-v1",
+      "agreement": 0.9915,
+      "notes": 118
+    },
+    {
+      "stem": "IMSLP183800-sys2-v1",
+      "agreement": 0.9921,
+      "notes": 126
+    },
+    {
+      "stem": "IMSLP578231-sys18-v1",
+      "agreement": 0.9942,
+      "notes": 173
+    },
+    {
+      "stem": "IMSLP154070-sys0-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP154070-sys0-v1",
+      "agreement": 1.0,
+      "notes": 75
+    },
+    {
+      "stem": "IMSLP154070-sys1-v0",
+      "agreement": 1.0,
+      "notes": 27
+    },
+    {
+      "stem": "IMSLP154070-sys1-v1",
+      "agreement": 1.0,
+      "notes": 118
+    },
+    {
+      "stem": "IMSLP154070-sys2-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP154070-sys2-v1",
+      "agreement": 1.0,
+      "notes": 82
+    },
+    {
+      "stem": "IMSLP154070-sys3-v0",
+      "agreement": 1.0,
+      "notes": 24
+    },
+    {
+      "stem": "IMSLP154070-sys3-v1",
+      "agreement": 1.0,
+      "notes": 124
+    },
+    {
+      "stem": "IMSLP154070-sys4-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP154070-sys4-v1",
+      "agreement": 1.0,
+      "notes": 77
+    },
+    {
+      "stem": "IMSLP154070-sys5-v0",
+      "agreement": 1.0,
+      "notes": 22
+    },
+    {
+      "stem": "IMSLP154070-sys5-v1",
+      "agreement": 1.0,
+      "notes": 89
+    },
+    {
+      "stem": "IMSLP154070-sys6-v0",
+      "agreement": 1.0,
+      "notes": 33
+    },
+    {
+      "stem": "IMSLP154070-sys6-v1",
+      "agreement": 1.0,
+      "notes": 132
+    },
+    {
+      "stem": "IMSLP154070-sys7-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP154070-sys7-v1",
+      "agreement": 1.0,
+      "notes": 97
+    },
+    {
+      "stem": "IMSLP154070-sys8-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP154070-sys8-v1",
+      "agreement": 1.0,
+      "notes": 110
+    },
+    {
+      "stem": "IMSLP154070-sys9-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP154070-sys9-v1",
+      "agreement": 1.0,
+      "notes": 100
+    },
+    {
+      "stem": "IMSLP154086-sys9-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP154086-sys10-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP154086-sys11-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP154086-sys11-v1",
+      "agreement": 1.0,
+      "notes": 95
+    },
+    {
+      "stem": "IMSLP154086-sys12-v0",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP154086-sys12-v1",
+      "agreement": 1.0,
+      "notes": 91
+    },
+    {
+      "stem": "IMSLP154086-sys13-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP154086-sys13-v1",
+      "agreement": 1.0,
+      "notes": 64
+    },
+    {
+      "stem": "IMSLP154086-sys14-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP154086-sys14-v1",
+      "agreement": 1.0,
+      "notes": 77
+    },
+    {
+      "stem": "IMSLP154086-sys15-v1",
+      "agreement": 1.0,
+      "notes": 63
+    },
+    {
+      "stem": "IMSLP154086-sys16-v0",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP154086-sys16-v1",
+      "agreement": 1.0,
+      "notes": 42
+    },
+    {
+      "stem": "IMSLP154086-sys17-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP154086-sys17-v1",
+      "agreement": 1.0,
+      "notes": 61
+    },
+    {
+      "stem": "IMSLP154086-sys18-v1",
+      "agreement": 1.0,
+      "notes": 57
+    },
+    {
+      "stem": "IMSLP154086-sys19-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP154086-sys19-v1",
+      "agreement": 1.0,
+      "notes": 57
+    },
+    {
+      "stem": "IMSLP154086-sys20-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP154086-sys20-v1",
+      "agreement": 1.0,
+      "notes": 87
+    },
+    {
+      "stem": "IMSLP154086-sys21-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP154086-sys21-v1",
+      "agreement": 1.0,
+      "notes": 59
+    },
+    {
+      "stem": "IMSLP154110-sys0-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP154110-sys1-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP154110-sys1-v1",
+      "agreement": 1.0,
+      "notes": 147
+    },
+    {
+      "stem": "IMSLP154110-sys2-v1",
+      "agreement": 1.0,
+      "notes": 123
+    },
+    {
+      "stem": "IMSLP154110-sys3-v0",
+      "agreement": 1.0,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP154110-sys3-v1",
+      "agreement": 1.0,
+      "notes": 48
+    },
+    {
+      "stem": "IMSLP154110-sys4-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP154110-sys5-v0",
+      "agreement": 1.0,
+      "notes": 22
+    },
+    {
+      "stem": "IMSLP154110-sys5-v1",
+      "agreement": 1.0,
+      "notes": 92
+    },
+    {
+      "stem": "IMSLP154110-sys6-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP154110-sys6-v1",
+      "agreement": 1.0,
+      "notes": 117
+    },
+    {
+      "stem": "IMSLP154110-sys7-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP154110-sys7-v1",
+      "agreement": 1.0,
+      "notes": 139
+    },
+    {
+      "stem": "IMSLP154110-sys8-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP154110-sys8-v1",
+      "agreement": 1.0,
+      "notes": 123
+    },
+    {
+      "stem": "IMSLP16369-sys15-v0",
+      "agreement": 1.0,
+      "notes": 30
+    },
+    {
+      "stem": "IMSLP16369-sys15-v1",
+      "agreement": 1.0,
+      "notes": 160
+    },
+    {
+      "stem": "IMSLP16369-sys16-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP16369-sys16-v1",
+      "agreement": 1.0,
+      "notes": 153
+    },
+    {
+      "stem": "IMSLP16369-sys17-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP16369-sys17-v1",
+      "agreement": 1.0,
+      "notes": 119
+    },
+    {
+      "stem": "IMSLP16369-sys18-v0",
+      "agreement": 1.0,
+      "notes": 12
+    },
+    {
+      "stem": "IMSLP16369-sys19-v0",
+      "agreement": 1.0,
+      "notes": 14
+    },
+    {
+      "stem": "IMSLP16369-sys19-v1",
+      "agreement": 1.0,
+      "notes": 157
+    },
+    {
+      "stem": "IMSLP16369-sys20-v0",
+      "agreement": 1.0,
+      "notes": 12
+    },
+    {
+      "stem": "IMSLP16369-sys20-v1",
+      "agreement": 1.0,
+      "notes": 127
+    },
+    {
+      "stem": "IMSLP16369-sys28-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP16369-sys29-v0",
+      "agreement": 1.0,
+      "notes": 13
+    },
+    {
+      "stem": "IMSLP16369-sys29-v1",
+      "agreement": 1.0,
+      "notes": 159
+    },
+    {
+      "stem": "IMSLP16369-sys30-v0",
+      "agreement": 1.0,
+      "notes": 9
+    },
+    {
+      "stem": "IMSLP16369-sys30-v1",
+      "agreement": 1.0,
+      "notes": 143
+    },
+    {
+      "stem": "IMSLP16369-sys31-v0",
+      "agreement": 1.0,
+      "notes": 13
+    },
+    {
+      "stem": "IMSLP16369-sys31-v1",
+      "agreement": 1.0,
+      "notes": 157
+    },
+    {
+      "stem": "IMSLP16369-sys32-v0",
+      "agreement": 1.0,
+      "notes": 9
+    },
+    {
+      "stem": "IMSLP16369-sys32-v1",
+      "agreement": 1.0,
+      "notes": 115
+    },
+    {
+      "stem": "IMSLP16369-sys33-v0",
+      "agreement": 1.0,
+      "notes": 11
+    },
+    {
+      "stem": "IMSLP16369-sys33-v1",
+      "agreement": 1.0,
+      "notes": 155
+    },
+    {
+      "stem": "IMSLP183800-sys2-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP183800-sys3-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP183800-sys4-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP183800-sys4-v1",
+      "agreement": 1.0,
+      "notes": 89
+    },
+    {
+      "stem": "IMSLP183800-sys5-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP183800-sys6-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP183800-sys7-v0",
+      "agreement": 1.0,
+      "notes": 24
+    },
+    {
+      "stem": "IMSLP183800-sys7-v1",
+      "agreement": 1.0,
+      "notes": 170
+    },
+    {
+      "stem": "IMSLP183800-sys8-v0",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP183800-sys8-v1",
+      "agreement": 1.0,
+      "notes": 133
+    },
+    {
+      "stem": "IMSLP183800-sys9-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP183800-sys9-v1",
+      "agreement": 1.0,
+      "notes": 128
+    },
+    {
+      "stem": "IMSLP183800-sys10-v0",
+      "agreement": 1.0,
+      "notes": 22
+    },
+    {
+      "stem": "IMSLP183800-sys10-v1",
+      "agreement": 1.0,
+      "notes": 92
+    },
+    {
+      "stem": "IMSLP183800-sys11-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP183800-sys11-v1",
+      "agreement": 1.0,
+      "notes": 164
+    },
+    {
+      "stem": "IMSLP183800-sys12-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP183800-sys12-v1",
+      "agreement": 1.0,
+      "notes": 157
+    },
+    {
+      "stem": "IMSLP183800-sys13-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP183800-sys13-v1",
+      "agreement": 1.0,
+      "notes": 94
+    },
+    {
+      "stem": "IMSLP183800-sys14-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP183800-sys14-v1",
+      "agreement": 1.0,
+      "notes": 95
+    },
+    {
+      "stem": "IMSLP183800-sys15-v0",
+      "agreement": 1.0,
+      "notes": 13
+    },
+    {
+      "stem": "IMSLP22647-sys18-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP405017-sys0-v0",
+      "agreement": 1.0,
+      "notes": 22
+    },
+    {
+      "stem": "IMSLP405017-sys14-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP405017-sys15-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP405017-sys17-v0",
+      "agreement": 1.0,
+      "notes": 31
+    },
+    {
+      "stem": "IMSLP405017-sys17-v1",
+      "agreement": 1.0,
+      "notes": 81
+    },
+    {
+      "stem": "IMSLP405017-sys19-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP405017-sys20-v0",
+      "agreement": 1.0,
+      "notes": 27
+    },
+    {
+      "stem": "IMSLP405017-sys20-v1",
+      "agreement": 1.0,
+      "notes": 93
+    },
+    {
+      "stem": "IMSLP405017-sys22-v1",
+      "agreement": 1.0,
+      "notes": 52
+    },
+    {
+      "stem": "IMSLP405017-sys30-v0",
+      "agreement": 1.0,
+      "notes": 28
+    },
+    {
+      "stem": "IMSLP405017-sys37-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP405017-sys37-v1",
+      "agreement": 1.0,
+      "notes": 108
+    },
+    {
+      "stem": "IMSLP405017-sys38-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP405017-sys38-v1",
+      "agreement": 1.0,
+      "notes": 75
+    },
+    {
+      "stem": "IMSLP405017-sys39-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP405017-sys39-v1",
+      "agreement": 1.0,
+      "notes": 90
+    },
+    {
+      "stem": "IMSLP405017-sys40-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP405017-sys40-v1",
+      "agreement": 1.0,
+      "notes": 187
+    },
+    {
+      "stem": "IMSLP405017-sys41-v1",
+      "agreement": 1.0,
+      "notes": 179
+    },
+    {
+      "stem": "IMSLP405017-sys42-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP405017-sys42-v1",
+      "agreement": 1.0,
+      "notes": 161
+    },
+    {
+      "stem": "IMSLP405017-sys43-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP405017-sys44-v0",
+      "agreement": 1.0,
+      "notes": 24
+    },
+    {
+      "stem": "IMSLP405017-sys45-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP405017-sys45-v1",
+      "agreement": 1.0,
+      "notes": 80
+    },
+    {
+      "stem": "IMSLP405017-sys46-v0",
+      "agreement": 1.0,
+      "notes": 24
+    },
+    {
+      "stem": "IMSLP405017-sys46-v1",
+      "agreement": 1.0,
+      "notes": 82
+    },
+    {
+      "stem": "IMSLP405017-sys47-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP405017-sys55-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP405017-sys55-v1",
+      "agreement": 1.0,
+      "notes": 123
+    },
+    {
+      "stem": "IMSLP44341-sys0-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys0-v1",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys0-v2",
+      "agreement": 1.0,
+      "notes": 78
+    },
+    {
+      "stem": "IMSLP44341-sys1-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys1-v1",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys1-v2",
+      "agreement": 1.0,
+      "notes": 98
+    },
+    {
+      "stem": "IMSLP44341-sys2-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys2-v1",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys2-v2",
+      "agreement": 1.0,
+      "notes": 92
+    },
+    {
+      "stem": "IMSLP44341-sys3-v0",
+      "agreement": 1.0,
+      "notes": 22
+    },
+    {
+      "stem": "IMSLP44341-sys3-v1",
+      "agreement": 1.0,
+      "notes": 22
+    },
+    {
+      "stem": "IMSLP44341-sys4-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys4-v1",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys5-v1",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys5-v2",
+      "agreement": 1.0,
+      "notes": 74
+    },
+    {
+      "stem": "IMSLP44341-sys7-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys7-v1",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys7-v2",
+      "agreement": 1.0,
+      "notes": 77
+    },
+    {
+      "stem": "IMSLP44341-sys8-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys8-v2",
+      "agreement": 1.0,
+      "notes": 96
+    },
+    {
+      "stem": "IMSLP44341-sys9-v0",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP44341-sys9-v1",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP44341-sys10-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys10-v2",
+      "agreement": 1.0,
+      "notes": 41
+    },
+    {
+      "stem": "IMSLP44341-sys11-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP44341-sys11-v1",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys11-v2",
+      "agreement": 1.0,
+      "notes": 104
+    },
+    {
+      "stem": "IMSLP44341-sys12-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys12-v1",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP44341-sys12-v2",
+      "agreement": 1.0,
+      "notes": 52
+    },
+    {
+      "stem": "IMSLP44341-sys13-v0",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP44341-sys13-v1",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP44341-sys13-v2",
+      "agreement": 1.0,
+      "notes": 56
+    },
+    {
+      "stem": "IMSLP44341-sys14-v0",
+      "agreement": 1.0,
+      "notes": 13
+    },
+    {
+      "stem": "IMSLP44341-sys14-v1",
+      "agreement": 1.0,
+      "notes": 14
+    },
+    {
+      "stem": "IMSLP44341-sys14-v2",
+      "agreement": 1.0,
+      "notes": 144
+    },
+    {
+      "stem": "IMSLP44341-sys15-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys15-v1",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP44341-sys15-v2",
+      "agreement": 1.0,
+      "notes": 96
+    },
+    {
+      "stem": "IMSLP44341-sys16-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP44341-sys16-v1",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP44341-sys16-v2",
+      "agreement": 1.0,
+      "notes": 80
+    },
+    {
+      "stem": "IMSLP44341-sys17-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP44341-sys17-v1",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP44341-sys18-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP44341-sys18-v1",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP44341-sys18-v2",
+      "agreement": 1.0,
+      "notes": 75
+    },
+    {
+      "stem": "IMSLP44341-sys19-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP44341-sys19-v1",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP44341-sys20-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP44341-sys20-v1",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP44341-sys20-v2",
+      "agreement": 1.0,
+      "notes": 100
+    },
+    {
+      "stem": "IMSLP44341-sys21-v0",
+      "agreement": 1.0,
+      "notes": 14
+    },
+    {
+      "stem": "IMSLP44341-sys21-v1",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP44341-sys21-v2",
+      "agreement": 1.0,
+      "notes": 110
+    },
+    {
+      "stem": "IMSLP44341-sys22-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP44341-sys22-v1",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP44341-sys22-v2",
+      "agreement": 1.0,
+      "notes": 125
+    },
+    {
+      "stem": "IMSLP557088-sys8-v1",
+      "agreement": 1.0,
+      "notes": 47
+    },
+    {
+      "stem": "IMSLP557088-sys9-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP557088-sys9-v1",
+      "agreement": 1.0,
+      "notes": 61
+    },
+    {
+      "stem": "IMSLP557088-sys10-v0",
+      "agreement": 1.0,
+      "notes": 15
+    },
+    {
+      "stem": "IMSLP557088-sys11-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP557088-sys11-v1",
+      "agreement": 1.0,
+      "notes": 45
+    },
+    {
+      "stem": "IMSLP557088-sys12-v0",
+      "agreement": 1.0,
+      "notes": 17
+    },
+    {
+      "stem": "IMSLP557088-sys12-v1",
+      "agreement": 1.0,
+      "notes": 47
+    },
+    {
+      "stem": "IMSLP557088-sys13-v0",
+      "agreement": 1.0,
+      "notes": 14
+    },
+    {
+      "stem": "IMSLP557088-sys14-v0",
+      "agreement": 1.0,
+      "notes": 27
+    },
+    {
+      "stem": "IMSLP557088-sys14-v1",
+      "agreement": 1.0,
+      "notes": 83
+    },
+    {
+      "stem": "IMSLP557088-sys15-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP557088-sys16-v0",
+      "agreement": 1.0,
+      "notes": 35
+    },
+    {
+      "stem": "IMSLP557088-sys17-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP557088-sys17-v1",
+      "agreement": 1.0,
+      "notes": 63
+    },
+    {
+      "stem": "IMSLP578231-sys1-v0",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP578231-sys2-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP578231-sys3-v0",
+      "agreement": 1.0,
+      "notes": 24
+    },
+    {
+      "stem": "IMSLP578231-sys4-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP578231-sys5-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP578231-sys6-v0",
+      "agreement": 1.0,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP578231-sys7-v0",
+      "agreement": 1.0,
+      "notes": 28
+    },
+    {
+      "stem": "IMSLP578231-sys8-v1",
+      "agreement": 1.0,
+      "notes": 138
+    },
+    {
+      "stem": "IMSLP578231-sys9-v0",
+      "agreement": 1.0,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP578231-sys9-v1",
+      "agreement": 1.0,
+      "notes": 98
+    },
+    {
+      "stem": "IMSLP578231-sys17-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP578231-sys17-v1",
+      "agreement": 1.0,
+      "notes": 152
+    },
+    {
+      "stem": "IMSLP578231-sys18-v0",
+      "agreement": 1.0,
+      "notes": 33
+    },
+    {
+      "stem": "IMSLP578231-sys19-v1",
+      "agreement": 1.0,
+      "notes": 144
+    },
+    {
+      "stem": "IMSLP598858-sys0-v0",
+      "agreement": 1.0,
+      "notes": 28
+    },
+    {
+      "stem": "IMSLP598858-sys1-v0",
+      "agreement": 1.0,
+      "notes": 34
+    },
+    {
+      "stem": "IMSLP598858-sys2-v0",
+      "agreement": 1.0,
+      "notes": 32
+    },
+    {
+      "stem": "IMSLP598858-sys2-v1",
+      "agreement": 1.0,
+      "notes": 127
+    },
+    {
+      "stem": "IMSLP598858-sys3-v0",
+      "agreement": 1.0,
+      "notes": 44
+    },
+    {
+      "stem": "IMSLP598858-sys3-v1",
+      "agreement": 1.0,
+      "notes": 157
+    },
+    {
+      "stem": "IMSLP61117-sys4-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP61117-sys4-v1",
+      "agreement": 1.0,
+      "notes": 93
+    },
+    {
+      "stem": "IMSLP61117-sys5-v0",
+      "agreement": 1.0,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP61117-sys5-v1",
+      "agreement": 1.0,
+      "notes": 101
+    },
+    {
+      "stem": "IMSLP61117-sys6-v0",
+      "agreement": 1.0,
+      "notes": 32
+    },
+    {
+      "stem": "IMSLP61117-sys6-v1",
+      "agreement": 1.0,
+      "notes": 99
+    },
+    {
+      "stem": "IMSLP61117-sys7-v0",
+      "agreement": 1.0,
+      "notes": 33
+    },
+    {
+      "stem": "IMSLP61117-sys7-v1",
+      "agreement": 1.0,
+      "notes": 79
+    },
+    {
+      "stem": "IMSLP61117-sys8-v0",
+      "agreement": 1.0,
+      "notes": 24
+    },
+    {
+      "stem": "IMSLP61117-sys8-v1",
+      "agreement": 1.0,
+      "notes": 139
+    },
+    {
+      "stem": "IMSLP61117-sys9-v0",
+      "agreement": 1.0,
+      "notes": 31
+    },
+    {
+      "stem": "IMSLP61117-sys9-v1",
+      "agreement": 1.0,
+      "notes": 138
+    },
+    {
+      "stem": "IMSLP61117-sys10-v0",
+      "agreement": 1.0,
+      "notes": 32
+    },
+    {
+      "stem": "IMSLP61117-sys10-v1",
+      "agreement": 1.0,
+      "notes": 141
+    },
+    {
+      "stem": "IMSLP61117-sys11-v0",
+      "agreement": 1.0,
+      "notes": 31
+    },
+    {
+      "stem": "IMSLP61117-sys12-v0",
+      "agreement": 1.0,
+      "notes": 24
+    },
+    {
+      "stem": "IMSLP61117-sys12-v1",
+      "agreement": 1.0,
+      "notes": 101
+    },
+    {
+      "stem": "IMSLP61117-sys13-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP61117-sys13-v1",
+      "agreement": 1.0,
+      "notes": 150
+    },
+    {
+      "stem": "IMSLP61117-sys14-v0",
+      "agreement": 1.0,
+      "notes": 39
+    },
+    {
+      "stem": "IMSLP61117-sys14-v1",
+      "agreement": 1.0,
+      "notes": 150
+    },
+    {
+      "stem": "IMSLP61117-sys15-v0",
+      "agreement": 1.0,
+      "notes": 30
+    },
+    {
+      "stem": "IMSLP61117-sys15-v1",
+      "agreement": 1.0,
+      "notes": 169
+    },
+    {
+      "stem": "IMSLP621832-sys2-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP621832-sys2-v1",
+      "agreement": 1.0,
+      "notes": 73
+    },
+    {
+      "stem": "IMSLP621832-sys3-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP621832-sys3-v1",
+      "agreement": 1.0,
+      "notes": 78
+    },
+    {
+      "stem": "IMSLP621832-sys4-v0",
+      "agreement": 1.0,
+      "notes": 23
+    },
+    {
+      "stem": "IMSLP621832-sys5-v1",
+      "agreement": 1.0,
+      "notes": 109
+    },
+    {
+      "stem": "IMSLP621832-sys6-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP621832-sys6-v1",
+      "agreement": 1.0,
+      "notes": 67
+    },
+    {
+      "stem": "IMSLP621832-sys7-v0",
+      "agreement": 1.0,
+      "notes": 16
+    },
+    {
+      "stem": "IMSLP621832-sys7-v1",
+      "agreement": 1.0,
+      "notes": 60
+    },
+    {
+      "stem": "IMSLP621832-sys8-v0",
+      "agreement": 1.0,
+      "notes": 20
+    },
+    {
+      "stem": "IMSLP621832-sys8-v1",
+      "agreement": 1.0,
+      "notes": 81
+    },
+    {
+      "stem": "IMSLP621832-sys9-v0",
+      "agreement": 1.0,
+      "notes": 22
+    },
+    {
+      "stem": "IMSLP621832-sys10-v0",
+      "agreement": 1.0,
+      "notes": 25
+    },
+    {
+      "stem": "IMSLP621832-sys11-v0",
+      "agreement": 1.0,
+      "notes": 19
+    },
+    {
+      "stem": "IMSLP621832-sys11-v1",
+      "agreement": 1.0,
+      "notes": 90
+    },
+    {
+      "stem": "IMSLP621832-sys12-v0",
+      "agreement": 1.0,
+      "notes": 18
+    },
+    {
+      "stem": "IMSLP621832-sys12-v1",
+      "agreement": 1.0,
+      "notes": 80
+    },
+    {
+      "stem": "IMSLP89797-sys0-v0",
+      "agreement": 1.0,
+      "notes": 21
+    },
+    {
+      "stem": "IMSLP89797-sys0-v1",
+      "agreement": 1.0,
+      "notes": 99
+    },
+    {
+      "stem": "IMSLP89797-sys1-v0",
+      "agreement": 1.0,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP89797-sys1-v1",
+      "agreement": 1.0,
+      "notes": 144
+    },
+    {
+      "stem": "IMSLP89797-sys2-v0",
+      "agreement": 1.0,
+      "notes": 27
+    },
+    {
+      "stem": "IMSLP89797-sys2-v1",
+      "agreement": 1.0,
+      "notes": 136
+    },
+    {
+      "stem": "IMSLP89797-sys3-v0",
+      "agreement": 1.0,
+      "notes": 27
+    },
+    {
+      "stem": "IMSLP89797-sys3-v1",
+      "agreement": 1.0,
+      "notes": 152
+    },
+    {
+      "stem": "IMSLP89797-sys4-v0",
+      "agreement": 1.0,
+      "notes": 28
+    },
+    {
+      "stem": "IMSLP89797-sys4-v1",
+      "agreement": 1.0,
+      "notes": 144
+    },
+    {
+      "stem": "IMSLP89797-sys5-v0",
+      "agreement": 1.0,
+      "notes": 27
+    },
+    {
+      "stem": "IMSLP89797-sys5-v1",
+      "agreement": 1.0,
+      "notes": 131
+    },
+    {
+      "stem": "IMSLP89797-sys6-v0",
+      "agreement": 1.0,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP89797-sys7-v0",
+      "agreement": 1.0,
+      "notes": 26
+    },
+    {
+      "stem": "IMSLP89797-sys8-v0",
+      "agreement": 1.0,
+      "notes": 28
+    }
+  ]
+}

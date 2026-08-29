@@ -1,0 +1,84 @@
+{
+  "old": "/workspace/b0/imslp_train_index.txt",
+  "new": "/workspace/b0/imslp_train_index_cleanonly.txt",
+  "counts": {
+    "old": 3353,
+    "new": 3548,
+    "shared": 1509,
+    "only_old": 1844,
+    "only_new": 2039
+  },
+  "kinds": {
+    "identical (once new tokens are stripped)": 1145,
+    "same crop, different bar count": 186,
+    "same crop, same bar count, different content": 178
+  },
+  "bar_delta": {
+    "3": 21,
+    "-1": 41,
+    "2": 33,
+    "1": 70,
+    "-2": 5,
+    "5": 6,
+    "4": 9,
+    "6": 1
+  },
+  "examples": [
+    {
+      "stem": "IMSLP10416-sys7-v0",
+      "old_bars": 2,
+      "new_bars": 5,
+      "old_symbols": 8,
+      "new_symbols": 14
+    },
+    {
+      "stem": "IMSLP10416-sys7-v1",
+      "old_bars": 6,
+      "new_bars": 5,
+      "old_symbols": 50,
+      "new_symbols": 41
+    },
+    {
+      "stem": "IMSLP11784-sys10-v0",
+      "old_bars": 3,
+      "new_bars": 5,
+      "old_symbols": 19,
+      "new_symbols": 23
+    },
+    {
+      "stem": "IMSLP11784-sys12-v0",
+      "old_bars": 3,
+      "new_bars": 5,
+      "old_symbols": 15,
+      "new_symbols": 19
+    },
+    {
+      "stem": "IMSLP11784-sys12-v1",
+      "old_bars": 6,
+      "new_bars": 5,
+      "old_symbols": 56,
+      "new_symbols": 47
+    },
+    {
+      "stem": "IMSLP11784-sys17-v0",
+      "old_bars": 2,
+      "new_bars": 5,
+      "old_symbols": 10,
+      "new_symbols": 16
+    },
+    {
+      "stem": "IMSLP11784-sys17-v1",
+      "old_bars": 6,
+      "new_bars": 5,
+      "old_symbols": 58,
+      "new_symbols": 48
+    },
+    {
+      "stem": "IMSLP11784-sys4-v0",
+      "old_bars": 3,
+      "new_bars": 5,
+      "old_symbols": 15,
+      "new_symbols": 19
+    }
+  ]
+}

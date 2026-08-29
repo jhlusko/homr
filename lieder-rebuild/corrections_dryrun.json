@@ -1,0 +1,12 @@
+[
+  {
+    "stem": "IMSLP405017-sys17-v0",
+    "correction": "/workspace/b0/lieder-rebuild/corrections/overfull-single/IMSLP405017-sys17-v0.musicxml",
+    "target": "/workspace/b0/olimpic-probe/stage2_pairs_overfull/IMSLP405017-sys17-v0.tokens",
+    "bars_before": 5,
+    "bars_after": 5,
+    "symbols_before": 32,
+    "symbols_after": 34,
+    "status": "would apply"
+  }
+]

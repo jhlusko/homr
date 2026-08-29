@@ -1,0 +1,779 @@
+{
+  "systems_examined": 2259,
+  "grand_staff_voices_reconstructed": 2244,
+  "findings_by_kind": {
+    "motif_articulation_mismatch": 24,
+    "overfull_bar": 45,
+    "key_signature_mismatch": 3,
+    "time_signature_mismatch": 3,
+    "barline_position_mismatch": 5,
+    "measure_duration_mismatch": 3
+  },
+  "cross_staff": [
+    {
+      "score_id": "IMSLP11784",
+      "system": 7,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 2 play a matching 9-note run but disagree on articulation at one note: '_' vs 'staccato'",
+      "staff_indices": [
+        0,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP11784",
+      "system": 8,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 2 play a matching 10-note run but disagree on articulation at one note: '_' vs 'staccato'",
+      "staff_indices": [
+        0,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP12778",
+      "system": 2,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 10-note run but disagree on articulation at one note: '_' vs 'staccato'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP12778",
+      "system": 8,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 9-note run but disagree on articulation at one note: '_' vs 'staccato'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154201",
+      "system": 2,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: 'breathMark' vs '_'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 1,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'accent'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 1,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'accent'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 1,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'accent'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 2,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'arpeggiate'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 8,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'accent'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 8,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'accent'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 8,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'accent'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP154220",
+      "system": 8,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: 'accent' vs '_'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP16883",
+      "system": 7,
+      "kind": "key_signature_mismatch",
+      "message": "key signature sequences disagree across the system: [('keySignature_0', 'keySignature_1'), ('keySignature_1',), ('keySignature_1',)]",
+      "staff_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP16890",
+      "system": 7,
+      "kind": "key_signature_mismatch",
+      "message": "key signature sequences disagree across the system: [('keySignature_-3', 'keySignature_-3'), ('keySignature_-3',), ('keySignature_-3',)]",
+      "staff_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP183806",
+      "system": 0,
+      "kind": "time_signature_mismatch",
+      "message": "time signature sequences disagree across the system: [('timeSignature/4',), ('timeSignature/8',), ('timeSignature/8',)]",
+      "staff_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP420543",
+      "system": 24,
+      "kind": "time_signature_mismatch",
+      "message": "time signature sequences disagree across the system: [('timeSignature/4', 'timeSignature/8'), ('timeSignature/8', 'timeSignature/8'), ('timeSignature/8', 'timeSignature/8')]",
+      "staff_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP44341",
+      "system": 10,
+      "kind": "barline_position_mismatch",
+      "message": "cumulative barline positions (whole notes) disagree across the system, compared over the first 4 barline(s): {0: ['1/2', '1', '3/2', '2'], 1: ['1/2', '1', '3/2', '15/8']}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP44341",
+      "system": 12,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 5-note run but disagree on articulation at one note: '_' vs 'accent'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP44341",
+      "system": 12,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 5-note run but disagree on articulation at one note: 'staccato' vs '_'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP44341",
+      "system": 12,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 5-note run but disagree on articulation at one note: 'staccato' vs '_'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP44341",
+      "system": 12,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 5-note run but disagree on articulation at one note: 'staccato' vs '_'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP44341",
+      "system": 12,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 5-note run but disagree on articulation at one note: 'staccato' vs '_'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP588848",
+      "system": 1,
+      "kind": "key_signature_mismatch",
+      "message": "key signature sequences disagree across the system: [('keySignature_-2',), ('keySignature_-2', 'keySignature_1'), ('keySignature_-2', 'keySignature_1')]",
+      "staff_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP61112",
+      "system": 13,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'trill'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP621831",
+      "system": 5,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'staccato'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP621831",
+      "system": 5,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'staccato'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP621831",
+      "system": 5,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'staccato'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP624193",
+      "system": 21,
+      "kind": "time_signature_mismatch",
+      "message": "time signature sequences disagree across the system: [('timeSignature/8',), ('timeSignature/16',), ('timeSignature/16',)]",
+      "staff_indices": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP632171",
+      "system": 9,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'tenuto'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP632171",
+      "system": 9,
+      "kind": "motif_articulation_mismatch",
+      "message": "staves 0 and 1 play a matching 4-note run but disagree on articulation at one note: '_' vs 'tenuto'",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 11,
+      "kind": "barline_position_mismatch",
+      "message": "cumulative barline positions (whole notes) disagree across the system, compared over the first 4 barline(s): {0: ['1/2', '1', '3/2', '2'], 1: ['1/2', '1', '25/16', '33/16']}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 15,
+      "kind": "measure_duration_mismatch",
+      "message": "typical measure duration (whole notes) disagrees across the system: {0: '1/2', 1: '5/8'}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 15,
+      "kind": "barline_position_mismatch",
+      "message": "cumulative barline positions (whole notes) disagree across the system, compared over the first 4 barline(s): {0: ['1/2', '1', '3/2', '2'], 1: ['3/4', '11/8', '2', '41/16']}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 36,
+      "kind": "measure_duration_mismatch",
+      "message": "typical measure duration (whole notes) disagrees across the system: {0: '1/2', 1: '3/4'}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 36,
+      "kind": "barline_position_mismatch",
+      "message": "cumulative barline positions (whole notes) disagree across the system, compared over the first 4 barline(s): {0: ['1/2', '1', '3/2', '2'], 1: ['3/4', '3/2', '9/4', '3']}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 37,
+      "kind": "measure_duration_mismatch",
+      "message": "typical measure duration (whole notes) disagrees across the system: {0: '1/2', 1: '19/32'}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 37,
+      "kind": "barline_position_mismatch",
+      "message": "cumulative barline positions (whole notes) disagree across the system, compared over the first 4 barline(s): {0: ['1/2', '1', '3/2', '2'], 1: ['5/8', '5/4', '29/16', '37/16']}",
+      "staff_indices": [
+        0,
+        1
+      ]
+    }
+  ],
+  "overfull": [
+    {
+      "score_id": "IMSLP148200",
+      "system": 3,
+      "voice": 0,
+      "bars": [
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP148200",
+      "system": 10,
+      "voice": 0,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP397173",
+      "system": 6,
+      "voice": 0,
+      "bars": [
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP397173",
+      "system": 11,
+      "voice": 0,
+      "bars": [
+        4
+      ]
+    },
+    {
+      "score_id": "IMSLP397173",
+      "system": 17,
+      "voice": 0,
+      "bars": [
+        4
+      ]
+    },
+    {
+      "score_id": "IMSLP405017",
+      "system": 15,
+      "voice": 0,
+      "bars": [
+        4,
+        5
+      ]
+    },
+    {
+      "score_id": "IMSLP405017",
+      "system": 17,
+      "voice": 0,
+      "bars": [
+        4
+      ]
+    },
+    {
+      "score_id": "IMSLP405017",
+      "system": 29,
+      "voice": 0,
+      "bars": [
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "score_id": "IMSLP405017",
+      "system": 43,
+      "voice": 0,
+      "bars": [
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP420543",
+      "system": 3,
+      "voice": 0,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP420543",
+      "system": 4,
+      "voice": 0,
+      "bars": [
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP420543",
+      "system": 15,
+      "voice": 0,
+      "bars": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP420543",
+      "system": 24,
+      "voice": 0,
+      "bars": [
+        2,
+        3
+      ]
+    },
+    {
+      "score_id": "IMSLP434340",
+      "system": 19,
+      "voice": 0,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP434340",
+      "system": 19,
+      "voice": 1,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP435041",
+      "system": 12,
+      "voice": 0,
+      "bars": [
+        2,
+        3
+      ]
+    },
+    {
+      "score_id": "IMSLP453689",
+      "system": 20,
+      "voice": 0,
+      "bars": [
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP557090",
+      "system": 28,
+      "voice": 0,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP581586",
+      "system": 11,
+      "voice": 0,
+      "bars": [
+        6
+      ]
+    },
+    {
+      "score_id": "IMSLP588109",
+      "system": 15,
+      "voice": 0,
+      "bars": [
+        3
+      ]
+    },
+    {
+      "score_id": "IMSLP588109",
+      "system": 20,
+      "voice": 0,
+      "bars": [
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP588990",
+      "system": 23,
+      "voice": 0,
+      "bars": [
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP588990",
+      "system": 24,
+      "voice": 0,
+      "bars": [
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP617260",
+      "system": 2,
+      "voice": 0,
+      "bars": [
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP617260",
+      "system": 12,
+      "voice": 0,
+      "bars": [
+        3
+      ]
+    },
+    {
+      "score_id": "IMSLP621830",
+      "system": 1,
+      "voice": 0,
+      "bars": [
+        5
+      ]
+    },
+    {
+      "score_id": "IMSLP621830",
+      "system": 9,
+      "voice": 0,
+      "bars": [
+        5
+      ]
+    },
+    {
+      "score_id": "IMSLP621832",
+      "system": 5,
+      "voice": 0,
+      "bars": [
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP621841",
+      "system": 20,
+      "voice": 0,
+      "bars": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP621841",
+      "system": 22,
+      "voice": 0,
+      "bars": [
+        2,
+        3
+      ]
+    },
+    {
+      "score_id": "IMSLP622105",
+      "system": 16,
+      "voice": 0,
+      "bars": [
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "score_id": "IMSLP622484",
+      "system": 1,
+      "voice": 0,
+      "bars": [
+        4,
+        5
+      ]
+    },
+    {
+      "score_id": "IMSLP622484",
+      "system": 8,
+      "voice": 0,
+      "bars": [
+        0,
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP624193",
+      "system": 28,
+      "voice": 0,
+      "bars": [
+        2,
+        3
+      ]
+    },
+    {
+      "score_id": "IMSLP625359",
+      "system": 3,
+      "voice": 0,
+      "bars": [
+        2,
+        3
+      ]
+    },
+    {
+      "score_id": "IMSLP676305",
+      "system": 1,
+      "voice": 0,
+      "bars": [
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP676305",
+      "system": 2,
+      "voice": 0,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP676305",
+      "system": 4,
+      "voice": 0,
+      "bars": [
+        1,
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP676305",
+      "system": 5,
+      "voice": 0,
+      "bars": [
+        1
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 11,
+      "voice": 1,
+      "bars": [
+        2
+      ]
+    },
+    {
+      "score_id": "IMSLP77665",
+      "system": 15,
+      "voice": 1,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP80521",
+      "system": 7,
+      "voice": 0,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP89026",
+      "system": 6,
+      "voice": 0,
+      "bars": [
+        0
+      ]
+    },
+    {
+      "score_id": "IMSLP89292",
+      "system": 2,
+      "voice": 0,
+      "bars": [
+        9
+      ]
+    },
+    {
+      "score_id": "IMSLP89797",
+      "system": 8,
+      "voice": 0,
+      "bars": [
+        2,
+        3,
+        4
+      ]
+    }
+  ]
+}

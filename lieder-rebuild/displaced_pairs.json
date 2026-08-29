@@ -1,0 +1,1010 @@
+[
+  {
+    "stem": "IMSLP122258-sys7-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP122258-sys7-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP122258-sys7-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP122258-sys7-v0.tokens",
+    "old_stem_matched": "IMSLP122258-sys6-v0"
+  },
+  {
+    "stem": "IMSLP122258-sys7-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP122258-sys7-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP122258-sys7-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP122258-sys7-v1.tokens",
+    "old_stem_matched": "IMSLP122258-sys6-v1"
+  },
+  {
+    "stem": "IMSLP122258-sys8-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP122258-sys8-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP122258-sys8-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP122258-sys8-v0.tokens",
+    "old_stem_matched": "IMSLP122258-sys7-v0"
+  },
+  {
+    "stem": "IMSLP227283-sys6-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP227283-sys6-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP227283-sys6-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP227283-sys6-v0.tokens",
+    "old_stem_matched": "IMSLP227283-sys5-v0"
+  },
+  {
+    "stem": "IMSLP227283-sys6-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP227283-sys6-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP227283-sys6-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP227283-sys6-v1.tokens",
+    "old_stem_matched": "IMSLP227283-sys5-v1"
+  },
+  {
+    "stem": "IMSLP227283-sys8-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP227283-sys8-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP227283-sys8-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP227283-sys8-v1.tokens",
+    "old_stem_matched": "IMSLP227283-sys7-v1"
+  },
+  {
+    "stem": "IMSLP237206-sys14-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP237206-sys14-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP237206-sys14-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP237206-sys14-v0.tokens",
+    "old_stem_matched": "IMSLP237206-sys11-v0"
+  },
+  {
+    "stem": "IMSLP243472-sys9-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP243472-sys9-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP243472-sys9-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP243472-sys9-v0.tokens",
+    "old_stem_matched": "IMSLP243472-sys8-v0"
+  },
+  {
+    "stem": "IMSLP243472-sys9-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP243472-sys9-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP243472-sys9-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP243472-sys9-v1.tokens",
+    "old_stem_matched": "IMSLP243472-sys8-v1"
+  },
+  {
+    "stem": "IMSLP243472-sys10-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP243472-sys10-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP243472-sys10-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP243472-sys10-v0.tokens",
+    "old_stem_matched": "IMSLP243472-sys9-v0"
+  },
+  {
+    "stem": "IMSLP262465-sys3-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP262465-sys3-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP262465-sys3-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP262465-sys3-v0.tokens",
+    "old_stem_matched": "IMSLP262465-sys5-v0"
+  },
+  {
+    "stem": "IMSLP262465-sys4-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP262465-sys4-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP262465-sys4-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP262465-sys4-v0.tokens",
+    "old_stem_matched": "IMSLP262465-sys6-v0"
+  },
+  {
+    "stem": "IMSLP280033-sys4-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys4-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys4-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys4-v0.tokens",
+    "old_stem_matched": "IMSLP280033-sys2-v0"
+  },
+  {
+    "stem": "IMSLP280033-sys4-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys4-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys4-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys4-v1.tokens",
+    "old_stem_matched": "IMSLP280033-sys2-v1"
+  },
+  {
+    "stem": "IMSLP280033-sys5-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys5-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys5-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys5-v0.tokens",
+    "old_stem_matched": "IMSLP280033-sys3-v0"
+  },
+  {
+    "stem": "IMSLP280033-sys5-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys5-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys5-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys5-v1.tokens",
+    "old_stem_matched": "IMSLP280033-sys3-v1"
+  },
+  {
+    "stem": "IMSLP280033-sys6-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys6-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys6-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys6-v0.tokens",
+    "old_stem_matched": "IMSLP280033-sys4-v0"
+  },
+  {
+    "stem": "IMSLP280033-sys6-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys6-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys6-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys6-v1.tokens",
+    "old_stem_matched": "IMSLP280033-sys4-v1"
+  },
+  {
+    "stem": "IMSLP280033-sys7-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys7-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys7-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys7-v0.tokens",
+    "old_stem_matched": "IMSLP280033-sys5-v0"
+  },
+  {
+    "stem": "IMSLP280033-sys7-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys7-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys7-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys7-v1.tokens",
+    "old_stem_matched": "IMSLP280033-sys5-v1"
+  },
+  {
+    "stem": "IMSLP280033-sys8-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys8-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys8-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys8-v0.tokens",
+    "old_stem_matched": "IMSLP280033-sys6-v0"
+  },
+  {
+    "stem": "IMSLP280033-sys8-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys8-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys8-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys8-v1.tokens",
+    "old_stem_matched": "IMSLP280033-sys6-v1"
+  },
+  {
+    "stem": "IMSLP280033-sys9-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys9-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP280033-sys9-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP280033-sys9-v0.tokens",
+    "old_stem_matched": "IMSLP280033-sys7-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys3-v0",
+    "offset": 3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys3-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys3-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys3-v0.tokens",
+    "old_stem_matched": "IMSLP285347-sys6-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys4-v1",
+    "offset": 3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys4-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys4-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys4-v1.tokens",
+    "old_stem_matched": "IMSLP285347-sys7-v1"
+  },
+  {
+    "stem": "IMSLP285347-sys5-v0",
+    "offset": 3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys5-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys5-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys5-v0.tokens",
+    "old_stem_matched": "IMSLP285347-sys8-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys6-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys6-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys6-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys6-v0.tokens",
+    "old_stem_matched": "IMSLP285347-sys4-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys6-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys6-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys6-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys6-v1.tokens",
+    "old_stem_matched": "IMSLP285347-sys4-v1"
+  },
+  {
+    "stem": "IMSLP285347-sys7-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys7-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys7-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys7-v0.tokens",
+    "old_stem_matched": "IMSLP285347-sys5-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys7-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys7-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys7-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys7-v1.tokens",
+    "old_stem_matched": "IMSLP285347-sys5-v1"
+  },
+  {
+    "stem": "IMSLP285347-sys8-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys8-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys8-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys8-v0.tokens",
+    "old_stem_matched": "IMSLP285347-sys6-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys8-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys8-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys8-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys8-v1.tokens",
+    "old_stem_matched": "IMSLP285347-sys6-v1"
+  },
+  {
+    "stem": "IMSLP285347-sys9-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys9-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys9-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys9-v0.tokens",
+    "old_stem_matched": "IMSLP285347-sys7-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys18-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys18-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys18-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys18-v0.tokens",
+    "old_stem_matched": "IMSLP285347-sys16-v0"
+  },
+  {
+    "stem": "IMSLP285347-sys18-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys18-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP285347-sys18-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP285347-sys18-v1.tokens",
+    "old_stem_matched": "IMSLP285347-sys16-v1"
+  },
+  {
+    "stem": "IMSLP33023-sys23-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP33023-sys23-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP33023-sys23-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP33023-sys23-v0.tokens",
+    "old_stem_matched": "IMSLP33023-sys21-v0"
+  },
+  {
+    "stem": "IMSLP397173-sys1-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys1-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys1-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP397173-sys1-v0.tokens",
+    "old_stem_matched": "IMSLP397173-sys2-v0"
+  },
+  {
+    "stem": "IMSLP397173-sys1-v1",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys1-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys1-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP397173-sys1-v1.tokens",
+    "old_stem_matched": "IMSLP397173-sys2-v1"
+  },
+  {
+    "stem": "IMSLP397173-sys13-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys13-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys13-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP397173-sys13-v0.tokens",
+    "old_stem_matched": "IMSLP397173-sys14-v0"
+  },
+  {
+    "stem": "IMSLP397173-sys13-v1",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys13-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP397173-sys13-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP397173-sys13-v1.tokens",
+    "old_stem_matched": "IMSLP397173-sys14-v1"
+  },
+  {
+    "stem": "IMSLP405017-sys19-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys19-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys19-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP405017-sys19-v0.tokens",
+    "old_stem_matched": "IMSLP405017-sys18-v0"
+  },
+  {
+    "stem": "IMSLP405017-sys19-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys19-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys19-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP405017-sys19-v1.tokens",
+    "old_stem_matched": "IMSLP405017-sys18-v1"
+  },
+  {
+    "stem": "IMSLP405017-sys39-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys39-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys39-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP405017-sys39-v0.tokens",
+    "old_stem_matched": "IMSLP405017-sys36-v0"
+  },
+  {
+    "stem": "IMSLP405017-sys39-v1",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys39-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys39-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP405017-sys39-v1.tokens",
+    "old_stem_matched": "IMSLP405017-sys36-v1"
+  },
+  {
+    "stem": "IMSLP405017-sys44-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys44-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys44-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP405017-sys44-v0.tokens",
+    "old_stem_matched": "IMSLP405017-sys41-v0"
+  },
+  {
+    "stem": "IMSLP405017-sys44-v1",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys44-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP405017-sys44-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP405017-sys44-v1.tokens",
+    "old_stem_matched": "IMSLP405017-sys41-v1"
+  },
+  {
+    "stem": "IMSLP414132-sys9-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP414132-sys9-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP414132-sys9-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP414132-sys9-v0.tokens",
+    "old_stem_matched": "IMSLP414132-sys6-v0"
+  },
+  {
+    "stem": "IMSLP414132-sys9-v1",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP414132-sys9-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP414132-sys9-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP414132-sys9-v1.tokens",
+    "old_stem_matched": "IMSLP414132-sys6-v1"
+  },
+  {
+    "stem": "IMSLP556523-sys16-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP556523-sys16-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP556523-sys16-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP556523-sys16-v0.tokens",
+    "old_stem_matched": "IMSLP556523-sys13-v0"
+  },
+  {
+    "stem": "IMSLP556523-sys16-v1",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP556523-sys16-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP556523-sys16-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP556523-sys16-v1.tokens",
+    "old_stem_matched": "IMSLP556523-sys13-v1"
+  },
+  {
+    "stem": "IMSLP558713-sys6-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys6-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys6-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP558713-sys6-v0.tokens",
+    "old_stem_matched": "IMSLP558713-sys3-v0"
+  },
+  {
+    "stem": "IMSLP558713-sys6-v1",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys6-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys6-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP558713-sys6-v1.tokens",
+    "old_stem_matched": "IMSLP558713-sys3-v1"
+  },
+  {
+    "stem": "IMSLP558713-sys7-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys7-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys7-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP558713-sys7-v0.tokens",
+    "old_stem_matched": "IMSLP558713-sys4-v0"
+  },
+  {
+    "stem": "IMSLP558713-sys9-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys9-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys9-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP558713-sys9-v0.tokens",
+    "old_stem_matched": "IMSLP558713-sys6-v0"
+  },
+  {
+    "stem": "IMSLP558713-sys9-v1",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys9-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys9-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP558713-sys9-v1.tokens",
+    "old_stem_matched": "IMSLP558713-sys6-v1"
+  },
+  {
+    "stem": "IMSLP558713-sys12-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys12-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys12-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP558713-sys12-v0.tokens",
+    "old_stem_matched": "IMSLP558713-sys9-v0"
+  },
+  {
+    "stem": "IMSLP558713-sys17-v0",
+    "offset": -3,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys17-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP558713-sys17-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP558713-sys17-v0.tokens",
+    "old_stem_matched": "IMSLP558713-sys14-v0"
+  },
+  {
+    "stem": "IMSLP580179-sys8-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys8-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys8-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys8-v0.tokens",
+    "old_stem_matched": "IMSLP580179-sys7-v0"
+  },
+  {
+    "stem": "IMSLP580179-sys8-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys8-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys8-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys8-v1.tokens",
+    "old_stem_matched": "IMSLP580179-sys7-v1"
+  },
+  {
+    "stem": "IMSLP580179-sys9-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys9-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys9-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys9-v0.tokens",
+    "old_stem_matched": "IMSLP580179-sys8-v0"
+  },
+  {
+    "stem": "IMSLP580179-sys9-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys9-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys9-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys9-v1.tokens",
+    "old_stem_matched": "IMSLP580179-sys8-v1"
+  },
+  {
+    "stem": "IMSLP580179-sys13-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys13-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys13-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys13-v0.tokens",
+    "old_stem_matched": "IMSLP580179-sys12-v0"
+  },
+  {
+    "stem": "IMSLP580179-sys13-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys13-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys13-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys13-v1.tokens",
+    "old_stem_matched": "IMSLP580179-sys12-v1"
+  },
+  {
+    "stem": "IMSLP580179-sys14-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys14-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys14-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys14-v0.tokens",
+    "old_stem_matched": "IMSLP580179-sys13-v0"
+  },
+  {
+    "stem": "IMSLP580179-sys14-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys14-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP580179-sys14-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP580179-sys14-v1.tokens",
+    "old_stem_matched": "IMSLP580179-sys13-v1"
+  },
+  {
+    "stem": "IMSLP606009-sys4-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys4-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys4-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP606009-sys4-v0.tokens",
+    "old_stem_matched": "IMSLP606009-sys5-v0"
+  },
+  {
+    "stem": "IMSLP606009-sys4-v1",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys4-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys4-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP606009-sys4-v1.tokens",
+    "old_stem_matched": "IMSLP606009-sys5-v1"
+  },
+  {
+    "stem": "IMSLP606009-sys5-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys5-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys5-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP606009-sys5-v0.tokens",
+    "old_stem_matched": "IMSLP606009-sys6-v0"
+  },
+  {
+    "stem": "IMSLP606009-sys5-v1",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys5-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP606009-sys5-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP606009-sys5-v1.tokens",
+    "old_stem_matched": "IMSLP606009-sys6-v1"
+  },
+  {
+    "stem": "IMSLP61111-sys7-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP61111-sys7-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP61111-sys7-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP61111-sys7-v0.tokens",
+    "old_stem_matched": "IMSLP61111-sys5-v0"
+  },
+  {
+    "stem": "IMSLP61111-sys7-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP61111-sys7-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP61111-sys7-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP61111-sys7-v1.tokens",
+    "old_stem_matched": "IMSLP61111-sys5-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys6-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys6-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys6-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys6-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys5-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys6-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys6-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys6-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys6-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys5-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys7-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys7-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys7-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys7-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys6-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys7-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys7-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys7-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys7-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys6-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys13-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys13-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys13-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys13-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys12-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys13-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys13-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys13-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys13-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys12-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys15-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys15-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys15-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys15-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys14-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys15-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys15-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys15-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys15-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys14-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys16-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys16-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys16-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys16-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys15-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys16-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys16-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys16-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys16-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys15-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys17-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys17-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys17-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys17-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys16-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys17-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys17-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys17-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys17-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys16-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys18-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys18-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys18-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys18-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys17-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys18-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys18-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys18-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys18-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys17-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys19-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys19-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys19-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys19-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys18-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys19-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys19-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys19-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys19-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys18-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys20-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys20-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys20-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys20-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys19-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys26-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys26-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys26-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys26-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys25-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys26-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys26-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys26-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys26-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys25-v1"
+  },
+  {
+    "stem": "IMSLP624193-sys27-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys27-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys27-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys27-v0.tokens",
+    "old_stem_matched": "IMSLP624193-sys26-v0"
+  },
+  {
+    "stem": "IMSLP624193-sys27-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys27-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP624193-sys27-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP624193-sys27-v1.tokens",
+    "old_stem_matched": "IMSLP624193-sys26-v1"
+  },
+  {
+    "stem": "IMSLP625663-sys5-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP625663-sys5-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP625663-sys5-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP625663-sys5-v0.tokens",
+    "old_stem_matched": "IMSLP625663-sys4-v0"
+  },
+  {
+    "stem": "IMSLP625663-sys5-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP625663-sys5-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP625663-sys5-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP625663-sys5-v1.tokens",
+    "old_stem_matched": "IMSLP625663-sys4-v1"
+  },
+  {
+    "stem": "IMSLP625663-sys6-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP625663-sys6-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP625663-sys6-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP625663-sys6-v0.tokens",
+    "old_stem_matched": "IMSLP625663-sys5-v0"
+  },
+  {
+    "stem": "IMSLP634834-sys13-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys13-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys13-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys13-v0.tokens",
+    "old_stem_matched": "IMSLP634834-sys11-v0"
+  },
+  {
+    "stem": "IMSLP634834-sys14-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys14-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys14-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys14-v0.tokens",
+    "old_stem_matched": "IMSLP634834-sys12-v0"
+  },
+  {
+    "stem": "IMSLP634834-sys18-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys18-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys18-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys18-v0.tokens",
+    "old_stem_matched": "IMSLP634834-sys16-v0"
+  },
+  {
+    "stem": "IMSLP634834-sys18-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys18-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys18-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys18-v1.tokens",
+    "old_stem_matched": "IMSLP634834-sys16-v1"
+  },
+  {
+    "stem": "IMSLP634834-sys19-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys19-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys19-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys19-v0.tokens",
+    "old_stem_matched": "IMSLP634834-sys17-v0"
+  },
+  {
+    "stem": "IMSLP634834-sys19-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys19-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys19-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys19-v1.tokens",
+    "old_stem_matched": "IMSLP634834-sys17-v1"
+  },
+  {
+    "stem": "IMSLP634834-sys20-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys20-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys20-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys20-v0.tokens",
+    "old_stem_matched": "IMSLP634834-sys18-v0"
+  },
+  {
+    "stem": "IMSLP634834-sys20-v1",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys20-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys20-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys20-v1.tokens",
+    "old_stem_matched": "IMSLP634834-sys18-v1"
+  },
+  {
+    "stem": "IMSLP634834-sys21-v0",
+    "offset": -2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys21-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP634834-sys21-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP634834-sys21-v0.tokens",
+    "old_stem_matched": "IMSLP634834-sys19-v0"
+  },
+  {
+    "stem": "IMSLP660145-sys5-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP660145-sys5-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP660145-sys5-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP660145-sys5-v0.tokens",
+    "old_stem_matched": "IMSLP660145-sys6-v0"
+  },
+  {
+    "stem": "IMSLP660145-sys7-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP660145-sys7-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP660145-sys7-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP660145-sys7-v0.tokens",
+    "old_stem_matched": "IMSLP660145-sys8-v0"
+  },
+  {
+    "stem": "IMSLP660145-sys7-v1",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP660145-sys7-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP660145-sys7-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP660145-sys7-v1.tokens",
+    "old_stem_matched": "IMSLP660145-sys8-v1"
+  },
+  {
+    "stem": "IMSLP75214-sys6-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75214-sys6-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75214-sys6-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75214-sys6-v0.tokens",
+    "old_stem_matched": "IMSLP75214-sys7-v0"
+  },
+  {
+    "stem": "IMSLP75214-sys6-v1",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75214-sys6-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75214-sys6-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75214-sys6-v1.tokens",
+    "old_stem_matched": "IMSLP75214-sys7-v1"
+  },
+  {
+    "stem": "IMSLP75959-sys3-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys3-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys3-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75959-sys3-v0.tokens",
+    "old_stem_matched": "IMSLP75959-sys2-v0"
+  },
+  {
+    "stem": "IMSLP75959-sys3-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys3-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys3-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75959-sys3-v1.tokens",
+    "old_stem_matched": "IMSLP75959-sys2-v1"
+  },
+  {
+    "stem": "IMSLP75959-sys11-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys11-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys11-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75959-sys11-v0.tokens",
+    "old_stem_matched": "IMSLP75959-sys10-v0"
+  },
+  {
+    "stem": "IMSLP75959-sys11-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys11-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys11-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75959-sys11-v1.tokens",
+    "old_stem_matched": "IMSLP75959-sys10-v1"
+  },
+  {
+    "stem": "IMSLP75959-sys12-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys12-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys12-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75959-sys12-v0.tokens",
+    "old_stem_matched": "IMSLP75959-sys11-v0"
+  },
+  {
+    "stem": "IMSLP75959-sys12-v1",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys12-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys12-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75959-sys12-v1.tokens",
+    "old_stem_matched": "IMSLP75959-sys11-v1"
+  },
+  {
+    "stem": "IMSLP75959-sys13-v0",
+    "offset": -1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys13-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP75959-sys13-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP75959-sys13-v0.tokens",
+    "old_stem_matched": "IMSLP75959-sys12-v0"
+  },
+  {
+    "stem": "IMSLP83314-sys10-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys10-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys10-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys10-v0.tokens",
+    "old_stem_matched": "IMSLP83314-sys12-v0"
+  },
+  {
+    "stem": "IMSLP83314-sys12-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys12-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys12-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys12-v0.tokens",
+    "old_stem_matched": "IMSLP83314-sys14-v0"
+  },
+  {
+    "stem": "IMSLP83314-sys12-v1",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys12-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys12-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys12-v1.tokens",
+    "old_stem_matched": "IMSLP83314-sys14-v1"
+  },
+  {
+    "stem": "IMSLP83314-sys13-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys13-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys13-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys13-v0.tokens",
+    "old_stem_matched": "IMSLP83314-sys15-v0"
+  },
+  {
+    "stem": "IMSLP83314-sys17-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys17-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys17-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys17-v0.tokens",
+    "old_stem_matched": "IMSLP83314-sys19-v0"
+  },
+  {
+    "stem": "IMSLP83314-sys17-v1",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys17-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys17-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys17-v1.tokens",
+    "old_stem_matched": "IMSLP83314-sys19-v1"
+  },
+  {
+    "stem": "IMSLP83314-sys18-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys18-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys18-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys18-v0.tokens",
+    "old_stem_matched": "IMSLP83314-sys20-v0"
+  },
+  {
+    "stem": "IMSLP83314-sys21-v0",
+    "offset": 2,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys21-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83314-sys21-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83314-sys21-v0.tokens",
+    "old_stem_matched": "IMSLP83314-sys23-v0"
+  },
+  {
+    "stem": "IMSLP83319-sys8-v0",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83319-sys8-v0.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83319-sys8-v0.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83319-sys8-v0.tokens",
+    "old_stem_matched": "IMSLP83319-sys9-v0"
+  },
+  {
+    "stem": "IMSLP83319-sys8-v1",
+    "offset": 1,
+    "image": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83319-sys8-v1.png",
+    "new_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_clean_v6/IMSLP83319-sys8-v1.tokens",
+    "old_tokens": "/workspace/b0/olimpic-probe/stage2_pairs_out/IMSLP83319-sys8-v1.tokens",
+    "old_stem_matched": "IMSLP83319-sys9-v1"
+  }
+]

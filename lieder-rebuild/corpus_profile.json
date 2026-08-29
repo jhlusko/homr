@@ -1,0 +1,41 @@
+[
+  {
+    "label": "v6 training index",
+    "pairs": 3880,
+    "scores": 220,
+    "distinct_labels": 3752,
+    "pairs_sharing_a_label": 214,
+    "trivial": 36,
+    "silent": 0,
+    "unreadable": 0,
+    "single_staff": 2131,
+    "grand_staff": 1749,
+    "scores_for_half_the_pairs": 56
+  },
+  {
+    "label": "OSSQ benchmark",
+    "pairs": 792,
+    "scores": 792,
+    "distinct_labels": 791,
+    "pairs_sharing_a_label": 2,
+    "trivial": 0,
+    "silent": 0,
+    "unreadable": 0,
+    "single_staff": 792,
+    "grand_staff": 0,
+    "scores_for_half_the_pairs": 396
+  },
+  {
+    "label": "Lieder validation",
+    "pairs": 292,
+    "scores": 14,
+    "distinct_labels": 286,
+    "pairs_sharing_a_label": 12,
+    "trivial": 0,
+    "silent": 0,
+    "unreadable": 0,
+    "single_staff": 168,
+    "grand_staff": 124,
+    "scores_for_half_the_pairs": 5
+  }
+]

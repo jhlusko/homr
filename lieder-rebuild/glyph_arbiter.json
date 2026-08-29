@@ -1,0 +1,112 @@
+[
+  {
+    "stem": "IMSLP397173-sys1-v1",
+    "offset": 1,
+    "verdict": "old claims glyphs the rebuilt lacks",
+    "only_in_rebuilt": {},
+    "only_in_old": {
+      "clef_G2": 2,
+      "clef_F4": 2
+    }
+  },
+  {
+    "stem": "IMSLP405017-sys19-v0",
+    "offset": -1,
+    "verdict": "both claim glyphs the other lacks",
+    "only_in_rebuilt": {
+      "timeSignatureBeats_3": 1,
+      "timeSignatureBeats_4": 1
+    },
+    "only_in_old": {
+      "timeSignature/2": 1
+    }
+  },
+  {
+    "stem": "IMSLP405017-sys19-v1",
+    "offset": -1,
+    "verdict": "both claim glyphs the other lacks",
+    "only_in_rebuilt": {
+      "timeSignatureBeats_3": 1,
+      "timeSignatureBeats_4": 1
+    },
+    "only_in_old": {
+      "timeSignature/2": 1
+    }
+  },
+  {
+    "stem": "IMSLP61111-sys7-v1",
+    "offset": -2,
+    "verdict": "rebuilt claims glyphs the old lacks",
+    "only_in_rebuilt": {
+      "clef_G2": 1,
+      "clef_F4": 1
+    },
+    "only_in_old": {}
+  },
+  {
+    "stem": "IMSLP624193-sys6-v0",
+    "offset": -1,
+    "verdict": "rebuilt claims glyphs the old lacks",
+    "only_in_rebuilt": {
+      "timeSignatureBeats_3": 1,
+      "timeSignature/8": 1
+    },
+    "only_in_old": {}
+  },
+  {
+    "stem": "IMSLP624193-sys6-v1",
+    "offset": -1,
+    "verdict": "rebuilt claims glyphs the old lacks",
+    "only_in_rebuilt": {
+      "clef_F4": 1,
+      "timeSignatureBeats_3": 1,
+      "timeSignature/8": 1
+    },
+    "only_in_old": {}
+  },
+  {
+    "stem": "IMSLP624193-sys17-v1",
+    "offset": -1,
+    "verdict": "old claims glyphs the rebuilt lacks",
+    "only_in_rebuilt": {},
+    "only_in_old": {
+      "clef_G2": 1
+    }
+  },
+  {
+    "stem": "IMSLP624193-sys18-v1",
+    "offset": -1,
+    "verdict": "rebuilt claims glyphs the old lacks",
+    "only_in_rebuilt": {
+      "clef_G2": 1
+    },
+    "only_in_old": {}
+  },
+  {
+    "stem": "IMSLP624193-sys19-v1",
+    "offset": -1,
+    "verdict": "old claims glyphs the rebuilt lacks",
+    "only_in_rebuilt": {},
+    "only_in_old": {
+      "clef_F4": 1
+    }
+  },
+  {
+    "stem": "IMSLP634834-sys19-v1",
+    "offset": -2,
+    "verdict": "old claims glyphs the rebuilt lacks",
+    "only_in_rebuilt": {},
+    "only_in_old": {
+      "clef_G2": 1
+    }
+  },
+  {
+    "stem": "IMSLP634834-sys20-v1",
+    "offset": -2,
+    "verdict": "old claims glyphs the rebuilt lacks",
+    "only_in_rebuilt": {},
+    "only_in_old": {
+      "clef_F4": 1
+    }
+  }
+]

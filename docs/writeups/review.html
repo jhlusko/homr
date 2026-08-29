@@ -266,6 +266,28 @@ const SETS = {
       ["unclear",     "Unclear"]
     ]
   },
+  checkpointScansV4: {
+    label: "0a2 &middot; scans_v4 vs v4",
+    dir: "review-data/checkpoint-scansv4-vs-v4",
+    left: "left", right: "right",
+    leftLabel: "v4 Lieder-only (s42)", rightLabel: "scans_v4 (OSSQ + v4 + varied replay)",
+    question: "Which reading of this stave is <strong>closer to the page</strong>?",
+    detail: "Both checkpoints have the numerator and the naturals, so unlike the 426 comparison almost nothing here is vocabulary - a difference should be a real difference. Ordered by size of disagreement either way: 84 of the 100 favour scans_v4 and 16 favour v4. The asymmetry worth judging is that scans_v4 wins more often but by less (mean +0.18) while its losses are deeper (mean -0.33), so the regressions are fewer and sharper than the gains.",
+    firstCaption: "v4 vs scans_v4 \u2014 which is closer to the crop?",
+    second: {
+      left: "reference", right: "right",
+      leftLabel: "Reference label", rightLabel: "scans_v4",
+      caption: "Reference label vs scans_v4 \u2014 is the label itself right?"
+    },
+    verdicts: [
+      ["scans-better", "scans_v4 is better"],
+      ["v4-better",    "v4 Lieder-only is better \u2014 regression"],
+      ["same",         "No real difference"],
+      ["ref-wrong",    "REFERENCE is wrong \u2014 not a model difference"],
+      ["both-wrong",   "Both checkpoints wrong"],
+      ["unclear",      "Unclear"]
+    ]
+  },
   metre: {
     label: "0b &middot; Note values",
     dir: "review-data/sets/metre",

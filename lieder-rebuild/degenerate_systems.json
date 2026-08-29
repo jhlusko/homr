@@ -1,0 +1,497 @@
+[
+  {
+    "score_id": "IMSLP280033",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0583,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.058 vs median 0.917; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP280033",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0222,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.022 vs median 0.917; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP454110",
+    "page_index": 3,
+    "system_index": 1,
+    "width": 0.1145,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.115 vs median 0.484; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP454110",
+    "page_index": 3,
+    "system_index": 3,
+    "width": 0.151,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.151 vs median 0.484; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP454110",
+    "page_index": 3,
+    "system_index": 5,
+    "width": 0.0817,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.082 vs median 0.484; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP454110",
+    "page_index": 5,
+    "system_index": 1,
+    "width": 0.0411,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.041 vs median 0.484; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP454110",
+    "page_index": 5,
+    "system_index": 3,
+    "width": 0.0729,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.073 vs median 0.484; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP555775",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0726,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.073 vs median 0.799; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP558603",
+    "page_index": 0,
+    "system_index": 2,
+    "width": 0.132,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.132 vs median 0.879; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP558603",
+    "page_index": 0,
+    "system_index": 3,
+    "width": 0.0783,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.078 vs median 0.879; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP578228",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.1536,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.154 vs median 0.744; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP580410",
+    "page_index": 4,
+    "system_index": 0,
+    "width": 0.0388,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.039 vs median 0.698; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP580410",
+    "page_index": 4,
+    "system_index": 1,
+    "width": 0.0435,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.044 vs median 0.698; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP588990",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0371,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.037 vs median 0.752; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP600893",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0617,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.062 vs median 0.825; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP629934",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.1645,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.164 vs median 0.916; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP629934",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.1544,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.154 vs median 0.916; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP26121",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0318,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.032 vs median 0.851; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP361244",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.076,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.076 vs median 0.912; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP483603",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0496,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.050 vs median 0.932; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP558609",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.2175,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.218 vs median 0.877; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP578182",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0653,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.065 vs median 0.760; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP578229",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0645,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.064 vs median 0.759; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP580246",
+    "page_index": 6,
+    "system_index": 0,
+    "width": 0.0227,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.023 vs median 0.693; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP581585",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.038,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.038 vs median 0.757; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP588987",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0758,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.076 vs median 0.761; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP589010",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0536,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.054 vs median 0.791; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP589010",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0302,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.030 vs median 0.791; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP621832",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.036,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.036 vs median 0.921; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP634834",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0241,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.024 vs median 0.913; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP634834",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0938,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.094 vs median 0.913; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP637440",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0896,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.090 vs median 0.907; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP637440",
+    "page_index": 0,
+    "system_index": 9,
+    "width": 0.0178,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.018 vs median 0.907; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP243472",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.2403,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.240 vs median 0.852; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP578226",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.1108,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.111 vs median 0.802; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP578230",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.264,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.264 vs median 0.809; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP588988",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0673,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.067 vs median 0.757; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP602409",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0579,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.058 vs median 0.288; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP621841",
+    "page_index": 0,
+    "system_index": 2,
+    "width": 0.0816,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.082 vs median 0.915; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP634835",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0241,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.024 vs median 0.917; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP634835",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0938,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.094 vs median 0.917; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP637441",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0896,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.090 vs median 0.749; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP637441",
+    "page_index": 0,
+    "system_index": 9,
+    "width": 0.0178,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.018 vs median 0.749; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP453689",
+    "page_index": 6,
+    "system_index": 3,
+    "width": 0.2656,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.266 vs median 0.870; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP578227",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0625,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.062 vs median 0.746; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP580250",
+    "page_index": 1,
+    "system_index": 1,
+    "width": 0.1004,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.100 vs median 0.687; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP581738",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.038,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.038 vs median 0.697; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP581738",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.1263,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.126 vs median 0.697; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP617446",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.1322,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.132 vs median 0.761; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP617446",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0859,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.086 vs median 0.761; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP632171",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0739,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.074 vs median 0.912; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP634836",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0241,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.024 vs median 0.915; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP634836",
+    "page_index": 0,
+    "system_index": 1,
+    "width": 0.0938,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.094 vs median 0.915; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP637442",
+    "page_index": 0,
+    "system_index": 0,
+    "width": 0.0896,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.090 vs median 0.902; no barlines detected"
+  },
+  {
+    "score_id": "IMSLP637442",
+    "page_index": 0,
+    "system_index": 9,
+    "width": 0.0178,
+    "barlines": 0,
+    "staves": 1,
+    "why": "width 0.018 vs median 0.902; no barlines detected"
+  }
+]

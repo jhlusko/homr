@@ -1,0 +1,3316 @@
+[
+  {
+    "score": "IMSLP10416",
+    "measures": 36,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "2"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP10602",
+    "measures": 53,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP112763",
+    "measures": 60,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP11784",
+    "measures": 92,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "2"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP122258",
+    "measures": 49,
+    "changes": 5,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP122262",
+    "measures": 35,
+    "changes": 13,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "2",
+        "8"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP12291",
+    "measures": 40,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP12778",
+    "measures": 68,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP13971",
+    "measures": 120,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP140920",
+    "measures": 147,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP148200",
+    "measures": 28,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154059",
+    "measures": 40,
+    "changes": 5,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154060",
+    "measures": 64,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154063",
+    "measures": 54,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154067",
+    "measures": 44,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154070",
+    "measures": 75,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154084",
+    "measures": 66,
+    "changes": 7,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154086",
+    "measures": 75,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154110",
+    "measures": 53,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154140",
+    "measures": 50,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154142",
+    "measures": 71,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154144",
+    "measures": 67,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154201",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154211",
+    "measures": 46,
+    "changes": 1,
+    "distinct": [
+      [
+        "12",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154220",
+    "measures": 33,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154223",
+    "measures": 53,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154229",
+    "measures": 52,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154240",
+    "measures": 45,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "2"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154241",
+    "measures": 41,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154242",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154245",
+    "measures": 43,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154289",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP154299",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16259",
+    "measures": 35,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16349",
+    "measures": 56,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16364",
+    "measures": 14,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16369",
+    "measures": 150,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16400",
+    "measures": 17,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16625",
+    "measures": 36,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16883",
+    "measures": 110,
+    "changes": 2,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP16890",
+    "measures": 114,
+    "changes": 3,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP173062",
+    "measures": 36,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP173063",
+    "measures": 71,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP183800",
+    "measures": 47,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP183806",
+    "measures": 66,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP184203",
+    "measures": 67,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP184205",
+    "measures": 49,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP185782",
+    "measures": 26,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP19490",
+    "measures": 87,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP204253",
+    "measures": 66,
+    "changes": 3,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP212406",
+    "measures": 44,
+    "changes": 5,
+    "distinct": [
+      [
+        "12",
+        "8"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP22647",
+    "measures": 83,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP227283",
+    "measures": 26,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP231920",
+    "measures": 54,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP234590",
+    "measures": 29,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP237206",
+    "measures": 61,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP24047",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP24051",
+    "measures": 42,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP243472",
+    "measures": 36,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP253076",
+    "measures": 51,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP257340",
+    "measures": 44,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP262465",
+    "measures": 126,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP280033",
+    "measures": 36,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP282760",
+    "measures": 41,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP285344",
+    "measures": 79,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP285345",
+    "measures": 73,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP285346",
+    "measures": 33,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP285347",
+    "measures": 65,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP285360",
+    "measures": 47,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP286578",
+    "measures": 74,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP286659",
+    "measures": 103,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP329302",
+    "measures": 88,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP329303",
+    "measures": 53,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP329304",
+    "measures": 91,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP33023",
+    "measures": 96,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP396671",
+    "measures": 69,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP397171",
+    "measures": 80,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP397173",
+    "measures": 96,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP405017",
+    "measures": 259,
+    "changes": 41,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "2"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP41375",
+    "measures": 44,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP414132",
+    "measures": 23,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP420543",
+    "measures": 120,
+    "changes": 11,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP422393",
+    "measures": 48,
+    "changes": 2,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP434340",
+    "measures": 80,
+    "changes": 5,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP435041",
+    "measures": 64,
+    "changes": 6,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP435483",
+    "measures": 28,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP435485",
+    "measures": 59,
+    "changes": 2,
+    "distinct": [
+      [
+        "2",
+        "2"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP43630",
+    "measures": 54,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP43758",
+    "measures": 109,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP43916",
+    "measures": 25,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP440659",
+    "measures": 104,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP44341",
+    "measures": 93,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP453689",
+    "measures": 134,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP456168",
+    "measures": 69,
+    "changes": 11,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP476181",
+    "measures": 55,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP476183",
+    "measures": 31,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP507203",
+    "measures": 41,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP508574",
+    "measures": 23,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP510573",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP516852",
+    "measures": 32,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP542017",
+    "measures": 78,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP55434",
+    "measures": 72,
+    "changes": 9,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP555778",
+    "measures": 113,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "2"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP556523",
+    "measures": 58,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP557086",
+    "measures": 35,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP557087",
+    "measures": 56,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP557088",
+    "measures": 73,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP557090",
+    "measures": 107,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP558603",
+    "measures": 23,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP558609",
+    "measures": 30,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP558713",
+    "measures": 55,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP578182",
+    "measures": 95,
+    "changes": 4,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP578227",
+    "measures": 71,
+    "changes": 3,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP578231",
+    "measures": 92,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP580179",
+    "measures": 77,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP580246",
+    "measures": 69,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP580250",
+    "measures": 89,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP580410",
+    "measures": 44,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP580411",
+    "measures": 95,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP580584",
+    "measures": 37,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP581585",
+    "measures": 153,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP581586",
+    "measures": 116,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP581738",
+    "measures": 137,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP582024",
+    "measures": 29,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP584272",
+    "measures": 89,
+    "changes": 5,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP584726",
+    "measures": 55,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP584727",
+    "measures": 44,
+    "changes": 7,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP588109",
+    "measures": 72,
+    "changes": 13,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP588848",
+    "measures": 125,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP588852",
+    "measures": 73,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP588987",
+    "measures": 59,
+    "changes": 11,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP588988",
+    "measures": 78,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP588989",
+    "measures": 73,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP588990",
+    "measures": 118,
+    "changes": 16,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP589001",
+    "measures": 94,
+    "changes": 7,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP589004",
+    "measures": 58,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP589008",
+    "measures": 163,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP589118",
+    "measures": 74,
+    "changes": 4,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP592442",
+    "measures": 46,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP593990",
+    "measures": 43,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP597597",
+    "measures": 33,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP598858",
+    "measures": 42,
+    "changes": 1,
+    "distinct": [
+      [
+        "12",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP600893",
+    "measures": 36,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP600895",
+    "measures": 52,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP603446",
+    "measures": 79,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP605026",
+    "measures": 55,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP606009",
+    "measures": 42,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP606047",
+    "measures": 54,
+    "changes": 2,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP606054",
+    "measures": 35,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP606057",
+    "measures": 145,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP60848",
+    "measures": 188,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP61111",
+    "measures": 67,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP61112",
+    "measures": 82,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP61117",
+    "measures": 102,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "2"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP617003",
+    "measures": 36,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP617260",
+    "measures": 64,
+    "changes": 1,
+    "distinct": [
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP617446",
+    "measures": 80,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP617593",
+    "measures": 94,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP618722",
+    "measures": 18,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP621593",
+    "measures": 35,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP621598",
+    "measures": 38,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP621599",
+    "measures": 50,
+    "changes": 3,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP621830",
+    "measures": 51,
+    "changes": 5,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP621831",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP621832",
+    "measures": 47,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP621841",
+    "measures": 65,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP621842",
+    "measures": 93,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP622102",
+    "measures": 29,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP622103",
+    "measures": 47,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP622104",
+    "measures": 23,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP622105",
+    "measures": 75,
+    "changes": 6,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP622484",
+    "measures": 42,
+    "changes": 4,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ],
+      [
+        "6",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP622485",
+    "measures": 33,
+    "changes": 2,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP622486",
+    "measures": 32,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP622487",
+    "measures": 39,
+    "changes": 2,
+    "distinct": [
+      [
+        "12",
+        "8"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP622488",
+    "measures": 39,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP62381",
+    "measures": 176,
+    "changes": 5,
+    "distinct": [
+      [
+        "2",
+        "2"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP62382",
+    "measures": 80,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP62383",
+    "measures": 108,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP624192",
+    "measures": 63,
+    "changes": 4,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP624193",
+    "measures": 96,
+    "changes": 4,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ],
+      [
+        "9",
+        "16"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP624194",
+    "measures": 127,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP624196",
+    "measures": 99,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP624197",
+    "measures": 62,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP625359",
+    "measures": 44,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP625663",
+    "measures": 39,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP626307",
+    "measures": 85,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP630163",
+    "measures": 37,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP632171",
+    "measures": 123,
+    "changes": 2,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP632172",
+    "measures": 78,
+    "changes": 6,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ],
+      [
+        "6",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP632175",
+    "measures": 60,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP632177",
+    "measures": 164,
+    "changes": 4,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP634834",
+    "measures": 133,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP634835",
+    "measures": 49,
+    "changes": 1,
+    "distinct": [
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP637242",
+    "measures": 56,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP637440",
+    "measures": 107,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP637441",
+    "measures": 32,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP637442",
+    "measures": 95,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP642301",
+    "measures": 57,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP654022",
+    "measures": 54,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP656649",
+    "measures": 79,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP657998",
+    "measures": 73,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP660145",
+    "measures": 56,
+    "changes": 2,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP661315",
+    "measures": 97,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP662011",
+    "measures": 70,
+    "changes": 4,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP668192",
+    "measures": 51,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP669434",
+    "measures": 100,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP676298",
+    "measures": 52,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP676303",
+    "measures": 48,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP676305",
+    "measures": 49,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP676315",
+    "measures": 56,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP74369",
+    "measures": 48,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "8"
+      ],
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP75214",
+    "measures": 85,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP75959",
+    "measures": 48,
+    "changes": 3,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ],
+      [
+        "6",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP77665",
+    "measures": 99,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP80521",
+    "measures": 86,
+    "changes": 6,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "4",
+        "4"
+      ],
+      [
+        "9",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP83314",
+    "measures": 144,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP83316",
+    "measures": 75,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP83318",
+    "measures": 62,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP83319",
+    "measures": 73,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP88709",
+    "measures": 47,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89016",
+    "measures": 66,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89017",
+    "measures": 40,
+    "changes": 1,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89026",
+    "measures": 70,
+    "changes": 11,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89287",
+    "measures": 66,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89290",
+    "measures": 63,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89292",
+    "measures": 38,
+    "changes": 3,
+    "distinct": [
+      [
+        "2",
+        "4"
+      ],
+      [
+        "3",
+        "4"
+      ],
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": true
+  },
+  {
+    "score": "IMSLP89794",
+    "measures": 38,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89795",
+    "measures": 59,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89796",
+    "measures": 49,
+    "changes": 1,
+    "distinct": [
+      [
+        "3",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89797",
+    "measures": 44,
+    "changes": 3,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ],
+      [
+        "6",
+        "4"
+      ]
+    ],
+    "numerator_changes": true,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP89798",
+    "measures": 52,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP92046",
+    "measures": 23,
+    "changes": 1,
+    "distinct": [
+      [
+        "6",
+        "8"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  },
+  {
+    "score": "IMSLP97202",
+    "measures": 33,
+    "changes": 1,
+    "distinct": [
+      [
+        "4",
+        "4"
+      ]
+    ],
+    "numerator_changes": false,
+    "denominator_changes": false
+  }
+]

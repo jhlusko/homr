@@ -1,0 +1,40 @@
+{
+  "bars_by_cause": {
+    "tuplet": 161,
+    "unexplained": 229,
+    "missing-barline": 80,
+    "metre-change": 76
+  },
+  "pairs_by_staff_type": {
+    "grand": 371,
+    "single": 46
+  },
+  "bars_by_staff_type_and_cause": {
+    "grand/tuplet": 151,
+    "grand/unexplained": 200,
+    "single/unexplained": 29,
+    "grand/missing-barline": 76,
+    "grand/metre-change": 56,
+    "single/metre-change": 20,
+    "single/tuplet": 10,
+    "single/missing-barline": 4
+  },
+  "pairs_by_bucket": {
+    "grandstaff": 371,
+    "single": 46
+  },
+  "sets": [
+    {
+      "set": "overfull-grandstaff",
+      "items": 60,
+      "candidates": 371,
+      "unrenderable": 0
+    },
+    {
+      "set": "overfull-single",
+      "items": 46,
+      "candidates": 46,
+      "unrenderable": 0
+    }
+  ]
+}
