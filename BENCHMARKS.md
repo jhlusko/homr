@@ -421,3 +421,24 @@ python -m training.transformer.compare_checkpoints \
 
 Scored `.jsonl` files, `cmp_*.json` reports and the checkpoints are in
 `homr-artifacts/instance-2026-08-28/`.
+
+## v4 boundary-safe, replicated (2026-08-29)
+
+Two matched seeds against the pinned base checkpoint (426), numerator-neutral - see
+RUNLOG IV.15 for why a raw comparison across this vocabulary change is meaningless in
+both directions.
+
+| benchmark | base426 | v4 s42 | v4 s7 | delta (s42 / s7) |
+| --- | --- | --- | --- | --- |
+| OSSQ | 91.49 | 93.21 | 93.19 | +1.71 / +1.70 |
+| PDMX held-out | 83.97 | 87.46 | 87.30 | +3.48 / +3.33 |
+| Lieder v4 holdout | 87.23 | 95.38 | 95.44 | +8.15 / +8.21 |
+
+All six significant; seed spread at most 0.15pp. OSSQ is the independent read, PDMX the
+held-out general corpus, and the Lieder holdout is score-disjoint but shares the v4
+consensus lineage with training - it is the least independent of the three and should not
+carry a corpus claim on its own.
+
+**These OSSQ numbers use the regenerated `phase7num/` references.** The older
+`phase7fix/` set contains no `timeSignatureBeats_*` at all and understates any checkpoint
+that states a metre numerator; it is not comparable with the rows above.

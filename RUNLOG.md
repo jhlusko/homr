@@ -11991,3 +11991,99 @@ all other reviewed items listed by verdict/note in the adjacent JSON report. No 
 pair is promoted, and no reverse-derived pair is admitted to evaluation. The failures
 remain system-level exclusions for any future broader promotion: `IMSLP515921-sys2`
 (shifted), `IMSLP617593-sys26` (truncated), and `IMSLP617004-sys10` (implicit tuplets).
+
+## IV.15 The metre numerator was missing from three converters, and the "regression" it caused was the benchmark
+
+The v4 boundary-safe checkpoint first measured **-0.37pp** against the pinned base on
+OSSQ (95% CI -1.76 to +0.92, not significant), with a shape that did not fit a
+regression: 421 staves better against 128 worse, median +0.37pp, and a negative mean.
+48 staves lost more than 10pp and carried 93% of all loss - `compare_checkpoints`'s
+"few staves collapsing" case rather than its "every staff drifting" one.
+
+They collapsed because the checkpoint was right. It states `timeSignatureBeats_N`, and
+the OSSQ reference set (built 2026-08-25) contained it on **0 of 3,912** staves. Branches
+are compared position by position, so one correct insertion at index 2 shifts the whole
+staff to near zero. 61 of 792 staves emitted a numerator; 48 collapsed.
+
+### The token was missing from three converters, not one
+
+`music_xml_parser` emitted it; nothing else did.
+
+| site | defect | blast radius |
+| --- | --- | --- |
+| `humdrum_kern_parser` | kept `parts[1]` of `*M4/4` | grandstaff corpus labels |
+| `primus_semantic_parser` | bound `num`, then discarded it | primus corpus labels |
+| `music21_kern_parser` | read `.denominator`, ignored `.numerator` | **smb's default scoring path** |
+
+`convert_lieder` and `convert_musetrainer` already carried it. The music21 one mattered
+most immediately: `validation/smb.py` defaults `--kern-parser` to `music21` while the
+prediction side is parsed as MusicXML, so that benchmark was charging the tool for a
+token its reference could not produce. Primus needed a decision rather than a default -
+`C` and `C/` carry no fraction but state 4/4 and cut time as definitely as one does, so
+both now yield a numerator.
+
+Grandstaff was reconverted and measured against a matched run of the unmodified parser
+rather than against the stale index: **15 gained, 0 lost**, strictly additive, the
+recovered files being ones whose tuplet ratio fell back under threshold once the extra
+token joined the denominator. The ~3,700 gap against the old `index.txt` is pre-existing
+drift in the tuplet/slur filters, reproduced exactly by the unmodified parser.
+
+### Both directions of the same artifact
+
+Regenerating the OSSQ validation references flipped the sign, but a raw comparison then
+overshot just as badly in the other direction. All 3,349 PDMX references state a
+numerator and the pinned base states none, so it is *deleted* from every staff: scored
+raw, base 28.29% against 86.72%, a "+58.43pp gain" that is almost entirely one token.
+
+Two guards, because the two directions look completely different from the outside. A
+checkpoint emitting a token the corpus lacks looks like a model that got worse;
+a checkpoint predating a token emits nothing unusual at all and looks like nothing.
+`unscorable_classes` catches the first, `never_predicted_classes` the second, and
+`--ignore-rhythm-prefix` drops matching positions from both sides and every branch so a
+comparison can straddle a vocabulary change. Naturals are deliberately *not* dropped: a
+rhythm-branch insertion misaligns everything after it, while a wrong lift value is an
+ordinary error on one position. One is an artifact; the other is the capability being
+measured.
+
+### The result, replicated
+
+Numerator-neutral, against the pinned base, two matched seeds:
+
+| benchmark | s42 | s7 | seed spread |
+| --- | --- | --- | --- |
+| OSSQ | **+1.71pp** (CI +0.72 to +2.71) | **+1.70pp** (CI +0.73 to +2.73) | 0.01pp |
+| PDMX | **+3.48pp** (CI +2.68 to +4.33) | **+3.33pp** (CI +2.62 to +4.11) | 0.15pp |
+| Lieder v4 | **+8.15pp** (CI +5.35 to +11.10) | **+8.21pp** (CI +5.31 to +11.17) | 0.06pp |
+
+Six comparisons, all significant, with a seed spread of at most 0.15pp - so these are
+results rather than draws, which is the whole point of running the matched seed. The v4
+corpus is a real, modest improvement on the two independent corpora and a large one on
+its own domain: not the -0.37pp regression first reported, and not the +58pp the raw
+cross-vocabulary comparison advertised.
+
+Both seeds warm start from the pinned 426, so all three columns are measured against a
+checkpoint that predates both the numerator and the naturals. The numerator is neutralised
+above; the naturals deliberately are not, and part of the PDMX and Lieder gaps is that
+capability rather than the corpus. Separating those two is a further ablation, not
+something these runs answer.
+
+### What this does not settle
+
+The residual OSSQ tail is 25 staves, still mostly length shifts, and at least one is a
+ground-truth defect both checkpoints disagree with: `sq8806881_0012_0001_4` has no key
+signature in the reference while both predict `keySignature_-3`. v4 also never predicts
+`timeSignatureBeats_12` (113 staves) or `_5` (75) - rare numerators it has not learned.
+
+The OSSQ **training** corpus has the same gap (516 of 2,000 sampled staves state a metre,
+0 carry a numerator). The v4 recipe excludes OSSQ scans so it was unaffected, but
+`train_scans.py` mixes them with Lieder and PDMX, which do supply the token - that recipe
+would train on contradictory supervision. Regenerated to `phase7num/`; `phase7fix/` is
+left in place because `train_scans.py` names it, and repointing it is a separate decision.
+
+**The operational lesson.** Uncapped `multiprocessing.Pool` workers each spawn a BLAS
+thread pool; three successive grandstaff reconversions hung at ~53,790 of 53,882 files
+with the pool idle and never printed `Done indexing`, and a concurrent scoring run died
+with `pthread_create failed`. Their partial `index_tmp.txt` files looked plausible, and
+comparing two of them produced a wholly fictitious "+51 files" measurement. Cap
+`OPENBLAS/OMP/MKL_NUM_THREADS`, and never read a count from a job that has not printed
+its own completion marker.
