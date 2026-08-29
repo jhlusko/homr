@@ -1,0 +1,79 @@
+{
+  "review": "/home/jhlusko/workspace/homr-artifacts/omr-review-boundaryreverse (1).json",
+  "source_manifest": "lieder-rebuild/stage2_boundary_ambiguous_v4_reverse_manifest.txt",
+  "policy": "only explicit complete verdicts with an empty note",
+  "reviewed_rows": 100,
+  "approved_pairs": 86,
+  "not_approved": [
+    {
+      "id": "IMSLP515921-sys2-v0",
+      "verdict": "wrong",
+      "notes": "shifted - 2nd bar of label is start of crop"
+    },
+    {
+      "id": "IMSLP617593-sys26-v0",
+      "verdict": "truncated",
+      "notes": "label misses last bar of crop"
+    },
+    {
+      "id": "IMSLP154059-sys3-v1",
+      "verdict": "complete",
+      "notes": "correct except for slurs - we appear to have a bug where chords cross staves so we can't identify where slur start/stop should be applied for chords? in this case the slurs are crossed. please confirm with visual inspection."
+    },
+    {
+      "id": "IMSLP632177-sys7-v1",
+      "verdict": "complete",
+      "notes": "crossed slurs"
+    },
+    {
+      "id": "IMSLP617593-sys26-v2",
+      "verdict": "truncated",
+      "notes": "missing last bar ofcrop"
+    },
+    {
+      "id": "IMSLP557087-sys21-v1",
+      "verdict": "complete",
+      "notes": "crossed slurs"
+    },
+    {
+      "id": "IMSLP637441-sys22-v1",
+      "verdict": "complete",
+      "notes": "wrong slurs"
+    },
+    {
+      "id": "IMSLP624193-sys21-v1",
+      "verdict": "complete",
+      "notes": "notes are correct but wrong time sig, should be 3/8"
+    },
+    {
+      "id": "IMSLP212407-sys14-v1",
+      "verdict": "complete",
+      "notes": "all Cs in the last bar should be double sharp, otherwise correct"
+    },
+    {
+      "id": "IMSLP617004-sys10-v1",
+      "verdict": "wrong",
+      "notes": "implicit tuplets"
+    },
+    {
+      "id": "IMSLP624197-sys9-v1",
+      "verdict": "complete",
+      "notes": "all of the naturals should be double sharps, otherwise correct"
+    },
+    {
+      "id": "IMSLP212406-sys3-v0",
+      "verdict": "complete",
+      "notes": "time sig should be 9/8, otherwise correct"
+    },
+    {
+      "id": "IMSLP624193-sys21-v0",
+      "verdict": "complete",
+      "notes": "should be 3/8, otherwise correct"
+    },
+    {
+      "id": "IMSLP617004-sys9-v0",
+      "verdict": "complete",
+      "notes": "naturals should be double sharps, otherwise correct"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "provenance": "reverse fingerprint model predictions",
+  "usage": "training-only; never evaluation",
+  "alignment": "alignment_v4_boundary_safe.json",
+  "source_manifest": "stage2_reverse_manifest_v3.txt",
+  "boundary_ambiguous_systems": 480,
+  "confidently_placed_reverse_pairs": 333,
+  "confidently_placed_reverse_systems": 169
+}

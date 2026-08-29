@@ -73,3 +73,10 @@ docs/writeups/score-editor/
 # Verovio, fetched by docs/writeups/fetch-vendor.sh - a 7.3MB build, vendored the
 # same way score-editor is rather than committed.
 docs/writeups/vendor/
+
+# Lieder alignment blobs: regenerable on the instance, and RUNLOG IV.9 records their
+# instance paths and SHA-256. The manifests and reports beside them stay tracked -
+# they are small, and the reviewed whitelist cannot be rebuilt without its review export.
+lieder-rebuild/alignment_v3_complete.json
+lieder-rebuild/alignment_v4_boundary_safe.json
+lieder-rebuild/bar_count_rows_v3_complete.json

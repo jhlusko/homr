@@ -1,0 +1,9 @@
+{
+  "manifest": "/workspace/b0/lieder-rebuild/stage2_clean_v4_boundary_safe_manifest.txt",
+  "pairs": 4343,
+  "unique_stems": 4343,
+  "recovered_overlap": 0,
+  "rebuilt_over_recovered": 434,
+  "problems": [],
+  "passed": true
+}
