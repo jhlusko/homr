@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
-from homr import color_adjust, download_utils, text_detector_config
+from homr import color_adjust, download_utils
 from homr.autocrop import autocrop
 from homr.bar_line_detection import (
     detect_bar_lines,
@@ -45,6 +45,7 @@ from homr.staff_parsing import parse_staffs
 from homr.staff_position_save_load import load_staff_positions, save_staff_positions
 from homr.title_detection import detect_title, download_ocr_weights
 from homr.transformer.configs import Config, default_config
+from homr.tuplet_repair import repair_symbols
 from homr.type_definitions import NDArray
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -253,6 +254,9 @@ def process_image(
             staff_context_weights=config.staff_context_weights,
         )
 
+        if transformer_config.tuplet_repair:
+            result_staffs = [repair_symbols(voice)[0] for voice in result_staffs]
+
         if not config.read_staff_positions:
             title = title_future.result(60)
         eprint("Found title:", title)
@@ -417,10 +421,8 @@ def download_weights(segnet_use_gpu: bool, transformer_use_gpu: bool, coreml_enc
     # Independent of whether any *required* model was missing: an install where the
     # segnet/encoder/decoder were already present (every run after the first) must
     # still pick up an optional model it doesn't have yet - e.g. after upgrading to a
-    # version that ships structured heads or a text detector for the first time.
+    # version that ships structured heads for the first time.
     download_optional_model(default_config.filepaths.structured_heads_path, base_url)
-    download_optional_model(text_detector_config.detector_vocal_path, base_url)
-    download_optional_model(text_detector_config.detector_instrumental_path, base_url)
 
 
 def download_optional_model(model: str, base_url: str) -> None:
@@ -428,12 +430,11 @@ def download_optional_model(model: str, base_url: str) -> None:
 
     Deliberately separate from the required-model loop above: that loop raises on
     failure, which is correct for a model inference cannot run without (the segnet,
-    encoder, decoder). The structured heads and the two Stage 3 text detectors are the
-    opposite - each is off-by-default, and their absence is already handled elsewhere
-    as the normal case (`decoder_inference.get_decoder` for the heads; no inference
-    class reads the detector paths yet at all). A release without one of these assets
-    yet, or a network hiccup fetching it, must not turn an optional feature into a
-    startup failure for everyone, or for the other optional models in the same call.
+    encoder, decoder). The structured heads are the opposite - off-by-default, and their
+    absence is already handled elsewhere as the normal case
+    (`decoder_inference.get_decoder` for the heads). A release without this asset yet, or
+    a network hiccup fetching it, must not turn an optional feature into a startup
+    failure for everyone.
     """
     if os.path.exists(model):
         return

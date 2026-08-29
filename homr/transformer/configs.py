@@ -135,6 +135,25 @@ class Config:
         #: anyway. Without a cap, a model that will not emit a divider trades one
         #: missing barline for a page of invented notes.
         self.max_forced_continuations = 8
+        #: Rewrite an implied tuplet (no bracket, no numeral - engraving does this
+        #: freely) that a single-staff voice's greedy decode wrote as plain values,
+        #: when the arithmetic identifies exactly one rewrite that makes the bar exact.
+        #: See `homr.tuplet_repair` for the full rationale.
+        #:
+        #: ON by default since a chord-duration double-counting bug in `bar_duration`
+        #: was found and fixed (a bar containing any chord was being scored as
+        #: artificially overfull, which was the source of every loss the earlier,
+        #: OFF-by-default measurement recorded). Reconfirmed against OSSQ (4
+        #: checkpoints, `training/omr_datasets/eval_tuplet_repair.py`): exact staves
+        #: moved +3/+4/+7/+6 with ZERO losses across all four runs, precision 71.7-
+        #: 93.3%. `repair_symbols` (the function this flag calls, via `homr/main.py`)
+        #: carries its own 13-case unit suite; the surrounding pipeline glue
+        #: (`homr/main.py`'s one-line `[repair_symbols(voice)[0] for voice in
+        #: result_staffs]`) has not separately been exercised end to end through the
+        #: full image-detection pipeline, only through this offline harness and
+        #: direct unit tests - worth knowing if something here ever looks off.
+        #: Set HOMR_TUPLET_REPAIR=0 to go back to the old default-off behaviour.
+        self.tuplet_repair = os.environ.get("HOMR_TUPLET_REPAIR", "1") != "0"
         self.pad_token = 0
         self.bos_token = 1
         self.eos_token = 2
