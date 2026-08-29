@@ -13,12 +13,25 @@ from homr.transformer.structured_notation import (
     empty_beam_levels,
     empty_slur_slots,
 )
-from homr.transformer.vocabulary import EncodedSymbol, empty, nonote
+from homr.transformer.vocabulary import (
+    TIME_SIGNATURE_BEATS_PREFIX,
+    VALID_TIME_SIGNATURE_NUMERATORS,
+    EncodedSymbol,
+    empty,
+    nonote,
+)
 from training.omr_datasets.staff_merging import (
     EncodedSymbolWithPos,
     merge_upper_and_lower_staff,
 )
 from training.transformer.training_vocabulary import VocabularyStats, check_token_lines
+
+
+def _beats_at(position: int, beats: EncodedSymbol | None) -> EncodedSymbolWithPos | None:
+    """Position a stated numerator immediately before the denominator it belongs to."""
+    if beats is None:
+        return None
+    return EncodedSymbolWithPos(position, beats, insert_before=True)
 
 
 class _SignatureState(NamedTuple):
@@ -32,6 +45,10 @@ class _SignatureState(NamedTuple):
     clef: EncodedSymbol
     key: EncodedSymbol
     time: EncodedSymbol
+    #: The stated numerator, which `*M4/4` carries and not every metre declaration does
+    #: (`*M4/4` over an unsupported numerator yields none). `None` means "no numerator
+    #: in force", which is distinct from any particular one.
+    beats: EncodedSymbol | None = None
 
 
 def _blank_notation() -> NoteNotation:
@@ -499,10 +516,25 @@ class HumdrumKernConverter:
         circle = mapping[key_signature.split(maxsplit=1)[0]]
         return EncodedSymbol(f"keySignature_{circle}")
 
-    def parse_time_signature(self, ts: str) -> EncodedSymbol:
+    def parse_time_signature(self, ts: str) -> list[EncodedSymbol]:
+        """The stated numerator first, as its own token, then the denominator.
+
+        Kern spells the whole metre in `*M4/4`, but this read only `parts[1]` and threw
+        the numerator away, so 3/4 and 4/4 produced the identical label and the renderer
+        had to guess the metre back from measure durations. `music_xml_parser` stopped
+        doing that when the numerator token was introduced; this converter was missed,
+        which is why kern-derived corpora carried no `timeSignatureBeats_*` while the
+        MusicXML-derived ones did. Same guard as there: a numerator outside
+        `VALID_TIME_SIGNATURE_NUMERATORS` has no token and is dropped rather than
+        invented.
+        """
         ts_val = ts.split(maxsplit=1)[0].replace("*M", "")
         parts = ts_val.split("/")
-        return EncodedSymbol(f"timeSignature/{parts[1]}")
+        result: list[EncodedSymbol] = []
+        if parts[0].isdigit() and int(parts[0]) in VALID_TIME_SIGNATURE_NUMERATORS:
+            result.append(EncodedSymbol(f"{TIME_SIGNATURE_BEATS_PREFIX}{int(parts[0])}"))
+        result.append(EncodedSymbol(f"timeSignature/{parts[1]}"))
+        return result
 
     def parse_duration(self, dur: str, is_rest: bool = False, is_grace: bool = False) -> str:
         if not dur:
@@ -660,10 +692,14 @@ class HumdrumKernConverter:
         prev_clef = initial.clef if initial is not None else self._get_default_clef(staff_no)
         prev_key = initial.key if initial is not None else EncodedSymbol("keySignature_0")
         prev_time = initial.time if initial is not None else EncodedSymbol("timeSignature/4")
+        prev_beats = initial.beats if initial is not None else None
 
         clef = EncodedSymbolWithPos(-10, prev_clef)
         keySignature = EncodedSymbolWithPos(-9, prev_key)
         timeSignature = EncodedSymbolWithPos(-8, prev_time)
+        # The numerator shares the denominator's position and sorts immediately before
+        # it, so the pair cannot be separated by whatever else lands on that position.
+        timeBeats = _beats_at(-8, prev_beats)
         initial_signature_was_added = False
         for (line_no, line), columns in zip(self._add_line_numbers(lines), staff.columns):
             if line.startswith("="):
@@ -679,10 +715,21 @@ class HumdrumKernConverter:
                     result.append(EncodedSymbolWithPos(line_no, new_key))
                 keySignature = EncodedSymbolWithPos(-9, new_key)
             elif line.startswith("*M"):
-                new_time = self.parse_time_signature(line)
-                if initial_signature_was_added and new_time != timeSignature.symbol:
+                *new_beats_symbol, new_time = self.parse_time_signature(line)
+                new_beats = new_beats_symbol[0] if new_beats_symbol else None
+                # Numerator and denominator are one declaration: if either moved, both
+                # are re-emitted, so a metre change can never leave a stale numerator
+                # standing beside a fresh denominator.
+                signature_changed = (
+                    new_time != timeSignature.symbol
+                    or new_beats != (timeBeats.symbol if timeBeats is not None else None)
+                )
+                if initial_signature_was_added and signature_changed:
+                    if new_beats is not None:
+                        result.append(EncodedSymbolWithPos(line_no, new_beats, insert_before=True))
                     result.append(EncodedSymbolWithPos(line_no, new_time))
                 timeSignature = EncodedSymbolWithPos(-8, new_time)
+                timeBeats = _beats_at(-8, new_beats)
             elif line.startswith("*clef"):
                 new_clef = self.parse_clef(line)
                 if initial_signature_was_added and new_clef != clef.symbol:
@@ -705,7 +752,14 @@ class HumdrumKernConverter:
                         result.append(clef)
                     if initial is None or keySignature.symbol != prev_key:
                         result.append(keySignature)
-                    if initial is None or timeSignature.symbol != prev_time:
+                    current_beats = timeBeats.symbol if timeBeats is not None else None
+                    if (
+                        initial is None
+                        or timeSignature.symbol != prev_time
+                        or current_beats != prev_beats
+                    ):
+                        if timeBeats is not None:
+                            result.append(timeBeats)
                         result.append(timeSignature)
                     initial_signature_was_added = True
                 symbols = line.split()
@@ -730,7 +784,10 @@ class HumdrumKernConverter:
         # (e.g. merge_upper_and_lower_staff fills in symbol.position), so returning the
         # same objects would let that later mutation leak back into the carried state.
         return result, _SignatureState(
-            copy.copy(clef.symbol), copy.copy(keySignature.symbol), copy.copy(timeSignature.symbol)
+            copy.copy(clef.symbol),
+            copy.copy(keySignature.symbol),
+            copy.copy(timeSignature.symbol),
+            copy.copy(timeBeats.symbol) if timeBeats is not None else None,
         )
 
 

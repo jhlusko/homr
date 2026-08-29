@@ -27,13 +27,7 @@ from typing import TYPE_CHECKING, TypedDict
 import editdistance
 
 from homr.circle_of_fifths import strip_naturals
-from homr.transformer.vocabulary import (
-    TIME_SIGNATURE_BEATS_PREFIX,
-    EncodedSymbol,
-    empty,
-    nonote,
-    sort_token_chords,
-)
+from homr.transformer.vocabulary import EncodedSymbol, empty, nonote, sort_token_chords
 from training.omr_datasets.humdrum_kern_parser import convert_kern_to_parts
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 
@@ -388,25 +382,6 @@ def _side_parts(text: str, kern_parser: str, xml_parser: str) -> list[list[Encod
     return [_strip_position([t for chord in sort_token_chords(p) for t in chord]) for p in raw]
 
 
-def _strip_time_signature_beats(
-    parts: list[list[EncodedSymbol]],
-) -> list[list[EncodedSymbol]]:
-    """Drop the stated-numerator token, which only one of the two parsers can produce.
-
-    The MusicXML parser emits `timeSignatureBeats_N` before `timeSignature/D`; the kern
-    parser reads the numerator of `*M4/4` and keeps only the denominator.  In a
-    same-format comparison that asymmetry cancels, which is why it is invisible almost
-    everywhere.  Across formats it does not: the XML side carries a token the kern side
-    structurally cannot, and the edit distance charges it to the tool as a recognition
-    error it had no way to avoid.  Numerators are still scored whenever both sides can
-    express one.
-    """
-    return [
-        [s for s in part if not s.rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX)]
-        for part in parts
-    ]
-
-
 def _parse_output(
     gt_text: str,
     raw_output: str,
@@ -429,9 +404,6 @@ def _parse_output(
     """
     gt_parts = _side_parts(gt_text, kern_parser, xml_parser)
     pred_parts = _side_parts(raw_output, kern_parser, xml_parser)
-    if _is_xml(gt_text) != _is_xml(raw_output):
-        gt_parts = _strip_time_signature_beats(gt_parts)
-        pred_parts = _strip_time_signature_beats(pred_parts)
     if ignore_unreliable_articulation:
         gt_parts = _strip_articulation_from_parts(gt_parts)
         pred_parts = _strip_articulation_from_parts(pred_parts)
