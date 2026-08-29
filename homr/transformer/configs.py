@@ -14,7 +14,19 @@ root_dir = os.getcwd()
 
 class FilePaths:
     def __init__(self) -> None:
-        model_name = "pytorch_model_426-b6fd20809a8dcaf10dfd39a4ca4f64c6f056e644"
+        #: The pinned release weights. `HOMR_MODEL_NAME` points every path below at a
+        #: different export instead - the encoder/decoder/heads graphs *and* the
+        #: checkpoint, so they cannot drift apart.
+        #:
+        #: This exists because testing a freshly trained checkpoint end to end had no
+        #: safe way to happen: `training/onnx/main.py` writes to these very paths, so
+        #: exporting anything other than the pinned weights overwrote the live cache that
+        #: `download_weights` manages. That is why the tuplet-repair confirmation in
+        #: RUNLOG IV.8 could only ever be run against checkpoint 426, which predates the
+        #: measurement it was meant to confirm. Unset, behaviour is exactly as before.
+        model_name = os.environ.get(
+            "HOMR_MODEL_NAME", "pytorch_model_426-b6fd20809a8dcaf10dfd39a4ca4f64c6f056e644"
+        )
         self.encoder_path = os.path.join(
             workspace,
             f"encoder_{model_name}.onnx",

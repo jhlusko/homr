@@ -12087,3 +12087,39 @@ with `pthread_create failed`. Their partial `index_tmp.txt` files looked plausib
 comparing two of them produced a wholly fictitious "+51 files" measurement. Cap
 `OPENBLAS/OMP/MKL_NUM_THREADS`, and never read a count from a job that has not printed
 its own completion marker.
+
+### IV.15.1 The numerators v4 never predicts are the ones it barely saw
+
+`never_predicted_classes` flagged that v4 states no `timeSignatureBeats_12` (113 PDMX
+staves) and no `_5` (75). Before reading that as a limit on what the model can learn, the
+same question the naturals and advance threads both turned on: does the mixture supply
+the class at all?
+
+The v4 fine-tune is 3,622 Lieder v4 pairs plus **1,300** PDMX replay pairs. Numerator
+supply, counted over the token files themselves:
+
+| numerator | Lieder v4 train | PDMX train | est. instances in 1,300 replay | PDMX valid staves |
+| --- | --- | --- | --- | --- |
+| `4` | 99 (33.2%) | 48.3% | ~790 | 1,733 |
+| `3` | 79 (26.5%) | 18.6% | ~300 | 897 |
+| `12` | 6 (2.0%) | 1.20% | **~20** | 115 |
+| `5` | 0 | 2.14% | **~35** | 84 |
+
+So the two classes it never states are the two it was shown a couple of dozen times,
+against a validation split that is *enriched* in `_12` relative to the training
+distribution (2.75% against 1.20%). This is the same shape as the rare-gap classes in the
+advance head's held-out evaluation (IV.8): a supply gap in the tail, not a broad failure.
+Lieder supplies six metres and no `5` or `7` at all, so at this replay size PDMX is the
+only source of the tail and 1,300 pairs is too few to carry it.
+
+Worth noting rather than acting on immediately: the cheap move is more replay, not a
+different architecture, and the honest report is that v4 handles the common metres and
+has not been shown to handle the rare ones. Do not claim uniform metre coverage.
+
+**A method note, since it nearly went the other way.** The first run of this count
+reported *zero* numerators anywhere in PDMX, which would have contradicted an already
+established fact. PDMX index rows are repo-relative while Lieder and OSSQ rows are
+absolute, so resolving them against the working directory silently skipped every row and
+returned a confident empty Counter. The script now resolves against the repo root and
+prints how many token files it could not open, because a corpus analysis that quietly
+measures nothing looks exactly like a corpus analysis that measures zero.
