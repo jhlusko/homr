@@ -53,3 +53,26 @@ class TestGrandstaffIndexIsTheCurrentOne(unittest.TestCase):
         # The note has to be tied to the token-only path; printing it unconditionally
         # would tell a full rebuild to promote an index it never wrote.
         self.assertIn("if only_recreate_token_files:", source)
+
+
+class TestScansUsesTheV4Corpus(unittest.TestCase):
+    """`train_scans` mixes OSSQ with Lieder; the Lieder half must be the corrected one."""
+
+    def test_it_reads_the_boundary_safe_lieder_index(self) -> None:
+        from training.transformer import train_scans
+
+        # The original index is what v4 replaces - IV.10 found grouped-boundary
+        # displacement fabricating cuts in it. Mixing corrected OSSQ with those labels
+        # would restore on one side what was removed from the other.
+        self.assertIn("v4_boundary_safe", train_scans.IMSLP_TRAIN_INDEX)
+        self.assertNotEqual(train_scans.IMSLP_TRAIN_INDEX, "/workspace/b0/imslp_train_index.txt")
+
+    def test_its_lieder_count_matches_the_v4_split(self) -> None:
+        from training.transformer import train_scans
+
+        self.assertEqual(train_scans.IMSLP_COUNT, 3622)
+
+    def test_it_can_replay_from_several_corpora(self) -> None:
+        from training.transformer import train_scans
+
+        self.assertIs(train_scans.REPLAY_CORPORA, REPLAY_CORPORA)
