@@ -11720,6 +11720,20 @@ training-recipe or architecture change.
    caught the score-profile regression, checked against the primary six-branch decode);
    a full-scale naturals production run; wiring the advance head into the renderer
    (blocked on the held-out check in item 1).
+5. **Added to the sprint, not started — Lieder physical-bar-recount recovery**
+   (separate thread, `/workspace/b0/lieder-rebuild`, plan at
+   `HANDOFF_2026-08-27.md`). A 12-shard recount launched all in the same second, hit the
+   container's `pids.max` ceiling from ONNX Runtime's per-session thread pools, and 130 of
+   330 scores (39%) failed silently — the per-score `except Exception` prints `FAILED` and
+   continues, so two shards wrote empty `[]` files and every shard exited 0. Plan: (a)
+   don't touch the 10 still-running shards; (b) harden `compare_bar_counts.py` — collect
+   failures, add `--failed-out`, exit non-zero on any failure, refuse to write an empty
+   `--rows-out`; (c) rerun the ~130 missing ids in 4 shards (not 12) at safe concurrency;
+   (d) gate the merge into `align_lieder_systems` on an explicit id-coverage check, not on
+   trusting the shard count; (e) resync the instance before the rerun, since the last sync
+   was interrupted; (f) then the rest of the handoff's finish sequence unchanged (margin
+   2.0, no vocal training until the 100-item review passes). Full plan retained at
+   `/home/jhlusko/.claude/plans/virtual-soaring-hollerith.md`.
 
 ## IV.8 Progress against the plan
 
