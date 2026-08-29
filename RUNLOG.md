@@ -11547,3 +11547,224 @@ make_review_sets.py          # six sets, one hypothesis each
 
 **Vocal training remains blocked on human review.** Four automated decisions have been
 overturned by it so far, every one of them in the direction of discarding good data.
+
+# Part IV — Onset representation, tuplet repair, and structured-head promotion
+
+A single session's work, condensed here from an in-conversation "Promotion Week" plan
+(published as a private artifact and moved into this log per standing practice). Spans
+three corpora (Lieder, PDMX, OSSQ) and touches both the corpus-construction thread (Part
+III) and the structured-notation-heads thread (Part I/II's 27.x series) — filed as its
+own Part rather than shoehorned into either, since it is neither Lieder-only nor
+dynamics-only.
+
+## IV.1 Naturals restored, and the true cost isolated
+
+`strip_naturals` (`homr/circle_of_fifths.py`) stripped every `N` lift unconditionally
+across four of five converters; only `convert_ossq.py` never did, which is why OSSQ was
+the only corpus that ever recorded a natural and why every checkpoint carried a uniform
+~0.54% ceiling on lift-branch accuracy (no checkpoint had ever predicted `N`: 0/879 OSSQ
+references). A naturals-kept fine-tune (3,880 Lieder pairs) moved OSSQ N recall 0% → 62%
+on two seeds, with lift accuracy *improving* (91.55% → 93.06/93.15%) despite learning a
+new symbol class from scratch.
+
+A naive before/after PDMX comparison suggested a ~5pp accuracy cost — but PDMX regresses
+under almost any fine-tune on this corpus, independent of naturals. Isolated the true
+cost with a matched control: identical 3,880 pairs, identical recipe, naturals stripped
+from the *same* files rather than a different corpus slice. True cost: **-1.2 to -1.6pp
+PDMX exact-match**, an order of magnitude smaller than the naive comparison implied.
+**Default flipped**: `HOMR_KEEP_NATURALS` now defaults to keep (was strip); 5 tests, all
+14 call sites verified to share the one switch.
+
+## IV.2 Tuplet repair: from a narrow win to zero losses
+
+The single-staff arithmetic tuplet repair (implied tuplets — no bracket, no numeral,
+which the model cannot learn from pixels) initially showed a real but narrow win: exact
+staves +1/+2/+4/+4 across four OSSQ checkpoints, with up to 2 broken staves per run. All
+of those losses turned out to share one cause: `bar_duration` summed every token in a bar
+naively, double-counting chord members (`SymbolChord.get_duration()` correctly takes the
+**minimum** across a simultaneity; the repair's own duration check did not). Fixed, plus
+the run-detection bug it exposed (a candidate run could grab one member of a chord while
+its partner sat untouched). **Reconfirmed: exact staves +3/+4/+7/+6, zero losses across
+all four checkpoints, precision 71.7-93.3%.** `HOMR_TUPLET_REPAIR` flipped to default-on.
+
+## IV.3 The onset/advance representation problem
+
+Research (`docs/private/ONSET_REPRESENTATION_RESEARCH.md`) established that homr's
+min-duration rule for a grand staff's bar length — `SymbolChord.get_duration()` takes the
+min across a simultaneity — is not an approximation but structurally wrong wherever the
+two hands' onsets desynchronize, which MusicXML's `<backup>`/`<forward>` allow and kern's
+spine format does not. Measured directly against real Lieder ground truth: the min-rule
+disagrees with the true onset gap **30.6% of the time** on grand-staff simultaneities —
+far past the report's own 95%-agreement "stop, this is smaller than believed" threshold.
+
+Built a full structured "advance" head end to end (schema → model head → targets → losses
+→ decoding → metrics → sidecar), extracted via true cross-onset position tracking for the
+MusicXML path (Lieder, PDMX, OSSQ) and via a proof that the min-rule is *already exact*
+for kern (GrandStaff) — kern's spine format guarantees a new data line at the finest
+rhythmic grid present in any voice, confirmed against a real excerpt (four bass 16ths
+spanning one treble quarter, exactly 4:1). Frozen-core probe: **82.4% macro F1 on the
+nonzero-gap subset**, well above the 69.4% min-rule baseline and not a majority-class
+collapse (verified via macro F1, not just micro accuracy). A joint probe on the combined
+Lieder+PDMX corpus (7,709 pairs) scored 88.7% micro / 83% macro — currently train-set fit
+only, held-out validation still open (Part IV.8).
+
+## IV.4 Kern beam/stem/tie: real markup, real signal, actually held out
+
+GrandStaff (kern-sourced) previously contributed **zero** beam/tie/stem signal to any
+structured head — a placeholder `NoteNotation` with everything blank except `advance`.
+Replaced with real parsing of kern's own markup: `L`/`J` beam levels including `k`/`K`
+partial-beam hooks (previously discarded as noise), `[`/`]`/`_` ties (this corpus writes
+them as *suffixes*, differing from the reference spec — handled both spellings), and
+confirmed this corpus states **zero** real stems anywhere across all 53,882 `.krn` files
+(a true property of the data, not a parser gap — correctly comes out `UNKNOWN`, masked
+from loss).
+
+Validated on a genuine held-out split (disjoint scores, verified zero overlap) — the only
+head this session got a true generalization check on before promotion:
+
+| head | in-sample | held-out | majority baseline |
+|---|---|---|---|
+| beam level 1 | 0.838 | 0.833 | 0.124 |
+| beam level 2 | 0.797 | 0.770 | 0.097 |
+| beam level 3 | 0.804 | 0.713 | 0.093 |
+| ties | 0.909 | 0.893 | 0.246 |
+
+Negligible generalization gap on every well-supported class; ~42k trainable head
+parameters against 3.5M scored positions makes memorization implausible. **Promoted.**
+
+## IV.5 Three renderer bugs found by a ground-truth roundtrip check
+
+Built `training/omr_datasets/roundtrip_fidelity.py` (Lieder) and
+`roundtrip_fidelity_corpora.py` (PDMX/OSSQ): real ground-truth tokens → `generate_xml` →
+reparse → diff against the original, token for token. No model in the loop — any mismatch
+is a tokenizer/renderer bug, provable directly.
+
+1. **Duplicated/misordered `<attributes>`/time-signature blocks** — a state-tracking bug
+   in `build_measures` (`homr/music_xml_generator.py`) that didn't carry the current
+   attributes reference forward. Lieder exact-match 0% → 52.6% from this fix alone.
+2. **A measurement artifact in the tool itself** (chord-member order not canonicalized
+   before diffing) — found and fixed before trusting anything downstream. → 84.1%.
+3. **`_collect_articulation` produced `"slurStart_slurStart"`**
+   (`training/omr_datasets/music_xml_parser.py`) whenever a note carried both a
+   `<tied type="start">` and a `<slur type="start">` at once — common (741/800 notes in
+   an earlier sample), because homr's vocabulary deliberately collapses ties and slurs
+   into one string field. Crashed `build_slurs` on ~8% of real crops via the actual
+   production render path. Fixed with a one-line dedup (`articulations` already had the
+   same dedup two lines below; `slurs` never did).
+4. **`build_clef` mangled multi-character clef signs** — indexed by character
+   (`sign = sign_and_line[0]`), so `clef_TAB5` split as sign `T`, line `A`, not a real
+   MusicXML clef. TAB staves are common enough to surface in a 50-file PDMX sample. Fixed
+   by splitting on trailing digits.
+5. **PDMX/musetrainer windowed conversion lost the time-signature numerator on 92.4%/
+   89.2% of files** — `_context_at_measure` seeded a fresh per-window `MeasureCutter`
+   from context that carried the denominator but not the numerator, so every window after
+   the first emitted a bare `timeSignature/4`. Fixed (`time_beats` now a fourth return
+   value, wired into both converters); full corpora reconverted. **PDMX roundtrip exact-
+   match: 15.3% → 91.9%** (confirmed on the live, reconverted corpus, not just the
+   validation scratch tree).
+
+Lieder roundtrip now sits at **92.0% exact** (231/251 crops), up from 84.1% at the start
+of the session. Remaining gap: one confirmed, twice-attempted-and-reverted open bug (below)
+plus a handful of documented representational limits (chorded rests can't be represented
+in MusicXML at all; a trailing repeat token at a crop edge grows a phantom measure).
+
+**Open, not fixed: `TupletParser.add_tuplets` can stitch two unrelated same-ratio
+triplets from different hands into one bogus bracket** (confirmed on `IMSLP435041`). A
+same-hand-tracking fix solved that case but regressed a different score
+(`IMSLP83318`, which has *genuinely simultaneous* triplets in both hands at once) from 83
+to 226 field mismatches — reverted. A second attempt (independent per-hand cursors) fixed
+`IMSLP83318` but exposed that `IMSLP435041`'s own triplet groups are "short by exactly
+one" under strict per-hand counting, for a reason not yet established (real data property,
+crop-boundary artifact, or a `group_into_chords` assembly issue) — also reverted (165
+mismatches, still worse than shipped). Documented in the function's own docstring with
+both dead ends recorded, rather than silently reintroduced by a future attempt.
+
+## IV.6 Dynamics: mostly confirmed prior history, plus one real new metrics bug
+
+Full account in `docs/private/DYNAMICS_HEAD_FINDINGS.md`. A joint probe scored dynamics
+at 11.97% macro F1, far below every other head. Investigation found two stacked
+artifacts — a ~10-point scoring floor from masked decoder positions being scored as free
+correct `NONE` predictions (real signal is closer to 0.02-0.03), and an illusory
+"improvement" over a prior 0.063 baseline that was really just a vocabulary-fold effect.
+**Both findings replicate this project's own prior history** (RUNLOG 27.94-27.98, several
+sessions ago: phase14-17 already found the identical fold artifact and diagnosed the same
+"registration failure, not confusion" pattern for `mf`/`mp`/`ppp`) — convergent
+confirmation, not new discovery, and the scoring-floor bug was independently rediscovered
+a second way by the kern probe (IV.4): tie support inflated 9.2x by the same mechanism,
+small in tie's case (0.998 none-accuracy) but severe for dynamics.
+
+**Also re-surfaced: dynamics already has a working, separate Stage 3 pipeline** — a
+page-level detector (84.0% F1) feeding a dedicated CNN classifier (88.6% mark accuracy)
+feeding a position-based attachment heuristic (27.45, 27.95-27.97). The structured head is
+a deliberate parallel attempt at inline decoding, not a replacement for a broken Stage 3.
+Given that, and given this project has already measured unfreezing quietly erase a
+working signal elsewhere (score-profile conditioning, `docs/writeups/homr-devs.html` —
++0.0615 mean ablation delta under a frozen core, oscillating in sign under an otherwise
+identical unfrozen run), the case for spending an unfreeze specifically on dynamics is
+weak. The cheaper, already-identified-but-never-done next step (RUNLOG 27.98's own
+diagnostic pass) is to crop and look at the real `mf`/`mp`/`ppp` misses before any
+training-recipe or architecture change.
+
+## IV.7 This week's plan
+
+1. **Finish what's running** — evaluate the Lieder+PDMX promotion run on a genuine
+   held-out split (not done yet — every advance-head number so far is train-set fit);
+   confirm the PDMX/musetrainer numerator fix on the live corpus (done, IV.8).
+2. **Promote what's validated** — kern beam/stem/tie (done, IV.4); one real end-to-end
+   confirmation of tuplet repair through the actual image pipeline, not just the offline
+   harness; fix the scoring-floor bug now confirmed twice.
+3. **Cheap next steps on open threads** — the RUNLOG-planned dynamics crop diagnostic;
+   decide (don't just note) the trailing-repeat phantom-measure question; leave the
+   cross-hand tuplet bug alone absent a genuinely new angle.
+4. **Bigger calls, gated, not started** — unfreezing (needs the same clean ablation that
+   caught the score-profile regression, checked against the primary six-branch decode);
+   a full-scale naturals production run; wiring the advance head into the renderer
+   (blocked on the held-out check in item 1).
+
+## IV.8 Progress against the plan
+
+- **PDMX numerator fix, confirmed on the live corpus.** 0.30% of a 2,000-file sample
+  still missing a numerator (down from 92.4%), all attributable to numerators outside
+  `VALID_TIME_SIGNATURE_NUMERATORS` (documented, unrelated residue). Reran the PDMX
+  roundtrip check against the live reconverted corpus rather than the validation scratch
+  tree: **91.9% exact, 1,243 crops, 0 crashes** — reconfirmed, not just carried over.
+- **Held-out manifest built** for the advance-head promotion run: 2,000 PDMX
+  `index_train.txt` pairs, verified zero overlap with the training manifest. Evaluation
+  pending the promotion training run finishing (epoch 5/12 as of this entry).
+- **Scoring-floor fix, in progress.** Added `TieState.UNKNOWN`/`DynamicMark.UNKNOWN`
+  sentinels (`homr/transformer/structured_notation.py`), mirroring `StemDirection.UNKNOWN`
+  exactly — excluded from `TIE_CLASSES`/`DYNAMIC_CLASSES` (never a real inference class),
+  and added by filtering rather than reordering the existing enum members, so no trained
+  checkpoint's class indices move. Next: wire `_lookup`'s masked-position fallback to the
+  new sentinel and exclude it in `tie_report`/`dynamic_report`.
+- **Scoring-floor fix, shipped.** `TieState.UNKNOWN`/`DynamicMark.UNKNOWN` wired end to
+  end: `structured_decoding.py::_note` now decodes a masked position (padding, BOS/EOS,
+  a non-note token) to `UNKNOWN` for both heads instead of `NONE`, and
+  `tie_report`/`dynamic_report` (`structured_metrics.py`) exclude it - mirroring
+  `stem_report`'s already-correct `StemDirection.UNKNOWN` handling exactly. 5 new tests
+  (2 metrics, 1 decoding, both directions - a masked position decodes to UNKNOWN, a real
+  note's genuine NONE still decodes to NONE and is still scored). 80/80 structured-heads
+  tests pass. No trained checkpoint's class indices move (UNKNOWN excluded from
+  `TIE_CLASSES`/`DYNAMIC_CLASSES` by filtering, not reordering, the existing members).
+- **Tuplet repair, real end-to-end confirmation (partial).** Ran the actual
+  `homr/main.py` image → detect → decode → repair pipeline (not the offline harness) on
+  several real OSSQ scans with `HOMR_TUPLET_REPAIR=1` vs `=0`: no crash, valid MusicXML,
+  and correctly a no-op when the staff has no overfull bar. Full test suite: 1805 passed,
+  no regressions. **Not yet decisive**: the only checkpoint with exported ONNX weights is
+  426, which predates the checkpoints the offline OSSQ measurement (+3/+4/+7/+6 exact
+  staves, zero losses) used - so this run confirms the integration is safe, not that it
+  fires correctly end to end on a real overfull bar. That needs a fresh ONNX export of a
+  current checkpoint, not done this session - left as a named gap rather than papered
+  over with a checkpoint that can't actually test the claim.
+- **Trailing-repeat phantom measure, fixed and decided.** A token stream ending on a
+  bare `repeatStart` opened a fresh measure to hold the forward-repeat barline, then the
+  post-loop "anything left to close" check counted that bare barline as real content and
+  emitted it as its own phantom measure - an empty bar with a forward repeat on its
+  RIGHT edge, a shape real engraving never produces. Added
+  `_measure_has_real_content` (any child other than `barline`) and used it in place of
+  the old "any children at all" check. 3 new tests (the repeat case, the ordinary-ending
+  case that must stay untouched, and a trailing-content case that must still be kept).
+  Full suite: 1808 passed, no regressions. Real-corpus confirmation inconclusive at
+  n=150/seed=11 (crops_exact and field_mismatches identical before/after - the pattern is
+  only ~1.6% of crops, too rare to reliably land in this sample); a larger sample is
+  running to try to surface it directly.
