@@ -11768,3 +11768,16 @@ training-recipe or architecture change.
   n=150/seed=11 (crops_exact and field_mismatches identical before/after - the pattern is
   only ~1.6% of crops, too rare to reliably land in this sample); a larger sample is
   running to try to surface it directly.
+- **Dynamics crop diagnostic, item 3's plan entry: already closed, not open.** Went to run
+  the RUNLOG-planned mf/mp/ppp crop diagnostic and found it had already been done in an
+  earlier session (§24, lines ~3345-3387): 13 real crops hand-checked (9 mf/mp/ppp, 4 p/f
+  control), 7/9 mf/mp/ppp print exactly as labelled, and the conclusion already reached was
+  that the ~2-in-9 miss rate is real but far too small to explain the head's 87-92%
+  predicts-none behavior - most of the collapse is a genuine model limitation, not a corpus
+  artifact. Corrected `docs/private/DYNAMICS_HEAD_FINDINGS.md`'s "what would actually fix
+  it" section, which had stated the diagnostic as still-open. Nothing cheap remains on this
+  thread; the next real decision is the unfreeze-vs-Stage-3 tradeoff, not another
+  crop-sampling pass.
+- **Advance-head promotion run, in progress.** Epoch 9/12 as of this entry (~660s/epoch,
+  ~2 more epochs of wall time left); held-out evaluation against the 2,000-pair manifest
+  still pending completion.
