@@ -1,0 +1,20 @@
+{
+  "alignment": "/workspace/b0/lieder-rebuild/system_alignment_supplement.json",
+  "model_predictions_used": false,
+  "pairs": 32,
+  "span_inconsistent_pairs_skipped": 0,
+  "quarantined_recovered_pairs": 0,
+  "scores": [
+    {
+      "score_id": "IMSLP621830",
+      "status": "built",
+      "aligned_systems": 16,
+      "pairs": 32
+    },
+    {
+      "score_id": "IMSLP622484",
+      "status": "prepare failed",
+      "error": "Octave shift isn't supported"
+    }
+  ]
+}

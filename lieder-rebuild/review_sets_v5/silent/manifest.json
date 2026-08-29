@@ -1,0 +1,569 @@
+[
+  {
+    "id": "IMSLP154084-sys0-v0",
+    "score_id": "IMSLP154084",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP605026-sys1-v1",
+    "score_id": "IMSLP605026",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP16400-sys7-v0",
+    "score_id": "IMSLP16400",
+    "system": 7,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP589008-sys26-v0",
+    "score_id": "IMSLP589008",
+    "system": 26,
+    "voice": 0,
+    "left_bars": 9,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP622487-sys0-v0",
+    "score_id": "IMSLP622487",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP285346-sys0-v0",
+    "score_id": "IMSLP285346",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP285347-sys2-v0",
+    "score_id": "IMSLP285347",
+    "system": 2,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP592442-sys0-v1",
+    "score_id": "IMSLP592442",
+    "system": 0,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP183806-sys21-v1",
+    "score_id": "IMSLP183806",
+    "system": 21,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP74369-sys14-v0",
+    "score_id": "IMSLP74369",
+    "system": 14,
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP558603-sys4-v0",
+    "score_id": "IMSLP558603",
+    "system": 4,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP405017-sys55-v0",
+    "score_id": "IMSLP405017",
+    "system": 55,
+    "voice": 0,
+    "left_bars": 9,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP555778-sys14-v0",
+    "score_id": "IMSLP555778",
+    "system": 14,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP676303-sys0-v0",
+    "score_id": "IMSLP676303",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP61112-sys0-v0",
+    "score_id": "IMSLP61112",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP11784-sys0-v0",
+    "score_id": "IMSLP11784",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP556523-sys3-v0",
+    "score_id": "IMSLP556523",
+    "system": 3,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP434340-sys0-v1",
+    "score_id": "IMSLP434340",
+    "system": 0,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP185782-sys0-v0",
+    "score_id": "IMSLP185782",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP62382-sys0-v0",
+    "score_id": "IMSLP62382",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP154299-sys0-v0",
+    "score_id": "IMSLP154299",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP622486-sys13-v0",
+    "score_id": "IMSLP622486",
+    "system": 13,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP414132-sys3-v0",
+    "score_id": "IMSLP414132",
+    "system": 3,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP285344-sys0-v0",
+    "score_id": "IMSLP285344",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP12778-sys0-v0",
+    "score_id": "IMSLP12778",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP617260-sys1-v0",
+    "score_id": "IMSLP617260",
+    "system": 1,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP140920-sys32-v0",
+    "score_id": "IMSLP140920",
+    "system": 32,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP285345-sys8-v0",
+    "score_id": "IMSLP285345",
+    "system": 8,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP618722-sys0-v0",
+    "score_id": "IMSLP618722",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP558713-sys3-v0",
+    "score_id": "IMSLP558713",
+    "system": 3,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP122258-sys1-v0",
+    "score_id": "IMSLP122258",
+    "system": 1,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP630163-sys4-v0",
+    "score_id": "IMSLP630163",
+    "system": 4,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP422393-sys3-v0",
+    "score_id": "IMSLP422393",
+    "system": 3,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP154241-sys0-v0",
+    "score_id": "IMSLP154241",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP626307-sys0-v0",
+    "score_id": "IMSLP626307",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP89016-sys0-v0",
+    "score_id": "IMSLP89016",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP154201-sys0-v0",
+    "score_id": "IMSLP154201",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP60848-sys18-v0",
+    "score_id": "IMSLP60848",
+    "system": 18,
+    "voice": 0,
+    "left_bars": 8,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP435483-sys0-v0",
+    "score_id": "IMSLP435483",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP154223-sys0-v0",
+    "score_id": "IMSLP154223",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP622103-sys0-v0",
+    "score_id": "IMSLP622103",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP606057-sys0-v0",
+    "score_id": "IMSLP606057",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 7,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP589008-sys0-v0",
+    "score_id": "IMSLP589008",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP592442-sys0-v0",
+    "score_id": "IMSLP592442",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP183806-sys1-v1",
+    "score_id": "IMSLP183806",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP185782-sys9-v0",
+    "score_id": "IMSLP185782",
+    "system": 9,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP62382-sys18-v0",
+    "score_id": "IMSLP62382",
+    "system": 18,
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP622486-sys12-v0",
+    "score_id": "IMSLP622486",
+    "system": 12,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP12778-sys12-v0",
+    "score_id": "IMSLP12778",
+    "system": 12,
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP617260-sys18-v0",
+    "score_id": "IMSLP617260",
+    "system": 18,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP558713-sys16-v0",
+    "score_id": "IMSLP558713",
+    "system": 16,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP60848-sys7-v0",
+    "score_id": "IMSLP60848",
+    "system": 7,
+    "voice": 0,
+    "left_bars": 8,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP606057-sys1-v0",
+    "score_id": "IMSLP606057",
+    "system": 1,
+    "voice": 0,
+    "left_bars": 8,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP183806-sys15-v1",
+    "score_id": "IMSLP183806",
+    "system": 15,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP185782-sys10-v0",
+    "score_id": "IMSLP185782",
+    "system": 10,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP62382-sys6-v0",
+    "score_id": "IMSLP62382",
+    "system": 6,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP617260-sys11-v0",
+    "score_id": "IMSLP617260",
+    "system": 11,
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP60848-sys1-v0",
+    "score_id": "IMSLP60848",
+    "system": 1,
+    "voice": 0,
+    "left_bars": 8,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP183806-sys2-v1",
+    "score_id": "IMSLP183806",
+    "system": 2,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP185782-sys1-v0",
+    "score_id": "IMSLP185782",
+    "system": 1,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP60848-sys0-v0",
+    "score_id": "IMSLP60848",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 7,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP183806-sys0-v0",
+    "score_id": "IMSLP183806",
+    "system": 0,
+    "voice": 0,
+    "left_bars": 2,
+    "right_bars": null,
+    "has_right": false
+  },
+  {
+    "id": "IMSLP183806-sys21-v0",
+    "score_id": "IMSLP183806",
+    "system": 21,
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false
+  }
+]

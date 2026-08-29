@@ -1,0 +1,182 @@
+[
+  {
+    "id": "IMSLP405017-sys29-v0",
+    "score_id": "IMSLP405017",
+    "voice": 0,
+    "left_bars": 5,
+    "right_bars": 5,
+    "has_right": true,
+    "label_beats": 1.0,
+    "predicted_beats": 0.75
+  },
+  {
+    "id": "IMSLP405017-sys18-v1",
+    "score_id": "IMSLP405017",
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": 3,
+    "has_right": true,
+    "label_beats": 1.5,
+    "predicted_beats": 1.25
+  },
+  {
+    "id": "IMSLP405017-sys21-v1",
+    "score_id": "IMSLP405017",
+    "voice": 1,
+    "left_bars": 2,
+    "right_bars": 2,
+    "has_right": true,
+    "label_beats": 1.0625,
+    "predicted_beats": 0.9
+  },
+  {
+    "id": "IMSLP44341-sys4-v2",
+    "score_id": "IMSLP44341",
+    "voice": 2,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 0.8125,
+    "predicted_beats": 0.6875
+  },
+  {
+    "id": "IMSLP44341-sys3-v2",
+    "score_id": "IMSLP44341",
+    "voice": 2,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 0.6875,
+    "predicted_beats": 0.625
+  },
+  {
+    "id": "IMSLP405017-sys16-v1",
+    "score_id": "IMSLP405017",
+    "voice": 1,
+    "left_bars": 2,
+    "right_bars": 2,
+    "has_right": true,
+    "label_beats": 1.0625,
+    "predicted_beats": 1.125
+  },
+  {
+    "id": "IMSLP44341-sys19-v2",
+    "score_id": "IMSLP44341",
+    "voice": 2,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 0.625,
+    "predicted_beats": 0.59375
+  },
+  {
+    "id": "IMSLP89797-sys6-v1",
+    "score_id": "IMSLP89797",
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 1.5,
+    "predicted_beats": 1.5
+  },
+  {
+    "id": "IMSLP621832-sys9-v1",
+    "score_id": "IMSLP621832",
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 0.75,
+    "predicted_beats": 0.75
+  },
+  {
+    "id": "IMSLP61117-sys11-v1",
+    "score_id": "IMSLP61117",
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": 5,
+    "has_right": true,
+    "label_beats": 1.0,
+    "predicted_beats": 1.0
+  },
+  {
+    "id": "IMSLP578231-sys8-v0",
+    "score_id": "IMSLP578231",
+    "voice": 0,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 0.75,
+    "predicted_beats": 0.75
+  },
+  {
+    "id": "IMSLP557088-sys8-v0",
+    "score_id": "IMSLP557088",
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": 3,
+    "has_right": true,
+    "label_beats": 0.75,
+    "predicted_beats": 0.75
+  },
+  {
+    "id": "IMSLP44341-sys10-v1",
+    "score_id": "IMSLP44341",
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 0.5,
+    "predicted_beats": 0.5
+  },
+  {
+    "id": "IMSLP405017-sys29-v1",
+    "score_id": "IMSLP405017",
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": 5,
+    "has_right": true,
+    "label_beats": 1.125,
+    "predicted_beats": 1.125
+  },
+  {
+    "id": "IMSLP405017-sys19-v1",
+    "score_id": "IMSLP405017",
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 1.0625,
+    "predicted_beats": 1.0625
+  },
+  {
+    "id": "IMSLP405017-sys0-v1",
+    "score_id": "IMSLP405017",
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": 4,
+    "has_right": true,
+    "label_beats": 1.0,
+    "predicted_beats": 1.0
+  },
+  {
+    "id": "IMSLP183800-sys15-v1",
+    "score_id": "IMSLP183800",
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": 3,
+    "has_right": true,
+    "label_beats": 1.0,
+    "predicted_beats": 1.0
+  },
+  {
+    "id": "IMSLP154086-sys15-v0",
+    "score_id": "IMSLP154086",
+    "voice": 0,
+    "left_bars": 3,
+    "right_bars": 3,
+    "has_right": true,
+    "label_beats": 1.0,
+    "predicted_beats": 1.0
+  }
+]

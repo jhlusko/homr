@@ -1,0 +1,4 @@
+# Scores reproducibly outside the recount. Verified, not guessed.
+# (empty: IMSLP323995 was recovered 2026-08-27 after its corrupt download - an IMSLP
+#  HTML disclaimer page saved as .pdf - was replaced with the real 6-page PDF,
+#  detection was re-run (29 systems), and it rejoined the corpus.)

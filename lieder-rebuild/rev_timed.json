@@ -1,0 +1,979 @@
+{
+  "provenance": "reverse-fingerprint",
+  "model_predictions_used": true,
+  "warning": "Model-derived labels. Trainable as pseudo-labels; NEVER admissible in a held-out evaluation set.",
+  "min_mean_score": 0.45,
+  "stats": {
+    "scores": 8,
+    "accepted": 8,
+    "rejected": 0,
+    "pairs": 246,
+    "unclaimed_measures": 0
+  },
+  "scores": [
+    {
+      "score_id": "IMSLP154063",
+      "systems": 15,
+      "measures": 54,
+      "placed": 14,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 16,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 24,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 28,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 31,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 34,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 37,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 41,
+          "end_measure": 45,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 45,
+          "end_measure": 49,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 49,
+          "end_measure": 54,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154086",
+      "systems": 27,
+      "measures": 75,
+      "placed": 27,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 5,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 5,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 8,
+          "end_measure": 11,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 11,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 14,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 17,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 20,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 23,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 25,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 33,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 36,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 39,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 41,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 44,
+          "end_measure": 47,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 47,
+          "end_measure": 49,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 49,
+          "end_measure": 52,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 52,
+          "end_measure": 54,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 54,
+          "end_measure": 56,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 56,
+          "end_measure": 59,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 59,
+          "end_measure": 61,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 61,
+          "end_measure": 63,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 63,
+          "end_measure": 66,
+          "score": 1.0
+        },
+        {
+          "system": 24,
+          "start_measure": 66,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 25,
+          "start_measure": 68,
+          "end_measure": 71,
+          "score": 1.0
+        },
+        {
+          "system": 26,
+          "start_measure": 71,
+          "end_measure": 75,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154144",
+      "systems": 13,
+      "measures": 67,
+      "placed": 13,
+      "mean_span_score": 0.964,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 5,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 5,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 10,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 13,
+          "end_measure": 20,
+          "score": 0.938
+        },
+        {
+          "system": 4,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 0.944
+        },
+        {
+          "system": 5,
+          "start_measure": 24,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 29,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 33,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 38,
+          "end_measure": 44,
+          "score": 0.909
+        },
+        {
+          "system": 9,
+          "start_measure": 44,
+          "end_measure": 48,
+          "score": 0.737
+        },
+        {
+          "system": 10,
+          "start_measure": 48,
+          "end_measure": 54,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 54,
+          "end_measure": 59,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 59,
+          "end_measure": 67,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154223",
+      "systems": 19,
+      "measures": 53,
+      "placed": 16,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 14,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 17,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 19,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 21,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 23,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 26,
+          "end_measure": 26,
+          "score": 0.0
+        },
+        {
+          "system": 11,
+          "start_measure": 26,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 32,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 34,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 37,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 40,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 43,
+          "end_measure": 46,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 46,
+          "end_measure": 53,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 53,
+          "end_measure": 53,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154242",
+      "systems": 15,
+      "measures": 48,
+      "placed": 14,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 7,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 10,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 13,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 16,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 19,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 22,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 25,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 28,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 31,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 34,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 38,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 41,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 44,
+          "end_measure": 48,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP161329",
+      "systems": 27,
+      "measures": 73,
+      "placed": 19,
+      "mean_span_score": 0.929,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 0,
+          "end_measure": 10,
+          "score": 0.0
+        },
+        {
+          "system": 7,
+          "start_measure": 10,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 13,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 16,
+          "end_measure": 19,
+          "score": 0.875
+        },
+        {
+          "system": 10,
+          "start_measure": 19,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 23,
+          "end_measure": 23,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 23,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 29,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 32,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 34,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 37,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 40,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 43,
+          "end_measure": 46,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 46,
+          "end_measure": 46,
+          "score": 0.0
+        },
+        {
+          "system": 20,
+          "start_measure": 46,
+          "end_measure": 53,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 53,
+          "end_measure": 56,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 56,
+          "end_measure": 59,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 59,
+          "end_measure": 62,
+          "score": 1.0
+        },
+        {
+          "system": 24,
+          "start_measure": 62,
+          "end_measure": 65,
+          "score": 1.0
+        },
+        {
+          "system": 25,
+          "start_measure": 65,
+          "end_measure": 68,
+          "score": 0.778
+        },
+        {
+          "system": 26,
+          "start_measure": 68,
+          "end_measure": 73,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP16400",
+      "systems": 8,
+      "measures": 17,
+      "placed": 6,
+      "mean_span_score": 0.975,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 4,
+          "end_measure": 6,
+          "score": 0.85
+        },
+        {
+          "system": 3,
+          "start_measure": 6,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 8,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 10,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 12,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 17,
+          "end_measure": 17,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP16887",
+      "systems": 22,
+      "measures": 100,
+      "placed": 19,
+      "mean_span_score": 0.963,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 16,
+          "score": 0.36
+        },
+        {
+          "system": 2,
+          "start_measure": 16,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 24,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 28,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 32,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 36,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 40,
+          "end_measure": 40,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 40,
+          "end_measure": 48,
+          "score": 0.938
+        },
+        {
+          "system": 10,
+          "start_measure": 48,
+          "end_measure": 52,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 52,
+          "end_measure": 56,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 56,
+          "end_measure": 60,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 60,
+          "end_measure": 64,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 64,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 68,
+          "end_measure": 72,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 72,
+          "end_measure": 76,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 76,
+          "end_measure": 76,
+          "score": 0.0
+        },
+        {
+          "system": 18,
+          "start_measure": 76,
+          "end_measure": 84,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 84,
+          "end_measure": 88,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 88,
+          "end_measure": 92,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 92,
+          "end_measure": 100,
+          "score": 1.0
+        }
+      ]
+    }
+  ]
+}

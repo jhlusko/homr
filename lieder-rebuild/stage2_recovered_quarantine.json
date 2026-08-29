@@ -1,0 +1,7 @@
+{
+  "reason": "model-derived partial-span labels; excluded from training and evaluation",
+  "recoverable_files_deleted": false,
+  "pairs": 954,
+  "source_manifest": "/workspace/b0/olimpic-probe/stage2_recovered_manifest.txt",
+  "quarantine_manifest": "/workspace/b0/lieder-rebuild/stage2_recovered_QUARANTINED.txt"
+}

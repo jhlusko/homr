@@ -1,0 +1,27 @@
+[
+  {
+    "set": "eval",
+    "items": 100,
+    "candidates": 3372
+  },
+  {
+    "set": "rejected",
+    "items": 100,
+    "candidates": 800
+  },
+  {
+    "set": "pseudo",
+    "items": 100,
+    "candidates": 3812
+  },
+  {
+    "set": "phantom",
+    "items": 60,
+    "candidates": 242
+  },
+  {
+    "set": "octave",
+    "items": 100,
+    "candidates": 1373
+  }
+]

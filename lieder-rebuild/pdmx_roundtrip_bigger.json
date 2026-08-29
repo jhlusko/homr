@@ -1,0 +1,67 @@
+{
+  "corpus": "pdmx",
+  "crops_tested": 2686,
+  "crops_exact": 2459,
+  "crops_failed": 0,
+  "bar_count_mismatches": 0,
+  "event_types": {
+    "delete": 690,
+    "substitute": 187,
+    "insert": 28
+  },
+  "field_mismatches": {
+    "delete": 690,
+    "substitute:rhythm": 187,
+    "insert": 28
+  },
+  "source_failures": {
+    "score-level filter": 152,
+    "no window survived the window filters": 9,
+    "unreadable: KeyError": 3,
+    "unreadable: ValueError": 4,
+    "unreadable: IndexError": 1
+  },
+  "crop_signatures": {
+    "delete:rest/chord": 108,
+    "substitute:rhythm:repeatStart": 19,
+    "substitute:rhythm:repeatEndStart": 42,
+    "time signature": 30,
+    "substitute:rhythm:note": 13,
+    "substitute:rhythm:note + substitute:rhythm:rest/chord": 5,
+    "delete:note + insert:note + substitute:rhythm:note": 2,
+    "substitute:rhythm:note + time signature": 1,
+    "delete:note + delete:rest/chord + time signature": 1,
+    "delete:rest/chord + time signature": 1,
+    "substitute:rhythm:repeatEndStart + time signature": 1,
+    "delete:voltaStop + insert:voltaStop": 1,
+    "substitute:rhythm:repeatEnd + substitute:rhythm:repeatEndStart": 1,
+    "delete:note + delete:rest/chord + insert:note + insert:rest/chord": 1,
+    "substitute:rhythm:repeatEnd": 1
+  },
+  "examples": {
+    "delete": [
+      "QmaMS9dJhRFQaqSFVSMw8ZaE6Uty9GVP7rRM32JAUTrKhW-v0-w0: rhythm='rest_1' pitch='_'",
+      "QmaMS9dJhRFQaqSFVSMw8ZaE6Uty9GVP7rRM32JAUTrKhW-v0-w0: rhythm='chord' pitch='.'",
+      "QmaMS9dJhRFQaqSFVSMw8ZaE6Uty9GVP7rRM32JAUTrKhW-v0-w1: rhythm='rest_1' pitch='_'",
+      "QmaMS9dJhRFQaqSFVSMw8ZaE6Uty9GVP7rRM32JAUTrKhW-v0-w1: rhythm='chord' pitch='.'",
+      "QmaMS9dJhRFQaqSFVSMw8ZaE6Uty9GVP7rRM32JAUTrKhW-v0-w5: rhythm='rest_1' pitch='_'",
+      "QmaMS9dJhRFQaqSFVSMw8ZaE6Uty9GVP7rRM32JAUTrKhW-v0-w5: rhythm='chord' pitch='.'"
+    ],
+    "substitute:rhythm": [
+      "QmdgGGBF5VFVV3EgF5wCgrFkt4A8EfNG3VH21zkvp2FQnQ-v0-w0: exp='repeatStart' act='barline' (full exp rhythm='repeatStart' act rhythm='barline')",
+      "QmdgGGBF5VFVV3EgF5wCgrFkt4A8EfNG3VH21zkvp2FQnQ-v1-w0: exp='repeatStart' act='barline' (full exp rhythm='repeatStart' act rhythm='barline')",
+      "QmZt6aBgvDnco4oyaF8zrjYNyMCNf6cmHNrMbzgw7U3GWR-v0-w0: exp='repeatEndStart' act='repeatEnd' (full exp rhythm='repeatEndStart' act rhythm='repeatEnd')",
+      "QmZt6aBgvDnco4oyaF8zrjYNyMCNf6cmHNrMbzgw7U3GWR-v1-w0: exp='repeatEndStart' act='repeatEnd' (full exp rhythm='repeatEndStart' act rhythm='repeatEnd')",
+      "QmVG3hKJT8K1XPBHNQH6HkeUAcZpHPeBwJ2cq71ccyTPid-v0-w5: exp='timeSignatureBeats_4' act='timeSignatureBeats_6' (full exp rhythm='timeSignatureBeats_4' act rhythm='timeSignatureBeats_6')",
+      "QmZSE1yJStHHxWJFCWeDdsK57Gb1RdMAZdNvUYhMwQ1btU-v0-w6: exp='timeSignatureBeats_6' act='timeSignatureBeats_7' (full exp rhythm='timeSignatureBeats_6' act rhythm='timeSignatureBeats_7')"
+    ],
+    "insert": [
+      "QmWNoy9kwn1QVK5eHqL9Uk6ePHXGKT1KMDXbznqDs15FHe-v0-w3: rhythm='note_8' pitch='E3'",
+      "QmWNoy9kwn1QVK5eHqL9Uk6ePHXGKT1KMDXbznqDs15FHe-v0-w3: rhythm='note_8' pitch='C3'",
+      "QmUHMr81prY2ANwR4J8dmAyLcnYyEhXBRytofU6BhDmsyp-v0-w1: rhythm='timeSignatureBeats_24' pitch='.'",
+      "QmfALcr6GiCiLVWDz8mKFkQzGJembq6wamjMCXGUMrvVA7-v0-w0: rhythm='timeSignatureBeats_24' pitch='.'",
+      "QmQ4XgM7E5cn8JQW9UfiARfh7p7F2CQsriuJmnuESgG29q-v0-w1: rhythm='voltaStop' pitch='.'",
+      "QmUdiGuF5sszddCYBjNxCXDCbcouqjCtC3Ez3367WCbch4-v0-w1: rhythm='timeSignatureBeats_16' pitch='.'"
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+/workspace/b0/lieder-rebuild/probe_fingerprint_pairs/IMSLP10602-sys8-v0.png,/workspace/b0/lieder-rebuild/probe_fingerprint_pairs/IMSLP10602-sys8-v0.tokens
+/workspace/b0/lieder-rebuild/probe_fingerprint_pairs/IMSLP10602-sys10-v0.png,/workspace/b0/lieder-rebuild/probe_fingerprint_pairs/IMSLP10602-sys10-v0.tokens
+/workspace/b0/lieder-rebuild/probe_fingerprint_pairs/IMSLP10602-sys11-v0.png,/workspace/b0/lieder-rebuild/probe_fingerprint_pairs/IMSLP10602-sys11-v0.tokens

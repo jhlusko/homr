@@ -1,0 +1,65 @@
+{
+  "sequences": 4488,
+  "beam_levels": {
+    "1": {
+      "macro_f1": 0.8641330657848364,
+      "micro_accuracy": 0.8868258449954988,
+      "support": 97752
+    },
+    "2": {
+      "macro_f1": 0.8668569983803588,
+      "micro_accuracy": 0.8995131533993851,
+      "support": 23416
+    },
+    "3": {
+      "macro_f1": 0.9766542980828695,
+      "micro_accuracy": 0.9738805970149254,
+      "support": 804
+    },
+    "4": {
+      "macro_f1": 1.0,
+      "micro_accuracy": 1.0,
+      "support": 10
+    }
+  },
+  "exact_beam_vector": {
+    "rate": 0.8760741468205254,
+    "matching": 85638,
+    "total": 97752
+  },
+  "hooks": {
+    "f1": 0.8032128514056226,
+    "support": 1821
+  },
+  "stems": {
+    "macro_f1": 0.6367063196350594,
+    "micro": 0.8211339269489369,
+    "direction_only": 0.8104187447566075
+  },
+  "slur_spans": {
+    "f1": 0.7261953412341643,
+    "support": 8356
+  },
+  "ties": {
+    "macro_f1": 0.7285491711250838,
+    "support": 9339
+  },
+  "slur_sides": {
+    "macro_f1": 0.8092154192627221,
+    "support": 1742
+  },
+  "dynamics": {
+    "macro_f1": 0.1197399301403858,
+    "support": 2965
+  },
+  "advance": {
+    "macro_f1": 0.8304709271854486,
+    "micro": 0.8871765047979063,
+    "support": 65341
+  },
+  "advance_nontrivial": {
+    "macro_f1": 0.8237619303425051,
+    "micro": 0.8871702104827459,
+    "support": 65231
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "homr.capability-manifest.v1",
+  "modelRevision": "training/architecture/transformer/pytorch_model_463-69f4db00f98dbb1649cfe2d4f1ee130e8fcb08d1.pth",
+  "trainingRevision": "997b70a88c9f945b632f4129b036b2cd0972b2a3",
+  "supportedHeads": [
+    "beam.level.1",
+    "beam.level.2",
+    "beam.level.3",
+    "beam.level.4",
+    "stem.direction",
+    "tie.state",
+    "dynamic.mark",
+    "advance.delta",
+    "slur.slot.1.event",
+    "slur.slot.1.side",
+    "slur.slot.2.event",
+    "slur.slot.2.side"
+  ],
+  "headVocabularyHashes": {
+    "beam.level.1": "2f04d7bd8677f491",
+    "beam.level.2": "2f04d7bd8677f491",
+    "beam.level.3": "2f04d7bd8677f491",
+    "beam.level.4": "2f04d7bd8677f491",
+    "stem.direction": "98bfa8a76b5e7bf3",
+    "tie.state": "f9ca7586a80caa3b",
+    "dynamic.mark": "b14a17ac423e948d",
+    "advance.delta": "855c4faf3277fc24",
+    "slur.slot.1.event": "e650ac9bec48a146",
+    "slur.slot.1.side": "b3621cd50ff8241a",
+    "slur.slot.2.event": "e650ac9bec48a146",
+    "slur.slot.2.side": "b3621cd50ff8241a"
+  },
+  "maxBeamLevels": 6,
+  "maxSlurSlots": 6,
+  "structuredHeadsAutoregressive": false,
+  "maxImageHeight": 256,
+  "maxImageWidth": 1280,
+  "maxSequenceLength": 608,
+  "labelSchemaVersion": "homr.structured-symbols.v1",
+  "datasetRevision": "",
+  "runId": "464-997b70a88c9f945b632f4129b036b2cd0972b2a3",
+  "notes": {}
+}

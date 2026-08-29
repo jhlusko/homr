@@ -1,0 +1,77 @@
+{
+  "corpus": "pdmx",
+  "crops_tested": 1243,
+  "crops_exact": 1142,
+  "crops_failed": 0,
+  "bar_count_mismatches": 0,
+  "event_types": {
+    "delete": 583,
+    "insert": 19,
+    "substitute": 121
+  },
+  "field_mismatches": {
+    "delete": 583,
+    "insert": 19,
+    "substitute:rhythm": 121,
+    "substitute:pitch": 6,
+    "substitute:lift": 2
+  },
+  "source_failures": {
+    "score-level filter": 62,
+    "no window survived the window filters": 4,
+    "unreadable: ValueError": 2,
+    "unreadable: KeyError": 1
+  },
+  "crop_signatures": {
+    "delete:rest/chord": 65,
+    "substitute:lift:note + substitute:pitch:note + substitute:rhythm:note + time signature": 1,
+    "time signature": 7,
+    "delete:rest/chord + insert:rest/chord": 1,
+    "substitute:rhythm:repeatStart": 5,
+    "substitute:rhythm:repeatEndStart": 15,
+    "substitute:rhythm:note + substitute:rhythm:rest/chord": 1,
+    "delete:note + insert:note + substitute:rhythm:note": 2,
+    "substitute:rhythm:note": 1,
+    "substitute:rhythm:repeatEnd": 1,
+    "delete:note + delete:rest/chord + insert:note + substitute:rhythm:note": 1,
+    "delete:rest/chord + substitute:rhythm:note": 1
+  },
+  "examples": {
+    "delete": [
+      "QmRGgfsg5AtGZxRtDZTnnVPGVNFaxxpKVdsXY9cPxCNAea-v0-w0: rhythm='rest_32' pitch='_'",
+      "QmRGgfsg5AtGZxRtDZTnnVPGVNFaxxpKVdsXY9cPxCNAea-v0-w0: rhythm='chord' pitch='.'",
+      "QmRGgfsg5AtGZxRtDZTnnVPGVNFaxxpKVdsXY9cPxCNAea-v0-w0: rhythm='rest_32' pitch='_'",
+      "QmRGgfsg5AtGZxRtDZTnnVPGVNFaxxpKVdsXY9cPxCNAea-v0-w0: rhythm='chord' pitch='.'",
+      "QmRGgfsg5AtGZxRtDZTnnVPGVNFaxxpKVdsXY9cPxCNAea-v0-w0: rhythm='rest_8' pitch='_'",
+      "QmRGgfsg5AtGZxRtDZTnnVPGVNFaxxpKVdsXY9cPxCNAea-v0-w0: rhythm='rest_8' pitch='_'"
+    ],
+    "insert": [
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: rhythm='timeSignatureBeats_16' pitch='.'",
+      "QmXEEdvUn9bXXhC5TKQtjmH8o3sNqSsodzguEwDqd32NFd-v0-w4: rhythm='rest_4' pitch='_'",
+      "QmXEEdvUn9bXXhC5TKQtjmH8o3sNqSsodzguEwDqd32NFd-v0-w4: rhythm='chord' pitch='.'",
+      "QmXEEdvUn9bXXhC5TKQtjmH8o3sNqSsodzguEwDqd32NFd-v0-w4: rhythm='rest_8' pitch='_'",
+      "QmXEEdvUn9bXXhC5TKQtjmH8o3sNqSsodzguEwDqd32NFd-v0-w4: rhythm='rest_8' pitch='_'",
+      "QmXEEdvUn9bXXhC5TKQtjmH8o3sNqSsodzguEwDqd32NFd-v0-w4: rhythm='chord' pitch='.'"
+    ],
+    "substitute:rhythm": [
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='note_6' act='note_4' (full exp rhythm='note_6' act rhythm='note_4')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='note_5' act='note_4' (full exp rhythm='note_5' act rhythm='note_4')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='note_5' act='note_4' (full exp rhythm='note_5' act rhythm='note_4')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='note_5' act='note_4' (full exp rhythm='note_5' act rhythm='note_4')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='note_12' act='note_8' (full exp rhythm='note_12' act rhythm='note_8')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='note_20' act='note_16' (full exp rhythm='note_20' act rhythm='note_16')"
+    ],
+    "substitute:pitch": [
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='E5' act='G4' (full exp rhythm='note_6' act rhythm='note_4')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='G4' act='G3' (full exp rhythm='note_5' act rhythm='note_4')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='G3' act='E5' (full exp rhythm='note_5' act rhythm='note_4')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='C5' act='G4' (full exp rhythm='note_12' act rhythm='note_8.')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='G4' act='A3' (full exp rhythm='note_10.' act rhythm='note_8.')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='A3' act='C5' (full exp rhythm='note_10.' act rhythm='note_8')"
+    ],
+    "substitute:lift": [
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='_' act='b' (full exp rhythm='note_12' act rhythm='note_8.')",
+      "QmSKuMtyc5i479zQuG3Gi5MmEsfQHYJaobgYs1iyP3R7uM-v0-w3: exp='b' act='_' (full exp rhythm='note_10.' act rhythm='note_8')"
+    ]
+  }
+}

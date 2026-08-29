@@ -12327,3 +12327,40 @@ whole-score MusicXML has no repeat there, and the nearest forward repeat is 1, 2
 systems away respectively - too far to be an off-by-one in the mapping. The scanned page
 and the whole-score transcription disagree, which is an edition or transcription gap in
 the corpus rather than a defect in the conversion. Not fixable by touching the converter.
+
+## IV.19 Second review: the vocabulary hypothesis confirmed from the page, and the regressions are artifacts
+
+`scans_v4` against `v4_s42`, 50 of 100 judged. Both checkpoints state the numerator and
+the naturals, so unlike the 426 comparison there is almost no vocabulary difference for a
+verdict to absorb.
+
+| verdict | n | sum delta | mean |
+| --- | --- | --- | --- |
+| scans-better | 41 | +7.363 | +0.180 |
+| ref-wrong | 5 | -1.478 | -0.295 |
+| v4-better | 2 | +0.752 | +0.376 |
+| same | 1 | +0.618 | +0.618 |
+| both-wrong | 1 | +0.158 | +0.158 |
+
+**`same` collapses from 22 of 61 to 1 of 50.** IV.18 could only suspect that the first
+review's largest category was absorbing the numerator and naturals; removing the
+vocabulary difference removes the category. That is the IV.17 conclusion reached again
+from the page rather than from the `nat` controls, and it is the strongest evidence either
+has produced.
+
+**The regressions were an artifact.** IV.16's set flagged an asymmetry - scans_v4 winning
+more often but by less, losing less often but by more, with all four largest
+disagreements being losses. Reviewed:
+
+- `sq10307350_0018_0004_1` (-0.718) and `_3` (-0.656): **scans_v4 is better**, scored worse
+- `sq8075304_0015_0002_4` (-0.706) and `_2` (-0.682): **reference has the wrong time
+  signature**
+
+Of the ten judged staves where the metric scored `scans_v4` lower, seven were judged
+better and three were reference defects. **Zero genuine regressions.** The "fewer but
+deeper losses" shape was measurement, not a weakness of the larger mixture, and the
+per-staff metric disagrees with a musician most sharply exactly where the label is wrong.
+
+Read against the 41 wins, this says the OSSQ gain is real reading improvement rather than
+the bookkeeping IV.18 found in half the 426 comparison. It does not extrapolate: this is
+the largest disagreements, and half the set is still unjudged.

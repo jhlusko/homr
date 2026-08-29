@@ -1,0 +1,9 @@
+{
+  "manifest": "/workspace/b0/lieder-rebuild/stage2_clean_manifest.txt",
+  "pairs": 3214,
+  "unique_stems": 3214,
+  "recovered_overlap": 0,
+  "rebuilt_over_recovered": 468,
+  "problems": [],
+  "passed": true
+}

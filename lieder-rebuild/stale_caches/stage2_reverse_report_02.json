@@ -1,0 +1,6050 @@
+{
+  "provenance": "reverse-fingerprint",
+  "model_predictions_used": true,
+  "warning": "Model-derived labels. Trainable as pseudo-labels; NEVER admissible in a held-out evaluation set.",
+  "min_mean_score": 0.45,
+  "stats": {
+    "scores": 49,
+    "accepted": 46,
+    "rejected": 3,
+    "pairs": 1450,
+    "unclaimed_measures": 0
+  },
+  "scores": [
+    {
+      "score_id": "IMSLP12291",
+      "systems": 9,
+      "measures": 40,
+      "placed": 8,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 10,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 14,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 18,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 22,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 26,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 30,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 35,
+          "end_measure": 40,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP14336",
+      "systems": 7,
+      "measures": 23,
+      "placed": 7,
+      "mean_span_score": 0.974,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 4,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 7,
+          "end_measure": 10,
+          "score": 0.818
+        },
+        {
+          "system": 3,
+          "start_measure": 10,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 13,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 16,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 19,
+          "end_measure": 23,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154060",
+      "systems": 19,
+      "measures": 64,
+      "placed": 16,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 7,
+          "end_measure": 11,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 11,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 14,
+          "end_measure": 14,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 14,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 22,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 26,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 29,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 32,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 35,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 37,
+          "end_measure": 37,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 37,
+          "end_measure": 45,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 45,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 48,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 51,
+          "end_measure": 54,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 54,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 57,
+          "end_measure": 60,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 60,
+          "end_measure": 64,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154084",
+      "systems": 23,
+      "measures": 66,
+      "placed": 20,
+      "mean_span_score": 0.993,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 7,
+          "end_measure": 10,
+          "score": 0.929
+        },
+        {
+          "system": 3,
+          "start_measure": 10,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 13,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 15,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 17,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 19,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 21,
+          "end_measure": 21,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 21,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 28,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 31,
+          "end_measure": 34,
+          "score": 0.938
+        },
+        {
+          "system": 12,
+          "start_measure": 34,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 36,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 38,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 41,
+          "end_measure": 41,
+          "score": 0.0
+        },
+        {
+          "system": 16,
+          "start_measure": 41,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 48,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 51,
+          "end_measure": 54,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 54,
+          "end_measure": 56,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 56,
+          "end_measure": 58,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 58,
+          "end_measure": 61,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 61,
+          "end_measure": 66,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154227",
+      "systems": 18,
+      "measures": 45,
+      "placed": 17,
+      "mean_span_score": 0.935,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 8,
+          "score": 0.206
+        },
+        {
+          "system": 2,
+          "start_measure": 8,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 10,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 14,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 17,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 19,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 21,
+          "end_measure": 23,
+          "score": 0.923
+        },
+        {
+          "system": 9,
+          "start_measure": 23,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 26,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 29,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 31,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 34,
+          "end_measure": 37,
+          "score": 0.833
+        },
+        {
+          "system": 14,
+          "start_measure": 37,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 39,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 41,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 43,
+          "end_measure": 45,
+          "score": 0.941
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP154242",
+      "systems": 15,
+      "measures": 48,
+      "placed": 14,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 7,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 10,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 13,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 16,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 19,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 22,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 25,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 28,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 31,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 34,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 38,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 41,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 44,
+          "end_measure": 48,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP16349",
+      "systems": 10,
+      "measures": 56,
+      "placed": 10,
+      "mean_span_score": 0.983,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 7,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 14,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 20,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 26,
+          "end_measure": 31,
+          "score": 0.952
+        },
+        {
+          "system": 5,
+          "start_measure": 31,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 35,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 40,
+          "end_measure": 44,
+          "score": 0.95
+        },
+        {
+          "system": 8,
+          "start_measure": 44,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 48,
+          "end_measure": 56,
+          "score": 0.923
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP16400",
+      "systems": 8,
+      "measures": 17,
+      "placed": 6,
+      "mean_span_score": 0.975,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 4,
+          "end_measure": 6,
+          "score": 0.85
+        },
+        {
+          "system": 3,
+          "start_measure": 6,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 8,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 10,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 12,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 17,
+          "end_measure": 17,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP16887",
+      "systems": 22,
+      "measures": 100,
+      "placed": 19,
+      "mean_span_score": 0.963,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 16,
+          "score": 0.36
+        },
+        {
+          "system": 2,
+          "start_measure": 16,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 24,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 28,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 32,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 36,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 40,
+          "end_measure": 40,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 40,
+          "end_measure": 48,
+          "score": 0.938
+        },
+        {
+          "system": 10,
+          "start_measure": 48,
+          "end_measure": 52,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 52,
+          "end_measure": 56,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 56,
+          "end_measure": 60,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 60,
+          "end_measure": 64,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 64,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 68,
+          "end_measure": 72,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 72,
+          "end_measure": 76,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 76,
+          "end_measure": 76,
+          "score": 0.0
+        },
+        {
+          "system": 18,
+          "start_measure": 76,
+          "end_measure": 84,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 84,
+          "end_measure": 88,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 88,
+          "end_measure": 92,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 92,
+          "end_measure": 100,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP184205",
+      "systems": 14,
+      "measures": 49,
+      "placed": 14,
+      "mean_span_score": 0.98,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 0.9
+        },
+        {
+          "system": 1,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 15,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 19,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 20,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 33,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 36,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 40,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 44,
+          "end_measure": 49,
+          "score": 0.818
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP22635",
+      "systems": 33,
+      "measures": 91,
+      "placed": 15,
+      "mean_span_score": 0.752,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 4,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 8,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 15,
+          "end_measure": 18,
+          "score": 0.9
+        },
+        {
+          "system": 5,
+          "start_measure": 18,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 19,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 25,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 29,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 33,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 37,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 40,
+          "end_measure": 55,
+          "score": 0.051
+        },
+        {
+          "system": 12,
+          "start_measure": 55,
+          "end_measure": 60,
+          "score": 0.323
+        },
+        {
+          "system": 13,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 14,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 15,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 16,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 17,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 18,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 19,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 20,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 21,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 22,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 23,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 24,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 25,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 26,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 27,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 28,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 29,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 30,
+          "start_measure": 60,
+          "end_measure": 60,
+          "score": 0.0
+        },
+        {
+          "system": 31,
+          "start_measure": 60,
+          "end_measure": 75,
+          "score": 0.0
+        },
+        {
+          "system": 32,
+          "start_measure": 75,
+          "end_measure": 91,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP24047",
+      "systems": 15,
+      "measures": 48,
+      "placed": 15,
+      "mean_span_score": 0.959,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 3,
+          "end_measure": 7,
+          "score": 0.944
+        },
+        {
+          "system": 2,
+          "start_measure": 7,
+          "end_measure": 11,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 11,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 14,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 17,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 20,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 23,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 26,
+          "end_measure": 29,
+          "score": 0.778
+        },
+        {
+          "system": 9,
+          "start_measure": 29,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 32,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 35,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 38,
+          "end_measure": 41,
+          "score": 0.889
+        },
+        {
+          "system": 13,
+          "start_measure": 41,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 44,
+          "end_measure": 48,
+          "score": 0.778
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP243472",
+      "systems": 13,
+      "measures": 36,
+      "placed": 12,
+      "mean_span_score": 0.988,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 15,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 18,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 21,
+          "end_measure": 24,
+          "score": 0.941
+        },
+        {
+          "system": 9,
+          "start_measure": 24,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 0.909
+        },
+        {
+          "system": 12,
+          "start_measure": 33,
+          "end_measure": 36,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP285360",
+      "systems": 21,
+      "measures": 47,
+      "placed": 18,
+      "mean_span_score": 0.987,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 6,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 8,
+          "end_measure": 11,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 11,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 13,
+          "end_measure": 13,
+          "score": 0.0
+        },
+        {
+          "system": 8,
+          "start_measure": 13,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 17,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 20,
+          "end_measure": 23,
+          "score": 0.938
+        },
+        {
+          "system": 11,
+          "start_measure": 23,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 26,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 29,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 31,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 33,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 36,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 38,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 40,
+          "end_measure": 42,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 42,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 44,
+          "end_measure": 47,
+          "score": 0.833
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP364857",
+      "systems": 2,
+      "measures": 23,
+      "placed": 2,
+      "mean_span_score": 0.0,
+      "unclaimed_measures": [],
+      "accepted": false,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 7,
+          "end_measure": 23,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP397171",
+      "systems": 16,
+      "measures": 80,
+      "placed": 16,
+      "mean_span_score": 0.997,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 7,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 12,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 17,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 22,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 26,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 32,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 37,
+          "end_measure": 42,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 42,
+          "end_measure": 47,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 47,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 51,
+          "end_measure": 58,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 58,
+          "end_measure": 63,
+          "score": 0.955
+        },
+        {
+          "system": 12,
+          "start_measure": 63,
+          "end_measure": 67,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 67,
+          "end_measure": 71,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 71,
+          "end_measure": 75,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 75,
+          "end_measure": 80,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP41375",
+      "systems": 12,
+      "measures": 44,
+      "placed": 12,
+      "mean_span_score": 0.995,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 0.944
+        },
+        {
+          "system": 2,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 14,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 24,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 28,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 31,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 35,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 39,
+          "end_measure": 44,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP434340",
+      "systems": 24,
+      "measures": 80,
+      "placed": 24,
+      "mean_span_score": 0.971,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 3,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 4,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 15,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 18,
+          "end_measure": 21,
+          "score": 0.8
+        },
+        {
+          "system": 7,
+          "start_measure": 21,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 24,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 0.8
+        },
+        {
+          "system": 11,
+          "start_measure": 33,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 35,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 39,
+          "end_measure": 42,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 42,
+          "end_measure": 45,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 45,
+          "end_measure": 49,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 49,
+          "end_measure": 53,
+          "score": 0.778
+        },
+        {
+          "system": 17,
+          "start_measure": 53,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 57,
+          "end_measure": 60,
+          "score": 0.938
+        },
+        {
+          "system": 19,
+          "start_measure": 60,
+          "end_measure": 64,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 64,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 68,
+          "end_measure": 72,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 72,
+          "end_measure": 76,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 76,
+          "end_measure": 80,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP43630",
+      "systems": 12,
+      "measures": 54,
+      "placed": 12,
+      "mean_span_score": 0.741,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 0.5
+        },
+        {
+          "system": 1,
+          "start_measure": 4,
+          "end_measure": 9,
+          "score": 0.588
+        },
+        {
+          "system": 2,
+          "start_measure": 9,
+          "end_measure": 13,
+          "score": 0.143
+        },
+        {
+          "system": 3,
+          "start_measure": 13,
+          "end_measure": 17,
+          "score": 0.231
+        },
+        {
+          "system": 4,
+          "start_measure": 17,
+          "end_measure": 23,
+          "score": 0.929
+        },
+        {
+          "system": 5,
+          "start_measure": 23,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 27,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 32,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 37,
+          "end_measure": 41,
+          "score": 0.571
+        },
+        {
+          "system": 9,
+          "start_measure": 41,
+          "end_measure": 45,
+          "score": 0.933
+        },
+        {
+          "system": 10,
+          "start_measure": 45,
+          "end_measure": 49,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 49,
+          "end_measure": 54,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP43758",
+      "systems": 20,
+      "measures": 109,
+      "placed": 20,
+      "mean_span_score": 0.994,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 5,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 5,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 10,
+          "end_measure": 15,
+          "score": 0.889
+        },
+        {
+          "system": 3,
+          "start_measure": 15,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 20,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 26,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 31,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 37,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 41,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 48,
+          "end_measure": 53,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 53,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 57,
+          "end_measure": 65,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 65,
+          "end_measure": 70,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 70,
+          "end_measure": 75,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 75,
+          "end_measure": 80,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 80,
+          "end_measure": 87,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 87,
+          "end_measure": 92,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 92,
+          "end_measure": 97,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 97,
+          "end_measure": 103,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 103,
+          "end_measure": 109,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP44341",
+      "systems": 23,
+      "measures": 93,
+      "placed": 23,
+      "mean_span_score": 0.996,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 4,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 8,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 12,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 16,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 20,
+          "end_measure": 23,
+          "score": 0.909
+        },
+        {
+          "system": 6,
+          "start_measure": 23,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 27,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 31,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 35,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 39,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 43,
+          "end_measure": 46,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 46,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 51,
+          "end_measure": 54,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 54,
+          "end_measure": 60,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 60,
+          "end_measure": 64,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 64,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 68,
+          "end_measure": 72,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 72,
+          "end_measure": 76,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 76,
+          "end_measure": 80,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 80,
+          "end_measure": 84,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 84,
+          "end_measure": 88,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 88,
+          "end_measure": 93,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP507203",
+      "systems": 13,
+      "measures": 41,
+      "placed": 11,
+      "mean_span_score": 0.991,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 0.9
+        },
+        {
+          "system": 5,
+          "start_measure": 15,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 17,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 20,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 23,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 26,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 29,
+          "end_measure": 32,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 32,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 41,
+          "end_measure": 41,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP542017",
+      "systems": 19,
+      "measures": 78,
+      "placed": 19,
+      "mean_span_score": 0.996,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 5,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 5,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 9,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 13,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 17,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 21,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 25,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 29,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 33,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 37,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 43,
+          "end_measure": 47,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 47,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 51,
+          "end_measure": 55,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 55,
+          "end_measure": 58,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 58,
+          "end_measure": 62,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 62,
+          "end_measure": 65,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 65,
+          "end_measure": 69,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 69,
+          "end_measure": 73,
+          "score": 0.933
+        },
+        {
+          "system": 18,
+          "start_measure": 73,
+          "end_measure": 78,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP556523",
+      "systems": 22,
+      "measures": 58,
+      "placed": 17,
+      "mean_span_score": 0.964,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 5,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 5,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 8,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 12,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 16,
+          "end_measure": 20,
+          "score": 0.944
+        },
+        {
+          "system": 9,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 0.5
+        },
+        {
+          "system": 10,
+          "start_measure": 24,
+          "end_measure": 27,
+          "score": 0.944
+        },
+        {
+          "system": 11,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 33,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 36,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 38,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 40,
+          "end_measure": 40,
+          "score": 0.0
+        },
+        {
+          "system": 17,
+          "start_measure": 40,
+          "end_measure": 46,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 46,
+          "end_measure": 49,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 49,
+          "end_measure": 52,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 52,
+          "end_measure": 55,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 55,
+          "end_measure": 58,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP558713",
+      "systems": 22,
+      "measures": 55,
+      "placed": 17,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 15,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 18,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 21,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 24,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 30,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 34,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 36,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 38,
+          "end_measure": 38,
+          "score": 0.0
+        },
+        {
+          "system": 17,
+          "start_measure": 38,
+          "end_measure": 42,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 42,
+          "end_measure": 45,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 45,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 48,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 51,
+          "end_measure": 55,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP580584",
+      "systems": 19,
+      "measures": 37,
+      "placed": 12,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 7,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 15,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 18,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 21,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 23,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 33,
+          "end_measure": 37,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP581586",
+      "systems": 28,
+      "measures": 116,
+      "placed": 18,
+      "mean_span_score": 0.887,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 13,
+          "score": 0.052
+        },
+        {
+          "system": 1,
+          "start_measure": 13,
+          "end_measure": 20,
+          "score": 0.019
+        },
+        {
+          "system": 2,
+          "start_measure": 20,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 26,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 31,
+          "end_measure": 36,
+          "score": 0.9
+        },
+        {
+          "system": 5,
+          "start_measure": 36,
+          "end_measure": 40,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 40,
+          "end_measure": 46,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 46,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 51,
+          "end_measure": 56,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 56,
+          "end_measure": 62,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 62,
+          "end_measure": 70,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 70,
+          "end_measure": 77,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 77,
+          "end_measure": 83,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 83,
+          "end_measure": 89,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 89,
+          "end_measure": 96,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 96,
+          "end_measure": 103,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 103,
+          "end_measure": 109,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 109,
+          "end_measure": 116,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 19,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 20,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 21,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 22,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 23,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 24,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 25,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 26,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        },
+        {
+          "system": 27,
+          "start_measure": 116,
+          "end_measure": 116,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP584723",
+      "systems": 15,
+      "measures": 38,
+      "placed": 13,
+      "mean_span_score": 0.754,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 11,
+          "score": 0.145
+        },
+        {
+          "system": 2,
+          "start_measure": 11,
+          "end_measure": 11,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 11,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 13,
+          "end_measure": 15,
+          "score": 0.727
+        },
+        {
+          "system": 5,
+          "start_measure": 15,
+          "end_measure": 17,
+          "score": 0.6
+        },
+        {
+          "system": 6,
+          "start_measure": 17,
+          "end_measure": 20,
+          "score": 0.667
+        },
+        {
+          "system": 7,
+          "start_measure": 20,
+          "end_measure": 22,
+          "score": 0.583
+        },
+        {
+          "system": 8,
+          "start_measure": 22,
+          "end_measure": 24,
+          "score": 0.923
+        },
+        {
+          "system": 9,
+          "start_measure": 24,
+          "end_measure": 26,
+          "score": 0.909
+        },
+        {
+          "system": 10,
+          "start_measure": 26,
+          "end_measure": 29,
+          "score": 0.917
+        },
+        {
+          "system": 11,
+          "start_measure": 29,
+          "end_measure": 31,
+          "score": 0.857
+        },
+        {
+          "system": 12,
+          "start_measure": 31,
+          "end_measure": 33,
+          "score": 0.778
+        },
+        {
+          "system": 13,
+          "start_measure": 33,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 35,
+          "end_measure": 38,
+          "score": 0.7
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP588109",
+      "systems": 21,
+      "measures": 72,
+      "placed": 13,
+      "mean_span_score": 0.846,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 4,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 8,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 12,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 12,
+          "end_measure": 12,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 12,
+          "end_measure": 12,
+          "score": 0.0
+        },
+        {
+          "system": 7,
+          "start_measure": 12,
+          "end_measure": 12,
+          "score": 0.0
+        },
+        {
+          "system": 8,
+          "start_measure": 12,
+          "end_measure": 12,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 12,
+          "end_measure": 12,
+          "score": 0.0
+        },
+        {
+          "system": 10,
+          "start_measure": 12,
+          "end_measure": 12,
+          "score": 0.0
+        },
+        {
+          "system": 11,
+          "start_measure": 12,
+          "end_measure": 17,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 17,
+          "end_measure": 33,
+          "score": 0.0
+        },
+        {
+          "system": 13,
+          "start_measure": 33,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 39,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 43,
+          "end_measure": 47,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 47,
+          "end_measure": 52,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 52,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 57,
+          "end_measure": 62,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 62,
+          "end_measure": 67,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 67,
+          "end_measure": 72,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP606009",
+      "systems": 8,
+      "measures": 42,
+      "placed": 7,
+      "mean_span_score": 0.752,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 16,
+          "score": 0.138
+        },
+        {
+          "system": 2,
+          "start_measure": 16,
+          "end_measure": 21,
+          "score": 0.125
+        },
+        {
+          "system": 3,
+          "start_measure": 21,
+          "end_measure": 26,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 26,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 30,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 34,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 38,
+          "end_measure": 42,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP606188",
+      "systems": 38,
+      "measures": 125,
+      "placed": 8,
+      "mean_span_score": 0.0,
+      "unclaimed_measures": [],
+      "accepted": false,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 7,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 8,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 10,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 11,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 13,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 14,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 15,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 16,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 17,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 18,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 19,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 20,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 21,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 22,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 23,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 24,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 25,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 26,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 27,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 28,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 29,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 30,
+          "start_measure": 0,
+          "end_measure": 13,
+          "score": 0.0
+        },
+        {
+          "system": 31,
+          "start_measure": 13,
+          "end_measure": 29,
+          "score": 0.0
+        },
+        {
+          "system": 32,
+          "start_measure": 29,
+          "end_measure": 45,
+          "score": 0.0
+        },
+        {
+          "system": 33,
+          "start_measure": 45,
+          "end_measure": 61,
+          "score": 0.0
+        },
+        {
+          "system": 34,
+          "start_measure": 61,
+          "end_measure": 77,
+          "score": 0.0
+        },
+        {
+          "system": 35,
+          "start_measure": 77,
+          "end_measure": 93,
+          "score": 0.0
+        },
+        {
+          "system": 36,
+          "start_measure": 93,
+          "end_measure": 109,
+          "score": 0.0
+        },
+        {
+          "system": 37,
+          "start_measure": 109,
+          "end_measure": 125,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP61113",
+      "systems": 11,
+      "measures": 84,
+      "placed": 9,
+      "mean_span_score": 0.984,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 15,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 23,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 31,
+          "end_measure": 36,
+          "score": 0.857
+        },
+        {
+          "system": 5,
+          "start_measure": 36,
+          "end_measure": 36,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 36,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 51,
+          "end_measure": 56,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 56,
+          "end_measure": 63,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 63,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 68,
+          "end_measure": 84,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP616432",
+      "systems": 20,
+      "measures": 53,
+      "placed": 4,
+      "mean_span_score": 0.094,
+      "unclaimed_measures": [],
+      "accepted": false,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 7,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 8,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 10,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 11,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 13,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 14,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 15,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 16,
+          "start_measure": 0,
+          "end_measure": 15,
+          "score": 0.015
+        },
+        {
+          "system": 17,
+          "start_measure": 15,
+          "end_measure": 31,
+          "score": 0.185
+        },
+        {
+          "system": 18,
+          "start_measure": 31,
+          "end_measure": 37,
+          "score": 0.107
+        },
+        {
+          "system": 19,
+          "start_measure": 37,
+          "end_measure": 53,
+          "score": 0.068
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP621593",
+      "systems": 7,
+      "measures": 35,
+      "placed": 7,
+      "mean_span_score": 0.99,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 4,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 9,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 14,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 19,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 24,
+          "end_measure": 29,
+          "score": 0.929
+        },
+        {
+          "system": 6,
+          "start_measure": 29,
+          "end_measure": 35,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP62381",
+      "systems": 39,
+      "measures": 176,
+      "placed": 39,
+      "mean_span_score": 0.992,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 5,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 5,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 10,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 15,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 20,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 25,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 27,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 34,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 38,
+          "end_measure": 42,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 42,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 44,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 51,
+          "end_measure": 55,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 55,
+          "end_measure": 60,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 60,
+          "end_measure": 61,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 61,
+          "end_measure": 70,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 70,
+          "end_measure": 75,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 75,
+          "end_measure": 80,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 80,
+          "end_measure": 85,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 85,
+          "end_measure": 88,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 88,
+          "end_measure": 94,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 94,
+          "end_measure": 97,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 97,
+          "end_measure": 101,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 101,
+          "end_measure": 105,
+          "score": 0.688
+        },
+        {
+          "system": 23,
+          "start_measure": 105,
+          "end_measure": 107,
+          "score": 1.0
+        },
+        {
+          "system": 24,
+          "start_measure": 107,
+          "end_measure": 112,
+          "score": 1.0
+        },
+        {
+          "system": 25,
+          "start_measure": 112,
+          "end_measure": 115,
+          "score": 1.0
+        },
+        {
+          "system": 26,
+          "start_measure": 115,
+          "end_measure": 118,
+          "score": 1.0
+        },
+        {
+          "system": 27,
+          "start_measure": 118,
+          "end_measure": 121,
+          "score": 1.0
+        },
+        {
+          "system": 28,
+          "start_measure": 121,
+          "end_measure": 125,
+          "score": 1.0
+        },
+        {
+          "system": 29,
+          "start_measure": 125,
+          "end_measure": 130,
+          "score": 1.0
+        },
+        {
+          "system": 30,
+          "start_measure": 130,
+          "end_measure": 134,
+          "score": 1.0
+        },
+        {
+          "system": 31,
+          "start_measure": 134,
+          "end_measure": 138,
+          "score": 1.0
+        },
+        {
+          "system": 32,
+          "start_measure": 138,
+          "end_measure": 139,
+          "score": 1.0
+        },
+        {
+          "system": 33,
+          "start_measure": 139,
+          "end_measure": 148,
+          "score": 1.0
+        },
+        {
+          "system": 34,
+          "start_measure": 148,
+          "end_measure": 153,
+          "score": 1.0
+        },
+        {
+          "system": 35,
+          "start_measure": 153,
+          "end_measure": 158,
+          "score": 1.0
+        },
+        {
+          "system": 36,
+          "start_measure": 158,
+          "end_measure": 163,
+          "score": 1.0
+        },
+        {
+          "system": 37,
+          "start_measure": 163,
+          "end_measure": 166,
+          "score": 1.0
+        },
+        {
+          "system": 38,
+          "start_measure": 166,
+          "end_measure": 176,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP624193",
+      "systems": 29,
+      "measures": 96,
+      "placed": 24,
+      "mean_span_score": 0.958,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 14,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 14,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 22,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 25,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 28,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 31,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 34,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 37,
+          "end_measure": 37,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 37,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 44,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 48,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 51,
+          "end_measure": 53,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 53,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 57,
+          "end_measure": 59,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 59,
+          "end_measure": 63,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 63,
+          "end_measure": 66,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 66,
+          "end_measure": 69,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 69,
+          "end_measure": 74,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 74,
+          "end_measure": 77,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 77,
+          "end_measure": 80,
+          "score": 1.0
+        },
+        {
+          "system": 24,
+          "start_measure": 80,
+          "end_measure": 83,
+          "score": 1.0
+        },
+        {
+          "system": 25,
+          "start_measure": 83,
+          "end_measure": 86,
+          "score": 1.0
+        },
+        {
+          "system": 26,
+          "start_measure": 86,
+          "end_measure": 89,
+          "score": 1.0
+        },
+        {
+          "system": 27,
+          "start_measure": 89,
+          "end_measure": 92,
+          "score": 1.0
+        },
+        {
+          "system": 28,
+          "start_measure": 92,
+          "end_measure": 96,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP630163",
+      "systems": 18,
+      "measures": 37,
+      "placed": 13,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 0,
+          "end_measure": 5,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 5,
+          "end_measure": 8,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 8,
+          "end_measure": 11,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 11,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 13,
+          "end_measure": 15,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 15,
+          "end_measure": 17,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 17,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 21,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 24,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 27,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 29,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 31,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 33,
+          "end_measure": 37,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP632174",
+      "systems": 41,
+      "measures": 232,
+      "placed": 40,
+      "mean_span_score": 0.938,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 13,
+          "score": 0.333
+        },
+        {
+          "system": 1,
+          "start_measure": 13,
+          "end_measure": 13,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 13,
+          "end_measure": 20,
+          "score": 0.113
+        },
+        {
+          "system": 3,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 24,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 29,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 34,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 39,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 44,
+          "end_measure": 45,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 45,
+          "end_measure": 55,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 55,
+          "end_measure": 59,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 59,
+          "end_measure": 66,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 66,
+          "end_measure": 69,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 69,
+          "end_measure": 77,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 77,
+          "end_measure": 82,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 82,
+          "end_measure": 87,
+          "score": 0.833
+        },
+        {
+          "system": 16,
+          "start_measure": 87,
+          "end_measure": 92,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 92,
+          "end_measure": 97,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 97,
+          "end_measure": 102,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 102,
+          "end_measure": 105,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 105,
+          "end_measure": 114,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 114,
+          "end_measure": 120,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 120,
+          "end_measure": 125,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 125,
+          "end_measure": 126,
+          "score": 0.25
+        },
+        {
+          "system": 24,
+          "start_measure": 126,
+          "end_measure": 138,
+          "score": 1.0
+        },
+        {
+          "system": 25,
+          "start_measure": 138,
+          "end_measure": 143,
+          "score": 1.0
+        },
+        {
+          "system": 26,
+          "start_measure": 143,
+          "end_measure": 151,
+          "score": 1.0
+        },
+        {
+          "system": 27,
+          "start_measure": 151,
+          "end_measure": 154,
+          "score": 1.0
+        },
+        {
+          "system": 28,
+          "start_measure": 154,
+          "end_measure": 163,
+          "score": 1.0
+        },
+        {
+          "system": 29,
+          "start_measure": 163,
+          "end_measure": 168,
+          "score": 1.0
+        },
+        {
+          "system": 30,
+          "start_measure": 168,
+          "end_measure": 173,
+          "score": 1.0
+        },
+        {
+          "system": 31,
+          "start_measure": 173,
+          "end_measure": 179,
+          "score": 1.0
+        },
+        {
+          "system": 32,
+          "start_measure": 179,
+          "end_measure": 185,
+          "score": 1.0
+        },
+        {
+          "system": 33,
+          "start_measure": 185,
+          "end_measure": 190,
+          "score": 1.0
+        },
+        {
+          "system": 34,
+          "start_measure": 190,
+          "end_measure": 195,
+          "score": 1.0
+        },
+        {
+          "system": 35,
+          "start_measure": 195,
+          "end_measure": 200,
+          "score": 1.0
+        },
+        {
+          "system": 36,
+          "start_measure": 200,
+          "end_measure": 206,
+          "score": 1.0
+        },
+        {
+          "system": 37,
+          "start_measure": 206,
+          "end_measure": 212,
+          "score": 1.0
+        },
+        {
+          "system": 38,
+          "start_measure": 212,
+          "end_measure": 218,
+          "score": 1.0
+        },
+        {
+          "system": 39,
+          "start_measure": 218,
+          "end_measure": 225,
+          "score": 1.0
+        },
+        {
+          "system": 40,
+          "start_measure": 225,
+          "end_measure": 232,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP637441",
+      "systems": 23,
+      "measures": 32,
+      "placed": 11,
+      "mean_span_score": 0.983,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 4,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 7,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 8,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 10,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 11,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 9,
+          "end_measure": 11,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 11,
+          "end_measure": 13,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 13,
+          "end_measure": 16,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 16,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 19,
+          "end_measure": 22,
+          "score": 0.917
+        },
+        {
+          "system": 20,
+          "start_measure": 22,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 25,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 28,
+          "end_measure": 32,
+          "score": 0.9
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP647333",
+      "systems": 8,
+      "measures": 36,
+      "placed": 7,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 10,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 14,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 18,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 22,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 27,
+          "end_measure": 31,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 31,
+          "end_measure": 36,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP660145",
+      "systems": 9,
+      "measures": 56,
+      "placed": 8,
+      "mean_span_score": 0.879,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 16,
+          "score": 0.143
+        },
+        {
+          "system": 2,
+          "start_measure": 16,
+          "end_measure": 20,
+          "score": 0.889
+        },
+        {
+          "system": 3,
+          "start_measure": 20,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 24,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 30,
+          "end_measure": 37,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 37,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 44,
+          "end_measure": 50,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 50,
+          "end_measure": 56,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP662011",
+      "systems": 15,
+      "measures": 70,
+      "placed": 15,
+      "mean_span_score": 0.967,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 6,
+          "score": 0.625
+        },
+        {
+          "system": 1,
+          "start_measure": 6,
+          "end_measure": 10,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 10,
+          "end_measure": 15,
+          "score": 0.875
+        },
+        {
+          "system": 3,
+          "start_measure": 15,
+          "end_measure": 20,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 20,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 25,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 30,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 35,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 38,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 41,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 44,
+          "end_measure": 47,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 47,
+          "end_measure": 52,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 52,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 57,
+          "end_measure": 62,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 62,
+          "end_measure": 70,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP670962",
+      "systems": 35,
+      "measures": 125,
+      "placed": 26,
+      "mean_span_score": 0.928,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 14,
+          "score": 0.078
+        },
+        {
+          "system": 3,
+          "start_measure": 14,
+          "end_measure": 20,
+          "score": 0.096
+        },
+        {
+          "system": 4,
+          "start_measure": 20,
+          "end_measure": 23,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 23,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 33,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 35,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 38,
+          "end_measure": 38,
+          "score": 0.0
+        },
+        {
+          "system": 10,
+          "start_measure": 38,
+          "end_measure": 45,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 45,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 48,
+          "end_measure": 53,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 53,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 57,
+          "end_measure": 61,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 61,
+          "end_measure": 63,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 63,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 68,
+          "end_measure": 69,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 69,
+          "end_measure": 77,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 77,
+          "end_measure": 81,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 81,
+          "end_measure": 85,
+          "score": 0.95
+        },
+        {
+          "system": 21,
+          "start_measure": 85,
+          "end_measure": 88,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 88,
+          "end_measure": 90,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 90,
+          "end_measure": 99,
+          "score": 1.0
+        },
+        {
+          "system": 24,
+          "start_measure": 99,
+          "end_measure": 103,
+          "score": 1.0
+        },
+        {
+          "system": 25,
+          "start_measure": 103,
+          "end_measure": 107,
+          "score": 1.0
+        },
+        {
+          "system": 26,
+          "start_measure": 107,
+          "end_measure": 113,
+          "score": 1.0
+        },
+        {
+          "system": 27,
+          "start_measure": 113,
+          "end_measure": 119,
+          "score": 1.0
+        },
+        {
+          "system": 28,
+          "start_measure": 119,
+          "end_measure": 125,
+          "score": 1.0
+        },
+        {
+          "system": 29,
+          "start_measure": 125,
+          "end_measure": 125,
+          "score": 0.0
+        },
+        {
+          "system": 30,
+          "start_measure": 125,
+          "end_measure": 125,
+          "score": 0.0
+        },
+        {
+          "system": 31,
+          "start_measure": 125,
+          "end_measure": 125,
+          "score": 0.0
+        },
+        {
+          "system": 32,
+          "start_measure": 125,
+          "end_measure": 125,
+          "score": 0.0
+        },
+        {
+          "system": 33,
+          "start_measure": 125,
+          "end_measure": 125,
+          "score": 0.0
+        },
+        {
+          "system": 34,
+          "start_measure": 125,
+          "end_measure": 125,
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP676315",
+      "systems": 25,
+      "measures": 56,
+      "placed": 13,
+      "mean_span_score": 0.87,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 3,
+          "start_measure": 0,
+          "end_measure": 7,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 5,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 6,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 7,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 8,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 9,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 10,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 11,
+          "start_measure": 7,
+          "end_measure": 7,
+          "score": 0.0
+        },
+        {
+          "system": 12,
+          "start_measure": 7,
+          "end_measure": 19,
+          "score": 0.0
+        },
+        {
+          "system": 13,
+          "start_measure": 19,
+          "end_measure": 22,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 22,
+          "end_measure": 25,
+          "score": 0.789
+        },
+        {
+          "system": 15,
+          "start_measure": 25,
+          "end_measure": 28,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 28,
+          "end_measure": 28,
+          "score": 0.0
+        },
+        {
+          "system": 17,
+          "start_measure": 28,
+          "end_measure": 35,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 35,
+          "end_measure": 38,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 38,
+          "end_measure": 41,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 41,
+          "end_measure": 44,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 44,
+          "end_measure": 47,
+          "score": 0.733
+        },
+        {
+          "system": 22,
+          "start_measure": 47,
+          "end_measure": 50,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 50,
+          "end_measure": 53,
+          "score": 0.789
+        },
+        {
+          "system": 24,
+          "start_measure": 53,
+          "end_measure": 56,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP75959",
+      "systems": 16,
+      "measures": 48,
+      "placed": 15,
+      "mean_span_score": 0.982,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 0.917
+        },
+        {
+          "system": 6,
+          "start_measure": 15,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 18,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 21,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 24,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 33,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 36,
+          "end_measure": 39,
+          "score": 0.818
+        },
+        {
+          "system": 14,
+          "start_measure": 39,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 43,
+          "end_measure": 48,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP83315",
+      "systems": 33,
+      "measures": 210,
+      "placed": 32,
+      "mean_span_score": 0.958,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 10,
+          "score": 0.778
+        },
+        {
+          "system": 1,
+          "start_measure": 10,
+          "end_measure": 10,
+          "score": 0.0
+        },
+        {
+          "system": 2,
+          "start_measure": 10,
+          "end_measure": 20,
+          "score": 0.067
+        },
+        {
+          "system": 3,
+          "start_measure": 20,
+          "end_measure": 25,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 25,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 30,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 36,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 43,
+          "end_measure": 49,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 49,
+          "end_measure": 55,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 55,
+          "end_measure": 61,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 61,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 68,
+          "end_measure": 75,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 75,
+          "end_measure": 81,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 81,
+          "end_measure": 87,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 87,
+          "end_measure": 93,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 93,
+          "end_measure": 100,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 100,
+          "end_measure": 105,
+          "score": 0.875
+        },
+        {
+          "system": 17,
+          "start_measure": 105,
+          "end_measure": 110,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 110,
+          "end_measure": 115,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 115,
+          "end_measure": 120,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 120,
+          "end_measure": 121,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 121,
+          "end_measure": 130,
+          "score": 1.0
+        },
+        {
+          "system": 22,
+          "start_measure": 130,
+          "end_measure": 135,
+          "score": 1.0
+        },
+        {
+          "system": 23,
+          "start_measure": 135,
+          "end_measure": 140,
+          "score": 1.0
+        },
+        {
+          "system": 24,
+          "start_measure": 140,
+          "end_measure": 147,
+          "score": 1.0
+        },
+        {
+          "system": 25,
+          "start_measure": 147,
+          "end_measure": 154,
+          "score": 1.0
+        },
+        {
+          "system": 26,
+          "start_measure": 154,
+          "end_measure": 160,
+          "score": 1.0
+        },
+        {
+          "system": 27,
+          "start_measure": 160,
+          "end_measure": 167,
+          "score": 1.0
+        },
+        {
+          "system": 28,
+          "start_measure": 167,
+          "end_measure": 174,
+          "score": 1.0
+        },
+        {
+          "system": 29,
+          "start_measure": 174,
+          "end_measure": 181,
+          "score": 1.0
+        },
+        {
+          "system": 30,
+          "start_measure": 181,
+          "end_measure": 188,
+          "score": 1.0
+        },
+        {
+          "system": 31,
+          "start_measure": 188,
+          "end_measure": 195,
+          "score": 1.0
+        },
+        {
+          "system": 32,
+          "start_measure": 195,
+          "end_measure": 210,
+          "score": 0.933
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP83319",
+      "systems": 15,
+      "measures": 73,
+      "placed": 14,
+      "mean_span_score": 0.83,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 0,
+          "score": 0.0
+        },
+        {
+          "system": 1,
+          "start_measure": 0,
+          "end_measure": 8,
+          "score": 0.133
+        },
+        {
+          "system": 2,
+          "start_measure": 8,
+          "end_measure": 20,
+          "score": 0.138
+        },
+        {
+          "system": 3,
+          "start_measure": 20,
+          "end_measure": 25,
+          "score": 0.857
+        },
+        {
+          "system": 4,
+          "start_measure": 25,
+          "end_measure": 29,
+          "score": 0.87
+        },
+        {
+          "system": 5,
+          "start_measure": 29,
+          "end_measure": 34,
+          "score": 0.944
+        },
+        {
+          "system": 6,
+          "start_measure": 34,
+          "end_measure": 39,
+          "score": 0.867
+        },
+        {
+          "system": 7,
+          "start_measure": 39,
+          "end_measure": 43,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 43,
+          "end_measure": 47,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 47,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 51,
+          "end_measure": 55,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 55,
+          "end_measure": 59,
+          "score": 0.812
+        },
+        {
+          "system": 12,
+          "start_measure": 59,
+          "end_measure": 63,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 63,
+          "end_measure": 68,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 68,
+          "end_measure": 73,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP89026",
+      "systems": 22,
+      "measures": 70,
+      "placed": 22,
+      "mean_span_score": 0.997,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 3,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 3,
+          "end_measure": 6,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 6,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 9,
+          "end_measure": 12,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 12,
+          "end_measure": 15,
+          "score": 0.938
+        },
+        {
+          "system": 5,
+          "start_measure": 15,
+          "end_measure": 18,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 18,
+          "end_measure": 21,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 21,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 24,
+          "end_measure": 27,
+          "score": 1.0
+        },
+        {
+          "system": 9,
+          "start_measure": 27,
+          "end_measure": 30,
+          "score": 1.0
+        },
+        {
+          "system": 10,
+          "start_measure": 30,
+          "end_measure": 33,
+          "score": 1.0
+        },
+        {
+          "system": 11,
+          "start_measure": 33,
+          "end_measure": 36,
+          "score": 1.0
+        },
+        {
+          "system": 12,
+          "start_measure": 36,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 13,
+          "start_measure": 39,
+          "end_measure": 42,
+          "score": 1.0
+        },
+        {
+          "system": 14,
+          "start_measure": 42,
+          "end_measure": 45,
+          "score": 1.0
+        },
+        {
+          "system": 15,
+          "start_measure": 45,
+          "end_measure": 48,
+          "score": 1.0
+        },
+        {
+          "system": 16,
+          "start_measure": 48,
+          "end_measure": 51,
+          "score": 1.0
+        },
+        {
+          "system": 17,
+          "start_measure": 51,
+          "end_measure": 54,
+          "score": 1.0
+        },
+        {
+          "system": 18,
+          "start_measure": 54,
+          "end_measure": 57,
+          "score": 1.0
+        },
+        {
+          "system": 19,
+          "start_measure": 57,
+          "end_measure": 60,
+          "score": 1.0
+        },
+        {
+          "system": 20,
+          "start_measure": 60,
+          "end_measure": 64,
+          "score": 1.0
+        },
+        {
+          "system": 21,
+          "start_measure": 64,
+          "end_measure": 70,
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "score_id": "IMSLP89797",
+      "systems": 9,
+      "measures": 44,
+      "placed": 9,
+      "mean_span_score": 1.0,
+      "unclaimed_measures": [],
+      "accepted": true,
+      "assignments": [
+        {
+          "system": 0,
+          "start_measure": 0,
+          "end_measure": 4,
+          "score": 1.0
+        },
+        {
+          "system": 1,
+          "start_measure": 4,
+          "end_measure": 9,
+          "score": 1.0
+        },
+        {
+          "system": 2,
+          "start_measure": 9,
+          "end_measure": 14,
+          "score": 1.0
+        },
+        {
+          "system": 3,
+          "start_measure": 14,
+          "end_measure": 19,
+          "score": 1.0
+        },
+        {
+          "system": 4,
+          "start_measure": 19,
+          "end_measure": 24,
+          "score": 1.0
+        },
+        {
+          "system": 5,
+          "start_measure": 24,
+          "end_measure": 29,
+          "score": 1.0
+        },
+        {
+          "system": 6,
+          "start_measure": 29,
+          "end_measure": 34,
+          "score": 1.0
+        },
+        {
+          "system": 7,
+          "start_measure": 34,
+          "end_measure": 39,
+          "score": 1.0
+        },
+        {
+          "system": 8,
+          "start_measure": 39,
+          "end_measure": 44,
+          "score": 1.0
+        }
+      ]
+    }
+  ]
+}

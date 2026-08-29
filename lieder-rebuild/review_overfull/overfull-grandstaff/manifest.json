@@ -1,0 +1,1586 @@
+[
+  {
+    "id": "IMSLP89016-sys15-v1",
+    "score_id": "IMSLP89016",
+    "system": 15,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "mixed",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0,
+      1
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "unexplained",
+        "detail": "ratio 14/11",
+        "ratio": "14/11",
+        "excess": "3/8"
+      },
+      {
+        "bar": 1,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "12/11",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP12778-sys1-v1",
+    "score_id": "IMSLP12778",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      5
+    ],
+    "findings": [
+      {
+        "bar": 5,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "3/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP624192-sys15-v1",
+    "score_id": "IMSLP624192",
+    "system": 15,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      3
+    ],
+    "findings": [
+      {
+        "bar": 3,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "1/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP397171-sys0-v1",
+    "score_id": "IMSLP397171",
+    "system": 0,
+    "voice": 1,
+    "left_bars": 7,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP580584-sys11-v1",
+    "score_id": "IMSLP580584",
+    "system": 11,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "9/8",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP154060-sys17-v1",
+    "score_id": "IMSLP154060",
+    "system": 17,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "5/4",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP184203-sys19-v1",
+    "score_id": "IMSLP184203",
+    "system": 19,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "tuplet",
+        "detail": "septuplet",
+        "ratio": "11/8",
+        "excess": "3/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP253076-sys11-v1",
+    "score_id": "IMSLP253076",
+    "system": 11,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 11/8",
+        "ratio": "11/8",
+        "excess": "3/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP183800-sys5-v1",
+    "score_id": "IMSLP183800",
+    "system": 5,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 17/16",
+        "ratio": "17/16",
+        "excess": "1/16"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP19490-sys18-v1",
+    "score_id": "IMSLP19490",
+    "system": 18,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "unexplained",
+        "detail": "ratio 11/6",
+        "ratio": "11/6",
+        "excess": "5/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP637442-sys18-v1",
+    "score_id": "IMSLP637442",
+    "system": 18,
+    "voice": 1,
+    "left_bars": 8,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "metre-change",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      4,
+      6
+    ],
+    "findings": [
+      {
+        "bar": 4,
+        "kind": "metre-change",
+        "detail": "2 bars of 1/2",
+        "ratio": "4/3",
+        "excess": "1/8"
+      },
+      {
+        "bar": 6,
+        "kind": "metre-change",
+        "detail": "2 bars of 1/2",
+        "ratio": "4/3",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP669434-sys12-v1",
+    "score_id": "IMSLP669434",
+    "system": 12,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "metre-change",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2,
+      3
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "metre-change",
+        "detail": "2 bars of 5/4",
+        "ratio": "5/4",
+        "excess": "1/4"
+      },
+      {
+        "bar": 3,
+        "kind": "metre-change",
+        "detail": "2 bars of 5/4",
+        "ratio": "5/4",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP154240-sys12-v1",
+    "score_id": "IMSLP154240",
+    "system": 12,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "missing-barline",
+        "detail": "3x the prevailing bar",
+        "ratio": "3",
+        "excess": "2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP89797-sys8-v1",
+    "score_id": "IMSLP89797",
+    "system": 8,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "mixed",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2,
+      3,
+      4
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "metre-change",
+        "detail": "2 bars of 3/2",
+        "ratio": "3/2",
+        "excess": "1/2"
+      },
+      {
+        "bar": 3,
+        "kind": "metre-change",
+        "detail": "2 bars of 3/2",
+        "ratio": "3/2",
+        "excess": "1/2"
+      },
+      {
+        "bar": 4,
+        "kind": "unexplained",
+        "detail": "ratio 5/4",
+        "ratio": "5/4",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP77665-sys38-v2",
+    "score_id": "IMSLP77665",
+    "system": 38,
+    "voice": 2,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2,
+      3
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "5/4",
+        "excess": "1/8"
+      },
+      {
+        "bar": 3,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "5/4",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP580179-sys8-v1",
+    "score_id": "IMSLP580179",
+    "system": 8,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0,
+      1
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/4"
+      },
+      {
+        "bar": 1,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP606057-sys1-v1",
+    "score_id": "IMSLP606057",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 8,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      3
+    ],
+    "findings": [
+      {
+        "bar": 3,
+        "kind": "unexplained",
+        "detail": "ratio 7/6",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP55434-sys16-v1",
+    "score_id": "IMSLP55434",
+    "system": 16,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "unexplained",
+        "detail": "ratio 12/7",
+        "ratio": "12/7",
+        "excess": "5/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP622103-sys1-v1",
+    "score_id": "IMSLP622103",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "metre-change",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1,
+      4
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "metre-change",
+        "detail": "2 bars of 7/8",
+        "ratio": "7/6",
+        "excess": "1/8"
+      },
+      {
+        "bar": 4,
+        "kind": "metre-change",
+        "detail": "2 bars of 7/8",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP654022-sys13-v1",
+    "score_id": "IMSLP654022",
+    "system": 13,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "1/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP625663-sys0-v1",
+    "score_id": "IMSLP625663",
+    "system": 0,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 9/8",
+        "ratio": "9/8",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP148200-sys10-v1",
+    "score_id": "IMSLP148200",
+    "system": 10,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP516852-sys6-v1",
+    "score_id": "IMSLP516852",
+    "system": 6,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "mixed",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/8"
+      },
+      {
+        "bar": 3,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/8"
+      },
+      {
+        "bar": 4,
+        "kind": "missing-barline",
+        "detail": "3x the prevailing bar",
+        "ratio": "3",
+        "excess": "3/4"
+      },
+      {
+        "bar": 5,
+        "kind": "unexplained",
+        "detail": "ratio 5/3",
+        "ratio": "5/3",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP617260-sys16-v1",
+    "score_id": "IMSLP617260",
+    "system": 16,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      3
+    ],
+    "findings": [
+      {
+        "bar": 3,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "9/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP622487-sys9-v1",
+    "score_id": "IMSLP622487",
+    "system": 9,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "5/4",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP122258-sys1-v1",
+    "score_id": "IMSLP122258",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "3/2",
+        "excess": "1/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP89290-sys1-v1",
+    "score_id": "IMSLP89290",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "unexplained",
+        "detail": "ratio 4/3",
+        "ratio": "4/3",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP22647-sys18-v1",
+    "score_id": "IMSLP22647",
+    "system": 18,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      4
+    ],
+    "findings": [
+      {
+        "bar": 4,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP605026-sys16-v2",
+    "score_id": "IMSLP605026",
+    "system": 16,
+    "voice": 2,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "5/4",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP558713-sys5-v1",
+    "score_id": "IMSLP558713",
+    "system": 5,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "5/4",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP632172-sys17-v1",
+    "score_id": "IMSLP632172",
+    "system": 17,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      4
+    ],
+    "findings": [
+      {
+        "bar": 4,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "17/16",
+        "excess": "1/16"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP154299-sys8-v1",
+    "score_id": "IMSLP154299",
+    "system": 8,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "1/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP62383-sys16-v1",
+    "score_id": "IMSLP62383",
+    "system": 16,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "17/16",
+        "excess": "1/16"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP622484-sys1-v1",
+    "score_id": "IMSLP622484",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      4,
+      5
+    ],
+    "findings": [
+      {
+        "bar": 4,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "4/3",
+        "excess": "1/4"
+      },
+      {
+        "bar": 5,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "4/3",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP435041-sys10-v1",
+    "score_id": "IMSLP435041",
+    "system": 10,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP588109-sys15-v1",
+    "score_id": "IMSLP588109",
+    "system": 15,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      3
+    ],
+    "findings": [
+      {
+        "bar": 3,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "3/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP280033-sys4-v1",
+    "score_id": "IMSLP280033",
+    "system": 4,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "9/8",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP16369-sys15-v1",
+    "score_id": "IMSLP16369",
+    "system": 15,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      5
+    ],
+    "findings": [
+      {
+        "bar": 5,
+        "kind": "unexplained",
+        "detail": "ratio 7/6",
+        "ratio": "7/6",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP285360-sys4-v1",
+    "score_id": "IMSLP285360",
+    "system": 4,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 17/16",
+        "ratio": "17/16",
+        "excess": "1/16"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP589001-sys8-v1",
+    "score_id": "IMSLP589001",
+    "system": 8,
+    "voice": 1,
+    "left_bars": 6,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      4
+    ],
+    "findings": [
+      {
+        "bar": 4,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "1/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP285344-sys3-v1",
+    "score_id": "IMSLP285344",
+    "system": 3,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "metre-change",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1,
+      3
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "metre-change",
+        "detail": "2 bars of 5/4",
+        "ratio": "5/4",
+        "excess": "1/4"
+      },
+      {
+        "bar": 3,
+        "kind": "metre-change",
+        "detail": "2 bars of 5/4",
+        "ratio": "5/4",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP624197-sys22-v1",
+    "score_id": "IMSLP624197",
+    "system": 22,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "tuplet",
+        "detail": "sextuplet",
+        "ratio": "9/8",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP24051-sys0-v1",
+    "score_id": "IMSLP24051",
+    "system": 0,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      3
+    ],
+    "findings": [
+      {
+        "bar": 3,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP154084-sys1-v1",
+    "score_id": "IMSLP154084",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "mixed",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1,
+      2
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "9/8",
+        "excess": "1/16"
+      },
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 11/8",
+        "ratio": "11/8",
+        "excess": "3/16"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP556523-sys17-v1",
+    "score_id": "IMSLP556523",
+    "system": 17,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "9/8",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP621832-sys5-v1",
+    "score_id": "IMSLP621832",
+    "system": 5,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP453689-sys20-v1",
+    "score_id": "IMSLP453689",
+    "system": 20,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "unexplained",
+        "detail": "ratio 5/3",
+        "ratio": "5/3",
+        "excess": "1/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP622102-sys6-v1",
+    "score_id": "IMSLP622102",
+    "system": 6,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      4
+    ],
+    "findings": [
+      {
+        "bar": 4,
+        "kind": "unexplained",
+        "detail": "ratio 7/4",
+        "ratio": "7/4",
+        "excess": "3/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP420543-sys3-v1",
+    "score_id": "IMSLP420543",
+    "system": 3,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "tuplet",
+        "detail": "septuplet",
+        "ratio": "3/2",
+        "excess": "3/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP617003-sys1-v1",
+    "score_id": "IMSLP617003",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 5,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      3
+    ],
+    "findings": [
+      {
+        "bar": 3,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "1/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP396671-sys1-v1",
+    "score_id": "IMSLP396671",
+    "system": 1,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2,
+      3
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 13/12",
+        "ratio": "13/12",
+        "excess": "1/16"
+      },
+      {
+        "bar": 3,
+        "kind": "unexplained",
+        "detail": "ratio 7/6",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP676298-sys7-v1",
+    "score_id": "IMSLP676298",
+    "system": 7,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "9/8",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP589004-sys7-v1",
+    "score_id": "IMSLP589004",
+    "system": 7,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "missing-barline",
+        "detail": "3x the prevailing bar",
+        "ratio": "3",
+        "excess": "3/2"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP329304-sys11-v1",
+    "score_id": "IMSLP329304",
+    "system": 11,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "missing-barline",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "missing-barline",
+        "detail": "2x the prevailing bar",
+        "ratio": "2",
+        "excess": "3/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP626307-sys8-v1",
+    "score_id": "IMSLP626307",
+    "system": 8,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 4/3",
+        "ratio": "4/3",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP668192-sys5-v1",
+    "score_id": "IMSLP668192",
+    "system": 5,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "tuplet",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      0
+    ],
+    "findings": [
+      {
+        "bar": 0,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP237206-sys6-v1",
+    "score_id": "IMSLP237206",
+    "system": 6,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "unexplained",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "unexplained",
+        "detail": "ratio 5/4",
+        "ratio": "5/4",
+        "excess": "1/4"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP476183-sys7-v1",
+    "score_id": "IMSLP476183",
+    "system": 7,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "mixed",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1,
+      2
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "unexplained",
+        "detail": "ratio 13/6",
+        "ratio": "13/6",
+        "excess": "7/8"
+      },
+      {
+        "bar": 2,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP588852-sys8-v1",
+    "score_id": "IMSLP588852",
+    "system": 8,
+    "voice": 1,
+    "left_bars": 4,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "mixed",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      2,
+      3
+    ],
+    "findings": [
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 3/2",
+        "ratio": "3/2",
+        "excess": "3/8"
+      },
+      {
+        "bar": 3,
+        "kind": "tuplet",
+        "detail": "triplet",
+        "ratio": "7/6",
+        "excess": "1/8"
+      }
+    ]
+  },
+  {
+    "id": "IMSLP630163-sys4-v1",
+    "score_id": "IMSLP630163",
+    "system": 4,
+    "voice": 1,
+    "left_bars": 3,
+    "right_bars": null,
+    "has_right": false,
+    "diagnosis": "mixed",
+    "staff": "grand",
+    "arithmetic_sound": false,
+    "overfull_bars": [
+      1,
+      2
+    ],
+    "findings": [
+      {
+        "bar": 1,
+        "kind": "missing-barline",
+        "detail": "8x the prevailing bar",
+        "ratio": "8",
+        "excess": "7/8"
+      },
+      {
+        "bar": 2,
+        "kind": "unexplained",
+        "detail": "ratio 29/2",
+        "ratio": "29/2",
+        "excess": "27/16"
+      }
+    ]
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "scores_sampled": 40,
+  "crops_tested": 57,
+  "crops_exact": 48,
+  "crops_failed": 6,
+  "bar_count_mismatches": 0,
+  "event_types": {
+    "substitute": 12
+  },
+  "field_mismatches": {
+    "RENDER/REPARSE EXCEPTION": 4,
+    "substitute:rhythm": 12
+  },
+  "examples": {
+    "RENDER/REPARSE EXCEPTION": [
+      "IMSLP578182 voice 1: ValueError: Unsupported slur slurStart_slurStart",
+      "IMSLP154245 voice 1: ValueError: Unsupported slur slurStop_slurStop",
+      "IMSLP89292 voice 1: ValueError: Unsupported slur slurStart_slurStart",
+      "IMSLP237206 voice 1: ValueError: Unsupported slur slurStart_slurStart"
+    ],
+    "substitute:rhythm": [
+      "IMSLP16369 v1: exp='timeSignatureBeats_4' act='timeSignatureBeats_6' (full exp rhythm='timeSignatureBeats_4' act rhythm='timeSignatureBeats_6')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')"
+    ]
+  }
+}

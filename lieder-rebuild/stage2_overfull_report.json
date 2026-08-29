@@ -1,0 +1,4647 @@
+{
+  "alignment": "/workspace/b0/lieder-rebuild/system_alignment_v2.json",
+  "model_predictions_used": false,
+  "pairs": 4172,
+  "span_inconsistent_pairs_skipped": 6,
+  "overfull_bar_pairs_skipped": 417,
+  "overfull_detail": [
+    {
+      "stem": "IMSLP112763-sys17-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP122258-sys1-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP12778-sys1-v1",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP148200-sys3-v0",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP148200-sys4-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP148200-sys10-v0",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP148200-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154060-sys3-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154060-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154060-sys17-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154070-sys1-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP154084-sys1-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154084-sys2-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154140-sys1-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154142-sys0-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP154142-sys2-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP154142-sys6-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP154142-sys7-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP154201-sys8-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154201-sys9-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154220-sys2-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154220-sys7-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154220-sys9-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154220-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154223-sys14-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154223-sys15-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154223-sys18-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP154229-sys7-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP154240-sys12-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154241-sys0-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP154245-sys6-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP154299-sys8-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP16364-sys2-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP16369-sys15-v1",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP183800-sys5-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP184203-sys19-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP184203-sys20-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP184205-sys13-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP19490-sys15-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP19490-sys18-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP204253-sys10-v1",
+      "bars": [
+        2,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP204253-sys11-v1",
+      "bars": [
+        1,
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP22647-sys18-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP237206-sys6-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP24051-sys0-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP24051-sys1-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP24051-sys3-v1",
+      "bars": [
+        1,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP24051-sys5-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP24051-sys6-v1",
+      "bars": [
+        1,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP24051-sys7-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP24051-sys10-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP253076-sys0-v1",
+      "bars": [
+        1,
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP253076-sys11-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP257340-sys3-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP257340-sys4-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP257340-sys8-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP257340-sys13-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP280033-sys3-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP280033-sys4-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP280033-sys6-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP280033-sys7-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP280033-sys12-v1",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP282760-sys0-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP282760-sys1-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP282760-sys2-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP282760-sys5-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP282760-sys7-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP282760-sys8-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP282760-sys10-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP282760-sys11-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP285344-sys2-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP285344-sys3-v1",
+      "bars": [
+        1,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP285344-sys4-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP285344-sys14-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP285344-sys15-v1",
+      "bars": [
+        1,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP285344-sys16-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP285344-sys18-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP285346-sys0-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP285360-sys4-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP286578-sys0-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP286578-sys6-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP286578-sys12-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP329302-sys4-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP329302-sys14-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP329302-sys16-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP329302-sys19-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP329302-sys22-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP329302-sys26-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP329304-sys11-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP329304-sys12-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP329304-sys14-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP396671-sys1-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP396671-sys3-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP396671-sys4-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP396671-sys6-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP396671-sys7-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP396671-sys14-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP397171-sys0-v1",
+      "bars": [
+        1
+      ],
+      "measures": 7
+    },
+    {
+      "stem": "IMSLP397173-sys6-v0",
+      "bars": [
+        1
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP397173-sys11-v0",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP397173-sys17-v0",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys15-v0",
+      "bars": [
+        4,
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP405017-sys15-v1",
+      "bars": [
+        4,
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP405017-sys17-v0",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys18-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP405017-sys29-v0",
+      "bars": [
+        2,
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys29-v1",
+      "bars": [
+        2,
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys39-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys40-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys43-v0",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys43-v1",
+      "bars": [
+        2,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP405017-sys44-v1",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP420543-sys3-v0",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP420543-sys3-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP420543-sys4-v0",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP420543-sys4-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP420543-sys15-v0",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP420543-sys15-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP420543-sys24-v0",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP434340-sys0-v2",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP434340-sys1-v2",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP434340-sys4-v2",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP434340-sys5-v2",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP434340-sys9-v2",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP434340-sys14-v2",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP434340-sys16-v2",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP434340-sys17-v2",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP434340-sys18-v2",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP434340-sys19-v0",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP434340-sys19-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP434340-sys19-v2",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP434340-sys20-v2",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP435041-sys0-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP435041-sys6-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP435041-sys7-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP435041-sys8-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP435041-sys10-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP435041-sys12-v0",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP435041-sys12-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP435041-sys18-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP435485-sys14-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP43630-sys11-v2",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP43916-sys5-v2",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP44341-sys3-v2",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP44341-sys5-v2",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP44341-sys13-v2",
+      "bars": [
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP44341-sys17-v2",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP44341-sys19-v2",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP44341-sys22-v2",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP453689-sys16-v1",
+      "bars": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP453689-sys20-v0",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP453689-sys20-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP453689-sys23-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP476183-sys4-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP476183-sys7-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP476183-sys9-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP508574-sys9-v1",
+      "bars": [
+        0,
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP516852-sys6-v1",
+      "bars": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP55434-sys5-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP55434-sys11-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP55434-sys12-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP55434-sys13-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP55434-sys15-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP55434-sys16-v1",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP555778-sys0-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP555778-sys1-v1",
+      "bars": [
+        0
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP555778-sys13-v1",
+      "bars": [
+        4,
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP555778-sys17-v1",
+      "bars": [
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP555778-sys18-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP555778-sys19-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP555778-sys20-v1",
+      "bars": [
+        4
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP556523-sys4-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP556523-sys5-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP556523-sys13-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP556523-sys17-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP556523-sys19-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP557087-sys19-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP557087-sys20-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP557087-sys21-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP557088-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP557088-sys16-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP557088-sys17-v1",
+      "bars": [
+        0,
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP557090-sys28-v0",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP558603-sys4-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP558609-sys7-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP558609-sys8-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP558609-sys10-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP558609-sys12-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP558713-sys5-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP558713-sys6-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP558713-sys12-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP578227-sys1-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP578231-sys1-v1",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP580179-sys7-v1",
+      "bars": [
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP580179-sys8-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP580410-sys9-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP580410-sys10-v1",
+      "bars": [
+        0,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP580410-sys12-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP580410-sys13-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP580410-sys14-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP580410-sys15-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP580410-sys16-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP580411-sys13-v1",
+      "bars": [
+        0,
+        2
+      ],
+      "measures": 7
+    },
+    {
+      "stem": "IMSLP580411-sys15-v1",
+      "bars": [
+        4,
+        6
+      ],
+      "measures": 7
+    },
+    {
+      "stem": "IMSLP580411-sys17-v1",
+      "bars": [
+        4
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP580411-sys18-v1",
+      "bars": [
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP580411-sys19-v1",
+      "bars": [
+        0,
+        4
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP580411-sys20-v1",
+      "bars": [
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP580584-sys11-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP581585-sys1-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP581585-sys2-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP581585-sys4-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP581585-sys8-v1",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP581585-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 8
+    },
+    {
+      "stem": "IMSLP581586-sys11-v0",
+      "bars": [
+        6
+      ],
+      "measures": 7
+    },
+    {
+      "stem": "IMSLP581586-sys13-v1",
+      "bars": [
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP582024-sys0-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP584726-sys2-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP588109-sys15-v0",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588109-sys15-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588109-sys20-v0",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP588109-sys20-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP588848-sys1-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP588852-sys8-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588852-sys9-v1",
+      "bars": [
+        0,
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588987-sys11-v2",
+      "bars": [
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP588988-sys7-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP588989-sys4-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588989-sys6-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588989-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP588989-sys14-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588989-sys15-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588990-sys23-v0",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP588990-sys23-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP588990-sys24-v0",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP588990-sys24-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP589001-sys8-v1",
+      "bars": [
+        4
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP589001-sys9-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP589001-sys10-v1",
+      "bars": [
+        3
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP589001-sys11-v1",
+      "bars": [
+        1,
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP589004-sys6-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP589004-sys7-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP589004-sys9-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP589008-sys24-v1",
+      "bars": [
+        6,
+        7
+      ],
+      "measures": 8
+    },
+    {
+      "stem": "IMSLP589118-sys6-v1",
+      "bars": [
+        0,
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP589118-sys18-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP589118-sys19-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP592442-sys4-v2",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP593990-sys0-v4",
+      "bars": [
+        1,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP597597-sys4-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP597597-sys5-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP597597-sys8-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP600893-sys2-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP605026-sys0-v2",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP605026-sys8-v2",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP605026-sys9-v2",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP605026-sys15-v2",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP605026-sys16-v2",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP605026-sys22-v2",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP606009-sys5-v1",
+      "bars": [
+        1,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP606009-sys7-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP606057-sys1-v1",
+      "bars": [
+        3
+      ],
+      "measures": 8
+    },
+    {
+      "stem": "IMSLP61112-sys11-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP61112-sys13-v1",
+      "bars": [
+        0,
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP61117-sys4-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP617003-sys1-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP617260-sys1-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys2-v0",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys2-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys4-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys5-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys9-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys10-v1",
+      "bars": [
+        0,
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP617260-sys12-v0",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP617260-sys13-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys14-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys15-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP617260-sys16-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP617260-sys17-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP617446-sys3-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP617446-sys13-v1",
+      "bars": [
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP617446-sys14-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP618722-sys1-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP618722-sys5-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP621598-sys2-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP621598-sys3-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP621830-sys1-v0",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP621830-sys1-v1",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP621830-sys9-v0",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP621830-sys9-v1",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP621831-sys0-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP621831-sys14-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP621832-sys4-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP621832-sys5-v0",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP621832-sys5-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP621832-sys6-v1",
+      "bars": [
+        1,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP621832-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP621832-sys11-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP621832-sys12-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP621841-sys20-v0",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP621841-sys21-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP621841-sys22-v0",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP621841-sys22-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP622102-sys3-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP622102-sys6-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP622103-sys0-v1",
+      "bars": [
+        2
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP622103-sys1-v1",
+      "bars": [
+        1,
+        4
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP622103-sys2-v1",
+      "bars": [
+        3
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP622104-sys5-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP622105-sys16-v0",
+      "bars": [
+        2,
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP622484-sys1-v0",
+      "bars": [
+        4,
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP622484-sys1-v1",
+      "bars": [
+        4,
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP622484-sys2-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP622484-sys4-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP622484-sys6-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP622484-sys8-v0",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP622484-sys8-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP622485-sys1-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP622485-sys2-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP622485-sys6-v1",
+      "bars": [
+        3,
+        4
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP622486-sys9-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP622487-sys9-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP622487-sys10-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP622488-sys2-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP62381-sys9-v1",
+      "bars": [
+        2,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP62381-sys21-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP62381-sys26-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP62381-sys28-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP62383-sys6-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP62383-sys9-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP62383-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP62383-sys11-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP62383-sys16-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP62383-sys20-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP62383-sys21-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP624192-sys15-v1",
+      "bars": [
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP624193-sys6-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP624193-sys19-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP624193-sys20-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP624193-sys28-v0",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP624197-sys22-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP625359-sys1-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP625359-sys2-v1",
+      "bars": [
+        2,
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP625359-sys3-v0",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP625359-sys3-v1",
+      "bars": [
+        0,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP625663-sys0-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP625663-sys2-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP626307-sys8-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP630163-sys4-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP630163-sys17-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP632171-sys21-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP632172-sys16-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP632172-sys17-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP632172-sys20-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP634834-sys12-v1",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP634834-sys14-v1",
+      "bars": [
+        0
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP634835-sys13-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP637441-sys12-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP637441-sys20-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP637442-sys18-v1",
+      "bars": [
+        4,
+        6
+      ],
+      "measures": 8
+    },
+    {
+      "stem": "IMSLP642301-sys14-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP654022-sys13-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP656649-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP656649-sys18-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP657998-sys7-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP660145-sys4-v1",
+      "bars": [
+        0,
+        4
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP660145-sys5-v1",
+      "bars": [
+        2,
+        6
+      ],
+      "measures": 7
+    },
+    {
+      "stem": "IMSLP660145-sys6-v1",
+      "bars": [
+        3
+      ],
+      "measures": 7
+    },
+    {
+      "stem": "IMSLP660145-sys7-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP662011-sys10-v0",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP662011-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP662011-sys12-v1",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP668192-sys5-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP668192-sys6-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP669434-sys3-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP669434-sys4-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP669434-sys6-v1",
+      "bars": [
+        2,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP669434-sys9-v1",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP669434-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP669434-sys12-v1",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP669434-sys13-v1",
+      "bars": [
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP669434-sys14-v1",
+      "bars": [
+        0,
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP669434-sys15-v1",
+      "bars": [
+        1
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP676298-sys7-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP676305-sys1-v0",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP676305-sys2-v0",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP676305-sys4-v0",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP676305-sys5-v0",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP75214-sys18-v1",
+      "bars": [
+        5
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP75959-sys3-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP75959-sys13-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP75959-sys14-v1",
+      "bars": [
+        0,
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP75959-sys15-v1",
+      "bars": [
+        2
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP77665-sys11-v1",
+      "bars": [
+        2
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP77665-sys15-v1",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP77665-sys38-v2",
+      "bars": [
+        2,
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP80521-sys7-v0",
+      "bars": [
+        0
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP80521-sys7-v1",
+      "bars": [
+        1
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP83316-sys13-v1",
+      "bars": [
+        1
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89016-sys2-v1",
+      "bars": [
+        3
+      ],
+      "measures": 4
+    },
+    {
+      "stem": "IMSLP89016-sys5-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP89016-sys10-v1",
+      "bars": [
+        0
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP89016-sys12-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89016-sys15-v1",
+      "bars": [
+        0,
+        1
+      ],
+      "measures": 6
+    },
+    {
+      "stem": "IMSLP89026-sys4-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89026-sys6-v0",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89026-sys6-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89026-sys11-v1",
+      "bars": [
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89290-sys1-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89290-sys3-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89290-sys8-v1",
+      "bars": [
+        0
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89290-sys10-v1",
+      "bars": [
+        1,
+        2
+      ],
+      "measures": 3
+    },
+    {
+      "stem": "IMSLP89292-sys2-v0",
+      "bars": [
+        9
+      ],
+      "measures": 10
+    },
+    {
+      "stem": "IMSLP89292-sys2-v1",
+      "bars": [
+        9
+      ],
+      "measures": 10
+    },
+    {
+      "stem": "IMSLP89292-sys6-v1",
+      "bars": [
+        0,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP89797-sys8-v0",
+      "bars": [
+        2,
+        3,
+        4
+      ],
+      "measures": 5
+    },
+    {
+      "stem": "IMSLP89797-sys8-v1",
+      "bars": [
+        2,
+        3,
+        4
+      ],
+      "measures": 5
+    }
+  ],
+  "quarantined_recovered_pairs": 0,
+  "scores": [
+    {
+      "score_id": "IMSLP10416",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP10602",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP112763",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 13
+    },
+    {
+      "score_id": "IMSLP11784",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 38
+    },
+    {
+      "score_id": "IMSLP122258",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP122262",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 5
+    },
+    {
+      "score_id": "IMSLP12291",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP12778",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 25
+    },
+    {
+      "score_id": "IMSLP13971",
+      "status": "built",
+      "aligned_systems": 29,
+      "pairs": 58
+    },
+    {
+      "score_id": "IMSLP140920",
+      "status": "built",
+      "aligned_systems": 24,
+      "pairs": 40
+    },
+    {
+      "score_id": "IMSLP148200",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP152191",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP154059",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP154060",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 35
+    },
+    {
+      "score_id": "IMSLP154063",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP154067",
+      "status": "built",
+      "aligned_systems": 17,
+      "pairs": 34
+    },
+    {
+      "score_id": "IMSLP154070",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP154084",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 6
+    },
+    {
+      "score_id": "IMSLP154086",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 25
+    },
+    {
+      "score_id": "IMSLP154110",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP154140",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP154142",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 20
+    },
+    {
+      "score_id": "IMSLP154144",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP154201",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 28
+    },
+    {
+      "score_id": "IMSLP154209",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 22 -24"
+    },
+    {
+      "score_id": "IMSLP154211",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP154220",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP154223",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 13
+    },
+    {
+      "score_id": "IMSLP154229",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 7
+    },
+    {
+      "score_id": "IMSLP154240",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP154241",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 29
+    },
+    {
+      "score_id": "IMSLP154242",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP154245",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 26
+    },
+    {
+      "score_id": "IMSLP154289",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 24
+    },
+    {
+      "score_id": "IMSLP154299",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 29
+    },
+    {
+      "score_id": "IMSLP161329",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP16259",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP16349",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP16364",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 7
+    },
+    {
+      "score_id": "IMSLP16369",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 23
+    },
+    {
+      "score_id": "IMSLP16370",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP16400",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 5
+    },
+    {
+      "score_id": "IMSLP16625",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 5
+    },
+    {
+      "score_id": "IMSLP16883",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 23
+    },
+    {
+      "score_id": "IMSLP16890",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP173062",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP173063",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 33
+    },
+    {
+      "score_id": "IMSLP179565",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP183800",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 27
+    },
+    {
+      "score_id": "IMSLP183806",
+      "status": "built",
+      "aligned_systems": 22,
+      "pairs": 44
+    },
+    {
+      "score_id": "IMSLP184203",
+      "status": "built",
+      "aligned_systems": 21,
+      "pairs": 40
+    },
+    {
+      "score_id": "IMSLP184205",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 27
+    },
+    {
+      "score_id": "IMSLP185782",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 21
+    },
+    {
+      "score_id": "IMSLP19488",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 0 -96"
+    },
+    {
+      "score_id": "IMSLP19490",
+      "status": "built",
+      "aligned_systems": 16,
+      "pairs": 30
+    },
+    {
+      "score_id": "IMSLP204253",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP212406",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 20
+    },
+    {
+      "score_id": "IMSLP22647",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 1
+    },
+    {
+      "score_id": "IMSLP227283",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP231920",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP234590",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP237206",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 9
+    },
+    {
+      "score_id": "IMSLP24047",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP24051",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP24124",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 33 -36"
+    },
+    {
+      "score_id": "IMSLP243472",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP253076",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP257340",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 24
+    },
+    {
+      "score_id": "IMSLP262191",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 170 -504"
+    },
+    {
+      "score_id": "IMSLP262465",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 6
+    },
+    {
+      "score_id": "IMSLP280033",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP282760",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP285344",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP285345",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP285346",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 21
+    },
+    {
+      "score_id": "IMSLP285347",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 24
+    },
+    {
+      "score_id": "IMSLP285360",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 23
+    },
+    {
+      "score_id": "IMSLP286578",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 27
+    },
+    {
+      "score_id": "IMSLP286603",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP286659",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 38
+    },
+    {
+      "score_id": "IMSLP300723",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 8 -12"
+    },
+    {
+      "score_id": "IMSLP323995",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 22 -24"
+    },
+    {
+      "score_id": "IMSLP329302",
+      "status": "built",
+      "aligned_systems": 17,
+      "pairs": 25
+    },
+    {
+      "score_id": "IMSLP329303",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP329304",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 23
+    },
+    {
+      "score_id": "IMSLP33023",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 6
+    },
+    {
+      "score_id": "IMSLP361244",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP394162",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 48 -72"
+    },
+    {
+      "score_id": "IMSLP396671",
+      "status": "built",
+      "aligned_systems": 18,
+      "pairs": 30
+    },
+    {
+      "score_id": "IMSLP397171",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 1
+    },
+    {
+      "score_id": "IMSLP397173",
+      "status": "built",
+      "aligned_systems": 17,
+      "pairs": 31
+    },
+    {
+      "score_id": "IMSLP405017",
+      "status": "built",
+      "aligned_systems": 25,
+      "pairs": 35
+    },
+    {
+      "score_id": "IMSLP41375",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP414132",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP420543",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 13
+    },
+    {
+      "score_id": "IMSLP422393",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 6
+    },
+    {
+      "score_id": "IMSLP434340",
+      "status": "built",
+      "aligned_systems": 24,
+      "pairs": 50
+    },
+    {
+      "score_id": "IMSLP435041",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 30
+    },
+    {
+      "score_id": "IMSLP435483",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 20
+    },
+    {
+      "score_id": "IMSLP435485",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP43630",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 35
+    },
+    {
+      "score_id": "IMSLP436708",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 48 -72"
+    },
+    {
+      "score_id": "IMSLP43758",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 39
+    },
+    {
+      "score_id": "IMSLP43916",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 1
+    },
+    {
+      "score_id": "IMSLP440659",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP441122",
+      "status": "prepare failed",
+      "error": "list index out of range"
+    },
+    {
+      "score_id": "IMSLP44341",
+      "status": "built",
+      "aligned_systems": 23,
+      "pairs": 63
+    },
+    {
+      "score_id": "IMSLP453689",
+      "status": "built",
+      "aligned_systems": 16,
+      "pairs": 28
+    },
+    {
+      "score_id": "IMSLP456006",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP456168",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP476181",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP476183",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP507203",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 26
+    },
+    {
+      "score_id": "IMSLP508574",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP510573",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 4
+    },
+    {
+      "score_id": "IMSLP513422",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP516852",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 5
+    },
+    {
+      "score_id": "IMSLP530500",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP542017",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP55434",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 6
+    },
+    {
+      "score_id": "IMSLP555778",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 21
+    },
+    {
+      "score_id": "IMSLP556523",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP557086",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP557087",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP557088",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP557089",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 8 -12"
+    },
+    {
+      "score_id": "IMSLP557090",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 29
+    },
+    {
+      "score_id": "IMSLP558603",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 5
+    },
+    {
+      "score_id": "IMSLP558609",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP558713",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 35
+    },
+    {
+      "score_id": "IMSLP578182",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP578226",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP578227",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP578230",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP578231",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 23
+    },
+    {
+      "score_id": "IMSLP580179",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 20
+    },
+    {
+      "score_id": "IMSLP580246",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP580248",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 8 -12"
+    },
+    {
+      "score_id": "IMSLP580250",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP580410",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP580411",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 22
+    },
+    {
+      "score_id": "IMSLP580584",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 23
+    },
+    {
+      "score_id": "IMSLP580585",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 18 -24"
+    },
+    {
+      "score_id": "IMSLP581585",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 11
+    },
+    {
+      "score_id": "IMSLP581586",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP581738",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP582024",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 1
+    },
+    {
+      "score_id": "IMSLP584272",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP584726",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 13
+    },
+    {
+      "score_id": "IMSLP584727",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP588109",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP588848",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 9
+    },
+    {
+      "score_id": "IMSLP588852",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP588987",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP588988",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 1
+    },
+    {
+      "score_id": "IMSLP588989",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 32
+    },
+    {
+      "score_id": "IMSLP588990",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP589001",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 4
+    },
+    {
+      "score_id": "IMSLP589004",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP589008",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 25
+    },
+    {
+      "score_id": "IMSLP589118",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 28
+    },
+    {
+      "score_id": "IMSLP592442",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 35
+    },
+    {
+      "score_id": "IMSLP593990",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 19
+    },
+    {
+      "score_id": "IMSLP597597",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP598858",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP600893",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 1
+    },
+    {
+      "score_id": "IMSLP600895",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 6
+    },
+    {
+      "score_id": "IMSLP603446",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 33
+    },
+    {
+      "score_id": "IMSLP605026",
+      "status": "built",
+      "aligned_systems": 24,
+      "pairs": 66
+    },
+    {
+      "score_id": "IMSLP606009",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 6
+    },
+    {
+      "score_id": "IMSLP606047",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP606054",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP606057",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 7
+    },
+    {
+      "score_id": "IMSLP606188",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP60848",
+      "status": "built",
+      "aligned_systems": 24,
+      "pairs": 48
+    },
+    {
+      "score_id": "IMSLP61111",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP61112",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 26
+    },
+    {
+      "score_id": "IMSLP61117",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 23
+    },
+    {
+      "score_id": "IMSLP616432",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP617003",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP617260",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 25
+    },
+    {
+      "score_id": "IMSLP617262",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 10 -12"
+    },
+    {
+      "score_id": "IMSLP617446",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 7
+    },
+    {
+      "score_id": "IMSLP617593",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP618722",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 11
+    },
+    {
+      "score_id": "IMSLP621593",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP621598",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP621599",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP621830",
+      "status": "built",
+      "aligned_systems": 16,
+      "pairs": 28
+    },
+    {
+      "score_id": "IMSLP621831",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 28
+    },
+    {
+      "score_id": "IMSLP621832",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP621841",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP621842",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 4
+    },
+    {
+      "score_id": "IMSLP622102",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP622103",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP622104",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 11
+    },
+    {
+      "score_id": "IMSLP622105",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 5
+    },
+    {
+      "score_id": "IMSLP622484",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 11
+    },
+    {
+      "score_id": "IMSLP622485",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 11
+    },
+    {
+      "score_id": "IMSLP622486",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 27
+    },
+    {
+      "score_id": "IMSLP622487",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 26
+    },
+    {
+      "score_id": "IMSLP622488",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 15
+    },
+    {
+      "score_id": "IMSLP62381",
+      "status": "built",
+      "aligned_systems": 18,
+      "pairs": 32
+    },
+    {
+      "score_id": "IMSLP62382",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 38
+    },
+    {
+      "score_id": "IMSLP62383",
+      "status": "built",
+      "aligned_systems": 17,
+      "pairs": 27
+    },
+    {
+      "score_id": "IMSLP624192",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP624193",
+      "status": "built",
+      "aligned_systems": 23,
+      "pairs": 42
+    },
+    {
+      "score_id": "IMSLP624194",
+      "status": "built",
+      "aligned_systems": 31,
+      "pairs": 62
+    },
+    {
+      "score_id": "IMSLP624196",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP624197",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP625359",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 4
+    },
+    {
+      "score_id": "IMSLP625520",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP625663",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP626307",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP630163",
+      "status": "built",
+      "aligned_systems": 3,
+      "pairs": 4
+    },
+    {
+      "score_id": "IMSLP632171",
+      "status": "built",
+      "aligned_systems": 27,
+      "pairs": 52
+    },
+    {
+      "score_id": "IMSLP632172",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP632173",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 23 -24"
+    },
+    {
+      "score_id": "IMSLP632175",
+      "status": "built",
+      "aligned_systems": 27,
+      "pairs": 54
+    },
+    {
+      "score_id": "IMSLP632177",
+      "status": "built",
+      "aligned_systems": 14,
+      "pairs": 28
+    },
+    {
+      "score_id": "IMSLP634834",
+      "status": "built",
+      "aligned_systems": 16,
+      "pairs": 30
+    },
+    {
+      "score_id": "IMSLP634835",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 29
+    },
+    {
+      "score_id": "IMSLP637242",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP637440",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 38
+    },
+    {
+      "score_id": "IMSLP637441",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 20
+    },
+    {
+      "score_id": "IMSLP637442",
+      "status": "built",
+      "aligned_systems": 11,
+      "pairs": 21
+    },
+    {
+      "score_id": "IMSLP642301",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 7
+    },
+    {
+      "score_id": "IMSLP654022",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 3
+    },
+    {
+      "score_id": "IMSLP656649",
+      "status": "built",
+      "aligned_systems": 2,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP657998",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP660145",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP661154",
+      "status": "built",
+      "aligned_systems": 30,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP661315",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 5
+    },
+    {
+      "score_id": "IMSLP661318",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP662011",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 10
+    },
+    {
+      "score_id": "IMSLP668192",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP669434",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 29
+    },
+    {
+      "score_id": "IMSLP676298",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP676303",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP676305",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP676315",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 20
+    },
+    {
+      "score_id": "IMSLP676491",
+      "status": "built",
+      "aligned_systems": 10,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP74369",
+      "status": "built",
+      "aligned_systems": 15,
+      "pairs": 30
+    },
+    {
+      "score_id": "IMSLP75214",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 11
+    },
+    {
+      "score_id": "IMSLP75959",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP77665",
+      "status": "built",
+      "aligned_systems": 20,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP80521",
+      "status": "built",
+      "aligned_systems": 5,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP83314",
+      "status": "built",
+      "aligned_systems": 19,
+      "pairs": 38
+    },
+    {
+      "score_id": "IMSLP83316",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 13
+    },
+    {
+      "score_id": "IMSLP83317",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 0
+    },
+    {
+      "score_id": "IMSLP83318",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 7
+    },
+    {
+      "score_id": "IMSLP83319",
+      "status": "built",
+      "aligned_systems": 7,
+      "pairs": 14
+    },
+    {
+      "score_id": "IMSLP88709",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 24
+    },
+    {
+      "score_id": "IMSLP89016",
+      "status": "built",
+      "aligned_systems": 16,
+      "pairs": 27
+    },
+    {
+      "score_id": "IMSLP89017",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP89026",
+      "status": "built",
+      "aligned_systems": 13,
+      "pairs": 18
+    },
+    {
+      "score_id": "IMSLP89287",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP89290",
+      "status": "built",
+      "aligned_systems": 20,
+      "pairs": 36
+    },
+    {
+      "score_id": "IMSLP89292",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 13
+    },
+    {
+      "score_id": "IMSLP89295",
+      "status": "prepare failed",
+      "error": "Backup duration is too long 11 -12"
+    },
+    {
+      "score_id": "IMSLP89794",
+      "status": "built",
+      "aligned_systems": 12,
+      "pairs": 17
+    },
+    {
+      "score_id": "IMSLP89795",
+      "status": "built",
+      "aligned_systems": 6,
+      "pairs": 12
+    },
+    {
+      "score_id": "IMSLP89796",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP89797",
+      "status": "built",
+      "aligned_systems": 9,
+      "pairs": 16
+    },
+    {
+      "score_id": "IMSLP89798",
+      "status": "built",
+      "aligned_systems": 4,
+      "pairs": 8
+    },
+    {
+      "score_id": "IMSLP92046",
+      "status": "built",
+      "aligned_systems": 1,
+      "pairs": 2
+    },
+    {
+      "score_id": "IMSLP97202",
+      "status": "built",
+      "aligned_systems": 8,
+      "pairs": 15
+    }
+  ]
+}

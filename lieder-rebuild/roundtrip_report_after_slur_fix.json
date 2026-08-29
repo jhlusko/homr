@@ -1,0 +1,67 @@
+{
+  "scores_sampled": 150,
+  "crops_tested": 251,
+  "crops_exact": 229,
+  "crops_failed": 5,
+  "bar_count_mismatches": 2,
+  "event_types": {
+    "substitute": 77,
+    "insert": 32,
+    "delete": 36
+  },
+  "field_mismatches": {
+    "substitute:rhythm": 77,
+    "insert": 32,
+    "delete": 36,
+    "substitute:pitch": 8,
+    "substitute:articulation": 4,
+    "substitute:lift": 5
+  },
+  "examples": {
+    "substitute:rhythm": [
+      "IMSLP16369 v1: exp='timeSignatureBeats_4' act='timeSignatureBeats_6' (full exp rhythm='timeSignatureBeats_4' act rhythm='timeSignatureBeats_6')",
+      "IMSLP435041 v1: exp='note_12' act='note_8' (full exp rhythm='note_12' act rhythm='note_8')",
+      "IMSLP435041 v1: exp='note_12' act='note_8' (full exp rhythm='note_12' act rhythm='note_8')",
+      "IMSLP80521 v0: exp='timeSignatureBeats_9' act='timeSignatureBeats_8' (full exp rhythm='timeSignatureBeats_9' act rhythm='timeSignatureBeats_8')",
+      "IMSLP617260 v0: exp='timeSignatureBeats_9' act='timeSignatureBeats_8' (full exp rhythm='timeSignatureBeats_9' act rhythm='timeSignatureBeats_8')",
+      "IMSLP580410 v1: exp='timeSignatureBeats_3' act='timeSignatureBeats_6' (full exp rhythm='timeSignatureBeats_3' act rhythm='timeSignatureBeats_6')"
+    ],
+    "insert": [
+      "IMSLP435041 v1: rhythm='note_8' pitch='G4'",
+      "IMSLP435041 v1: rhythm='note_8' pitch='E4'",
+      "IMSLP435041 v1: rhythm='note_8' pitch='E5'",
+      "IMSLP435041 v1: rhythm='note_8' pitch='D5'",
+      "IMSLP435041 v1: rhythm='note_8' pitch='G4'",
+      "IMSLP435041 v1: rhythm='note_8' pitch='E4'"
+    ],
+    "delete": [
+      "IMSLP435041 v1: rhythm='note_12' pitch='G4'",
+      "IMSLP435041 v1: rhythm='note_12' pitch='E4'",
+      "IMSLP435041 v1: rhythm='note_12' pitch='D5'",
+      "IMSLP435041 v1: rhythm='note_12' pitch='A5'",
+      "IMSLP435041 v1: rhythm='note_12' pitch='G4'",
+      "IMSLP435041 v1: rhythm='note_12' pitch='E4'"
+    ],
+    "substitute:pitch": [
+      "IMSLP435041 v1: exp='E5' act='A5' (full exp rhythm='note_12' act rhythm='note_8')",
+      "IMSLP435041 v1: exp='E5' act='A5' (full exp rhythm='note_12' act rhythm='note_8')",
+      "IMSLP83318 v1: exp='E4' act='G2' (full exp rhythm='note_24' act rhythm='note_8')",
+      "IMSLP83318 v1: exp='C4' act='E4' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP83318 v1: exp='G2' act='C4' (full exp rhythm='note_12' act rhythm='note_16')",
+      "IMSLP83318 v1: exp='E4' act='B2' (full exp rhythm='note_24' act rhythm='note_8')"
+    ],
+    "substitute:articulation": [
+      "IMSLP83318 v1: exp='_' act='staccato' (full exp rhythm='note_24' act rhythm='note_8')",
+      "IMSLP83318 v1: exp='staccato' act='_' (full exp rhythm='note_12' act rhythm='note_16')",
+      "IMSLP83318 v1: exp='_' act='staccato' (full exp rhythm='note_24' act rhythm='note_8')",
+      "IMSLP83318 v1: exp='staccato' act='_' (full exp rhythm='note_12' act rhythm='note_16')"
+    ],
+    "substitute:lift": [
+      "IMSLP83318 v1: exp='#' act='_' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP83318 v1: exp='_' act='#' (full exp rhythm='note_12' act rhythm='note_16')",
+      "IMSLP83318 v1: exp='_' act='b' (full exp rhythm='note_24' act rhythm='note_8')",
+      "IMSLP83318 v1: exp='#' act='_' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP83318 v1: exp='b' act='#' (full exp rhythm='note_12' act rhythm='note_16')"
+    ]
+  }
+}

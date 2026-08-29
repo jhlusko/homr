@@ -1,0 +1,194 @@
+{
+  "provenance": "fingerprint",
+  "model_predictions_used": true,
+  "warning": "Model-derived labels. Safe to train on as pseudo-labels; NEVER admissible in a held-out evaluation set - that is the circularity the Lieder rebuild exists to remove.",
+  "alignment": "/workspace/b0/lieder-rebuild/system_alignment_v2.json",
+  "min_coverage": 0.5,
+  "min_similarity": 0.55,
+  "counts": {
+    "attempted": 10,
+    "trusted": 3,
+    "written": 3,
+    "rejected": 6,
+    "no_notes": 1
+  },
+  "pairs": 3,
+  "records": [
+    {
+      "stem": "IMSLP10602-sys8-v0",
+      "score_id": "IMSLP10602",
+      "system": 8,
+      "voice": 0,
+      "prior_status": "ambiguous",
+      "prior_margin": 1.5,
+      "predicted_notes": 14,
+      "match": {
+        "start_measure": 33,
+        "end_measure": 37,
+        "coverage": 1.0,
+        "similarity": 1.0,
+        "trusted": true
+      },
+      "outcome": "written",
+      "range": [
+        33,
+        37
+      ]
+    },
+    {
+      "stem": "IMSLP10602-sys8-v1",
+      "score_id": "IMSLP10602",
+      "system": 8,
+      "voice": 1,
+      "prior_status": "ambiguous",
+      "prior_margin": 1.5,
+      "predicted_notes": 71,
+      "match": {
+        "start_measure": 30,
+        "end_measure": 53,
+        "coverage": 0.4225352112676056,
+        "similarity": 0.07614213197969544,
+        "trusted": false
+      },
+      "outcome": "below thresholds"
+    },
+    {
+      "stem": "IMSLP10602-sys9-v0",
+      "score_id": "IMSLP10602",
+      "system": 9,
+      "voice": 0,
+      "prior_status": "ambiguous",
+      "prior_margin": 1.0,
+      "predicted_notes": 13,
+      "match": {
+        "start_measure": 33,
+        "end_measure": 41,
+        "coverage": 1.0,
+        "similarity": 0.48148148148148145,
+        "trusted": false
+      },
+      "outcome": "below thresholds"
+    },
+    {
+      "stem": "IMSLP10602-sys9-v1",
+      "score_id": "IMSLP10602",
+      "system": 9,
+      "voice": 1,
+      "prior_status": "ambiguous",
+      "prior_margin": 1.0,
+      "predicted_notes": 95,
+      "match": {
+        "start_measure": 1,
+        "end_measure": 38,
+        "coverage": 0.4,
+        "similarity": 0.06386554621848739,
+        "trusted": false
+      },
+      "outcome": "below thresholds"
+    },
+    {
+      "stem": "IMSLP10602-sys10-v0",
+      "score_id": "IMSLP10602",
+      "system": 10,
+      "voice": 0,
+      "prior_status": "ambiguous",
+      "prior_margin": 0.5,
+      "predicted_notes": 16,
+      "match": {
+        "start_measure": 14,
+        "end_measure": 18,
+        "coverage": 1.0,
+        "similarity": 1.0,
+        "trusted": true
+      },
+      "outcome": "written",
+      "range": [
+        14,
+        18
+      ]
+    },
+    {
+      "stem": "IMSLP10602-sys10-v1",
+      "score_id": "IMSLP10602",
+      "system": 10,
+      "voice": 1,
+      "prior_status": "ambiguous",
+      "prior_margin": 0.5,
+      "predicted_notes": 63,
+      "match": {
+        "start_measure": 10,
+        "end_measure": 38,
+        "coverage": 0.4126984126984127,
+        "similarity": 0.05603448275862069,
+        "trusted": false
+      },
+      "outcome": "below thresholds"
+    },
+    {
+      "stem": "IMSLP10602-sys11-v0",
+      "score_id": "IMSLP10602",
+      "system": 11,
+      "voice": 0,
+      "prior_status": "count_mismatch",
+      "prior_margin": 0.5,
+      "predicted_notes": 8,
+      "match": {
+        "start_measure": 14,
+        "end_measure": 17,
+        "coverage": 1.0,
+        "similarity": 1.0,
+        "trusted": true
+      },
+      "outcome": "written",
+      "range": [
+        14,
+        17
+      ]
+    },
+    {
+      "stem": "IMSLP10602-sys11-v1",
+      "score_id": "IMSLP10602",
+      "system": 11,
+      "voice": 1,
+      "prior_status": "count_mismatch",
+      "prior_margin": 0.5,
+      "predicted_notes": 58,
+      "match": {
+        "start_measure": 10,
+        "end_measure": 22,
+        "coverage": 0.7241379310344828,
+        "similarity": 0.23595505617977527,
+        "trusted": false
+      },
+      "outcome": "below thresholds"
+    },
+    {
+      "stem": "IMSLP10602-sys12-v0",
+      "score_id": "IMSLP10602",
+      "system": 12,
+      "voice": 0,
+      "prior_status": "ambiguous",
+      "prior_margin": 0.5,
+      "predicted_notes": 0,
+      "match": null,
+      "outcome": "no usable notes"
+    },
+    {
+      "stem": "IMSLP10602-sys12-v1",
+      "score_id": "IMSLP10602",
+      "system": 12,
+      "voice": 1,
+      "prior_status": "ambiguous",
+      "prior_margin": 0.5,
+      "predicted_notes": 42,
+      "match": {
+        "start_measure": 1,
+        "end_measure": 26,
+        "coverage": 0.8571428571428571,
+        "similarity": 0.10434782608695652,
+        "trusted": false
+      },
+      "outcome": "below thresholds"
+    }
+  ]
+}

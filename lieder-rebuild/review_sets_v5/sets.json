@@ -1,0 +1,47 @@
+[
+  {
+    "set": "eval",
+    "items": 100,
+    "candidates": 3964
+  },
+  {
+    "set": "voices",
+    "items": 100,
+    "candidates": 2079
+  },
+  {
+    "set": "silent",
+    "items": 63,
+    "candidates": 63
+  },
+  {
+    "set": "abstained",
+    "items": 100,
+    "candidates": 304
+  },
+  {
+    "set": "arbitrated",
+    "items": 100,
+    "candidates": 251
+  },
+  {
+    "set": "rejected",
+    "items": 100,
+    "candidates": 391
+  },
+  {
+    "set": "pseudo",
+    "items": 100,
+    "candidates": 3656
+  },
+  {
+    "set": "phantom",
+    "items": 60,
+    "candidates": 68
+  },
+  {
+    "set": "octave",
+    "items": 100,
+    "candidates": 1373
+  }
+]

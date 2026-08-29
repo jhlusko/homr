@@ -1,0 +1,31 @@
+{
+  "scores_sampled": 60,
+  "crops_tested": 97,
+  "crops_exact": 90,
+  "crops_failed": 2,
+  "bar_count_mismatches": 0,
+  "event_types": {
+    "substitute": 14
+  },
+  "field_mismatches": {
+    "substitute:rhythm": 14
+  },
+  "examples": {
+    "substitute:rhythm": [
+      "IMSLP16369 v1: exp='timeSignatureBeats_4' act='timeSignatureBeats_6' (full exp rhythm='timeSignatureBeats_4' act rhythm='timeSignatureBeats_6')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP16400 v1: exp='note_24' act='note_16' (full exp rhythm='note_24' act rhythm='note_16')",
+      "IMSLP637441 v1: exp='timeSignatureBeats_6' act='timeSignatureBeats_8' (full exp rhythm='timeSignatureBeats_6' act rhythm='timeSignatureBeats_8')",
+      "IMSLP592442 v2: exp='timeSignatureBeats_6' act='timeSignatureBeats_8' (full exp rhythm='timeSignatureBeats_6' act rhythm='timeSignatureBeats_8')",
+      "IMSLP227283 v1: exp='timeSignatureBeats_4' act='timeSignatureBeats_6' (full exp rhythm='timeSignatureBeats_4' act rhythm='timeSignatureBeats_6')",
+      "IMSLP557088 v1: exp='timeSignatureBeats_3' act='timeSignatureBeats_4' (full exp rhythm='timeSignatureBeats_3' act rhythm='timeSignatureBeats_4')",
+      "IMSLP89016 v1: exp='timeSignatureBeats_4' act='timeSignatureBeats_6' (full exp rhythm='timeSignatureBeats_4' act rhythm='timeSignatureBeats_6')"
+    ]
+  }
+}

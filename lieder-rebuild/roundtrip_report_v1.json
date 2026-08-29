@@ -1,0 +1,86 @@
+{
+  "scores_sampled": 40,
+  "crops_tested": 57,
+  "crops_exact": 0,
+  "crops_failed": 6,
+  "bar_count_mismatches": 0,
+  "event_types": {
+    "insert": 885,
+    "substitute": 190,
+    "delete": 779
+  },
+  "field_mismatches": {
+    "insert": 885,
+    "RENDER/REPARSE EXCEPTION": 4,
+    "substitute:pitch": 187,
+    "substitute:lift": 122,
+    "delete": 779,
+    "substitute:rhythm": 47,
+    "substitute:articulation": 44,
+    "substitute:slur": 28
+  },
+  "examples": {
+    "insert": [
+      "IMSLP578182 v0: rhythm='timeSignatureBeats_2' pitch='.'",
+      "IMSLP578182 v0: rhythm='timeSignature/4' pitch='.'",
+      "IMSLP589118 v0: rhythm='timeSignatureBeats_3' pitch='.'",
+      "IMSLP589118 v0: rhythm='timeSignature/4' pitch='.'",
+      "IMSLP589118 v1: rhythm='timeSignatureBeats_3' pitch='.'",
+      "IMSLP589118 v1: rhythm='timeSignature/4' pitch='.'"
+    ],
+    "RENDER/REPARSE EXCEPTION": [
+      "IMSLP578182 voice 1: ValueError: Unsupported slur slurStart_slurStart",
+      "IMSLP154245 voice 1: ValueError: Unsupported slur slurStop_slurStop",
+      "IMSLP89292 voice 1: ValueError: Unsupported slur slurStart_slurStart",
+      "IMSLP237206 voice 1: ValueError: Unsupported slur slurStart_slurStart"
+    ],
+    "substitute:pitch": [
+      "IMSLP589118 v1: exp='B4' act='G5' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='G5' act='B4' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='B3' act='G4' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='G4' act='B3' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='B3' act='E2' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='E2' act='B3' (full exp rhythm='note_8' act rhythm='note_4')"
+    ],
+    "substitute:lift": [
+      "IMSLP589118 v1: exp='b' act='_' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='_' act='b' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='b' act='_' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='_' act='b' (full exp rhythm='note_8' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='b' act='_' (full exp rhythm='note_4' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='b' act='_' (full exp rhythm='note_4' act rhythm='note_4')"
+    ],
+    "delete": [
+      "IMSLP589118 v1: rhythm='chord' pitch='.'",
+      "IMSLP589118 v1: rhythm='note_4' pitch='G5'",
+      "IMSLP589118 v1: rhythm='note_4' pitch='G4'",
+      "IMSLP589118 v1: rhythm='chord' pitch='.'",
+      "IMSLP589118 v1: rhythm='chord' pitch='.'",
+      "IMSLP589118 v1: rhythm='note_4' pitch='F4'"
+    ],
+    "substitute:rhythm": [
+      "IMSLP589118 v1: exp='note_4' act='note_8' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='note_8' act='note_4' (full exp rhythm='note_8' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='note_4' act='note_8' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='note_8' act='note_4' (full exp rhythm='note_8' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='note_4' act='note_8' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='note_8' act='note_4' (full exp rhythm='note_8' act rhythm='note_4')"
+    ],
+    "substitute:articulation": [
+      "IMSLP589118 v1: exp='tenuto' act='_' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='_' act='tenuto' (full exp rhythm='note_8' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='tenuto' act='_' (full exp rhythm='note_4' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='_' act='tenuto' (full exp rhythm='note_4' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='tenuto' act='_' (full exp rhythm='note_4' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='_' act='tenuto' (full exp rhythm='note_4' act rhythm='note_4')"
+    ],
+    "substitute:slur": [
+      "IMSLP589118 v1: exp='_' act='slurStop' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='slurStop' act='_' (full exp rhythm='note_8' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='_' act='slurStop' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='slurStop' act='_' (full exp rhythm='note_8' act rhythm='note_4')",
+      "IMSLP589118 v1: exp='_' act='slurStop' (full exp rhythm='note_4' act rhythm='note_8')",
+      "IMSLP589118 v1: exp='slurStop' act='_' (full exp rhythm='note_8' act rhythm='note_4')"
+    ]
+  }
+}
