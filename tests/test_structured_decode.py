@@ -2,6 +2,7 @@ import math
 import unittest
 
 from homr.transformer.structured_decode import (
+    ADVANCE_CLASSES,
     BEAM_LEVEL_CLASSES,
     DEFAULT_CONFIDENCE_THRESHOLD,
     SLUR_EVENT_CLASSES,
@@ -12,6 +13,7 @@ from homr.transformer.structured_decode import (
     softmax,
 )
 from homr.transformer.structured_notation import (
+    AdvanceClass,
     BeamLevelState,
     DynamicMark,
     SlurEvent,
@@ -181,6 +183,13 @@ class TestDecodeNote(unittest.TestCase):
         prediction = decode_note(logits)
 
         self.assertEqual(prediction.notation.dynamic, DynamicMark.NONE)
+
+    def test_advance_is_carried_to_the_renderer_policy(self) -> None:
+        prediction = decode_note(
+            {"advance.delta": peaked(ADVANCE_CLASSES, AdvanceClass.QUARTER)}
+        )
+
+        self.assertEqual(prediction.notation.advance, AdvanceClass.QUARTER)
 
     def test_a_missing_head_falls_back_rather_than_raising(self) -> None:
         # A checkpoint trained before a head existed must keep decoding.

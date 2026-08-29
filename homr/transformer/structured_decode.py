@@ -26,6 +26,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from homr.transformer.structured_notation import (
+    ADVANCE_CLASSES,
     BEAM_LEVEL_CLASSES,
     DYNAMIC_CLASSES,
     SLUR_EVENT_CLASSES,
@@ -33,6 +34,7 @@ from homr.transformer.structured_notation import (
     STEM_CLASSES,
     TIE_CLASSES,
     BeamLevelState,
+    AdvanceClass,
     DynamicMark,
     NoteNotation,
     SlurEvent,
@@ -45,6 +47,7 @@ BEAM_HEAD = "beam.level.{level}"
 STEM_HEAD = "stem.direction"
 TIE_HEAD = "tie.state"
 DYNAMIC_HEAD = "dynamic.mark"
+ADVANCE_HEAD = "advance.delta"
 SLUR_EVENT_HEAD = "slur.slot.{slot}.event"
 SLUR_SIDE_HEAD = "slur.slot.{slot}.side"
 
@@ -53,6 +56,7 @@ HEAD_CLASSES: dict[str, tuple] = {
     STEM_HEAD: STEM_CLASSES,
     TIE_HEAD: TIE_CLASSES,
     DYNAMIC_HEAD: DYNAMIC_CLASSES,
+    ADVANCE_HEAD: ADVANCE_CLASSES,
 }
 
 #: Heads whose alternatives may be shown to a user, decided 2026-08-25.
@@ -225,7 +229,19 @@ def decode_note(
     )
 
     notation = NoteNotation(
-        beam_levels=beam_levels, stem=stem, slurs=slurs, tie=tie, dynamic=dynamic
+        beam_levels=beam_levels,
+        stem=stem,
+        slurs=slurs,
+        tie=tie,
+        dynamic=dynamic,
+        # Unlike dynamics, advance has passed its held-out gate.  The renderer still
+        # applies a stricter per-class policy: a decoded value is merely the head's
+        # opinion, not an instruction to use an unsupported rare gap class.
+        advance=(
+            AdvanceClass(by_head[ADVANCE_HEAD].value)
+            if ADVANCE_HEAD in by_head
+            else AdvanceClass.NOT_APPLICABLE
+        ),
     )
     # Only offered heads can carry alternatives, so the full list is safe to hand on;
     # callers filter with uncertain_choices() rather than re-deriving the policy.

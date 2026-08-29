@@ -18,6 +18,24 @@ from homr.transformer.vocabulary import (
     nonote,
     sort_token_chords,
 )
+from homr.transformer.structured_notation import AdvanceClass
+
+
+# The held-out promotion run established the following common gaps as reliable.  The
+# remaining exact spellings are deliberately *not* rendered yet: `1`, `64` and `32.`
+# each had fewer than 100 held-out examples, and the other long-tail spellings have not
+# been separately promoted.  Falling back to the historical min-duration rule for them
+# is safe and keeps the capability manifest's "supported head" distinct from a claim
+# that every class is production-ready.  See RUNLOG IV.8.
+_RENDERABLE_ADVANCE_DURATIONS: dict[AdvanceClass, Fraction] = {
+    AdvanceClass.HALF: Fraction(1, 2),
+    AdvanceClass.DOTTED_QUARTER: Fraction(3, 8),
+    AdvanceClass.QUARTER: Fraction(1, 4),
+    AdvanceClass.DOTTED_EIGHTH: Fraction(3, 16),
+    AdvanceClass.EIGHTH: Fraction(1, 8),
+    AdvanceClass.SIXTEENTH: Fraction(1, 16),
+    AdvanceClass.THIRTY_SECOND: Fraction(1, 32),
+}
 
 
 class ConversionState:
@@ -97,9 +115,18 @@ class ConversionState:
 
 
 class SymbolChord:
-    def __init__(self, symbols: list[EncodedSymbol], tuplet_mark: str = "") -> None:
+    def __init__(
+        self,
+        symbols: list[EncodedSymbol],
+        tuplet_mark: str = "",
+        advance_symbol: EncodedSymbol | None = None,
+    ) -> None:
         self.symbols = symbols
         self.tuplet_mark = tuplet_mark
+        # Chord members are sorted before rendering for the historical stable XML
+        # order, but advance was trained on the last member in *decode* order.  Keep
+        # that carrier separately so sorting cannot silently move the head target.
+        self.advance_symbol = advance_symbol if advance_symbol is not None else (symbols[-1] if symbols else None)
 
     def __str__(self) -> str:
         return str.join("&", [str(s) for s in self.symbols])
@@ -120,6 +147,28 @@ class SymbolChord:
         if len(notes_rests) == 0:
             return Fraction(0)
         return min(notes_rests)
+
+    def get_render_duration(self) -> Fraction:
+        """The time this simultaneity consumes in the rendered cursor.
+
+        Older labels and checkpoints have no advance sidecar, and unusual/rare head
+        predictions are intentionally not trusted, so they retain the original minimum
+        member-duration rule.  The one exception that can safely consume no time is a
+        grace-note simultaneity: `zero` is meaningful there, while applying it to an
+        ordinary sounded group would collapse real MusicXML notes onto one onset.
+        """
+        fallback = self.get_duration()
+        if not self.symbols:
+            return fallback
+        notation = getattr(self.advance_symbol, "notation", None)
+        advance = getattr(notation, "advance", AdvanceClass.NOT_APPLICABLE)
+        if advance == AdvanceClass.ZERO:
+            return (
+                Fraction(0)
+                if any("G" in symbol.rhythm for symbol in self.symbols)
+                else fallback
+            )
+        return _RENDERABLE_ADVANCE_DURATIONS.get(advance, fallback)
 
     def into_positions(self) -> list["SymbolChord"]:
         upper = []
@@ -255,7 +304,9 @@ def build_measures(
                 staff_positions = group.into_positions()
                 for pos_no, staff_pos in enumerate(staff_positions):
                     chord_duration = (
-                        group.get_duration() if pos_no == len(staff_positions) - 1 else Fraction(0)
+                        group.get_render_duration()
+                        if pos_no == len(staff_positions) - 1
+                        else Fraction(0)
                     )
                     for note_xml in build_note_chord(staff_pos, state, chord_duration):
                         current_measure.append(note_xml)
@@ -913,6 +964,13 @@ def build_backup(duration: Fraction, state: ConversionState) -> ET.Element:
     return backup
 
 
+def build_forward(duration: Fraction, state: ConversionState) -> ET.Element:
+    assert duration > Fraction(0), "Forward duration must be positive"
+    forward = ET.Element("forward")
+    ET.SubElement(forward, "duration").text = str(int(duration * state.division))
+    return forward
+
+
 def build_note_chord(
     note_chord: SymbolChord, state: ConversionState, chord_duration: Fraction
 ) -> list[ET.Element]:
@@ -958,8 +1016,20 @@ def build_note_chord(
         if i != len(by_duration) - 1 and group_duration > Fraction(0):
             result.append(build_backup(group_duration, state))
 
-    if chord_duration < max(by_duration):
-        result.append(build_backup(max(by_duration) - chord_duration, state))
+    # The cursor must land on the next onset, which need not be this chord's printed
+    # length.  Under the historical min-duration rule `chord_duration` was a member
+    # duration, so only the shorter-than-printed direction was reachable.  The advance
+    # head is independent of the printed rhythm, so a gap *longer* than the longest
+    # member is now reachable too - typically a dropped rest.  Truncating it silently
+    # would leave the measure short and shift every later onset in it, so emit the
+    # `forward` that the measure reader above already consumes.  A simultaneity of
+    # nothing but grace notes is excluded: it legitimately has no printed time, and
+    # must not invent any.
+    printed_duration = max(by_duration)
+    if chord_duration < printed_duration:
+        result.append(build_backup(printed_duration - chord_duration, state))
+    elif chord_duration > printed_duration > Fraction(0):
+        result.append(build_forward(chord_duration - printed_duration, state))
 
     return result
 
@@ -1020,7 +1090,7 @@ def find_division_and_time_signature_nominator(voice: list[SymbolChord]) -> tupl
             measure_duration.append(duration_in_measure)
             duration_in_measure = Fraction(0)
         else:
-            duration = chord.get_duration()
+            duration = chord.get_render_duration()
             if duration > Fraction(0):
                 durations.append(duration)
                 duration_in_measure += duration
@@ -1046,7 +1116,7 @@ def modal_measure_duration(voice: list[SymbolChord]) -> Fraction | None:
                 lengths.append(current)
             current = Fraction(0)
         else:
-            duration = chord.get_duration()
+            duration = chord.get_render_duration()
             if duration > 0:
                 current += duration
     if current > 0:
@@ -1095,7 +1165,23 @@ def stated_numerator_contradicts_bars(
 
 
 def group_into_chords(voice: list[EncodedSymbol]) -> list[SymbolChord]:
-    return [SymbolChord(s) for s in sort_token_chords(voice)]
+    # `sort_token_chords` preserves a stable visual/XML ordering but deliberately
+    # loses which token was last in autoregressive decode order.  The advance target is
+    # stamped on exactly that last token by staff_merging, so retain it as side metadata.
+    # (The raw grouping mirrors sort_token_chords' chord-sentinel grammar.)
+    raw_groups: list[list[EncodedSymbol]] = []
+    is_in_chord = False
+    for symbol in voice:
+        if symbol.rhythm == "chord":
+            is_in_chord = True
+        elif is_in_chord and raw_groups:
+            raw_groups[-1].append(symbol)
+            is_in_chord = False
+        else:
+            raw_groups.append([symbol])
+    return [
+        SymbolChord(sorted(group), advance_symbol=group[-1]) for group in raw_groups
+    ]
 
 
 class TupletParser:

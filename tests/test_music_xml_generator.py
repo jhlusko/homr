@@ -12,6 +12,7 @@ from homr.music_xml_generator import (
     generate_xml,
     rebalance_measure_voices,
 )
+from homr.transformer.structured_notation import AdvanceClass, NoteNotation, StemDirection
 from homr.transformer.vocabulary import EncodedSymbol, nonote
 from training.transformer.training_vocabulary import (
     read_token_lines,
@@ -128,6 +129,134 @@ barline . . . . ."""
                 self.assertLessEqual(v, 4)
             else:
                 self.assertGreaterEqual(v, 5)
+
+    def test_a_promoted_advance_moves_the_next_onset_not_the_shortest_note(self) -> None:
+        """The lower half-note would otherwise make the next onset land at beat 3.
+
+        The source's true next onset is beat 2 (a quarter after the joint onset), which
+        is information no min-duration rule can recover from these two sustained notes.
+        """
+        upper = EncodedSymbol("note_1", "C4", position="upper")
+        lower = EncodedSymbol(
+            "note_2",
+            "C3",
+            position="lower",
+            notation=NoteNotation(
+                beam_levels=(),
+                stem=StemDirection.NOT_APPLICABLE,
+                slurs=(),
+                advance=AdvanceClass.QUARTER,
+            ),
+        )
+        next_note = EncodedSymbol("note_4", "D4", position="upper")
+        voice = [upper, EncodedSymbol("chord"), lower, next_note, EncodedSymbol("barline")]
+        xml = generate_xml(XmlGeneratorArguments(), [voice], "")
+
+        cursor = 0
+        starts: dict[str, int] = {}
+        durations: dict[str, int] = {}
+        for element in _first_measure(xml):
+            if element.tag == "backup":
+                cursor -= int(element.findtext("duration", "0"))
+            elif element.tag == "note" and element.find("chord") is None:
+                pitch = element.find("pitch")
+                if pitch is not None:
+                    name = pitch.findtext("step", "") + pitch.findtext("octave", "")
+                    starts[name] = cursor
+                    durations[name] = _duration(element)
+                cursor += _duration(element)
+
+        # `note_4` is a quarter, so this says D begins one quarter after C rather
+        # than after the lower hand's half-note (the old min-duration fallback).
+        self.assertEqual(starts["D4"], durations["D4"])
+
+    def test_an_unpromoted_rare_advance_keeps_the_min_duration_fallback(self) -> None:
+        chord = SymbolChord(
+            [
+                EncodedSymbol("note_1", "C4", position="upper"),
+                EncodedSymbol(
+                    "note_2",
+                    "C3",
+                    position="lower",
+                    notation=NoteNotation(
+                        beam_levels=(),
+                        stem=StemDirection.NOT_APPLICABLE,
+                        slurs=(),
+                        advance=AdvanceClass.WHOLE,
+                    ),
+                ),
+            ]
+        )
+
+        self.assertEqual(chord.get_render_duration(), Fraction(1, 2))
+
+    def test_an_advance_longer_than_the_printed_note_emits_a_forward(self) -> None:
+        """A gap wider than the chord's own length must still move the cursor.
+
+        Under the old min-duration rule `chord_duration` was always one of the members'
+        own durations, so this direction was unreachable and truncating it cost nothing.
+        The advance head does not depend on the printed rhythm, so a longer gap (usually
+        a dropped rest) is now reachable, and swallowing it would leave the measure short
+        and shift every later onset in it.
+        """
+        eighth = EncodedSymbol(
+            "note_8",
+            "C4",
+            position="upper",
+            notation=NoteNotation(
+                beam_levels=(),
+                stem=StemDirection.NOT_APPLICABLE,
+                slurs=(),
+                advance=AdvanceClass.HALF,
+            ),
+        )
+        follower = EncodedSymbol("note_8", "D4", position="upper")
+        voice = [eighth, follower, EncodedSymbol("barline")]
+        measure = _first_measure(generate_xml(XmlGeneratorArguments(), [voice], ""))
+
+        forwards = [child for child in measure if child.tag == "forward"]
+        self.assertEqual(len(forwards), 1)
+
+        cursor = 0
+        starts: dict[str, int] = {}
+        for element in measure:
+            if element.tag == "forward":
+                cursor += int(element.findtext("duration", "0"))
+            elif element.tag == "backup":
+                cursor -= int(element.findtext("duration", "0"))
+            elif element.tag == "note":
+                pitch = element.find("pitch")
+                if pitch is not None:
+                    starts.setdefault(
+                        pitch.findtext("step", "") + pitch.findtext("octave", ""), cursor
+                    )
+                cursor += _duration(element)
+
+        # A half is four eighths, so D lands four of its own durations after C rather
+        # than immediately after the printed eighth.
+        self.assertEqual(starts["D4"], 4 * _duration(_notes(measure)[1]))
+
+    def test_a_grace_only_simultaneity_never_invents_time(self) -> None:
+        chord = SymbolChord(
+            [
+                EncodedSymbol(
+                    "note_G8",
+                    "C4",
+                    position="upper",
+                    notation=NoteNotation(
+                        beam_levels=(),
+                        stem=StemDirection.NOT_APPLICABLE,
+                        slurs=(),
+                        advance=AdvanceClass.QUARTER,
+                    ),
+                )
+            ]
+        )
+        state = ConversionState(8, Fraction(1))
+
+        emitted = build_note_chord(chord, state, chord.get_render_duration())
+
+        self.assertEqual([child.tag for child in emitted if child.tag == "forward"], [])
 
     def test_begin_chord_with_standalone_rests(self) -> None:
         """
