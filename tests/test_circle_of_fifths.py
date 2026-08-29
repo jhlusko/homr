@@ -1,4 +1,6 @@
+import os
 import unittest
+from unittest import mock
 
 from homr.circle_of_fifths import (
     maintain_accidentals_during_measure,
@@ -47,14 +49,15 @@ class TestCircleOfFifths(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_strip_naturals(self) -> None:
+    def test_strip_naturals_when_explicitly_disabled(self) -> None:
         symbols = [
             EncodedSymbol("note_4", "F4", "#"),
             EncodedSymbol("note_4", "G4", "_"),
             EncodedSymbol("note_4", "A4", "_"),
             EncodedSymbol("note_4", "F5", "N"),
         ]
-        result = strip_naturals(symbols)
+        with mock.patch.dict(os.environ, {"HOMR_KEEP_NATURALS": "0"}):
+            result = strip_naturals(symbols)
         expected = [
             EncodedSymbol("note_4", "F4", "#"),
             EncodedSymbol("note_4", "G4", "_"),
@@ -62,3 +65,21 @@ class TestCircleOfFifths(unittest.TestCase):
             EncodedSymbol("note_4", "F5", "_"),
         ]
         self.assertEqual(result, expected)
+
+    def test_naturals_are_kept_by_default(self) -> None:
+        """Flipped default: a matched-control comparison isolated the true PDMX cost at
+        -1.2 to -1.6pp (far smaller than the ~5pp a naive comparison suggested, which was
+        mostly the known cost of fine-tuning on this corpus at all), against OSSQ N
+        recall going 0% -> 62% and OSSQ lift accuracy improving. See strip_naturals'
+        docstring."""
+        symbols = [EncodedSymbol("note_4", "F5", "N")]
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("HOMR_KEEP_NATURALS", None)
+            result = strip_naturals(symbols)
+        self.assertEqual(result[0].lift, "N")
+
+    def test_keep_naturals_explicit_1_also_keeps(self) -> None:
+        symbols = [EncodedSymbol("note_4", "F5", "N")]
+        with mock.patch.dict(os.environ, {"HOMR_KEEP_NATURALS": "1"}):
+            result = strip_naturals(symbols)
+        self.assertEqual(result[0].lift, "N")

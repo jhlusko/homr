@@ -179,26 +179,36 @@ def maintain_accidentals_during_measure(
 def strip_naturals(
     symbols: list[EncodedSymbol],
 ) -> list[EncodedSymbol]:
-    """Discard the natural sign, unless HOMR_KEEP_NATURALS says otherwise.
+    """Discard the natural sign, if HOMR_KEEP_NATURALS is explicitly turned off.
 
     A natural is ink on the page and the vocabulary has a token for it - `build_lift`
-    lists `N` - but four of the five corpus converters call this, so no training corpus
-    contains one and **no checkpoint has ever predicted one**: 0 against OSSQ's 879
-    references, the base model included. `convert_ossq.py` is the only converter that
-    does not strip, which is why OSSQ is the only corpus that records naturals and why
-    every checkpoint carries a uniform ~0.54% ceiling on its token accuracy.
+    lists `N`. Historically four of the five corpus converters called this
+    unconditionally, so no training corpus contained one and no checkpoint ever
+    predicted one: 0 against OSSQ's 879 references, the base model included -
+    `convert_ossq.py` was the only converter that did not strip, which is why OSSQ was
+    the only corpus that recorded naturals and why every checkpoint carried a uniform
+    ~0.54% ceiling on its token accuracy.
+
+    Kept by default now, on measured evidence rather than the absence of one: a matched-
+    control fine-tune (identical corpus, recipe and epoch count, differing only in
+    whether naturals were stripped) isolated the true cost at -1.2 to -1.6pp PDMX exact-
+    match - far smaller than the ~5pp a naive before/after comparison suggested, which
+    was mostly just the known cost of fine-tuning on this corpus at all, not specifically
+    of naturals. Against that: OSSQ N recall went 0% -> 62% on both seeds, and OSSQ lift-
+    branch accuracy IMPROVED (91.55% -> 93.06/93.15%) despite the model taking on a new
+    symbol class with zero support in that benchmark before. Set `HOMR_KEEP_NATURALS=0`
+    to go back to the old stripped behaviour.
 
     Stripping does not change the music - the sounding pitch is carried elsewhere, and
     rendering 400 natural-bearing pairs with and without produced identical pitches. What
-    it discards is the printed mark, which is precisely what an OMR model reads. No
-    rationale for it appears in any docstring or commit.
+    it discards is the printed mark, which is precisely what an OMR model reads.
 
     The switch lives here rather than at the call sites because consistency is the whole
     point: labelling a natural `N` in one corpus and `empty` in another gives the model
     contradictory supervision on identical pixels, which is likely worse than either
     convention alone.
     """
-    if os.environ.get("HOMR_KEEP_NATURALS", "0") != "0":
+    if os.environ.get("HOMR_KEEP_NATURALS", "1") != "0":
         return list(symbols)
     results = []
     for symbol in symbols:
