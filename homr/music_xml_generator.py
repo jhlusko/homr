@@ -193,16 +193,20 @@ def _measure_has_real_content(measure: ET.Element) -> bool:
     """Whether this measure is worth emitting, as opposed to a trailing artefact.
 
     A token stream ending on a bare `repeatStart` (a real, if unusual, crop-boundary
-    shape - a repeat mark right where the source was cut) closes the PREVIOUS measure
-    and opens a fresh one to hold the forward-repeat barline, exactly like every other
-    mid-piece repeat. But nothing follows to fill that new measure, so the post-loop
-    "is there anything left to close" check used to count the bare `<barline>` as real
-    content and emit a phantom measure containing only
+    shape - a repeat mark right where the source was cut) used to close the PREVIOUS
+    measure and open a fresh one to hold the forward-repeat barline, exactly like every
+    other mid-piece repeat. But nothing follows to fill that new measure, so the
+    post-loop "is there anything left to close" check used to count the bare
+    `<barline>` as real content and emit a phantom measure containing only
     `<barline location="right"><repeat direction="forward"/></barline>` - an empty bar
     with a forward repeat on its RIGHT edge, which is not a shape real engraving
     produces (a forward repeat belongs at the start of the section it opens). Confirmed
     on real PDMX crops via `training/omr_datasets/roundtrip_fidelity_corpora.py` (1.6%
-    of mismatched crops, all attributable to this).
+    of mismatched crops, all attributable to this). `build_measures` no longer opens
+    that doomed trailing measure at all for a repeatStart with nothing after it - it
+    attaches the repeat mark directly to the measure already closing (see the
+    `repeatStart` branch there), so this function only ever sees a barline-only
+    measure when there is genuinely nothing left to preserve.
 
     A measure holding only barline elements - no note, no attributes, no direction, no
     print - has nothing a reader needs from it, so it is dropped rather than emitted.
@@ -304,12 +308,26 @@ def build_measures(
             measure_number += 1
             current_measure = ET.Element("measure", number=str(measure_number))
         elif rhythm == "repeatStart":
-            close_current_measure()
-            measure_number += 1
-            current_measure = ET.Element("measure", number=str(measure_number))
+            if group_no == len(groups) - 1:
+                # Nothing follows: the crop was cut right where a forward repeat
+                # begins. Opening a fresh measure to hold it, as the mid-piece case
+                # below does, would leave that measure with nothing but the repeat
+                # barline - dropped by `_measure_has_real_content` below, silently
+                # losing the mark rather than growing the phantom measure this used
+                # to be. Attach it to the measure already closing instead: the parser
+                # (`_process_barline`) reads `<repeat direction="forward">` from any
+                # barline in a measure regardless of location, so this still
+                # round-trips to `repeatStart`. Confirmed on real Lieder ground truth
+                # via roundtrip_fidelity.py (IMSLP16883, both crop voices).
+                barline = build_or_get_barline(current_measure, "right")
+                build_repeat(symbol, barline)
+            else:
+                close_current_measure()
+                measure_number += 1
+                current_measure = ET.Element("measure", number=str(measure_number))
 
-            barline = build_or_get_barline(current_measure, "right")
-            build_repeat(symbol, barline)
+                barline = build_or_get_barline(current_measure, "right")
+                build_repeat(symbol, barline)
         elif rhythm == "repeatEnd":
             barline = build_or_get_barline(current_measure, "right")
             build_repeat(symbol, barline)

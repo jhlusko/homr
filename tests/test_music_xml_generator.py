@@ -339,6 +339,29 @@ repeatStart . . . . ."""
         self.assertEqual(len(measures), 1)
         self.assertEqual(len(_notes(measures[0])), 4)
 
+    def test_trailing_repeat_start_is_not_lost(self) -> None:
+        # No extra measure grows (above), but the repeat mark itself must not vanish
+        # either - it attaches to the one real measure instead. Found via
+        # roundtrip_fidelity.py on real Lieder ground truth (IMSLP16883): dropping the
+        # phantom measure was silently dropping this token too.
+        tokens = """clef_G2 . . . . upper
+keySignature_0 . . . . .
+timeSignature/4 . . . . .
+note_4 C4 _ _ _ upper
+note_4 D4 _ _ _ upper
+note_4 E4 _ _ _ upper
+note_4 F4 _ _ _ upper
+repeatStart . . . . ."""
+        tokens_parsed = read_token_lines(tokens.splitlines())
+
+        xml = generate_xml(XmlGeneratorArguments(), [tokens_parsed], "")
+
+        measures = xml.find("part").findall("measure")
+        self.assertEqual(len(measures), 1)
+        repeats = measures[0].findall(".//repeat")
+        self.assertEqual(len(repeats), 1)
+        self.assertEqual(repeats[0].get("direction"), "forward")
+
     def test_an_ordinary_final_barline_still_grows_no_extra_measure(self) -> None:
         # The common case this change must not touch: a normal ending already left the
         # post-loop current_measure genuinely empty (0 children), not barline-only.
