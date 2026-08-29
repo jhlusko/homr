@@ -12272,3 +12272,58 @@ better, how much is a token the older one cannot emit, and how much is a referen
 wrong. Those three call for retraining, shipping and fixing the corpus respectively, so
 pooling them answers nothing. It says plainly that its totals cover the reviewed staves
 only - the set is the largest disagreements, not a sample, and does not extrapolate.
+
+## IV.18 Human review of the v4-vs-426 diff: half the measured movement is not a reading difference
+
+A first pass over the `checkpointV4` set, **61 of 100 judged**. The set is the largest
+disagreements by absolute delta, not a sample, so nothing below extrapolates to the
+benchmark - but it does say what the largest disagreements are made of, which is what it
+was built for.
+
+| verdict | n | mean delta | delta>0 | delta<0 |
+| --- | --- | --- | --- | --- |
+| same | 22 | +0.408 | 19 | 3 |
+| v4-better | 18 | +0.306 | 14 | 4 |
+| ref-wrong | 13 | +0.193 | 8 | 5 |
+| 426-better | 4 | +0.105 | 2 | 2 |
+| both-wrong | 4 | +0.328 | 3 | 1 |
+
+**Forty-eight per cent of the judged movement sits on staves a reviewer called "no real
+difference"** - and they carry the *largest* mean delta of any verdict, +0.408. A further
+13% is a reference that is simply wrong. Only 39% is one checkpoint reading the page
+better than the other.
+
+Among the differences that are real, v4 wins 18 to 4. So the *direction* established in
+IV.17 survives review; what does not survive is reading the magnitude as recognition
+quality. A metric that moves 0.4 on a stave a musician calls identical is measuring
+something other than musical correctness on that stave.
+
+**The `vocab-only` verdict went unused (0 of 61)**, which is worth stating rather than
+quietly assuming: the category most likely absorbing the numerator and naturals cases is
+`same`, since a reviewer judging musical content correctly sees no difference where the
+only change is a token 426 cannot emit. That is the same conclusion IV.17 reached from the
+`nat` controls, arrived at independently from the page.
+
+Two smaller things. Two of the four `426-better` staves have a *positive* delta - the
+metric scored v4 up where the reviewer reads 426 as better. And `both-wrong` at n=4 is
+small but real: neither checkpoint gets those.
+
+### The missing starting repeats are a whole-score gap, not a pipeline one
+
+Three notes report a reference missing a starting repeat, with the question of whether the
+format can even encode it. It can - `repeatStart` is in the rhythm vocabulary - and the
+repair for exactly this already exists: `convert_ossq.py` restores barlines from the whole
+score because the systemwise segments drop `<barline>` entirely (8,617 barlines and 3,740
+repeats present in the whole scores, zero in the segments).
+
+That repair works, and `phase7num` is the first OSSQ corpus to carry any repeats at all:
+**124 of 3,912 validation references**, against **0** in both `phase7fix` and `phase7clef`.
+Every repeat in the whole score reaches a slice - checked on three scores, 56 backward and
+36 forward for `sq8806134`, all present.
+
+So for the reviewed staves the pipeline is not losing anything. `sq8806134` p10 s2,
+`sq8806881` p7 s3 and `sq8907120` p12 s1 have no barline in their slice because the
+whole-score MusicXML has no repeat there, and the nearest forward repeat is 1, 2 and 5
+systems away respectively - too far to be an off-by-one in the mapping. The scanned page
+and the whole-score transcription disagree, which is an edition or transcription gap in
+the corpus rather than a defect in the conversion. Not fixable by touching the converter.

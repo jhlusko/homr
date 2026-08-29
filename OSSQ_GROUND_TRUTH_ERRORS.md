@@ -276,3 +276,31 @@ per-staff analysis. Recovering the key from the whole score, the way the repeat 
 handled, would fix them at the source; nothing here has done that. The remaining 20 of
 the 25 collapsed staves are *not* explained by this - the two checkpoints disagree with
 each other there, which is ordinary model error and not a corpus claim.
+
+
+---
+
+# Starting repeats the scan shows and the whole score does not (2026-08-29)
+
+Found by human review of the v4-vs-426 checkpoint diff, in which three separate notes
+reported a reference missing a starting repeat. As with the key-signature entry above,
+this compares against the corpus's own `scores/<composer>/<piece>/sq<id>.musicxml` and its
+systemwise segments - never against anything HOMR wrote.
+
+**The conversion is not what is losing them.** `convert_ossq.py` already restores barlines
+from the whole score, because the systemwise segments drop `<barline>` entirely (8,617
+barlines and 3,740 repeats in the whole scores, zero in the segments). That repair works
+and is complete: every repeat in the whole score reaches a segment slice, checked on three
+scores. `phase7num` is the first OSSQ build to carry repeats at all - 124 of 3,912
+validation references - where `phase7fix` and `phase7clef` carry none.
+
+**The whole score is what lacks them.** For `sq8806134` p10 s2, `sq8806881` p7 s3 and
+`sq8907120` p12 s1, the slice is empty because the whole-score MusicXML has no repeat in
+those measures, and the nearest forward repeat is 1, 2 and 5 systems away - far enough to
+rule out an off-by-one in the measure mapping. A reviewer reading the crop sees a repeat
+the transcription does not record.
+
+So this is an edition or transcription gap between the scanned page and the whole-score
+MusicXML, not something a converter change can reach. Staves in this state should not be
+counted as recognition errors: a model that reads the printed repeat is right and is
+scored wrong for it, exactly as with the missing key signatures.
