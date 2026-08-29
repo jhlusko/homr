@@ -226,6 +226,17 @@ def convert_grandstaff(only_recreate_token_files: bool = False) -> None:
                 else:
                     skipped.add(file)
     eprint("Done indexing")
+    if only_recreate_token_files:
+        # The token-only pass writes `index_tmp.txt` so a partial run cannot clobber a
+        # good index. The cost is that the two then disagree: the tokens on disk are the
+        # new ones either way, but `index.txt` still lists whatever passed the *old*
+        # tuplet/slur filters. On 2026-08-29 that gap was 3,669 staves, and replaying
+        # from the stale index would have drawn staves this pipeline now rejects.
+        eprint(
+            f"NOTE {index_file} supersedes {grandstaff_train_index}: same files, current "
+            "membership. Promote it (after checking the row count) before training - "
+            "nothing downstream reads index_tmp.txt."
+        )
 
 
 if __name__ == "__main__":

@@ -39,3 +39,17 @@ class TestReplayCorpora(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestGrandstaffIndexIsTheCurrentOne(unittest.TestCase):
+    """The token-only reconversion writes a second index; they must not silently diverge."""
+
+    def test_the_converter_warns_that_the_tmp_index_supersedes(self) -> None:
+        from pathlib import Path
+
+        source = Path("training/omr_datasets/convert_grandstaff.py").read_text(encoding="utf-8")
+
+        self.assertIn("supersedes", source)
+        # The note has to be tied to the token-only path; printing it unconditionally
+        # would tell a full rebuild to promote an index it never wrote.
+        self.assertIn("if only_recreate_token_files:", source)

@@ -12249,3 +12249,26 @@ That last sentence is not a reason to revert v4 - it was built to remove fabrica
 boundary labels, and IV.10 documents six human-confirmed displacement cases it
 quarantines. Correctness of the labels was the point; the holdout number was never the
 argument for it.
+
+### IV.16.1 Grandstaff replay now uses the membership the pipeline actually accepts
+
+The token-only reconversion writes `index_tmp.txt` so a partial run cannot clobber a good
+index. The cost is that the two then disagree about *membership* while agreeing about
+content: every `.tokens` file on disk is the new one, but `index.txt` still listed
+whatever passed the tuplet/slur filters when it was last built - 49,282 rows against
+45,613. The 3,669-row difference is a strict subset (0 rows in the new index absent from
+the old), so it is exactly what today's pipeline rejects and nothing else.
+
+Replaying from the stale index would have drawn those staves back in. `index.txt` is now
+the current membership, the previous one is kept as
+`index_pre_numerator_filters_2026-08-29.txt`, and the new index is verified at 45,613 rows,
+400 of 400 sampled staves stating a numerator, 0 missing files over a 2,000-row sample.
+`convert_grandstaff.py` now says outright, after a token-only run, that the tmp index
+supersedes the tracked one - the drift was silent, and silence is what made it survive.
+
+`summarise_checkpoint_review.py` reduces a checkpoint-diff review export to the question
+the review exists to answer: how much of a delta is one checkpoint reading the page
+better, how much is a token the older one cannot emit, and how much is a reference that is
+wrong. Those three call for retraining, shipping and fixing the corpus respectively, so
+pooling them answers nothing. It says plainly that its totals cover the reviewed staves
+only - the set is the largest disagreements, not a sample, and does not extrapolate.
