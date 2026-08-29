@@ -12175,3 +12175,43 @@ hope one turns up. Left for whoever picks this up; the blocker that made it impo
 is gone, the search strategy is the remaining work.
 
 **The rare numerators are a supply gap** - IV.15.1.
+
+## IV.17 Separating the v4 corpus from the vocabulary it arrived with
+
+Every v4 number in IV.15 is measured against checkpoint 426, which predates *both* the
+metre numerator and the naturals. The numerator is neutralised there; the naturals are
+not. So "+8.15pp on the Lieder holdout" could be the corpus, or could be a capability the
+baseline simply lacks, and nothing in that comparison tells them apart.
+
+`nat42`/`nat7` are the right control and already existed: naturals-era checkpoints trained
+on the *older* Lieder corpus. `v4 - nat42` therefore holds vocabulary roughly fixed and
+varies the corpus, which is the comparison IV.12 actually set out to make.
+
+| benchmark | vs 426 (s42 / s7) | vs nat42 (s42 / s7) |
+| --- | --- | --- |
+| OSSQ | +1.71 / +1.70 | **+2.55 / +2.53** (CI +0.07 to +6.75 / +0.04 to +6.79) |
+| PDMX | +3.48 / +3.33 | **+1.54 / +1.39** (CI +0.81 to +2.27 / +0.63 to +2.12) |
+| Lieder v4 | +8.15 / +8.21 | **+0.51 / +0.56, NOT significant** (CI -0.73 to +1.89 / -0.81 to +2.15) |
+
+**The Lieder result does not survive the control.** Against a checkpoint that already has
+the naturals, the v4 corpus is worth half a point on the Lieder holdout and the interval
+spans zero at both seeds - 53 staves better against 29 and 25, with 218 and 222 tied. The
++8.15pp was very largely a vocabulary gap, not the corpus. Anyone reading IV.15's table as
+evidence that the boundary-safe rebuild transformed Lieder recognition would be reading it
+wrong, and this is the number that says so.
+
+**The independent benchmarks survive it, and OSSQ improves.** PDMX drops from +3.48 to
++1.54 - so over half of that was vocabulary too - but stays significant at both seeds.
+OSSQ *grows*, from +1.71 to +2.55, because `nat42` is itself slightly worse than 426 there
+(90.66 against 91.49): the naturals fine-tune cost a little OSSQ accuracy, and the v4
+corpus recovers it and then some.
+
+So the defensible claim is narrower than IV.15's table suggested, and it is the claim on
+the two corpora the project does not build: **the v4 boundary-safe corpus is worth roughly
++2.5pp on OSSQ and +1.4-1.5pp on PDMX against a vocabulary-matched baseline, replicated at
+two seeds. On its own domain it is not distinguishable from the corpus it replaced.**
+
+That last sentence is not a reason to revert v4 - it was built to remove fabricated
+boundary labels, and IV.10 documents six human-confirmed displacement cases it
+quarantines. Correctness of the labels was the point; the holdout number was never the
+argument for it.

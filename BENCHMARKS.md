@@ -442,3 +442,20 @@ carry a corpus claim on its own.
 **These OSSQ numbers use the regenerated `phase7num/` references.** The older
 `phase7fix/` set contains no `timeSignatureBeats_*` at all and understates any checkpoint
 that states a metre numerator; it is not comparable with the rows above.
+
+
+## Vocabulary-controlled attribution (2026-08-29)
+
+The rows above compare against checkpoint 426, which predates the numerator *and* the
+naturals; only the numerator is neutralised. Against `nat42` - a naturals-era checkpoint
+on the older Lieder corpus, so vocabulary is roughly held fixed and the corpus varies:
+
+| benchmark | vs 426 (s42/s7) | vs nat42 (s42/s7) |
+| --- | --- | --- |
+| OSSQ | +1.71 / +1.70 | +2.55 / +2.53 (significant) |
+| PDMX | +3.48 / +3.33 | +1.54 / +1.39 (significant) |
+| Lieder v4 | +8.15 / +8.21 | +0.51 / +0.56 (**not significant**) |
+
+Read the second column, not the first, for any claim about the corpus. The Lieder gain is
+a vocabulary gap once controlled; the OSSQ and PDMX gains are real and replicate. See
+RUNLOG IV.17.
