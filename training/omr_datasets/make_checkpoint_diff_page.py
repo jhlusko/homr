@@ -10,7 +10,10 @@ arbiter. Reading engraved music is what a musician can actually adjudicate; a wa
 token strings is not, however precisely it encodes the same disagreement.
 
 Staves are ordered by net change with the regressions first, because those are what a
-reviewer needs to look at.
+reviewer needs to look at before shipping. `--order absolute` ranks by the size of the
+change in either direction instead, which is the right ordering when the question is
+where two checkpoints genuinely differ rather than whether one is safe to ship: a set
+drawn only from regressions cannot show where the newer checkpoint is strongest.
 """
 
 # flake8: noqa: T201
@@ -126,7 +129,13 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True, help="review set directory")
     parser.add_argument(
         "--limit", type=int, default=100,
-        help="Items to emit, worst regressions first. 0 = every differing stave.",
+        help="Items to emit, in --order. 0 = every differing stave.",
+    )
+    parser.add_argument(
+        "--order", choices=["regressions", "absolute"], default="regressions",
+        help="regressions: worst net loss first, for a ship/no-ship read. absolute: "
+        "largest change either way first, so the set carries the strongest evidence "
+        "for each checkpoint instead of only against the new one.",
     )
     args = parser.parse_args()
 
@@ -167,7 +176,14 @@ def main() -> None:
             "regressions": regs,
         })
 
-    candidates.sort(key=lambda c: c["delta"])
+    if args.order == "absolute":
+        # Largest movement either way. Ranking by signed delta answers "should this
+        # ship"; ranking by magnitude answers "where do these two actually differ",
+        # and a set built only from regressions cannot show where the new checkpoint
+        # is strongest - which is half of what a comparison is for.
+        candidates.sort(key=lambda c: -abs(c["delta"]))
+    else:
+        candidates.sort(key=lambda c: c["delta"])
     if args.limit:
         candidates = candidates[: args.limit]
 
