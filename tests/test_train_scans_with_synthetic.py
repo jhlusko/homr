@@ -8,7 +8,8 @@ class TestMixture(unittest.TestCase):
         # Adding the synthetic track uncorrected would reintroduce the 2.4% missing-clef
         # bug that was just removed from the scanned side.
         self.assertIn("phase2clef", run.OSSQ_SYNTHETIC_INDEX)
-        self.assertIn("phase7clef", run.OSSQ_SCANNED_INDEX)
+        self.assertIn("phase7num", run.OSSQ_SCANNED_INDEX)
+        self.assertNotIn("phase7clef", run.OSSQ_SCANNED_INDEX)
 
     def test_the_two_tracks_are_different_corpora(self) -> None:
         self.assertNotEqual(run.OSSQ_SCANNED_INDEX, run.OSSQ_SYNTHETIC_INDEX)

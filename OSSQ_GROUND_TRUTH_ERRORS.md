@@ -237,3 +237,42 @@ errors this sample found none of).
   and how it would even establish ground truth to compare against, given the primary
   source is a scan, not another symbolic file - is an open design question, not just an
   extension of the existing script.
+
+---
+
+# Systemwise segments can omit the key signature (2026-08-29)
+
+**This finding does not repeat the mistake retracted above.** It compares against the
+corpus's own `scores/<composer>/<piece>/musicxml/scanned/systemwise/*.musicxml` - the
+files `convert_ossq.py` actually reads - never against any file HOMR wrote, and it was
+confirmed by opening the segment XML directly rather than by inference from tokens.
+
+Found while triaging staves where a new checkpoint scored far below the pinned base on
+OSSQ. Two checkpoints separated by a long stretch of commits agree on a key signature the
+reference does not state at all. That agreement is evidence about the reference: they
+share no training corpus revision, and a shared hallucination of the same accidental
+count on the same staff is a far worse explanation than a segment that never carried it.
+
+**The decisive case.** `sq8806881:0012:0001` is Haydn's String Quartet **in E-flat
+major** - three flats. Both checkpoints open the staff `clef_F4 keySignature_-3`; the
+segment's `<attributes>` block carries `<divisions>` and `<time>` and **no `<key>`
+element whatsoever**, so the converter has nothing to emit and the staff's reference opens
+straight into `timeSignature/4`. The models read the printed key signature off the page
+correctly and are scored wrong for it.
+
+**Scale.** Of the 792 staves in the OSSQ validation split, **7 open with no key signature
+in the reference, and on 6 of those both checkpoints agree one is present**:
+`keySignature_-3` x3, `keySignature_-1` x2, `keySignature_2` x1. Small, but it is a
+systematic loss rather than noise, and it is concentrated exactly where it hurts most: an
+omission in the opening attributes shifts every position in the staff.
+
+This is consistent with an information loss the converter already documents for a
+different element - `convert_ossq.py` notes 3,740 repeats present in the whole scores and
+zero in the segments. The systemwise segments are lossy relative to the whole-score
+MusicXML; the key signature is a second instance of the same shape, not a new surprise.
+
+**What to do with it.** These 7 staves should not be read as recognition errors in any
+per-staff analysis. Recovering the key from the whole score, the way the repeat gap was
+handled, would fix them at the source; nothing here has done that. The remaining 20 of
+the 25 collapsed staves are *not* explained by this - the two checkpoints disagree with
+each other there, which is ordinary model error and not a corpus claim.

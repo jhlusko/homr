@@ -28,12 +28,16 @@ alone specialises the model at the expense of everything else.
 from training.omr_datasets.convert_pdmx import pdmx_train_index
 from training.transformer.train import train_transformer
 
-#: The *corrected* scanned conversion. `phase7` is the original build, in which
-#: `convert_ossq.py` took every scanned crop's symbols from `musicxml/unaligned` -
-#: the synthetic pagination - and paired 56.7% of staves with the wrong music (§7).
-#: It is deliberately not referenced here any more: re-running that mixture is the
-#: single easiest way to undo the fix, and a path constant is where that would happen.
-OSSQ_SCANNED_INDEX = "/workspace/b0/phase7fix/train/index.txt"
+#: The *current* scanned conversion, three builds on from the original. `phase7` took
+#: every scanned crop's symbols from `musicxml/unaligned` - the synthetic pagination -
+#: and paired 56.7% of staves with the wrong music (§7). `phase7fix` corrected that but
+#: predates the clef repair, and `phase7clef` predates the metre numerator: it carries
+#: `timeSignatureBeats_*` on 0 staves while Lieder and PDMX, mixed in below, carry it
+#: throughout - so training on it taught the model to both state and omit the numerator
+#: for the same notation (RUNLOG IV.15). All three earlier builds are deliberately not
+#: referenced any more: re-running an old mixture is the single easiest way to undo a
+#: fix, and a path constant is where that happens.
+OSSQ_SCANNED_INDEX = "/workspace/b0/phase7num/train/index.txt"
 IMSLP_TRAIN_INDEX = "/workspace/b0/imslp_train_index.txt"
 #: Both domains, not just Lieder. The previous run validated on the 362 Lieder
 #: staves alone, so nothing in its reported accuracy ever measured the OSSQ half -

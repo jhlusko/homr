@@ -6,11 +6,14 @@ from training.transformer import train_scans_continue
 
 
 class TestContinuationConfig(unittest.TestCase):
-    def test_it_reads_the_clef_corrected_corpus(self) -> None:
-        # Pointing at the previous corpus would train more epochs on exactly the labels
-        # this run exists to replace, and nothing in the output would say so.
-        self.assertIn("phase7clef", train_scans_continue.OSSQ_SCANNED_INDEX)
-        self.assertNotIn("phase7fix", train_scans_continue.OSSQ_SCANNED_INDEX)
+    def test_it_reads_the_current_corpus(self) -> None:
+        # Pointing at any previous corpus would train more epochs on exactly the labels
+        # this run exists to replace, and nothing in the output would say so. `phase7num`
+        # is the clef-corrected build plus the metre numerator; the two before it teach
+        # the model to omit a token the rest of the mixture states.
+        self.assertIn("phase7num", train_scans_continue.OSSQ_SCANNED_INDEX)
+        for superseded in ("phase7fix", "phase7clef"):
+            self.assertNotIn(superseded, train_scans_continue.OSSQ_SCANNED_INDEX)
 
     def test_validation_spans_both_domains(self) -> None:
         # A Lieder-only held-out set never measures the OSSQ half, which is how 56.7%
@@ -42,3 +45,22 @@ class TestCheckpointOverride(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestScansConfig(unittest.TestCase):
+    """`train_scans.py` had no such guard, and drifted two corpus builds behind."""
+
+    def test_it_reads_the_current_corpus(self) -> None:
+        from training.transformer import train_scans
+
+        self.assertIn("phase7num", train_scans.OSSQ_SCANNED_INDEX)
+        for superseded in ("phase7fix", "phase7clef"):
+            self.assertNotIn(superseded, train_scans.OSSQ_SCANNED_INDEX)
+
+    def test_both_recipes_read_the_same_scanned_corpus(self) -> None:
+        # They differ in what they warm start from, not in which labels are true.
+        from training.transformer import train_scans
+
+        self.assertEqual(
+            train_scans.OSSQ_SCANNED_INDEX, train_scans_continue.OSSQ_SCANNED_INDEX
+        )

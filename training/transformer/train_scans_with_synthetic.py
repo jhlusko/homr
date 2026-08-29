@@ -35,7 +35,9 @@ from pathlib import Path
 from training.omr_datasets.convert_pdmx import pdmx_train_index
 from training.transformer.train import train_transformer
 
-OSSQ_SCANNED_INDEX = "/workspace/b0/phase7clef/train/index.txt"
+#: `phase7num`: the clef-corrected build plus the metre numerator, which the corpora
+#: mixed alongside it all carry. See RUNLOG IV.15.
+OSSQ_SCANNED_INDEX = "/workspace/b0/phase7num/train/index.txt"
 OSSQ_SYNTHETIC_INDEX = "/workspace/b0/phase2clef/train/index.txt"
 IMSLP_TRAIN_INDEX = "/workspace/b0/imslp_train_index.txt"
 MIXED_VAL_INDEX = "/workspace/b0/mixed_valid_clef_index.txt"

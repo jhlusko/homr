@@ -13,7 +13,7 @@ Two things this therefore needs, and both are easy to get silently wrong:
 - **The base checkpoint must be the finished run's own weights**, not the pinned
   checkpoint `train.py` warm starts from by default. `--checkpoint` names it explicitly;
   the pinned file is left alone, since it is what production and every other run loads.
-- **The corpus must be `phase7clef`, not `phase7fix`.** Pointing at the previous corpus
+- **The corpus must be `phase7num`, not `phase7clef` or `phase7fix`.** Pointing at a previous corpus
   would train more epochs on the labels this run exists to replace, and nothing in the
   output would say so.
 
@@ -30,7 +30,10 @@ from pathlib import Path
 from training.omr_datasets.convert_pdmx import pdmx_train_index
 from training.transformer.train import train_transformer
 
-OSSQ_SCANNED_INDEX = "/workspace/b0/phase7clef/train/index.txt"
+#: `phase7num` is `phase7clef` plus the metre numerator - same 34,510 staves, same
+#: clef repair, and `timeSignatureBeats_*` now present as it is in every other corpus
+#: this run mixes. See RUNLOG IV.15.
+OSSQ_SCANNED_INDEX = "/workspace/b0/phase7num/train/index.txt"
 IMSLP_TRAIN_INDEX = "/workspace/b0/imslp_train_index.txt"
 MIXED_VAL_INDEX = "/workspace/b0/mixed_valid_clef_index.txt"
 
