@@ -2,6 +2,8 @@ import re
 
 from homr.circle_of_fifths import key_signature_to_circle_of_fifth
 from homr.transformer.vocabulary import (
+    TIME_SIGNATURE_BEATS_PREFIX,
+    VALID_TIME_SIGNATURE_NUMERATORS,
     EncodedSymbol,
     empty,
     has_rhythm_symbol_a_position,
@@ -92,15 +94,27 @@ class PrimusConverter:
         return EncodedSymbol(f"keySignature_{circle}")
 
     @staticmethod
-    def parse_time_signature(symbol: str) -> EncodedSymbol:
+    def parse_time_signature(symbol: str) -> list[EncodedSymbol]:
+        """The stated numerator first, as its own token, then the denominator.
+
+        The numerator was previously parsed into `num` and then dropped on the floor,
+        so 3/4 and 4/4 produced the identical label - the same defect `music_xml_parser`
+        and `humdrum_kern_parser` were both corrected for. The two abbreviations state a
+        metre just as definitely as a fraction does: `C` is 4/4 and `C/` is cut time,
+        2/2, so each yields its numerator rather than being treated as unstated.
+        """
         _, fraction = symbol.split("-")
         if fraction == "C":
-            denom = "4"
+            num, denom = "4", "4"
         elif fraction == "C/":
-            denom = "2"
+            num, denom = "2", "2"
         else:
             num, denom = fraction.split("/")
-        return EncodedSymbol(f"timeSignature/{denom}")
+        result: list[EncodedSymbol] = []
+        if num.isdigit() and int(num) in VALID_TIME_SIGNATURE_NUMERATORS:
+            result.append(EncodedSymbol(f"{TIME_SIGNATURE_BEATS_PREFIX}{int(num)}"))
+        result.append(EncodedSymbol(f"timeSignature/{denom}"))
+        return result
 
     @staticmethod
     def parse_barline(symbol: str) -> EncodedSymbol:
@@ -111,25 +125,26 @@ class PrimusConverter:
         return EncodedSymbol("tieSlur")
 
     @classmethod
-    def convert_symbol(cls, symbol: str) -> EncodedSymbol:  # noqa: PLR0911
+    def convert_symbol(cls, symbol: str) -> list[EncodedSymbol]:  # noqa: PLR0911
+        """A source symbol maps to a *run* of tokens: a stated metre yields two."""
         if symbol.startswith(("note-", "gracenote-")):
-            return cls.parse_note(symbol)
+            return [cls.parse_note(symbol)]
         elif symbol.startswith("rest-"):
-            return cls.parse_rest(symbol)
+            return [cls.parse_rest(symbol)]
         elif symbol.startswith("multirest-"):
-            return cls.parse_multirest(symbol)
+            return [cls.parse_multirest(symbol)]
         elif symbol.startswith("clef-"):
-            return cls.parse_clef(symbol)
+            return [cls.parse_clef(symbol)]
         elif symbol.startswith("keySignature-"):
-            return cls.parse_key_signature(symbol)
+            return [cls.parse_key_signature(symbol)]
         elif symbol.startswith("timeSignature-"):
             return cls.parse_time_signature(symbol)
         elif symbol == "barline":
-            return cls.parse_barline(symbol)
+            return [cls.parse_barline(symbol)]
         elif symbol == "tie":
-            return cls.parse_tie(symbol)
+            return [cls.parse_tie(symbol)]
         else:
-            return EncodedSymbol(symbol)
+            return [EncodedSymbol(symbol)]
 
 
 def change_tieSlur(tokens: list[EncodedSymbol]) -> list[EncodedSymbol]:
@@ -177,7 +192,7 @@ def find_last_note(tokens: list[EncodedSymbol], idx: int) -> None | int:
 
 def convert_primus_semantic_to_tokens(semantic: str) -> list[EncodedSymbol]:
     symbols = re.split("\\s+", semantic.strip())
-    tokens = [PrimusConverter.convert_symbol(sym) for sym in symbols]
+    tokens = [t for sym in symbols for t in PrimusConverter.convert_symbol(sym)]
     if tokens[-1].rhythm != "barline":
         tokens.append(EncodedSymbol("barline"))
     for symbol in tokens:

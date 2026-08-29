@@ -18,6 +18,7 @@ class TestPrimusSemanticToTokens(unittest.TestCase):
         as_string = token_lines_to_str(result)
         expected = """clef_G2 _ _ _ _ upper
 keySignature_-1 . . . . .
+timeSignatureBeats_3 . . . . .
 timeSignature/8 . . . . .
 note_4. F4 _ _ _ upper
 barline . . . . .
