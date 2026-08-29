@@ -87,6 +87,70 @@ def bootstrap_delta(
     return deltas[int(0.025 * rounds)], deltas[int(0.975 * rounds)]
 
 
+#: A class has to be predicted on at least this share of staves, and on at least
+#: UNSCORABLE_MIN_STAVES of them, before its total absence from the reference is read as
+#: staleness rather than as an ordinary rare mistake. The share alone is not enough: on a
+#: small benchmark it rounds down to a single staff, and one wrong token is a recognition
+#: error, not a corpus that cannot express the class. The case this was built from sat far
+#: above both (61 of 792 staves, 7.7%).
+UNSCORABLE_MIN_SHARE = 0.02
+UNSCORABLE_MIN_STAVES = 3
+
+#: `base_predictions.PAD` - the filler both sides are padded with, which by construction
+#: equals no real token and so appears in every prediction and no reference. Spelled out
+#: rather than imported because that module pulls in torch, which this one does not need.
+_PAD_SENTINEL = "\x00missing"
+
+
+def unscorable_classes(path: Path) -> dict[str, dict[str, int]]:
+    """Token classes a run predicts that appear nowhere in the reference corpus.
+
+    A reference built before a token existed cannot ever reward emitting it, and because
+    the branches are compared position by position, one such insertion shifts the rest of
+    the staff and scores it near zero. That is indistinguishable, in the aggregate, from
+    a checkpoint that got much worse - which is exactly how it was read on 2026-08-29,
+    when a checkpoint that had learned to state the metre numerator was measured against
+    an OSSQ reference set predating `timeSignatureBeats_*`: 61 of 792 staves collapsed,
+    and the corrected references turned a -0.37pp "regression" into +4.21pp.
+
+    Reported rather than raised. A model genuinely inventing a class the corpus never
+    uses is a real finding too, and the two are told apart by looking, not by a rule.
+    """
+    reference_seen: dict[str, set[str]] = {b: set() for b in BRANCHES}
+    predicted_counts: dict[str, dict[str, int]] = {b: {} for b in BRANCHES}
+    staves = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        staves += 1
+        for branch in BRANCHES:
+            want = row.get(f"{branch}_reference")
+            got = row.get(f"{branch}_predicted")
+            if want is None or got is None:
+                continue
+            reference_seen[branch].update(want)
+            for token in set(got):
+                if token.startswith(_PAD_SENTINEL):
+                    continue
+                predicted_counts[branch][token] = predicted_counts[branch].get(token, 0) + 1
+    if not staves:
+        return {}
+    floor = max(UNSCORABLE_MIN_STAVES, int(UNSCORABLE_MIN_SHARE * staves))
+    return {
+        branch: {
+            token: count
+            for token, count in sorted(counts.items(), key=lambda kv: -kv[1])
+            if count >= floor and token not in reference_seen[branch]
+        }
+        for branch, counts in predicted_counts.items()
+        if any(
+            count >= floor and token not in reference_seen[branch]
+            for token, count in counts.items()
+        )
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--name", required=True, help="benchmark name, for the report")
@@ -117,6 +181,16 @@ def main() -> None:
     for label, count in dropped.items():
         if count:
             print(f"  note: {count} staves dropped from {label} (not scored by every run)")
+
+    for spec in args.run:
+        label, _, path = spec.partition("=")
+        gaps = unscorable_classes(Path(path))
+        for branch, tokens in gaps.items():
+            listed = ", ".join(f"{t} x{n}" for t, n in list(tokens.items())[:4])
+            print(
+                f"  WARNING {label} predicts {branch} classes the reference never uses: "
+                f"{listed} - a stale reference corpus scores these staves near zero"
+            )
 
     report = {"benchmark": args.name, "staves": len(ids), "runs": {}}
     baseline_label, baseline_rows = runs[0]
