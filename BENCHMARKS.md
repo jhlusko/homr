@@ -1,5 +1,53 @@
 # Checkpoint results ledger
 
+## SMB (PRAIG Sheet Music Benchmark)
+
+SMB is a 748 MB, gated full-page benchmark.  Its target is each page's own
+``**kern`` transcription—not a concatenation of the auxiliary region labels.
+On the GPU instance, the project venv needs the isolated music21 install:
+
+```bash
+HF_TOKEN="$(sed -n 's/^HF_TOKEN=//p' /path/to/.env | head -n1)" \
+PYTHONPATH=/workspace/b0/m21libs \
+  /workspace/b0/homr/.venv/bin/python -m validation.smb \
+  --tool homr --workers 1 --kern-parser music21 --xml-parser native \
+  --output /workspace/b0/lieder-rebuild/smb_homr.db
+```
+
+Use the same environment and arguments when recomputing scores with `--update`.
+The dataset requires an account that has accepted PRAIG/SMB's access conditions; never
+commit its token.  Record the model graph/checkpoint and command alongside each result.
+
+### Upstream-426 SMB baseline — qualified result (2026-08-31)
+
+The first end-to-end `homr` run completed all **685/685** gated SMB test pages on the
+instance checkout `997b70a`. The command did not set `HOMR_MODEL_NAME`; the production
+CLI therefore loaded its configured default, the **upstream checkpoint 426**
+(`pytorch_model_426-b6fd…`), not Arm A, `rareNum`, or any other fine-tuned export. The
+reported baseline is the **651 pages with a non-empty reference token sequence after the
+configured `music21` `**kern` parse**:
+
+| pages | overall NED | rhythm | pitch | lift | articulation | slur |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 651 | **19.97%** mean / **18.88%** median | 9.52% | 7.90% | 7.72% | 8.37% | 12.43% |
+
+This is a full-page, end-to-end **upstream baseline**: segmentation and all
+decoding/repair stages in the current code are enabled through the normal `homr` CLI,
+but the core model weights are 426. It establishes an external baseline only. No
+fine-tuned checkpoint has yet been scored on SMB, so this table cannot support a claim
+that Arm A/`rareNum` improves the external benchmark.
+
+**Why 34 pages are omitted.** All 685 SMB rows have non-empty page-level `**kern`
+text; 34 valid rows (`2, 25, 130, 142, 170, 187, 206, 212, 247, 260, 317, 318, 353,
+362, 363, 376, 377, 384, 385, 406, 419, 420, 428, 437, 448, 499, 535, 550, 566, 567,
+573, 602, 621, 678`) produced zero tokens from the chosen `music21` reference parser.
+They are evaluator-unscoreable under this protocol, not blank ground truth and not
+HOMR failures. Including them mechanically assigns 100% NED and changes the raw mean
+to 23.94%, which is not a valid quality estimate. The native parser can parse 33 of
+these 34 pages; do not merge native and music21 per-page scores in a single headline
+metric. A future parser-fallback protocol must first be applied uniformly and then
+re-run for all comparison checkpoints.
+
 Every paired comparison run during the Lieder corpus work, in one place. Companion to
 `CORPUS_CHANGELOG.md`, which traces what changed in the corpus; this records what those
 changes scored.
@@ -487,3 +535,161 @@ Do not quote `scans_v4` as "the best model" without a domain. It is the best on 
 OSSQ by a wide margin and slightly behind on the other two. Four variables differ between
 these runs (OSSQ added, replay composition, replay fraction, epochs), so no single one is
 attributed. See RUNLOG IV.20.
+
+## scans_v4 attribution arms (2026-08-30)
+
+Two deliberately different continuations separate the two large changes bundled into
+`scans_v4`. Arm A keeps the scanned OSSQ and v4 Lieder mixture but uses the PDMX-only
+replay recipe. Arm B removes scanned OSSQ entirely and uses PDMX + grandstaff replay with
+v4 Lieder. Both are seed 42, six epochs from the pinned starting checkpoint, and every
+comparison below drops `timeSignatureBeats_` on both sides.
+
+| benchmark | scans_v4 | Arm A | Arm B |
+| --- | ---: | ---: | ---: |
+| OSSQ | **95.14** | 95.05, -0.09pp (CI -0.28 to +0.04, ns) | 91.26, **-3.89pp** (CI -5.12 to -2.79) |
+| PDMX held-out | 86.98 | **88.08**, +1.10pp (CI +0.30 to +1.90) | **88.02**, +1.04pp (CI +0.33 to +1.80) |
+| Lieder v4 holdout | 94.40 | 94.54, +0.13pp (CI -1.03 to +1.37, ns) | 94.59, +0.19pp (CI -1.35 to +1.73, ns) |
+
+The PDMX gains and Arm B OSSQ loss are significant paired bootstrap intervals; the other
+two deltas are not. This is still one seed per condition, so it establishes direction and
+mechanism rather than a seed-replicated corpus estimate.
+
+**What it separates.** Arm A recovers the PDMX cost while leaving OSSQ unchanged: replay
+composition is a material contributor to the `scans_v4` general-domain trade-off. Arm B
+also recovers PDMX and holds Lieder, but loses 3.89pp on OSSQ: the real scanned OSSQ crops
+are what supply `scans_v4`'s OSSQ gain. The useful production candidate before further
+work is therefore Arm A, not Arm B.
+
+**Rare metres are not measured by this table.** The fair cross-vocabulary comparison
+intentionally removes numerator tokens. On raw PDMX predictions `scans_v4` emits
+numerator 5 on only 6/75 reference staves and 12 on 0/113; Arm B emits neither 5 nor 12.
+That is a supply tail, not evidence of aggregate accuracy. The next, separately named
+continuation starts from Arm A and adds a fixed 796-row training-only replay manifest
+(401 rows with 5; 400 with 12) while retaining the Arm A mixture. It must report these
+per-numerator raw counts alongside the same three neutral benchmarks.
+
+**Operational note.** Arm A training completed normally, but a Bash `set -u` bug in the
+scoring wrapper stopped it before scoring. The saved Arm A checkpoint was scored and the
+chain resumed without retraining; the wrapper has a regression-safe resume mode. Thus the
+table represents the intended checkpoints, not a second Arm A draw.
+
+## Rare-numerator continuation from Arm A (2026-08-30)
+
+The aggregate tables above drop metre numerators by design, so they cannot answer whether
+the known 5/12 supply gap was repaired. Starting from Arm A, a three-epoch continuation
+kept its OSSQ/Lieder/PDMX mixture and added the fixed training-only rare replay manifest:
+796 unique rows (401 carrying `timeSignatureBeats_5`, 400 carrying `_12`; one row carries
+both). This is the direct held-out PDMX result, where "exact position" means the predicted
+numerator equals the reference token at its reference sequence position:
+
+| PDMX numerator | Arm A exact position | rare continuation exact position | emits target anywhere |
+| --- | ---: | ---: | ---: |
+| 5 (75 reference staves) | 7 / 75 | **43 / 75** | 52 / 75 |
+| 12 (113 reference staves) | 0 / 113 | **64 / 113** | 66 / 113 |
+
+The arm therefore repairs the named capability gap; a numerator emitted elsewhere is not
+counted as correct, which is why the final column is reported separately. `scans_v4` was
+only 5/75 and 0/113 on the same exact-position measure, so this is not a minor movement.
+
+The normal three benchmarks remain numerator-neutral and are safety reads against Arm A:
+
+| benchmark | Arm A | rare continuation | delta / 95% paired CI |
+| --- | ---: | ---: | --- |
+| OSSQ | 95.05 | 95.03 | -0.19pp, -0.33 to +0.26 (ns) |
+| PDMX | 88.08 | 87.76 | -0.33pp, -1.06 to +0.45 (ns) |
+| Lieder v4 | 94.54 | 94.08 | -0.46pp, -1.13 to +0.02 (ns) |
+
+This is a single targeted continuation and one seed, so the intervals establish no
+detectable aggregate regression rather than proving absence of one. The direct numerator
+gain is large enough to make this the correct candidate for a repeat/production review;
+future reports must retain both the raw 5/12 table and the neutral safety reads.
+
+### Seed-7 replication
+
+A matched seed-7 continuation (the same Arm-A start, mixture, fixed 796-row replay
+manifest, and three epochs) reproduces the targeted repair.  It improves the direct
+held-out PDMX counts slightly over seed 42:
+
+| PDMX numerator | seed 42 exact / anywhere | seed 7 exact / anywhere |
+| --- | ---: | ---: |
+| 5 (75 reference staves) | 43 / 52 | **45 / 54** |
+| 12 (113 reference staves) | 64 / 66 | **69 / 71** |
+
+The neutral safety reads remain close to Arm A.  PDMX and OSSQ are non-significant;
+seed 7's Lieder delta is significant but small and negative.  That makes the repair
+repeatable, while setting a real compatibility cost to weigh before promotion rather
+than calling the result regression-free.
+
+| benchmark | Arm A | seed 42 | seed 7 | seed-7 delta from Arm A / 95% paired CI |
+| --- | ---: | ---: | ---: | --- |
+| OSSQ | 95.05 | 95.03 | **95.19** | +0.14pp, -0.02 to +0.34 (ns) |
+| PDMX held-out | 88.08 | 87.76 | 87.98 | -0.10pp, -0.80 to +0.63 (ns) |
+| Lieder v4 holdout | 94.54 | 94.08 | 93.88 | **-0.65pp, -1.48 to -0.09** |
+
+These are two runs of the targeted continuation, not two independent Arm-A baselines;
+they establish replication of the rare-class effect, not a corpus-wide estimate of its
+mean trade-off.  Retain seed 42 as the structured-head base already trained, and use the
+seed-7 checkpoint only if the next production comparison explicitly values its modestly
+better numerator counts over the Lieder decrement.
+
+## Mixed-source structured notation sidecar (2026-08-31)
+
+The earlier promoted `rareNum` structured-head sidecar was trained and scored on
+GrandStaff/**kern alone. That split genuinely validates beams, ties, and onset/advance,
+but has no directional-stem, phrase-slur, or dynamic targets. Zero support there is a
+property of that evaluation split, not a claim about the wider corpus.
+
+This follow-up freezes the same pinned `rareNum` core and trains only its 24
+`decoder.structured_heads` tensors for 12 epochs. Its score-disjoint training mixture is
+5,959 GrandStaff crops, 3,622 rebuilt-Lieder crops, and a deterministic 6,000-crop PDMX
+training sample (seed `464_20260831`). The aggregate held-out index contains the pinned
+GrandStaff (1,807), Lieder (300), and PDMX (3,349) splits; 5,278 of 5,456 entries remain
+after the existing excessive-ledger-line filter.
+
+| head / measure | held-out support | result |
+| --- | ---: | ---: |
+| beam level 1 / 2 / 3 / 4 macro F1 | 219,289 / 77,353 / 7,218 / 301 | .852 / .786 / .721 / .434 |
+| exact beam vector | 219,289 note positions | .831 (182,288 / 219,289) |
+| hooks F1 | 8,433 | .777 |
+| ties macro F1 | 16,693 | .844 |
+| stem direction F1 (up/down only) | 217,631 | .811 |
+| slur spans F1 | 3,400 | .772 |
+| slur side macro F1 | 3,121 | .723 |
+| advance, nontrivial macro F1 | 166,624 | .751 |
+| dynamics macro F1 | 935 | .105 |
+
+Two compact source reads guard against the aggregate concealing a source distinction:
+all 298 usable Lieder validation crops, and 475 usable crops from a deterministic
+500-row PDMX validation sample (the same seed). They show usable support for the missing
+heads rather than a GrandStaff-only proxy:
+
+| source | ties macro F1 (support) | stem direction F1 | slur span F1 (support) | slur-side macro F1 (support) | dynamics macro F1 (support) |
+| --- | --- | ---: | --- | --- | --- |
+| Lieder | .729 (525) | .832 | .686 (474) | .621 (45) | .124 (158) |
+| PDMX sample | .810 (1,964) | .797 | .777 (486) | .743 (494) | .106 (112) |
+
+**Promotion boundary.** The figures validate the mixed sidecar as an experimental
+source of beam, tie, stem, slur, and advance predictions. They do **not** justify
+emitting dynamics: the apparent 99.7% dynamic micro accuracy is almost entirely the
+`none` class and the macro result is .105. At this point the renderer exports beams and
+advance; its existing slur path only uses structured values to pair/place a slur already
+emitted by the core. Ties and stems require explicit MusicXML integration and visual
+round-trip review before the mixed sidecar can be called a production bundle. Artifacts,
+including prediction sidecars and exact input manifests, are synced locally under
+`artifacts-instance/rareNum-heads-mixed/`.
+
+### Export-review implementation (2026-08-31)
+
+For review only, the renderer now has an isolated structured-export switch
+(`HOMR_STRUCTURED_EXPORT=none|tie|stem|slur|...`). It makes a same-crop, same-core-decode
+MusicXML A/B possible without fabricating alternate predictions. Predicted stems write
+`<stem>` on pitched notes; predicted ties write both direct `<tie>` and notational
+`<tied>` elements; a structured slur emits endpoints only when the core did not already
+emit a flat slur token. Existing core markings win, so this cannot double-engrave them.
+Twenty targeted tests covering the renderer/decoder seam pass locally and on the instance.
+
+The embedded review gallery uses five PDMX crops with visible tie changes, five with stem
+changes, and four with additional structured-slur endpoints. The fourth count is factual:
+the other high-scoring candidates already had a core slur and correctly remain no-ops in
+this fallback mode. This is direct transformer-crop export evidence, not deployment of a
+new default sidecar or a substitute for the full detector pipeline.

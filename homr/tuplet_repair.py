@@ -263,4 +263,10 @@ def repair_symbols(symbols: "list", **kwargs) -> tuple["list", list]:
         if before != after:
             out[i] = copy.copy(out[i])
             out[i].rhythm = after
+            # Decoding commonly asked the original symbol for its duration before this
+            # late repair pass.  A shallow copy carries that cache, so without clearing
+            # it `note_8 -> note_12` looked repaired in logs but rendered as the same
+            # eighth note in MusicXML.  Rhythm is the cache key; changing it requires
+            # a fresh SymbolDuration.
+            out[i]._duration = None
     return out, rewrites

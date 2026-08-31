@@ -203,7 +203,9 @@ def main() -> None:
             "id": stem,
             "score_id": parsed[0],
             "system": int(parsed[1].split("-v")[0]) if len(parsed) > 1 else 0,
-            "voice": int(stem.rsplit("-v", 1)[1]) if "-v" in stem else 0,
+            # PDMX appends a window suffix (``-v0-w2``); only the numeric part after
+            # ``-v`` is the voice identifier.
+            "voice": int(stem.rsplit("-v", 1)[1].split("-", 1)[0]) if "-v" in stem else 0,
             "left_bars": left_bars,
             "right_bars": right_bars,
             "has_right": True,

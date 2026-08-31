@@ -1,6 +1,7 @@
 # flake8: noqa: S101
 
 import math
+import os
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -16,9 +17,8 @@ from homr.transformer.vocabulary import (
     SymbolDuration,
     empty,
     nonote,
-    sort_token_chords,
 )
-from homr.transformer.structured_notation import AdvanceClass
+from homr.transformer.structured_notation import AdvanceClass, SlurEvent, TieState
 
 
 # The held-out promotion run established the following common gaps as reliable.  The
@@ -36,6 +36,17 @@ _RENDERABLE_ADVANCE_DURATIONS: dict[AdvanceClass, Fraction] = {
     AdvanceClass.SIXTEENTH: Fraction(1, 16),
     AdvanceClass.THIRTY_SECOND: Fraction(1, 32),
 }
+
+
+def structured_export_enabled(head: str) -> bool:
+    """Whether an experimental structured field is emitted in this render.
+
+    The environment switch exists for review A/Bs: it holds detector and decoder output
+    constant while turning one notation field on.  Unset is production behaviour (all
+    implemented structured fields); `none` makes a no-sidecar-export control.
+    """
+    selected = os.environ.get("HOMR_STRUCTURED_EXPORT")
+    return selected is None or head in {item.strip() for item in selected.split(",")}
 
 
 class ConversionState:
@@ -162,6 +173,8 @@ class SymbolChord:
             return fallback
         notation = getattr(self.advance_symbol, "notation", None)
         advance = getattr(notation, "advance", AdvanceClass.NOT_APPLICABLE)
+        if not structured_export_enabled("advance"):
+            return fallback
         if advance == AdvanceClass.ZERO:
             return (
                 Fraction(0)
@@ -826,7 +839,27 @@ def build_slurs(note: ET.Element, model_note: EncodedSymbol, state: ConversionSt
         notation = ET.SubElement(note, "notations")
 
     if slurs in {"_", ""}:
-        pass
+        # The vocabulary has only a flat slur field, so it cannot distinguish
+        # concurrent spans or ties.  A mixed-source structured sidecar can.  Preserve
+        # a core endpoint when it exists (the branches remain independently useful),
+        # but otherwise emit the sidecar's explicit endpoint(s) and their slot numbers.
+        structured = (
+            getattr(getattr(model_note, "notation", None), "slurs", ())
+            if structured_export_enabled("slur")
+            else ()
+        )
+        for index, (event, side) in enumerate(structured, start=1):
+            attrs = {"number": str(index)}
+            if str(side) != "unspecified":
+                attrs["placement"] = str(side)
+            if event == SlurEvent.START:
+                ET.SubElement(notation, "slur", type="start", **attrs)
+            elif event == SlurEvent.STOP:
+                ET.SubElement(notation, "slur", type="stop", **attrs)
+            elif event == SlurEvent.START_AND_STOP:
+                # Close before reopening the same slot, matching the core path.
+                ET.SubElement(notation, "slur", type="stop", **attrs)
+                ET.SubElement(notation, "slur", type="start", **attrs)
     elif slurs == nonote:
         eprint("WARNING note without valid articulation", slurs)
     elif slurs == "slurStart":
@@ -873,6 +906,8 @@ def build_beams(note: ET.Element, model_note: EncodedSymbol) -> None:
     Notes carrying no structured labels - anything read from a checkpoint without the
     heads, or a corpus with no sidecar - produce no `<beam>` elements, exactly as before.
     """
+    if not structured_export_enabled("beam"):
+        return
     notation = getattr(model_note, "notation", None)
     if notation is None:
         return
@@ -880,6 +915,58 @@ def build_beams(note: ET.Element, model_note: EncodedSymbol) -> None:
         value = BEAM_VALUES.get(str(state))
         if value is not None:
             ET.SubElement(note, "beam", number=str(level)).text = value
+
+
+def build_stem(note: ET.Element, model_note: EncodedSymbol) -> None:
+    """Write a sidecar stem only for a pitched note with an explicit direction."""
+    if not structured_export_enabled("stem") or model_note.pitch in {empty, nonote}:
+        return
+    stem = getattr(getattr(model_note, "notation", None), "stem", None)
+    if str(stem) in {"up", "down", "none", "double"}:
+        ET.SubElement(note, "stem").text = str(stem)
+
+
+def build_ties(note: ET.Element, model_note: EncodedSymbol) -> None:
+    """Write direct `<tie>` elements in their required position in a MusicXML note.
+
+    Do not duplicate a tie the core already decoded.  The legacy articulation route
+    stores only `<tied>` in `<notations>`; a structured prediction adds the direct
+    `<tie>` element required by MusicXML readers. `build_tied_notations` writes the
+    paired notational counterpart later, after the other direct note children.
+    """
+    if not structured_export_enabled("tie"):
+        return
+    if any(part in {"tieStart", "tieStop"} for part in model_note.articulation.split("_")):
+        return
+    tie = getattr(getattr(model_note, "notation", None), "tie", TieState.NONE)
+    kinds = {
+        TieState.START: ("start",),
+        TieState.STOP: ("stop",),
+        TieState.START_AND_STOP: ("stop", "start"),
+    }.get(tie, ())
+    for kind in kinds:
+        ET.SubElement(note, "tie", type=kind)
+
+
+def build_tied_notations(note: ET.Element, model_note: EncodedSymbol) -> None:
+    """Write `<notations><tied>` after direct `<tie>` placement is complete."""
+    if not structured_export_enabled("tie"):
+        return
+    if any(part in {"tieStart", "tieStop"} for part in model_note.articulation.split("_")):
+        return
+    tie = getattr(getattr(model_note, "notation", None), "tie", TieState.NONE)
+    kinds = {
+        TieState.START: ("start",),
+        TieState.STOP: ("stop",),
+        TieState.START_AND_STOP: ("stop", "start"),
+    }.get(tie, ())
+    if not kinds:
+        return
+    notation = note.find("notations")
+    if notation is None:
+        notation = ET.SubElement(note, "notations")
+    for kind in kinds:
+        ET.SubElement(notation, "tied", type=kind)
 
 
 def build_note_or_rest(
@@ -917,14 +1004,17 @@ def build_note_or_rest(
 
     if "G" in model_note.rhythm:
         base_duration = model_duration.kern
-        ET.SubElement(note, "type").text = DURATION_NAMES[base_duration]
     elif model_duration.fraction.numerator > 0:
         base_duration = 1 if model_duration.kern == 0 else model_duration.kern
         ET.SubElement(note, "duration").text = str(int(model_duration.fraction * state.division))
-        ET.SubElement(note, "type").text = DURATION_NAMES[base_duration]
     else:
         ET.SubElement(note, "duration").text = str(state.beats)
-        ET.SubElement(note, "type").text = DURATION_NAMES[0]
+        base_duration = 0
+
+    # MusicXML requires direct tie elements immediately after duration/grace data,
+    # before type, voice, staff, and notations.
+    build_ties(note, model_note)
+    ET.SubElement(note, "type").text = DURATION_NAMES[base_duration]
 
     for _ in range(model_duration.dots):
         ET.SubElement(note, "dot")
@@ -936,6 +1026,7 @@ def build_note_or_rest(
 
     staff_num = get_staff(model_note)
     ET.SubElement(note, "voice").text = str(get_xml_voice(staff_num, rhythmic_layer))
+    build_stem(note, model_note)
     ET.SubElement(note, "staff").text = str(staff_num)
 
     # Before articulations/slurs: those create <notations>, and MusicXML orders
@@ -943,6 +1034,7 @@ def build_note_or_rest(
     build_beams(note, model_note)
 
     build_articulations(note, model_note.articulation, tuplet_mark, state)
+    build_tied_notations(note, model_note)
     build_slurs(note, model_note, state)
 
     return note

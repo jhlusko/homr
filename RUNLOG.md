@@ -12394,3 +12394,198 @@ two.
 **Four variables moved at once** between these runs - OSSQ added, replay composition
 (pdmx-only to pdmx+grandstaff), replay fraction (26% to 14.9%) and epochs (12 to 6) - so
 nothing here attributes the +1.93 or the -0.98 to any one of them.
+
+## IV.21 Tuplet repair fires through the real image pipeline
+
+The earlier current-checkpoint image A/B sampled random pages, so every result was
+correctly a no-op. The offline OSSQ evaluator already identified the useful cases. Ran
+the exported v4 seed-7 ONNX model through `homr.main` with repair off/on on five of its
+clean, repairable staff crops, copying each input to
+`/workspace/b0/tuplet_targeted_ab/` so the corpus itself was never written.
+
+The first run exposed a real renderer seam: `repair_symbols` shallow-copied a decoded
+`EncodedSymbol` and changed `rhythm` from (for example) `note_8` to `note_12`, but
+carried its already-populated duration cache. Logs showed the repaired token while
+MusicXML remained byte-identical eighth notes. Clear `_duration` whenever this late pass
+changes rhythm; the new cached-duration regression test passes.
+
+With that fix deployed to the exported-model checkout, **2 of the 5 selected actual
+image-pipeline cases changed MusicXML** (`sq7354505_0047_0001_1` and
+`sq8806134_0005_0005_2`); the first converts six plain eighths into valid 3:2
+time-modified tuplet notes with start/stop markers. The other three are no-ops because
+their image-path decode differs from the transformer-only scoring output used to select
+them (one already emits tuplets); that is expected and distinct from the fixed cache
+failure. This closes the named end-to-end firing gap: repair is both selected from known
+overfull candidates and visibly applied in the production image → detection → decode →
+MusicXML path.
+
+## IV.22 SMB is benchmark-ready, pending gated-dataset access
+
+The SMB benchmark had not run because `music21` was absent from the instance venv and
+the gated PRAIG/SMB dataset was not present. `music21 10.5.0` is now confirmed usable
+from the isolated `/workspace/b0/m21libs` path, and the benchmark runner is covered by
+an instance-vendored regression test.
+
+More importantly, the runner had been using `"\\n".join(region["kern"])` as its ground
+truth. SMB's dataset card specifies a **page-level** `**kern` transcription alongside
+auxiliary region annotations; page-level is the end-to-end full-page benchmark target.
+`validation.smb` now prefers `sample["page"]["kern"]`, with top-level and region joins
+only as backward-compatible schema fallbacks. This matches `validation.compare_parsers`.
+
+The supplied Hugging Face token was passed only through standard input for a smoke test,
+never written to the instance or the repository. Hugging Face still returns
+`DatasetNotFoundError` saying this account has not been granted PRAIG/SMB's gated access.
+The remaining external prerequisite is accepting the dataset's access/contact terms (or
+following its card's email instruction); then launch the documented instance command in
+`BENCHMARKS.md`. Do not quote an SMB result until that run uses the corrected page-level
+reference.
+
+### Completion and reference-parser qualification (2026-08-31)
+
+Access was subsequently granted and the full `homr` run completed **685/685** SMB test
+pages with no tool failures (`smb_homr.db` on the instance). The command omitted
+`HOMR_MODEL_NAME`, so its normal CLI default was the **upstream 426 export**, not a
+fine-tuned model. The initially printed 23.94% mean NED is not a valid headline: 34 rows have real, non-empty page-level
+`**kern` ground truth but yielded zero reference tokens in the configured `music21`
+parser, mechanically assigning 100% NED. On the 651 rows with a non-empty parsed
+reference, the qualified result is **19.97% mean NED / 18.88% median**. The native
+parser can parse 33/34 of the omitted rows, demonstrating a parser-coverage issue—not
+blank annotations or HOMR failures—but its tokens must not be mixed per-row with the
+music21 protocol. `BENCHMARKS.md` records the exact command, qualified aggregate, raw
+diagnostic figure, and all omitted IDs. A future parser-fallback protocol must be
+defined and uniformly re-run before comparing checkpoints. This establishes the SMB
+baseline; Arm A/`rareNum` still require explicit-export SMB runs before an external
+generalization comparison is available.
+
+## IV.23 Rare metre numerators: targeted replay prepared, with a measurable baseline
+
+The tail is not merely uncommon in the abstract. On the held-out PDMX score for
+`scans_v4`, the model emits the right numerator **5 on 6/75** reference staves and
+numerator **12 on 0/113**. This is the relevant baseline for a targeted intervention;
+the numerator-neutral aggregate benchmark deliberately hides it.
+
+The existing source indexes have enough clean, training-only supply, but random replay
+does not reliably select it:
+
+| source | numerator 5 rows | numerator 12 rows |
+| --- | ---: | ---: |
+| PDMX train | 621 | 386 |
+| grandstaff train | 14 | 741 |
+| combined | 635 | 1,127 |
+
+`training.omr_datasets.build_numerator_replay` now makes this selection explicit. It
+reads original index rows, resolves token paths relative to the repository, selects a
+seeded class-balanced subset without duplicate output rows, refuses an undersupplied
+request, and writes both the index and a JSON provenance sidecar. Its two unit tests pass
+locally and on the instance.
+
+Built instance artifact:
+`/workspace/b0/lieder-rebuild/rare_numerator_replay_index.txt` — **796 rows**, 401 with
+`timeSignatureBeats_5` and 400 with `_12`, selected from current PDMX train and current
+grandstaff only, seed 42, 0 missing token files. The adjacent metadata sidecar records
+all of those inputs and counts.
+
+Do not start it concurrently with the current Arm A → scoring → Arm B chain. The next
+proper experiment is a separately named rare-metre arm using this manifest, scored both
+on the usual numerator-neutral three benchmarks and on the non-neutral per-numerator
+PDMX counts above. That separates a genuine tail repair from an apparent aggregate gain
+that simply ignores the classes being repaired.
+
+## IV.24 Rare-metre replay replicates across its second seed
+
+The first rare-numerator continuation was deliberately not promoted after one seed.
+Seed 7 repeated the exact intervention: Arm-A checkpoint start, the fixed 796-row
+training-only PDMX/grandstaff manifest, the same retained Arm-A mixture, and three
+epochs (4,221 steps). Training completed normally in 59m38s; OSSQ, held-out PDMX, and
+Lieder-v4 scoring all completed on 2026-08-30.
+
+The direct PDMX capability result replicates and edges upward:
+
+| reference numerator | seed 42 exact-position / anywhere | seed 7 exact-position / anywhere |
+| --- | ---: | ---: |
+| 5 (75 staves) | 43 / 52 | **45 / 54** |
+| 12 (113 staves) | 64 / 66 | **69 / 71** |
+
+Exact-position is the primary count: a token emitted elsewhere does not get credit.
+Against Arm A's 7/75 and 0/113 respectively, both seeds therefore establish that the
+fixed replay actually repairs the named supply tail.
+
+The numerator-neutral paired safety comparison uses every shared staff and drops
+`timeSignatureBeats_` on both sides:
+
+| benchmark | Arm A | seed 42 (delta / 95% CI) | seed 7 (delta / 95% CI) |
+| --- | ---: | --- | --- |
+| OSSQ (792) | 95.05 | 95.03 (-0.19pp, -0.33 to +0.26; ns) | 95.19 (+0.14pp, -0.02 to +0.34; ns) |
+| PDMX (3,349) | 88.08 | 87.76 (-0.33pp, -1.06 to +0.45; ns) | 87.98 (-0.10pp, -0.80 to +0.63; ns) |
+| Lieder v4 (300) | 94.54 | 94.08 (-0.46pp, -1.13 to +0.02; ns) | 93.88 (-0.65pp, -1.48 to -0.09) |
+
+Thus the rare-class gain is replicated, PDMX/OSSQ are stable at this resolution, and
+the second seed exposes a small but statistically detectable Lieder cost. These are not
+two draws of Arm A, so do not turn their average into a generalisation estimate. The
+right immediate use is a targeted candidate decision: keep seed 42 for the completed
+frozen structured-head bundle; compare seed 7 only when the extra 2/5 and 5/12 direct
+correct staves are worth the Lieder cost in an end-to-end production evaluation.
+
+## IV.25 Mixed structured heads: real support for ties, stems, and slurs
+
+The promoted frozen-head sidecar had been trained against GrandStaff/**kern only. Its
+held-out report correctly showed beam, tie, and advance support, but zero phrase-slur,
+dynamic, and directional-stem support. That was easy to misread as a dataset/parser
+claim. It is a training-split limitation: a direct 10,000-sidecar PDMX audit found
+23,157 slur endpoints, 51,243 ties, 3,501 non-none dynamics, and 697,040 non-neutral
+stems.
+
+Ran a separate mixed-source sidecar from the same pinned `rareNum` core, keeping the core
+frozen and training only the 24 structured-head tensors. Training input was 5,959
+GrandStaff crops, all 3,622 rebuilt-Lieder training crops, and a deterministic 6,000-row
+PDMX training sample (`Random(464_20260831)`); all sources retain their pre-existing,
+score-disjoint validation partitions. Twelve epochs trained on 15,053 usable crops after
+the ledger-line filter. The held-out aggregate is 5,278 usable crops from the 5,456-row
+union of GrandStaff 1,807, Lieder 300, and PDMX 3,349.
+
+| measure | aggregate result | support |
+| --- | ---: | ---: |
+| ties, macro F1 | .844 | 16,693 |
+| stem direction, up/down F1 | .811 | 217,631 |
+| slur span F1 | .772 | 3,400 |
+| slur side, macro F1 | .723 | 3,121 |
+| advance nontrivial, macro F1 | .751 | 166,624 |
+| dynamics, macro F1 | .105 | 935 |
+
+The compact source checks are deliberately small rather than another multi-thousand-crop
+job: all 298 usable Lieder validation crops and a seeded 500-row PDMX validation sample
+(475 usable). Lieder is tie .729 / stem direction .832 / slur span .686 / slur side .621
+/ dynamics .124; PDMX is .810 / .797 / .777 / .743 / .106 respectively. Thus ties,
+directional stems, and slurs have genuine cross-source held-out support. The side head is
+not a dynamics model: its .997 micro score is a `none`-class artefact, while macro F1 is
+near chance. Never enable dynamic emission from this run.
+
+The job initially used four non-persistent DataLoader workers on a 128-core instance,
+making an epoch take roughly 28 minutes and forcing workers to be recreated each epoch.
+`build_batches` now keeps workers persistent and the run uses 24 workers; this reduced
+the completed 12-epoch job to about 75 minutes. The same batch/worker configuration was
+used for evaluation. All weights, manifests, logs, prediction sidecars, and compact
+source reports are synced locally at `artifacts-instance/rareNum-heads-mixed/`.
+
+Important integration boundary: beams and promoted advance already alter MusicXML. The
+present slur renderer uses side-head slots only to number/place a core-decoded slur; it
+does not independently create one. Ties and stems are predicted but not yet emitted by
+the renderer. The next step is to add those explicit MusicXML elements, validate their
+round trip, and generate same-decode before/after compare views from the mixed sidecar;
+do not present synthetic or no-op comparisons as evidence of export.
+
+### IV.25a Export review completed, not promoted
+
+Added a field-isolating renderer switch for review (`HOMR_STRUCTURED_EXPORT`), then
+rendered the same held-out PDMX crop and frozen-core decode with each field cleared versus
+retained. Stem direction now writes `<stem>` for pitched notes. Tie state writes matching
+direct `<tie>` and `<notations><tied>` elements. A structured slur supplies endpoints
+only when the core did not already state a flat slur, retaining the core when it does.
+The 20 focused renderer/structured-decoder tests pass locally and on the instance.
+
+The resulting embedded gallery contains five visible tie A/Bs, five visible stem A/Bs,
+and four visible structured-slur fallback A/Bs. Four is not padded to five: the remaining
+candidates already carried the core slur and therefore correctly had no incremental output.
+This closes the *review* export seam, but is not a production promotion. The images are
+pre-cropped transformer inputs; full detector/pipeline validation and a deployment
+decision remain separate work.

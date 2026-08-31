@@ -20,6 +20,35 @@ from validation.ned_benchmark import Sample, run_benchmark, update_ned_scores
 from validation.tools import TOOLS
 
 
+def _sample_kern(sample: dict[object, object]) -> str:
+    """Return the full-page reference transcription from an SMB dataset row.
+
+    SMB publishes a page-level ``**kern`` transcription as well as per-region
+    annotations.  The page reference is the benchmark target; joining regions
+    is retained only for older dataset revisions that lack it.
+    """
+    page = sample.get("page")
+    if isinstance(page, dict):
+        kern = page.get("kern")
+        if isinstance(kern, str) and kern.strip():
+            return kern
+
+    kern = sample.get("kern")
+    if isinstance(kern, str) and kern.strip():
+        return kern
+
+    regions = sample.get("regions")
+    if not isinstance(regions, list):
+        return ""
+    return "\n".join(
+        kern
+        for region in regions
+        if isinstance(region, dict)
+        and isinstance(kern := region.get("kern"), str)
+        and kern.strip()
+    )
+
+
 def get_smb_samples(image_dir: Path) -> list[Sample]:
     from datasets import Image, load_dataset  # type: ignore  # noqa: PLC0415
 
@@ -27,13 +56,12 @@ def get_smb_samples(image_dir: Path) -> list[Sample]:
     ds = ds.cast_column("image", Image(decode=False))  # Don't decode on image colume.
     result = []
     for i, sample in enumerate(ds):
-        assert "kern" not in sample and isinstance(
-            sample["regions"], list
-        )  # not a global `kern` field, but a list of regions.
+        assert isinstance(sample, dict)
         assert sample["image"]["bytes"]
 
-        parts = [r["kern"] for r in sample["regions"] if r["kern"]]
-        kern = "\n".join(parts)
+        kern = _sample_kern(sample)
+        if not kern:
+            raise ValueError(f"SMB sample {i} has no page or region **kern transcription")
         image_path = image_dir / f"{i}.png"
         image_path.write_bytes(sample["image"]["bytes"])
 

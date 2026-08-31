@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arm A: a scan-adapted homr checkpoint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#fafaf8;--card:#fff;--ink:#1a211e;--soft:#4d5b55;--faint:#748078;--line:#dfe5e1;--strong:#bdc8c1;--acc:#0e6e5e;--accbg:#e5f2ee;--warn:#8a5a16;--warnbg:#faf1e0;--bad:#984232;--measure:42rem}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{background:var(--bg);color:var(--ink);font:17px/1.62 "IBM Plex Sans",system-ui,sans-serif}.wrap{max-width:61rem;margin:auto;padding:0 1.5rem 6rem}.paper{padding:4.7rem 0 1.2rem}.venue,.section-note,.lbl{font:500 .72rem/1.35 "IBM Plex Mono",monospace;letter-spacing:.1em;text-transform:uppercase}.venue{color:var(--acc);margin:0 0 1.2rem}h1{font-size:clamp(2.45rem,6vw,4.15rem);line-height:1.03;letter-spacing:-.045em;margin:0 0 1rem;max-width:50rem}.subtitle{font-size:1.22rem;line-height:1.48;color:var(--soft);max-width:45rem;margin:0 0 1rem}.authors{font:400 .75rem "IBM Plex Mono",monospace;color:var(--faint);margin:0}h2{font-size:clamp(1.65rem,3.4vw,2.25rem);line-height:1.16;letter-spacing:-.032em;margin:0 0 .55rem}h3{font-size:1.1rem;line-height:1.3;letter-spacing:-.015em;margin:0 0 .55rem}p{max-width:var(--measure);margin:0 0 1.05rem}.section-note{color:var(--faint);margin:0 0 1.45rem}code,pre{font-family:"IBM Plex Mono",ui-monospace,monospace}code{font-size:.87em;background:#f0f3f1;border:1px solid var(--line);border-radius:3px;padding:.1em .32em}a{color:var(--acc)}hr{border:0;margin:3.2rem 0;height:13px;background:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px 4px)}.abstract{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1.35rem 1.55rem;margin:1.8rem 0 0;max-width:48rem}.abstract h2{font:500 .75rem "IBM Plex Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin:0 0 .8rem}.abstract p:last-child{margin-bottom:0}.note{max-width:var(--measure);background:var(--warnbg);border:1px solid var(--line);border-left:3px solid var(--warn);padding:1.1rem 1.25rem;margin:1.55rem 0}.note .lbl{color:var(--warn);display:block;margin-bottom:.45rem}.note p{font-size:.94rem;margin:0}.tablewrap{overflow-x:auto;margin:1.35rem 0 1.6rem}table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.9rem}caption{caption-side:top;text-align:left;font:400 .72rem "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding-bottom:.65rem}th{font:500 .7rem "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--strong);padding:0 .8rem .45rem 0;text-align:right;vertical-align:bottom}th:first-child,td:first-child{text-align:left}td{padding:.52rem .8rem .52rem 0;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;vertical-align:top}tr:last-child td{border:0}.mark td{background:var(--accbg)}.win{color:var(--acc);font-weight:600}.loss{color:var(--bad);font-weight:600}.quiet{color:var(--faint)}.examples{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.45rem 0}.example{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1.15rem}.example .tag{font:500 .68rem "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);margin:0 0 .55rem}.stream{font:400 .76rem/1.55 "IBM Plex Mono",monospace;background:#f1f3f2;border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:3px;padding:.8rem;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:.7rem 0}blockquote{max-width:var(--measure);border-left:3px solid var(--acc);color:var(--soft);padding-left:1.1rem;margin:1.45rem 0;font-style:italic}footer{border-top:1px solid var(--line);margin-top:3.5rem;padding-top:1.5rem;color:var(--faint);font-size:.84rem;max-width:var(--measure)}@media(max-width:700px){.paper{padding-top:3.2rem}.examples{grid-template-columns:1fr}.wrap{padding-inline:1rem}}
+  .cmp-wide{width:100vw;position:relative;left:50%;margin-left:-50vw;margin-right:-50vw;background:var(--card);border-block:1px solid var(--line);padding:1.5rem 0}
+  .cmp-inner{max-width:88rem;margin:auto;padding:0 1.5rem}.cmp-card{max-width:72rem;margin:0 auto 2rem}.cmp-card:last-child{margin-bottom:0}.cmp-card h3{margin-bottom:.75rem}.cmp-scan{max-width:48rem;margin:0 0 1rem;border:1px solid var(--line);padding:.45rem;background:#f1f3f2}.cmp-scan img{display:block;width:100%;height:auto}.cmp-scan figcaption{font:400 .7rem "IBM Plex Mono",monospace;color:var(--faint);margin-top:.45rem}.cmp-frame{display:block;width:100%;height:44rem;border:1px solid var(--strong);background:white}.cmp-frame.is-hidden{display:none}.cmp-backup{display:none;grid-template-columns:1fr 1fr;gap:.8rem;border:1px solid var(--strong);background:#f1f3f2;padding:.7rem}.cmp-backup.is-shown{display:grid}.cmp-backup figure{margin:0}.cmp-backup img{display:block;width:100%;height:auto;background:#fff;border:1px solid var(--line)}.cmp-backup figcaption{font:500 .68rem "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:.4rem}.cmp-note{font-size:.9rem;color:var(--soft);max-width:58rem}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="paper">
+<p class="venue">Technical note · Optical Music Recognition · 2026-08-30</p>
+<h1>Arm A: a scan-adapted homr checkpoint</h1>
+<p class="subtitle">A comparison of the current general-purpose candidate with the pinned upstream homr checkpoint (426), and the controlled experiment that produced it.</p>
+<p class="authors">Working report · free-running held-out scoring · paired bootstrap intervals over staves</p>
+</header>
+<div class="abstract">
+<h2>Abstract</h2>
+<p>Arm A is the current general-purpose candidate checkpoint. It retains real scanned OpenScore String Quartet (OSSQ) crops and the v4 Lieder mixture, but replaces the replay component with PDMX-only replay. The run used seed 42 and six epochs from the common starting checkpoint.</p>
+<p>Against pinned upstream checkpoint 426, Arm A improves held-out overall token accuracy by <strong>+3.56pp on OSSQ</strong> (792 staves), <strong>+4.11pp on PDMX</strong> (3,349), and <strong>+7.30pp on the Lieder-v4 holdout</strong> (300). All paired intervals exclude zero. This is an end-to-end comparison, not an attribution of each gain to training data, vocabulary, or code changes.</p>
+</div>
+<hr>
+<section>
+<h2>1&nbsp;&nbsp;Baseline and scope</h2>
+<p class="section-note">What is being compared</p>
+<p>The upstream reference is <code>pytorch_model_426-b6fd208…</code>, the pinned release checkpoint. Arm A uses the same staff-level encoder–decoder; it is a continuation of the scan-adaptation line, not a new architecture. All runs use free-running generation. Predictions and references are padded to the longer sequence with a non-matching sentinel, so inserted and omitted material count as errors.</p>
+<div class="note">
+<span class="lbl">Vocabulary caveat</span>
+<p>426 predates time-signature numerator and natural-sign additions. Comparisons suppress <code>timeSignatureBeats_</code> tokens on both sides, but 426 also has no <code>N</code> lift class. An early missing class shifts later positional tokens. The figures answer how the current pipeline differs from upstream; they do not isolate training quality from vocabulary evolution.</p>
+</div>
+</section>
+<hr>
+<section>
+<h2>2&nbsp;&nbsp;Aggregate results</h2>
+<p class="section-note">Overall token accuracy, identical staves and current references</p>
+<div class="tablewrap">
+<table>
+<caption>Table 1 · Arm A against upstream 426. Higher is better.</caption>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>Staves</th>
+<th>426</th>
+<th>Arm A</th>
+<th>Δ Arm A − 426 (95% CI)</th>
+<th>Better / worse / tied</th>
+</tr>
+</thead>
+<tbody>
+<tr class="mark">
+<td>
+<strong>OSSQ</strong>
+<br>
+<span class="quiet">real scanned string quartets</span>
+</td>
+<td>792</td>
+<td>91.49</td>
+<td class="win">95.05</td>
+<td class="win">+3.56pp (+2.46 to +4.63)</td>
+<td>551 / 56 / 185</td>
+</tr>
+<tr>
+<td>
+<strong>PDMX held-out</strong>
+<br>
+<span class="quiet">broad public music corpus</span>
+</td>
+<td>3,349</td>
+<td>83.97</td>
+<td class="win">88.08</td>
+<td class="win">+4.11pp (+3.19 to +5.09)</td>
+<td>3,170 / 177 / 2</td>
+</tr>
+<tr>
+<td>
+<strong>Lieder v4 holdout</strong>
+<br>
+<span class="quiet">score-disjoint; least independent read</span>
+</td>
+<td>300</td>
+<td>87.23</td>
+<td class="win">94.54</td>
+<td class="win">+7.30pp (+4.38 to +10.37)</td>
+<td>167 / 31 / 102</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>OSSQ is the cleanest scan-domain external check: it was not used as a validation split. Lieder shares lineage with the adaptation programme and should not carry the generalisation claim by itself.</p>
+<div class="tablewrap">
+<table>
+<caption>Table 2 · Per-branch accuracy: upstream 426 → Arm A</caption>
+<thead>
+<tr>
+<th>Branch</th>
+<th>OSSQ</th>
+<th>PDMX</th>
+<th>Lieder v4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pitch</td>
+<td>90.41 → <span class="win">94.55</span>
+</td>
+<td>79.88 → <span class="win">84.60</span>
+</td>
+<td>83.86 → <span class="win">92.92</span>
+</td>
+</tr>
+<tr>
+<td>rhythm</td>
+<td>87.50 → <span class="win">93.11</span>
+</td>
+<td>82.50 → <span class="win">86.92</span>
+</td>
+<td>86.80 → <span class="win">94.01</span>
+</td>
+</tr>
+<tr>
+<td>lift</td>
+<td>90.00 → <span class="win">95.50</span>
+</td>
+<td>83.68 → <span class="win">88.24</span>
+</td>
+<td>86.31 → <span class="win">94.53</span>
+</td>
+</tr>
+<tr>
+<td>articulation</td>
+<td>92.65 → <span class="win">94.93</span>
+</td>
+<td>87.00 → <span class="win">90.41</span>
+</td>
+<td>89.76 → <span class="win">95.65</span>
+</td>
+</tr>
+<tr>
+<td>slur</td>
+<td>93.15 → <span class="win">95.30</span>
+</td>
+<td>86.22 → <span class="win">89.83</span>
+</td>
+<td>88.98 → <span class="win">95.26</span>
+</td>
+</tr>
+<tr>
+<td>position</td>
+<td>95.25 → <span class="win">96.91</span>
+</td>
+<td>84.56 → <span class="win">88.51</span>
+</td>
+<td>87.70 → <span class="win">94.85</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<hr>
+<section>
+<h2>3&nbsp;&nbsp;What the numbers look like</h2>
+<p class="section-note">Held-out OSSQ crops, with upstream 426 and Arm A rendered from their scored outputs</p>
+<p>The two examples below are real scan crops from the held-out OSSQ split. Each lower pane is a live MusicXML comparison: 426 on the left and Arm A on the right. The scores were reconstructed directly from the saved free-running prediction streams, rather than re-run or manually edited. The score editor highlights its own measure-level differences.</p>
+</section>
+<div class="cmp-wide"><div class="cmp-inner">
+  <article class="cmp-card">
+    <p class="venue">Example 1 · OSSQ held-out · 0.139 → 0.994 mean staff accuracy</p>
+    <h3>System crop <code>sq8907120_0001_0001_4</code></h3>
+    <figure class="cmp-scan"><img src="armA-examples/crops/ossq_case_1.png" alt="Held-out OpenScore String Quartet scan crop"><figcaption>Source crop used for both predictions.</figcaption></figure>
+    <iframe class="cmp-frame" data-src="score-editor/index.html?compareLeft=%2FarmA-examples%2Fscores%2Fossq_case_1__baseline.musicxml&compareRight=%2FarmA-examples%2Fscores%2Fossq_case_1__arma.musicxml&leftLabel=Upstream%20426&rightLabel=Arm%20A" title="Upstream 426 and Arm A comparison for OSSQ example 1" loading="lazy"></iframe>
+    <div class="cmp-backup" aria-label="Static comparison backup"><figure><img src="armA-examples/screenshots/ossq_case_1__baseline-1.png" alt="Upstream 426 rendered MusicXML"><figcaption>Upstream 426</figcaption></figure><figure><img src="armA-examples/screenshots/ossq_case_1__arma-1.png" alt="Arm A rendered MusicXML"><figcaption>Arm A</figcaption></figure></div>
+    <p class="cmp-note">This is an extreme improvement selected by absolute per-staff change. It is included as a visual inspection target, not as a representative effect size.</p>
+  </article>
+  <article class="cmp-card">
+    <p class="venue">Example 2 · OSSQ held-out · 0.151 → 1.000 mean staff accuracy</p>
+    <h3>System crop <code>sq8075304_0012_0002_4</code></h3>
+    <figure class="cmp-scan"><img src="armA-examples/crops/ossq_case_2.png" alt="Held-out OpenScore String Quartet scan crop"><figcaption>Source crop used for both predictions.</figcaption></figure>
+    <iframe class="cmp-frame" data-src="score-editor/index.html?compareLeft=%2FarmA-examples%2Fscores%2Fossq_case_2__baseline.musicxml&compareRight=%2FarmA-examples%2Fscores%2Fossq_case_2__arma.musicxml&leftLabel=Upstream%20426&rightLabel=Arm%20A" title="Upstream 426 and Arm A comparison for OSSQ example 2" loading="lazy"></iframe>
+    <div class="cmp-backup" aria-label="Static comparison backup"><figure><img src="armA-examples/screenshots/ossq_case_2__baseline-1.png" alt="Upstream 426 rendered MusicXML"><figcaption>Upstream 426</figcaption></figure><figure><img src="armA-examples/screenshots/ossq_case_2__arma-1.png" alt="Arm A rendered MusicXML"><figcaption>Arm A</figcaption></figure></div>
+    <p class="cmp-note">This is a separate score and crop, also selected by absolute difference. It prevents one score-specific failure from carrying the entire visual argument.</p>
+  </article>
+</div></div>
+<section>
+<div class="note"><span class="lbl">How to view the comparisons</span><p>Serve <code>docs/writeups/</code> over HTTP, for example <code>python3 -m http.server 8000</code>, then open <code>http://localhost:8000/homr-best-model.html</code>. The editor fetches score files same-origin; a direct <code>file://</code> open will show the scan crops but cannot load the interactive comparison panes.</p></div>
+<p>The examples are intentionally scan-domain cases, and they are not a substitute for Table 1. The aggregate result remains the relevant estimate: 551 OSSQ staves score higher for Arm A, 56 score lower, and 185 are unchanged. Because 426 predates part of the vocabulary, inspect these examples together with the vocabulary caveat in §1.</p>
+<h3>A diagnostic comparison for the training-mixture choice</h3>
+<p>Arm A was selected not merely because it exceeds 426, but because it improves PDMX over <code>scans_v4</code> while retaining its scan result: OSSQ −0.09pp (not significant), PDMX +1.10pp (significant), Lieder +0.13pp (not significant). The comparison below is the attribution experiment; it does not suffer from the same broad “upstream versus current vocabulary” interpretation.</p>
+</section>
+<hr>
+<section>
+<h2>4&nbsp;&nbsp;How Arm A was created</h2>
+<p class="section-note">A controlled attribution arm</p>
+<p>
+<code>scans_v4</code> had the strongest OSSQ result but a small PDMX cost. The follow-up separated two ingredients: real scanned OSSQ crops and replay composition. Arm A retained the OSSQ and v4 Lieder mixture and used PDMX-only replay. Arm B removed scanned OSSQ entirely. Both arms used seed 42 and six epochs from the same start.</p>
+<div class="tablewrap">
+<table>
+<caption>Table 3 · Attribution experiment, numerator-neutral.</caption>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>scans_v4</th>
+<th>Arm A</th>
+<th>Arm B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OSSQ</td>
+<td>95.14</td>
+<td>95.05 <span class="quiet">(−0.09pp; ns)</span>
+</td>
+<td class="loss">91.26 (−3.89pp)</td>
+</tr>
+<tr>
+<td>PDMX held-out</td>
+<td>86.98</td>
+<td class="win">88.08 (+1.10pp)</td>
+<td class="win">88.02 (+1.04pp)</td>
+</tr>
+<tr>
+<td>Lieder v4</td>
+<td>94.40</td>
+<td>94.54 <span class="quiet">(+0.13pp; ns)</span>
+</td>
+<td>94.59 <span class="quiet">(+0.19pp; ns)</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<blockquote>Arm A is the general-purpose candidate because it recovers PDMX while retaining the scan result. Arm B demonstrates that the real scanned OSSQ crops, rather than the replay change, supply the large OSSQ gain.</blockquote>
+</section>
+<hr>
+<section>
+<h2>5&nbsp;&nbsp;Scope</h2>
+<p class="section-note">What this report does not claim</p>
+<p>This does not turn one Arm A seed into a corpus-wide estimate. It also does not promote the rare-numerator continuation as the default: that two-seed targeted experiment repairs 5/ and 12/ metre recognition, but seed 7 has a small significant Lieder cost. Structured heads were trained separately over a frozen rare-numerator core, so their beam, tie, and advance results are not claimed as ordinary Arm A outputs here.</p>
+<p>The full experiment record, score files, confidence intervals, and caveats are in <a href="../../BENCHMARKS.md">BENCHMARKS.md</a> and <a href="../../RUNLOG.md">RUNLOG.md</a>.</p>
+</section>
+<footer>Arm A technical note · figures generated by <code>compare_checkpoints.py</code> on 2026-08-30. Overall accuracy is the mean of six decoded branches; “ns” denotes a 95% paired-bootstrap interval crossing zero.</footer>
+ </main>
+<script>
+if (location.protocol === "file:") {
+  document.querySelectorAll(".cmp-frame").forEach((frame) => frame.classList.add("is-hidden"));
+  document.querySelectorAll(".cmp-backup").forEach((backup) => backup.classList.add("is-shown"));
+} else {
+  document.querySelectorAll(".cmp-frame").forEach((frame) => { frame.src = frame.dataset.src; });
+}
+</script>
+</body>
+</html>

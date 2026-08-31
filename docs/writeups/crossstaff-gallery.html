@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;font:16px/1.5 system-ui,sans-serif;color:#19201d;background:#fafaf8}.intro{margin:0 0 1rem}.selection-actions{display:flex;align-items:center;gap:.75rem;margin:0 0 1rem}.selection-actions button{padding:.45rem .7rem;border:1px solid #39735f;border-radius:4px;background:#e7f3ec;color:#164b39;font:inherit;font-weight:600;cursor:pointer}.selection-actions button:hover{background:#d6ecdf}.selection-actions .count{font-size:.9rem;color:#52615a}.card{box-sizing:border-box;width:100%;margin:0 0 1.4rem;padding:1rem;background:#fff;border:1px solid #dce2df}.card img{display:block;width:100%;height:auto;margin:.75rem 0;border:1px solid #dce2df}.card iframe{display:block;width:100%;height:620px;border:1px solid #dce2df}.keep{float:right;font-size:.9rem}@media(max-width:800px){.card iframe{height:400px}}
+</style><body>
+<p class="intro">Regenerated with the current rare-numerator ONNX core and its exported structured-head sidecar. The source scan, detector, and model are identical on both sides; only Phase 1’s candidate selection is disabled or enabled. The cards show all four real reductions found in the five targeted pages. “Findings” are the sum of barline-position and measure-duration disagreements between sibling staves, not reference-score errors.</p>
+<div class="selection-actions"><button type="button" id="export-selections">Download selected examples (JSON)</button><span class="count" id="selection-count"></span></div>
+<div id="cards"></div>
+<script src="lazy-score-editor.js"></script><script>
+const examples=[
+ ['01_sq8796660:0016_system2',2,0],
+ ['02_sq8461409:0007_system3',2,0],
+ ['03_sq7093885:0007_system1',2,1],
+ ['04_sq10502527:0013_system5',2,1],
+];
+const key='homr-devs-crossstaff-keep'; const saved=JSON.parse(localStorage.getItem(key)||'{}'); const esc=s=>encodeURIComponent(s);
+const selectionCount=document.querySelector('#selection-count');
+const selectedExamples=()=>examples.filter(([id])=>saved[id]).map(([id,before,after])=>({id,before_findings:before,after_findings:after,reduction:before-after}));
+const updateSelectionCount=()=>{const count=selectedExamples().length;selectionCount.textContent=`${count} selected`;};
+document.querySelector('#cards').innerHTML=examples.map(([id,before,after],i)=>`<section class="card"><label class="keep"><input type="checkbox" data-id="${id}" ${saved[id]?'checked':''}> keep this example</label><strong>${i+1}. ${id.replace(/_/g,' ')}</strong><br><span>Structural findings ${before} → ${after} (${before-after} fewer)</span><img src="devs-assets/crossstaff/${id}__scan.png" alt="Scanned source page for ${id}"><iframe data-score-editor="score-editor/index.html?compareLeft=${esc('/devs-assets/crossstaff/'+id+'__before.musicxml')}&compareRight=${esc('/devs-assets/crossstaff/'+id+'__after.musicxml')}&leftLabel=${esc('Same decode, Phase 1 off')}&rightLabel=${esc('Same decode, Phase 1 on')}" title="Cross-staff reranking comparison for ${id}"></iframe></section>`).join('');
+installLazyScoreEditors(document.querySelector('#cards'));
+updateSelectionCount();
+document.addEventListener('change',event=>{if(!event.target.matches('[data-id]'))return;saved[event.target.dataset.id]=event.target.checked;localStorage.setItem(key,JSON.stringify(saved));updateSelectionCount();});
+document.querySelector('#export-selections').addEventListener('click',()=>{const payload={format:'homr-crossstaff-gallery-selection@1',gallery:'cross-staff-reranking-regenerated-current-runtime-systems',exported_at:new Date().toISOString(),selected_examples:selectedExamples()};const blob=new Blob([JSON.stringify(payload,null,2)+'\n'],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='homr-crossstaff-reranking-selections.json';link.click();URL.revokeObjectURL(url);});
+</script></body></html>

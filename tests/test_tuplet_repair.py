@@ -152,6 +152,25 @@ def test_repair_symbols_rewrites_rhythm_only_and_preserves_other_branches() -> N
     assert out[5] is symbols[5]
 
 
+def test_repair_symbols_invalidates_a_previously_cached_duration() -> None:
+    """The live decoder often populates this cache before the late repair pass."""
+    symbols = [
+        EncodedSymbol("note_8"), EncodedSymbol("note_8"), EncodedSymbol("note_8"),
+        EncodedSymbol("note_4"), EncodedSymbol(BAR),
+        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
+        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
+        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
+    ]
+    for symbol in symbols:
+        symbol.get_duration()
+
+    out, rewrites = repair_symbols(symbols)
+
+    assert rewrites
+    assert out[0].rhythm == "note_12"
+    assert out[0].get_duration().fraction == Fraction(1, 12)
+
+
 def test_repair_symbols_no_rewrite_returns_same_object() -> None:
     symbols = [
         EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),

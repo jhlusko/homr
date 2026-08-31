@@ -1,0 +1,5 @@
+/workspace/b0/ossq-omr/scores/Haydn,_Joseph/String_Quartet_in_A_major,_Hob.III36,_Op.20_No.6/images/scanned/original/sq8796660:0016.png
+/workspace/b0/ossq-omr/scores/Haydn,_Joseph/String_Quartet_in_B-flat_major_(“La_Chasse”),_Hob._III1,_Op.1_No.1/images/scanned/original/sq8461409:0007.png
+/workspace/b0/ossq-omr/scores/Mozart,_Wolfgang_Amadeus/String_Quartet_No.18_in_A_major,_K.464_(Op._10,_No._5)/images/scanned/original/sq7093885:0007.png
+/workspace/b0/ossq-omr/scores/Beethoven,_Ludwig_van/Grosse_Fuge_in_B-flat_major,_Op.133/images/scanned/original/sq10502527:0013.png
+/workspace/b0/ossq-omr/scores/Beethoven,_Ludwig_van/String_Quartet_No.3,_Op.18_No.3/images/scanned/original/sq8907120:0009.png

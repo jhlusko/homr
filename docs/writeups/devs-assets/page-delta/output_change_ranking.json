@@ -1,0 +1,218 @@
+[
+  {
+    "id": "28_sq8940236:0026",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/28_sq8940236:0026.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/28_sq8940236:0026.musicxml",
+    "change_ned": 0.18136769078295342,
+    "distance": 183,
+    "baseline_symbols": 506,
+    "arma_symbols": 503
+  },
+  {
+    "id": "25_sq7267316:0041",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/25_sq7267316:0041.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/25_sq7267316:0041.musicxml",
+    "change_ned": 0.16449086161879894,
+    "distance": 126,
+    "baseline_symbols": 384,
+    "arma_symbols": 382
+  },
+  {
+    "id": "27_sq8806746:0002",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/27_sq8806746:0002.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/27_sq8806746:0002.musicxml",
+    "change_ned": 0.15939086294416244,
+    "distance": 157,
+    "baseline_symbols": 488,
+    "arma_symbols": 497
+  },
+  {
+    "id": "17_sq10381459:0009",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/17_sq10381459:0009.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/17_sq10381459:0009.musicxml",
+    "change_ned": 0.07862903225806452,
+    "distance": 78,
+    "baseline_symbols": 497,
+    "arma_symbols": 495
+  },
+  {
+    "id": "01_sq7354505:0006",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/01_sq7354505:0006.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/01_sq7354505:0006.musicxml",
+    "change_ned": 0.06749740394600208,
+    "distance": 65,
+    "baseline_symbols": 483,
+    "arma_symbols": 480
+  },
+  {
+    "id": "10_sq7383977:0045",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/10_sq7383977:0045.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/10_sq7383977:0045.musicxml",
+    "change_ned": 0.06463414634146342,
+    "distance": 53,
+    "baseline_symbols": 410,
+    "arma_symbols": 410
+  },
+  {
+    "id": "09_sq8482283:0008",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/09_sq8482283:0008.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/09_sq8482283:0008.musicxml",
+    "change_ned": 0.06425339366515836,
+    "distance": 71,
+    "baseline_symbols": 555,
+    "arma_symbols": 550
+  },
+  {
+    "id": "18_sq8806134:0008",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/18_sq8806134:0008.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/18_sq8806134:0008.musicxml",
+    "change_ned": 0.06049149338374291,
+    "distance": 64,
+    "baseline_symbols": 530,
+    "arma_symbols": 528
+  },
+  {
+    "id": "14_sq8811375:0040",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/14_sq8811375:0040.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/14_sq8811375:0040.musicxml",
+    "change_ned": 0.052361396303901436,
+    "distance": 51,
+    "baseline_symbols": 487,
+    "arma_symbols": 487
+  },
+  {
+    "id": "22_sq9396439:0010",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/22_sq9396439:0010.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/22_sq9396439:0010.musicxml",
+    "change_ned": 0.04204993429697766,
+    "distance": 64,
+    "baseline_symbols": 761,
+    "arma_symbols": 761
+  },
+  {
+    "id": "13_sq8907120:0021",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/13_sq8907120:0021.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/13_sq8907120:0021.musicxml",
+    "change_ned": 0.03922789539227895,
+    "distance": 63,
+    "baseline_symbols": 803,
+    "arma_symbols": 803
+  },
+  {
+    "id": "21_sq10502527:0020",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/21_sq10502527:0020.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/21_sq10502527:0020.musicxml",
+    "change_ned": 0.038461538461538464,
+    "distance": 52,
+    "baseline_symbols": 676,
+    "arma_symbols": 676
+  },
+  {
+    "id": "20_sq14387632:0003",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/20_sq14387632:0003.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/20_sq14387632:0003.musicxml",
+    "change_ned": 0.038314176245210725,
+    "distance": 20,
+    "baseline_symbols": 261,
+    "arma_symbols": 261
+  },
+  {
+    "id": "26_sq12772795:0004",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/26_sq12772795:0004.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/26_sq12772795:0004.musicxml",
+    "change_ned": 0.03307607497243661,
+    "distance": 30,
+    "baseline_symbols": 454,
+    "arma_symbols": 453
+  },
+  {
+    "id": "08_sq10328092:0015",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/08_sq10328092:0015.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/08_sq10328092:0015.musicxml",
+    "change_ned": 0.03209242618741977,
+    "distance": 25,
+    "baseline_symbols": 390,
+    "arma_symbols": 389
+  },
+  {
+    "id": "19_sq8075304:0010",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/19_sq8075304:0010.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/19_sq8075304:0010.musicxml",
+    "change_ned": 0.03183023872679045,
+    "distance": 24,
+    "baseline_symbols": 377,
+    "arma_symbols": 377
+  },
+  {
+    "id": "29_sq7300376:0016",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/29_sq7300376:0016.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/29_sq7300376:0016.musicxml",
+    "change_ned": 0.031144781144781145,
+    "distance": 37,
+    "baseline_symbols": 594,
+    "arma_symbols": 594
+  },
+  {
+    "id": "16_sq7362818:0062",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/16_sq7362818:0062.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/16_sq7362818:0062.musicxml",
+    "change_ned": 0.027923211169284468,
+    "distance": 16,
+    "baseline_symbols": 287,
+    "arma_symbols": 286
+  },
+  {
+    "id": "11_sq7123582:0017",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/11_sq7123582:0017.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/11_sq7123582:0017.musicxml",
+    "change_ned": 0.026785714285714284,
+    "distance": 33,
+    "baseline_symbols": 616,
+    "arma_symbols": 616
+  },
+  {
+    "id": "23_sq11154985:0033",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/23_sq11154985:0033.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/23_sq11154985:0033.musicxml",
+    "change_ned": 0.02476780185758514,
+    "distance": 16,
+    "baseline_symbols": 323,
+    "arma_symbols": 323
+  },
+  {
+    "id": "07_sq7249986:0007",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/07_sq7249986:0007.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/07_sq7249986:0007.musicxml",
+    "change_ned": 0.02122641509433962,
+    "distance": 18,
+    "baseline_symbols": 425,
+    "arma_symbols": 423
+  },
+  {
+    "id": "24_sq15049456:0015",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/24_sq15049456:0015.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/24_sq15049456:0015.musicxml",
+    "change_ned": 0.02040816326530612,
+    "distance": 18,
+    "baseline_symbols": 441,
+    "arma_symbols": 441
+  },
+  {
+    "id": "02_sq16138966:0001",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/02_sq16138966:0001.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/02_sq16138966:0001.musicxml",
+    "change_ned": 0.019801980198019802,
+    "distance": 28,
+    "baseline_symbols": 707,
+    "arma_symbols": 707
+  },
+  {
+    "id": "03_sq11154985:0051",
+    "baseline": "/workspace/b0/page426_vs_arma/baseline/03_sq11154985:0051.musicxml",
+    "arma": "/workspace/b0/page426_vs_arma/arma/03_sq11154985:0051.musicxml",
+    "change_ned": 0.006211180124223602,
+    "distance": 4,
+    "baseline_symbols": 322,
+    "arma_symbols": 322
+  }
+]

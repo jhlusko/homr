@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;font:16px/1.5 system-ui,sans-serif;color:#19201d;background:#fafaf8}.intro{margin:0 0 1rem}.card{box-sizing:border-box;width:100%;margin:0 0 1.4rem;padding:1rem;background:#fff;border:1px solid #dce2df}.card img{display:block;width:100%;height:auto;margin:.75rem 0;border:1px solid #dce2df}.card iframe{display:block;width:100%;height:620px;border:1px solid #dce2df}.keep{float:right;font-size:.9rem}@media(max-width:800px){.card iframe{height:400px}}
+</style><body>
+<p class="intro">Five largest observed <em>output</em> changes on the 24 usable pages in a random page sample. Each score below is the structural normalized edit distance (NED) between upstream 426’s final MusicXML and Arm A’s final MusicXML, after each system’s normal live repairs. It ranks how much the output changed; without a page-aligned reference it is neither an error rate nor evidence that every change is an improvement.</p>
+<div id="cards"></div>
+<script src="lazy-score-editor.js"></script><script>
+const examples=[
+ ['28_sq8940236:0026',.1813676908,183,506,503],
+ ['25_sq7267316:0041',.1644908616,126,384,382],
+ ['27_sq8806746:0002',.1593908629,157,488,497],
+ ['17_sq10381459:0009',.0786290323,78,497,495],
+ ['01_sq7354505:0006',.0674974039,65,483,480],
+];
+const key='homr-devs-page-delta-keep'; const saved=JSON.parse(localStorage.getItem(key)||'{}');
+const esc=s=>encodeURIComponent(s);
+document.querySelector('#cards').innerHTML=examples.map(([id,ned,d,a,b],i)=>`<section class="card"><label class="keep"><input type="checkbox" data-id="${id}" ${saved[id]?'checked':''}> keep this example</label><strong>${i+1}. ${id}</strong><br><span>Output-change NED ${(ned*100).toFixed(2)}% · ${d} edits · 426/current structural tokens ${a}/${b}</span><img src="devs-assets/page-delta/baseline/${id}.png" alt="Scanned source page for ${id}"><iframe data-score-editor="score-editor/index.html?compareLeft=${esc('/devs-assets/page-delta/baseline/'+id+'.musicxml')}&compareRight=${esc('/devs-assets/page-delta/arma/'+id+'.musicxml')}&leftLabel=${esc('Upstream 426')}&rightLabel=${esc('Arm A')}" title="426 and Arm A comparison for ${id}"></iframe></section>`).join('');
+installLazyScoreEditors(document.querySelector('#cards'));
+document.addEventListener('change',event=>{if(!event.target.matches('[data-id]'))return;saved[event.target.dataset.id]=event.target.checked;localStorage.setItem(key,JSON.stringify(saved));});
+</script></body></html>

@@ -171,6 +171,12 @@ def dump_predictions(
                 [str(field) for pair in predicted[index].slurs[:slur_slots] for field in pair]
                 for index, _ in slurred
             ],
+            # Tie has the same all-note supervision shape as slur/dynamics.  Keep it
+            # explicit rather than inferring it from the legacy flat slur token: a
+            # tie and a phrase slur can coexist on one note, which is precisely why the
+            # head exists.  The vectors make output-gallery selection auditable.
+            "ties_reference": [str(note.tie) for _, note in slurred],
+            "ties_predicted": [str(predicted[index].tie) for index, _ in slurred],
             # Dynamic is supervised on every note, like slur event - no filtering
             # condition to mirror. 28.1's phase16/17 found mf/mp/ppp stuck at F1=0.000
             # with no way to see what the head predicts *instead* on those positions;

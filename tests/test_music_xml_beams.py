@@ -1,8 +1,8 @@
 import unittest
 import xml.etree.ElementTree as ET
 
-from homr.music_xml_generator import BEAM_VALUES, build_beams
-from homr.transformer.structured_notation import BeamLevelState, NoteNotation
+from homr.music_xml_generator import BEAM_VALUES, build_beams, build_note_or_rest, build_slurs, build_stem, build_tied_notations, build_ties, ConversionState
+from homr.transformer.structured_notation import BeamLevelState, NoteNotation, SlurEvent, SlurSide, StemDirection, TieState
 from homr.transformer.vocabulary import EncodedSymbol
 
 
@@ -82,6 +82,67 @@ class TestBuildBeams(unittest.TestCase):
     def test_the_non_connective_states_are_deliberately_absent(self) -> None:
         self.assertNotIn(str(BeamLevelState.FLAG), BEAM_VALUES)
         self.assertNotIn(str(BeamLevelState.NOT_APPLICABLE), BEAM_VALUES)
+
+
+class TestMixedSidecarExport(unittest.TestCase):
+    def test_tie_and_stem_have_schema_order_in_a_complete_note(self) -> None:
+        """Keep direct children in the order MuseScore's parser accepts.
+
+        The review editor loads each comparison only after parsing the treatment.
+        Direct ties added after ``notations`` left its control pane indefinitely at
+        "Loading checkpoint score", despite the document being well-formed XML.
+        """
+        symbol = _note_with(BeamLevelState.NOT_APPLICABLE)
+        symbol.notation = NoteNotation(
+            beam_levels=(BeamLevelState.NOT_APPLICABLE,),
+            stem=StemDirection.DOWN,
+            slurs=(),
+            tie=TieState.START,
+        )
+
+        note = build_note_or_rest(symbol, 0, False, ConversionState(16, 1), "")
+        children = [child.tag for child in note]
+
+        self.assertLess(children.index("duration"), children.index("tie"))
+        self.assertLess(children.index("tie"), children.index("type"))
+        self.assertLess(children.index("voice"), children.index("stem"))
+        self.assertLess(children.index("stem"), children.index("staff"))
+
+    def test_stem_and_tie_write_real_musicxml_elements(self) -> None:
+        symbol = _note_with(BeamLevelState.NOT_APPLICABLE)
+        symbol.notation = NoteNotation(
+            beam_levels=(BeamLevelState.NOT_APPLICABLE,),
+            stem=StemDirection.DOWN,
+            slurs=(),
+            tie=TieState.START,
+        )
+        note = ET.Element("note")
+
+        build_stem(note, symbol)
+        build_ties(note, symbol)
+        build_tied_notations(note, symbol)
+
+        self.assertEqual(note.findtext("stem"), "down")
+        self.assertEqual([(x.get("type")) for x in note.findall("tie")], ["start"])
+        self.assertEqual(
+            [(x.get("type")) for x in note.findall("notations/tied")], ["start"]
+        )
+
+    def test_structured_slur_is_emitted_when_core_has_no_slur_token(self) -> None:
+        symbol = _note_with(BeamLevelState.NOT_APPLICABLE)
+        symbol.notation = NoteNotation(
+            beam_levels=(BeamLevelState.NOT_APPLICABLE,),
+            stem=StemDirection.NOT_APPLICABLE,
+            slurs=((SlurEvent.START, SlurSide.ABOVE),),
+        )
+        note = ET.Element("note")
+
+        build_slurs(note, symbol, ConversionState(16, 1))
+
+        slur = note.find("notations/slur")
+        self.assertIsNotNone(slur)
+        assert slur is not None
+        self.assertEqual(slur.attrib, {"type": "start", "number": "1", "placement": "above"})
 
 
 if __name__ == "__main__":

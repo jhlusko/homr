@@ -327,6 +327,10 @@ def build_batches(
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=workers,
+        # Rebuilding image-loader processes for every epoch is several minutes on
+        # the mixed corpus.  These workers have no epoch-local state, so keep them
+        # alive and retain their filesystem/image caches between passes.
+        persistent_workers=workers > 0,
         collate_fn=lambda items: collate(items, names),
     )
     return loader, len(wrapped)
