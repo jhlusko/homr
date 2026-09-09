@@ -66,11 +66,10 @@ class TestIsOffered(unittest.TestCase):
         self.assertTrue(is_offered("slur.slot.1.event"))
         self.assertTrue(is_offered("slur.slot.2.side"))
 
-    def test_stems_and_ties_are_not_offered(self) -> None:
-        # Written to MusicXML, but not put to the user: 0.7189 and 0.8032 macro F1 is
-        # too weak a claim to render as "pick one".
-        self.assertFalse(is_offered("stem.direction"))
-        self.assertFalse(is_offered("tie.state"))
+    def test_selectable_scalar_heads_are_offered(self) -> None:
+        self.assertTrue(is_offered("stem.direction"))
+        self.assertTrue(is_offered("tie.state"))
+        self.assertTrue(is_offered("advance.delta"))
 
     def test_dynamics_are_not_offered(self) -> None:
         self.assertFalse(is_offered("dynamic.mark"))
@@ -109,8 +108,7 @@ class TestDecodeHead(unittest.TestCase):
 
         self.assertEqual(probabilities, sorted(probabilities, reverse=True))
 
-    def test_an_uncertain_head_that_is_not_offered_stays_silent(self) -> None:
-        # The decisive case: uncertainty alone does not earn a place in the UI.
+    def test_an_uncertain_scalar_head_offers_ranked_choices(self) -> None:
         choice = decode_head(
             "stem.direction",
             split_two(STEM_CLASSES, StemDirection.UP, StemDirection.DOWN),
@@ -118,7 +116,8 @@ class TestDecodeHead(unittest.TestCase):
         )
 
         self.assertEqual(choice.value, str(StemDirection.UP))
-        self.assertEqual(choice.alternatives, ())
+        self.assertEqual(choice.alternatives[0].value, str(StemDirection.UP))
+        self.assertEqual(choice.alternatives[1].value, str(StemDirection.DOWN))
 
     def test_the_threshold_is_honoured(self) -> None:
         logits = peaked(BEAM_LEVEL_CLASSES, BeamLevelState.BEGIN, mass=0.90)
@@ -208,7 +207,7 @@ class TestDecodeNote(unittest.TestCase):
 
         surfaced = [choice.head for choice in decode_note(logits).uncertain_choices()]
 
-        self.assertEqual(surfaced, ["beam.level.1"])
+        self.assertEqual(surfaced, ["beam.level.1", "stem.direction"])
 
     def test_a_confident_note_surfaces_nothing(self) -> None:
         self.assertEqual(decode_note(self.logits()).uncertain_choices(), ())
