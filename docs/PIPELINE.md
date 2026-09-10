@@ -31,14 +31,31 @@ source archive plus patches:
 | extra module | `homr_runtime/tuplet_repair.py` → `/opt/homr-tuplet-repair.py` |
 | service revision | `ots-ots-homr-provider-v4` |
 
-**The pinned commit `997b70a8` does not exist in this repository**, and is not
-recoverable by `git fetch`. It was rebased or force-pushed away. The pinning itself is
-correct — production is reproducible from the archive — but you currently cannot diff
-production against source history, which is how the write-ups drifted out of date
-without anyone noticing.
+**The pinned commit `997b70a8` is gone.** Not in this repository's objects, not in any
+other clone in the workspace, not reachable via reflog or `git fsck --lost-found`, and
+the GitHub API answers `422 No commit found`. It was rebased or force-pushed away, and
+the archive carries no `.git`, so the identity is unrecoverable.
 
-Only two modules exist here but not in the archive: `tuplet_repair.py` (shipped
-separately, see above) and `text_detector_config.py`.
+The *content* was not lost. `production/ots-homr-997b70a8` (tag
+`deployed/ots-homr-997b70a8`) is an orphan commit whose tree is exactly the archive's
+475 files, tree `55731f470c7702a76d4fe81e439f35fd6b16f9c3`. Its own hash is necessarily
+different — author, date and parent are unrecoverable — so treat the tree as the record
+and the commit as a container for it. What it restores is the capability that was
+actually lost:
+
+```
+git diff production/ots-homr-997b70a8 ossq-benchmark -- homr/
+```
+
+As of 2026-09-10 that is **12 files, +1,325 / −271**, concentrated in `main.py`,
+`music_xml_generator.py`, `decoder_inference.py`, `structured_decode.py`,
+`structured_notation.py` and `configs.py` — which is precisely the set
+`homr-997-runtime.patch` touches. The patch *is* that drift, carried as a diff instead
+of as commits. Two files exist here and not in the archive at all: `tuplet_repair.py`
+(shipped separately, see above) and `text_detector_config.py`.
+
+Note the working branch is `ossq-benchmark`, not `main`; `main` is well behind and is
+not what any of this is measured against.
 
 ## 2. Feature status
 

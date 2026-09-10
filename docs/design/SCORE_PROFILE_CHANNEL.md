@@ -96,6 +96,54 @@ once it exists, any of these can fill it without further plumbing.
   profile applied to its own page is circular, so it must be inferred from one page and
   applied to the *others*, and marked as inferred in provenance.
 
+## What a finding is, and who sees it
+
+A profile is a prior supplied by a human who may be wrong, so the question "what
+happens when the profile is wrong?" is the design, not an edge case. A profile expecting
+the cello in bass clef meets a movement that genuinely opens in tenor, or a passage that
+goes into treble; both are ordinary music, not recognition errors.
+
+**Today the answer is bad: findings go to `eprint`.** `check_clefs_against_profile`
+emits a `Finding` that `_report_cross_staff_findings` writes to the process log, which
+in production is a Modal container's stdout. No reviewer will ever see it. Shipping the
+channel without a surface would mean a wrong profile silently produces log noise, and a
+*right* profile catching a real error also silently produces log noise. Neither is worth
+building.
+
+So the channel is only worth landing together with a surface, and the surface must be
+built for the case where the **profile** is wrong rather than the score:
+
+1. **Findings are page-scoped review annotations, not errors.** A clef finding says
+   "staff 3 decoded treble; the profile expects bass or tenor for Cello" and offers two
+   dispositions: *the reading is wrong* (a recognition problem, route to the existing
+   review queue) and *the profile is wrong* (amend the profile for this job).
+2. **Amending the profile is the expected outcome, not a failure path.** A cello part
+   that uses tenor clef should end with `likelyClefs: ["bass", "tenor"]` recorded against
+   that job, and the finding should not recur on later pages. This is why `stableId` is
+   scoped to the submitted job rather than a universal instrument registry — the schema
+   already anticipated exactly this.
+3. **A dismissed finding stays dismissed, per part and per clef.** A quartet with a
+   tenor-clef cello would otherwise raise the same finding on every page of the
+   movement, which trains reviewers to ignore the whole category.
+4. **Findings never gate anything.** They do not block assembly, mark a page failed, or
+   change `page.status`. A page with unresolved profile findings is a complete page with
+   review annotations on it.
+5. **Provenance records which side won.** When a reviewer amends the profile, record it,
+   because a profile amended three times in one score is evidence that the profile was
+   guessed rather than known — worth knowing before anyone proposes giving profiles
+   corrective authority.
+
+The precision consequence is worth stating plainly: clef findings will be **noisy on
+real repertoire**. Cello tenor/treble, viola treble, bassoon tenor and octave-transposing
+voice parts are all common. A finding that fires on ordinary music is only tolerable
+because it is an annotation a reviewer can dismiss in one click, and it would be
+intolerable if it were an error, a block, or an automatic correction. That asymmetry is
+the whole reason §"Principle" refuses corrective authority.
+
+Surface seam: the findings ride the existing scan response as a bounded per-page
+artifact alongside the Stage 3 diagnostics, and render in the scanner page card next to
+the engine list — the same place a reviewer already looks at per-page state.
+
 ## What it unlocks, in order of value
 
 1. **Clef findings** (`check_clefs_against_profile`) — works the day the channel lands.
@@ -121,4 +169,6 @@ once it exists, any of these can fill it without further plumbing.
 - Absent profile is byte-identical to today's output — the regression assertion that
   matters, and the same shape the text-fusion design uses for core dynamics.
 - A deliberately wrong profile changes findings only, never decoded symbols.
+- A clef finding survives to the response as a review annotation, and a dismissal
+  suppresses it for that part and clef on later pages of the same job.
 - Fingerprint: two runs differing only in profile do not share an idempotency key.
