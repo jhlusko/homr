@@ -189,6 +189,25 @@ class Config:
         #: maintainer's explicit instruction. Set HOMR_CROSS_STAFF_REPAIR=0 to return to
         #: log-only.
         self.cross_staff_repair = os.environ.get("HOMR_CROSS_STAFF_REPAIR", "1") != "0"
+        #: Re-decode the one measure a cumulative-barline divergence localizes, and keep
+        #: an alternative only if its barlines then land exactly where the majority's do.
+        #:
+        #: `propose_majority_position_corrections` has no `apply_*` of its own because it
+        #: knows *where* a divergence starts and not *what* caused it. This does not
+        #: guess at the cause: it treats the proposal as a search hint, forks only the
+        #: rhythm decisions inside that measure, and verifies the result. A candidate
+        #: that merely agrees *better* - which is what Phase 1's reranker keeps - is
+        #: rejected.
+        #:
+        #: Distinct from Phase 1 in what it searches, not just how it is scored: the
+        #: reranker forks a staff's few narrowest margins across the whole staff, so a
+        #: divergence that survives it is one whose causal decision was not among them.
+        #: This searches one measure much more thoroughly (`DEFAULT_MAX_FORKS`).
+        #:
+        #: Set HOMR_CROSS_STAFF_POSITION_REPAIR=0 to leave these diagnostic.
+        self.cross_staff_position_repair = (
+            os.environ.get("HOMR_CROSS_STAFF_POSITION_REPAIR", "1") != "0"
+        )
         self.pad_token = 0
         self.bos_token = 1
         self.eos_token = 2

@@ -27,6 +27,7 @@ from homr.cross_staff_repair import (
     propose_motif_articulation_corrections,
     propose_repairs,
 )
+from homr.cross_staff_position_repair import repair_position_divergence
 from homr.cross_staff_rerank import fork_candidates_from_margins, rerank_staff_candidates
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
@@ -679,6 +680,11 @@ def parse_staffs(
             for staff_index, voice in enumerate(present_voices):
                 decoded[(voice, system_index)] = reranked[staff_index]
 
+            if config.cross_staff_position_repair:
+                _repair_position_divergence(
+                    decoded, voice_raw, present_voices, system_index, config
+                )
+
     if enable_staff_context and do_rerank:
         if not staff_context_weights:
             raise ValueError("enable_staff_context requires staff_context_weights")
@@ -734,6 +740,58 @@ def parse_staffs(
         # findings_by_page actually received.
         _report_cross_staff_findings(plan, voices, score_profile)
     return voices
+
+
+def _repair_position_divergence(
+    decoded: dict[tuple[int, int], list[EncodedSymbol]],
+    voice_raw: dict[int, tuple],
+    present_voices: list[int],
+    system_index: int,
+    config: Config,
+) -> None:
+    """Re-decode the measure a barline divergence localizes, and keep a verified fix.
+
+    Runs after Phase 1's reranker, on purpose: a divergence still standing here is one
+    the reranker's few narrowest margins could not reach, which is the population this
+    is for. Anything raised leaves the system exactly as the reranker left it - a
+    correction that cannot be computed is not worth failing a page over.
+    """
+    try:
+        staves = [decoded[(voice, system_index)] for voice in present_voices]
+        raw_staves = [voice_raw[voice][1] for voice in present_voices]
+        margins_by_staff = [voice_raw[voice][2] for voice in present_voices]
+
+        def fork(staff_index: int, step: int, alt_token_id: int) -> list[EncodedSymbol] | None:
+            staff, raw_greedy, _margins, context, decoder, _hidden = voice_raw[
+                present_voices[staff_index]
+            ]
+            candidate = decoder.rhythm_alternative(
+                raw_greedy,
+                step,
+                alt_token_id,
+                seq_len=config.max_seq_len,
+                eos_token=config.eos_token,
+                context=context,
+            )
+            if not candidate:
+                return None
+            # The same filter a plain decode gets, so a candidate is comparable with
+            # the greedy staves the majority was computed from.
+            return (
+                candidate
+                if staff.is_grandstaff
+                else [symbol for symbol in candidate if symbol.position != "lower"]
+            )
+
+        repaired = repair_position_divergence(staves, raw_staves, margins_by_staff, fork)
+        for staff_index, corrected in repaired.items():
+            decoded[(present_voices[staff_index], system_index)] = corrected
+            eprint(
+                f"System {system_index}: position repair applied - staff {staff_index}'s "
+                "barlines now match the majority exactly"
+            )
+    except Exception as error:  # noqa: BLE001
+        eprint(f"Cross-staff position repair failed for system {system_index}, skipping: {error}")
 
 
 def _apply_cross_staff_repairs(

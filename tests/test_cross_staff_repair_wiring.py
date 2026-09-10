@@ -99,5 +99,81 @@ class TestCrossStaffRepairWiring(unittest.TestCase):
         self.assertEqual(decoded, before)
 
 
+class _FakeDecoder:
+    """Returns a prepared candidate for any fork, recording what was asked for."""
+
+    def __init__(self, candidate):
+        self.candidate = candidate
+        self.calls = []
+
+    def rhythm_alternative(self, raw, step, alt_token_id, **kwargs):
+        self.calls.append((step, alt_token_id))
+        return self.candidate
+
+
+class _FakeStaff:
+    is_grandstaff = True
+
+
+class TestPositionRepairWiring(unittest.TestCase):
+    """The glue between parse_staffs' fork materials and the verified repair."""
+
+    def _staff(self, *measures):
+        out = []
+        for measure in measures:
+            out.extend(EncodedSymbol(rhythm=r, pitch="C4") for r in measure.split())
+            out.append(EncodedSymbol(rhythm="barline"))
+        return out
+
+    def test_a_verified_fix_replaces_the_decoded_staff(self) -> None:
+        from homr.staff_parsing import _repair_position_divergence
+
+        good = self._staff("note_4 note_4", "note_4 note_4", "note_4 note_4")
+        bad = self._staff("note_4 note_4", "note_4 note_4 note_8", "note_4 note_4")
+        decoder = _FakeDecoder(good)
+        present = [0, 1, 2, 3]
+        decoded = {(v, 0): (bad if v == 1 else good) for v in present}
+        voice_raw = {
+            v: (_FakeStaff(), decoded[(v, 0)], [(7, 0.5)] * len(decoded[(v, 0)]), None, decoder, None)
+            for v in present
+        }
+
+        class _Cfg:
+            max_seq_len = 256
+            eos_token = 2
+
+        with patch("homr.staff_parsing.eprint"):
+            _repair_position_divergence(decoded, voice_raw, present, 0, _Cfg())
+
+        self.assertEqual(decoded[(1, 0)], good)
+        self.assertTrue(decoder.calls)
+
+    def test_a_decoder_failure_leaves_the_system_untouched(self) -> None:
+        from homr.staff_parsing import _repair_position_divergence
+
+        good = self._staff("note_4 note_4", "note_4 note_4", "note_4 note_4")
+        bad = self._staff("note_4 note_4", "note_4 note_4 note_8", "note_4 note_4")
+        present = [0, 1, 2, 3]
+        decoded = {(v, 0): (bad if v == 1 else good) for v in present}
+        before = {k: list(v) for k, v in decoded.items()}
+
+        class _Boom:
+            def rhythm_alternative(self, *a, **k):
+                raise RuntimeError("boom")
+
+        voice_raw = {
+            v: (_FakeStaff(), decoded[(v, 0)], [(7, 0.5)] * len(decoded[(v, 0)]), None, _Boom(), None)
+            for v in present
+        }
+
+        class _Cfg:
+            max_seq_len = 256
+            eos_token = 2
+
+        with patch("homr.staff_parsing.eprint"):
+            _repair_position_divergence(decoded, voice_raw, present, 0, _Cfg())
+        self.assertEqual(decoded, before)
+
+
 if __name__ == "__main__":
     unittest.main()

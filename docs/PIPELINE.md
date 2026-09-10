@@ -70,7 +70,7 @@ not what any of this is measured against.
 | Structured heads: beam, advance, stem, tie, slur | yes | **yes** | §5 |
 | Structured head: dynamics | yes | **no** | macro-F1 .105 (935) — withheld, §5 |
 | Cross-staff tier-1 repair (key/time/articulation) | yes | **yes, new** | §4.2 — was log-only until 2026-09-10 |
-| Cross-staff position-divergence repair | proposer only | **no** | no applier exists, §4.2 |
+| Cross-staff position-divergence repair | yes | **yes, new** | §4.4 — verified re-decode, 2026-09-10 |
 | Stage C staff-context two-pass decode | yes | **no** | weights not pinned or shipped, §4.3 |
 | Score profiles (clef/layout checks) | yes | **no** | no channel to supply one, §6 |
 | Stage 3 text: lyrics / dynamics / measure numbers | yes | partial | one detector per run, §7 |
@@ -168,6 +168,30 @@ Guards, all pre-existing in the proposers and deliberately kept:
 maintainer's explicit instruction. Polymetric and polytonal music is real; the
 three-staff minimum and strict-majority rule are what stand between this and damaging
 it. If a regression appears, `HOMR_CROSS_STAFF_REPAIR=0` restores log-only behaviour.
+
+### 4.4 Verified position repair — ships as of 2026-09-10 (new)
+
+`propose_majority_position_corrections` says a staff's cumulative barline positions
+diverge from a majority by a constant offset from one measure onward, and deliberately
+had no `apply_*`: it knows *where* the divergence starts, not *what* caused it.
+
+`cross_staff_position_repair` does not guess at the cause. It treats the proposal as a
+**search hint** — re-decode only the rhythm decisions inside that one measure — and
+accepts an alternative only when its barline positions then match the majority's
+**exactly**. A candidate that merely agrees *better* is rejected. That verification is
+what lets it apply automatically where the proposal alone could not.
+
+It is not redundant with §4.1. The reranker forks a staff's `phase1_max_forks` (3)
+narrowest margins across the *whole staff* and keeps whichever candidate agrees most, so
+a divergence surviving it is one whose causal decision was not among those few. This
+runs afterwards, searches one measure far more thoroughly (6 forks), and demands
+exactness. The step numbering is safe because `generate_with_rhythm_margins` guarantees
+`margins[i]` belongs to `symbols[i]`, 1:1.
+
+Guards: the proposer's own bar (4+ staves with barlines, a 3-staff majority, no tie);
+margins must be aligned 1:1 with the raw sequence; the raw and filtered staves must
+agree on how many measures exist; and any exception leaves the system as the reranker
+left it. `HOMR_CROSS_STAFF_POSITION_REPAIR=0` restores diagnostic-only.
 
 ### 4.3 Stage C staff-context decode — does not ship
 
