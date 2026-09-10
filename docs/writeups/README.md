@@ -1,5 +1,11 @@
 # Write-ups
 
+> **Superseded.** The write-ups in this directory are retained copies of published
+> artifacts and are no longer maintained. For what the pipeline actually does and which
+> features ship, see [`docs/PIPELINE.md`](../PIPELINE.md). This README still describes
+> how to serve and republish these files, which remains accurate.
+
+
 Local copies of the two published write-ups. Both cover the same work for different
 readers, and both are condensed from `ENSEMBLE_TRANSCRIPTION_DESIGN.md` and
 `ENSEMBLE_TRANSCRIPTION_NEXT_STEPS.md` — those remain the authority when they disagree.

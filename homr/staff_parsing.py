@@ -18,6 +18,10 @@ from homr.cross_staff_consistency import (
     staves_by_system,
 )
 from homr.cross_staff_repair import (
+    RepairProposal,
+    apply_articulation_proposal,
+    apply_insertion_proposal,
+    apply_proposal,
     propose_carry_forward_key_signature,
     propose_majority_position_corrections,
     propose_motif_articulation_corrections,
@@ -707,6 +711,9 @@ def parse_staffs(
                 decoded[(voice, system_index)] = filtered2
                 i += 1
 
+    if config.cross_staff_repair and selected_staff < 0:
+        _apply_cross_staff_repairs(plan, decoded, number_of_voices)
+
     voices = []
     for voice in range(number_of_voices):
         result_for_voice = []
@@ -727,6 +734,75 @@ def parse_staffs(
         # findings_by_page actually received.
         _report_cross_staff_findings(plan, voices, score_profile)
     return voices
+
+
+def _apply_cross_staff_repairs(
+    plan: SystemPlan,
+    decoded: dict[tuple[int, int], list[EncodedSymbol]],
+    number_of_voices: int,
+) -> None:
+    """Apply the tier-1 repairs `cross_staff_repair` proposes, in place in `decoded`.
+
+    The proposers and their `apply_*` functions have been here, unit-tested, since the
+    Stage B work, and nothing called them: a system where three of four staves opened
+    4/4 and the fourth opened something else was detected by `check_time_signatures`,
+    written to a log, and shipped anyway. This closes that loop for the three families
+    that have an applier.
+
+    Applied on `decoded`, before the per-voice concatenation below, because that is
+    already the one-list-per-staff-of-one-system shape every proposer expects. Doing it
+    after would mean mapping a staff-local position back through
+    `staves_by_system`'s reshaping, which is exactly the offset arithmetic that has bitten
+    this codebase before.
+
+    Order matters and is not arbitrary. Replacements go first: they leave every position
+    valid, so a staff can take several. Insertions go last and back to front within a
+    staff, because inserting at position 4 moves everything at 5 and beyond and would
+    strand a proposal built against the old indices - `apply_proposal` would refuse it,
+    correctly, but the repair would simply be lost.
+
+    Anything raised here is swallowed and the system left exactly as decoded. A repair
+    that cannot be computed is a repair not worth failing a page over - the same
+    reasoning `_report_cross_staff_findings` states for itself, and the reason the
+    findings pass below still runs on whatever this leaves behind.
+    """
+    for system_index in range(len(plan.systems)):
+        voices_here = [
+            voice
+            for voice in range(number_of_voices)
+            if plan.staff_for_voice(system_index, voice) is not None
+            and decoded.get((voice, system_index))
+        ]
+        # One staff has no siblings to agree with, and two can only tie.
+        if len(voices_here) < 3:
+            continue
+        try:
+            staves = [decoded[(voice, system_index)] for voice in voices_here]
+            for proposal in propose_repairs(staves) + propose_motif_articulation_corrections(
+                staves
+            ):
+                staff_index = proposal.staff_index
+                applier = (
+                    apply_proposal
+                    if isinstance(proposal, RepairProposal)
+                    else apply_articulation_proposal
+                )
+                staves[staff_index] = applier(staves[staff_index], proposal)  # type: ignore[arg-type]
+                eprint(f"System {system_index}: repair applied - {proposal.reason}")
+            insertions = sorted(
+                propose_carry_forward_key_signature(staves),
+                key=lambda item: item.position,
+                reverse=True,
+            )
+            for insertion in insertions:
+                staves[insertion.staff_index] = apply_insertion_proposal(
+                    staves[insertion.staff_index], insertion
+                )
+                eprint(f"System {system_index}: repair applied - {insertion.reason}")
+            for voice, staff in zip(voices_here, staves, strict=True):
+                decoded[(voice, system_index)] = staff
+        except Exception as error:  # noqa: BLE001
+            eprint(f"Cross-staff repair failed for system {system_index}, skipping: {error}")
 
 
 def _report_cross_staff_findings(

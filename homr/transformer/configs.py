@@ -166,6 +166,29 @@ class Config:
         #: direct unit tests - worth knowing if something here ever looks off.
         #: Set HOMR_TUPLET_REPAIR=0 to go back to the old default-off behaviour.
         self.tuplet_repair = os.environ.get("HOMR_TUPLET_REPAIR", "1") != "0"
+        #: Apply the tier-1 cross-staff repair proposals `cross_staff_repair` already
+        #: builds - opening key/time signature majority corrections, motif-corroborated
+        #: articulation, and carried-forward key signatures - instead of only logging
+        #: them.
+        #:
+        #: These proposers, and the `apply_*` functions that go with them, have been
+        #: here and unit-tested since the Stage B work; nothing consumed them, so a
+        #: system where three of four staves opened 4/4 and the fourth opened something
+        #: else was detected, written to a log nobody reads, and shipped. Each proposer
+        #: already declines where a human belongs: `propose_majority_correction` returns
+        #: nothing on a tie or with fewer than two staves stating a signature at all,
+        #: and `apply_proposal` refuses a proposal built against a staff that has since
+        #: changed.
+        #:
+        #: Deliberately NOT the whole set. `propose_majority_position_corrections` has
+        #: no applier and stays diagnostic; polymetric and polytonal music is real, so
+        #: this only ever moves a minority staff onto a strict majority and never
+        #: invents a signature no staff read.
+        #:
+        #: Enabled without the 200-page benchmark `enable_phase1_rerank` carries, at the
+        #: maintainer's explicit instruction. Set HOMR_CROSS_STAFF_REPAIR=0 to return to
+        #: log-only.
+        self.cross_staff_repair = os.environ.get("HOMR_CROSS_STAFF_REPAIR", "1") != "0"
         self.pad_token = 0
         self.bos_token = 1
         self.eos_token = 2

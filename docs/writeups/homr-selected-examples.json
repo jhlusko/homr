@@ -1,0 +1,70 @@
+{
+  "format": "homr-example-selection@1",
+  "exported_at": "2026-08-31T21:44:17.892Z",
+  "selected_examples": [
+    {
+      "gallery": "cross-staff-reranking-regenerated-current-runtime-systems",
+      "id": "04_sq10502527:0013_system5"
+    },
+    {
+      "gallery": "whole-page-426-to-arm-a-output-change",
+      "id": "01_sq7354505:0006"
+    },
+    {
+      "gallery": "whole-page-426-to-arm-a-output-change",
+      "id": "17_sq10381459:0009"
+    },
+    {
+      "gallery": "whole-page-426-to-arm-a-output-change",
+      "id": "25_sq7267316:0041"
+    },
+    {
+      "key": "homr-keep-beam-sq8075304_0010_0003_1"
+    },
+    {
+      "key": "homr-keep-lieder-IMSLP183800-sys5-v1"
+    },
+    {
+      "key": "homr-keep-lieder-IMSLP89797-sys5-v1"
+    },
+    {
+      "key": "homr-keep-ossq-sq10414906_0010_0003_3"
+    },
+    {
+      "key": "homr-keep-ossq-sq8075304_0012_0002_4"
+    },
+    {
+      "key": "homr-keep-ossq-sq8907120_0001_0001_4"
+    },
+    {
+      "key": "homr-keep-pdmx_ned-QmRdzCzdzg8Vs1i4rS2RjCSdQdLFw2FD7yF12sfGXCbvnr-v0-w8"
+    },
+    {
+      "key": "homr-keep-pdmx_ned-QmTrEBbsgyehimMsQ3dEeM4RwdHMoazCPWXh61SptunTN7-v0-w5"
+    },
+    {
+      "key": "homr-keep-pdmx_ned-QmUR5gNmTU13qiucUDofSwzLFXnBEJraHJKY5wN5us3DBw-v0-w1"
+    },
+    {
+      "key": "homr-keep-stage3-stage3_1.jpg"
+    },
+    {
+      "key": "homr-keep-stage3-stage3_3.jpg"
+    },
+    {
+      "key": "homr-keep-structured-ties-pdmx_03"
+    },
+    {
+      "key": "homr-keep-structured-ties-pdmx_04"
+    },
+    {
+      "key": "homr-keep-structured-ties-pdmx_05"
+    },
+    {
+      "key": "homr-keep-tuplet-sq7354505_0047_0001_1"
+    },
+    {
+      "key": "homr-keep-tuplet-sq8806134_0005_0005_2"
+    }
+  ]
+}
