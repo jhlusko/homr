@@ -1,0 +1,376 @@
+import csv
+import multiprocessing
+import os
+import random
+import xml.etree.ElementTree as ET
+import zipfile
+from itertools import zip_longest
+from pathlib import Path
+
+import cv2
+
+from homr.circle_of_fifths import strip_naturals
+from homr.download_utils import download_file, untar_file
+from homr.simple_logging import eprint
+from homr.transformer.configs import default_config
+from training.omr_datasets.convert_lieder import (
+    MeasureCutter,
+    _count_staffs,
+    contains_only_supported_clefs,
+    is_grandstaff,
+)
+from training.omr_datasets.convert_musetrainer import (
+    _N_WORKERS,
+    _RENDER_TIMEOUT_SECONDS,
+    _TIMEOUT_SECONDS,
+    _VEROVIO_FONTS,
+    _WINDOW_SIZE,
+    _context_at_measure,
+    _render_svg_in_subprocess,
+    _svg_to_png,
+    inject_musicxml_markings,
+)
+from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
+from training.omr_datasets.musicxml_window import extract_window, measure_count
+from training.omr_datasets.notation_sidecar import round_trips, write_sidecar
+from training.transformer.training_vocabulary import (
+    calc_ratio_of_tuplets,
+    check_token_lines,
+    token_lines_to_str,
+)
+
+script_location = os.path.dirname(os.path.realpath(__file__))
+git_root = Path(script_location).parent.parent.absolute()
+dataset_root = os.path.join(git_root, "datasets")
+pdmx_root = os.path.join(dataset_root, "pdmx")
+pdmx_csv = os.path.join(pdmx_root, "PDMX.csv")
+pdmx_mxl_root = os.path.join(pdmx_root, "mxl")
+pdmx_out_root = os.path.join(pdmx_root, "out")
+#: Everything the converter wrote, training and validation together.  Callers that
+#: TRAIN must not use this - see pdmx_train_index below.
+pdmx_index = os.path.join(pdmx_root, "index.txt")
+
+#: The training split.  `index.txt` holds all 35,800 converted rows, validation
+#: included, and pointing replay at it meant every run - 426, 447 and 448 alike -
+#: sampled its 1,300 replay pairs from a pool containing the whole 3,349-row
+#: validation set.  A clean split already existed beside it and nothing used it, so
+#: every PDMX figure this project has quoted was measured against rows the model may
+#: have trained on.
+pdmx_train_index = os.path.join(pdmx_root, "index_train.txt")
+
+#: The held-out split, disjoint from the above (verified: zero overlapping rows).
+pdmx_valid_index = os.path.join(pdmx_root, "index_valid.txt")
+
+_MAX_COMPLEXITY = 2
+_MAX_TRACKS = 2
+_TARGET_FILES = 10000  # ~50K images
+
+
+def _read_mxl(path: Path) -> str:
+    with zipfile.ZipFile(path) as zf:
+        names = zf.namelist()
+        xml_name = next(
+            (n for n in names if n.endswith(".xml") and "/" not in n),
+            next((n for n in names if n.endswith(".xml")), None),
+        )
+        if xml_name is None:
+            raise ValueError(f"No XML found in {path}")
+        return zf.read(xml_name).decode("utf-8")
+
+
+#: Fewest sounding notes a score must have to be worth converting. Chosen from the
+#: distribution rather than taste. Over 1,200 sampled scores that already pass PDMX's own
+#: filters, the median holds 227 sounding notes and the mean 473, with a tail reaching
+#: down to 3. This threshold drops 20.8% of scores which between them hold 3.0% of the
+#: sounding notes - so the discarded fifth averages some 67 notes each against a corpus
+#: mean of 473. Below it a score yields a window or two of very sparse staves, which is
+#: what produces degenerate images.
+#:
+#: Set for quality rather than volume, which is the right trade at this size: PDMX has
+#: 254,035 scores, so 3% of the music is a cheap price for removing the worst fifth of the
+#: files. A smaller corpus would justify a lower bar.
+_MIN_SOUNDING_NOTES = 96
+
+
+def sounding_notes(parts: list[ET.Element]) -> int:
+    """Notes that are not rests, across every part.
+
+    Rests are excluded because a score padded out with them is exactly the kind of
+    fragment this is meant to catch - counting them would let it through.
+    """
+    return sum(
+        1
+        for part in parts
+        for measure in part.findall("measure")
+        for note in measure.findall("note")
+        if note.find("rest") is None
+    )
+
+
+def has_too_few_notes(parts: list[ET.Element]) -> bool:
+    return sounding_notes(parts) < _MIN_SOUNDING_NOTES
+
+
+def has_empty_final_measure(parts: list[ET.Element]) -> bool:
+    """Whether any part ends on a bar with nothing sounding in it.
+
+    A trailing empty bar is what an unfinished or badly truncated score looks like -
+    MuseScore leaves one behind on export from an incomplete edit - and PDMX is large
+    enough that a cheap well-formedness proxy is worth more than the scores it costs.
+
+    A bar of rests counts as empty too. In a hand-engraved edition that could be a real
+    ending, but PDMX is user-submitted MuseScore files, and in that population a trailing
+    bar of rests is far more likely to be an abandoned edit than a piece that deliberately
+    ends on silence. The filter follows the corpus rather than the engraving convention.
+    """
+    for part in parts:
+        measures = part.findall("measure")
+        if not measures:
+            continue
+        notes = measures[-1].findall("note")
+        if not notes or all(note.find("rest") is not None for note in notes):
+            return True
+    return False
+
+
+def _source_to_svg(score: ET.Element) -> str | None:
+    """Render a window of the *source* score.
+
+    The alternative, and what this replaces, is regenerating MusicXML from the tokens and
+    rendering that - which loses beams and stems, because tokens do not carry them, and
+    leaves Verovio to invent its own. See 27.25: it is the difference between a training
+    image that shows the score's engraving and one that shows the renderer's.
+    """
+    try:
+        xml_str = inject_musicxml_markings(ET.tostring(score, encoding="unicode"))
+    except Exception as e:  # noqa: BLE001
+        eprint("Marking injection failed:", e)
+        return None
+
+    try:
+        root = ET.fromstring(xml_str)  # noqa: S314
+        start = random.randint(1, 150)
+        for i, measure in enumerate(root.findall(".//measure")):
+            measure.set("number", str(start + i))
+        xml_str = ET.tostring(root, encoding="unicode")
+    except ET.ParseError:
+        pass
+
+    scale = random.randint(40, 80)
+    font = random.choice(_VEROVIO_FONTS)
+    mnum_interval = 1 if random.random() < 0.20 else 0
+    return _render_svg_in_subprocess(xml_str, scale, font, mnum_interval)
+
+
+def _convert_file_impl(mxl_path: Path) -> list[str]:
+    try:
+        xml_str = _read_mxl(mxl_path)
+    except Exception as e:
+        eprint("Failed to read", mxl_path, e)
+        return []
+
+    try:
+        voices = music_xml_string_to_tokens(xml_str)
+    except Exception as e:
+        eprint("Failed to parse", mxl_path, e)
+        return []
+
+    if not voices:
+        return []
+
+    try:
+        source_parts = ET.fromstring(xml_str).findall("part")  # noqa: S314
+    except ET.ParseError:
+        return []
+    # One parser entry per <part>, so the indices line up - but only if they are the same
+    # length. A disagreement means a window would be rendered from the wrong instrument,
+    # so the file is skipped rather than guessed at.
+    if len(source_parts) != len(voices):
+        return []
+    if has_empty_final_measure(source_parts) or has_too_few_notes(source_parts):
+        return []
+
+    voices_to_process = [
+        (index, voice) for index, voice in enumerate(voices) if _count_staffs(voice) >= 1
+    ]
+    if not voices_to_process:
+        return []
+
+    stem = mxl_path.stem
+
+    rel_parts = mxl_path.relative_to(pdmx_mxl_root).parts
+    out_dir = os.path.join(pdmx_out_root, *rel_parts[:-1])
+    os.makedirs(out_dir, exist_ok=True)
+
+    results: list[str] = []
+
+    for voice_idx, (part_index, voice) in enumerate(voices_to_process):
+        n_measures = len(voice)
+        if n_measures < 2:
+            continue
+
+        n_staffs = 2 if is_grandstaff(voice) else 1
+
+        window_start = 0
+        window_idx = 0
+        while window_start < n_measures:
+            end = min(window_start + _WINDOW_SIZE, n_measures)
+            window_measures = voice[window_start:end]
+
+            clefs, key, time_sym = _context_at_measure(voice, window_start, n_staffs)
+            cutter = MeasureCutter(list(window_measures))
+            cutter.clefs = clefs
+            cutter.key = key
+            cutter.time = time_sym
+
+            tokens = cutter.extract_measures(len(window_measures), always_include_time=True)
+
+            if calc_ratio_of_tuplets(tokens) <= 0.2 and contains_only_supported_clefs(tokens):
+                tokens = strip_naturals(tokens)
+                try:
+                    if len(tokens) > default_config.max_seq_len - 2:
+                        raise ValueError("Sequence too long")
+                    check_token_lines(tokens)
+                except ValueError:
+                    pass
+                else:
+                    window_score = extract_window(source_parts[part_index], window_start, end)
+                    if window_score is None or measure_count(
+                        window_score.find("part")
+                    ) != len(window_measures):
+                        window_start = end
+                        window_idx += 1
+                        continue
+                    svg_str = _source_to_svg(window_score)
+                    if svg_str is not None:
+                        img = _svg_to_png(svg_str)
+                        if img is not None:
+                            basename = f"{stem}-v{voice_idx}-w{window_idx}"
+                            img_path = os.path.join(out_dir, basename + ".jpg")
+                            tok_path = os.path.join(out_dir, basename + ".tokens")
+                            cv2.imwrite(img_path, img)
+                            with open(tok_path, "w") as f:
+                                f.write(token_lines_to_str(tokens))
+                            # Eligible now that the image is rendered from the source:
+                            # the beams and stems in the picture are the score's own.
+                            write_sidecar(tok_path, tokens)
+                            if not round_trips(tok_path):
+                                # Writer and reader disagree about which symbols are
+                                # note-bearing, so the labels cannot be trusted to sit on
+                                # the right notes. Drop the example here rather than let
+                                # it raise inside a DataLoader worker mid-training.
+                                for path in (img_path, tok_path, tok_path + ".notation.json"):
+                                    Path(path).unlink(missing_ok=True)
+                                window_start = end
+                                window_idx += 1
+                                continue
+                            rel_img = str(Path(img_path).relative_to(git_root))
+                            rel_tok = str(Path(tok_path).relative_to(git_root))
+                            results.append(rel_img + "," + rel_tok + "\n")
+
+            window_start = end
+            window_idx += 1
+
+    return results
+
+
+def _load_filtered_paths() -> list[Path]:
+    buckets: dict[tuple[int, int], list[Path]] = {}
+    with open(pdmx_csv, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["subset:no_license_conflict"] != "True":
+                continue
+            if row["subset:all_valid"] != "True":
+                continue
+            try:
+                n_tracks = int(row["n_tracks"])
+                if n_tracks > _MAX_TRACKS:
+                    continue
+            except (ValueError, KeyError):
+                continue
+            try:
+                complexity = int(row["complexity"])
+                if complexity > _MAX_COMPLEXITY:
+                    continue
+            except (ValueError, KeyError):
+                continue
+            rel_mxl = row["mxl"].lstrip("./")
+            buckets.setdefault((n_tracks, complexity), []).append(Path(pdmx_root) / rel_mxl)
+
+    rng = random.Random(42)
+    for paths in buckets.values():
+        rng.shuffle(paths)
+
+    for key in sorted(buckets):
+        n_tracks, complexity = key
+        eprint(f"  tracks={n_tracks} complexity={complexity}: {len(buckets[key]):,} files")
+
+    sentinel = object()
+    result: list[Path] = []
+    for group in zip_longest(*[buckets[k] for k in sorted(buckets)], fillvalue=sentinel):
+        for item in group:
+            if item is not sentinel:
+                result.append(item)  # type: ignore[arg-type]
+            if len(result) >= _TARGET_FILES:
+                return result
+    return result
+
+
+def convert_pdmx() -> None:
+    os.makedirs(pdmx_root, exist_ok=True)
+
+    if not os.path.exists(pdmx_csv):
+        eprint("Downloading PDMX.csv (~214 MB)")
+        download_file(
+            "https://zenodo.org/api/records/15571083/files/PDMX.csv/content",
+            pdmx_csv,
+        )
+
+    if not os.path.exists(pdmx_mxl_root):
+        eprint("Downloading PDMX mxl.tar.gz (~1.8 GB)")
+        mxl_archive = os.path.join(pdmx_root, "mxl.tar.gz")
+        download_file(
+            "https://zenodo.org/api/records/15571083/files/mxl.tar.gz/content",
+            mxl_archive,
+        )
+        eprint("Extracting mxl.tar.gz")
+        untar_file(mxl_archive, pdmx_root)
+
+    os.makedirs(pdmx_out_root, exist_ok=True)
+
+    eprint("Reading CSV and applying filters")
+    mxl_paths = _load_filtered_paths()
+    eprint(f"{len(mxl_paths)} files pass pre-filters (c<={_MAX_COMPLEXITY}, tracks<={_MAX_TRACKS})")
+
+    with open(pdmx_index, "w") as index_f:
+        file_number = 0
+        skipped_files = 0
+        with multiprocessing.Pool(processes=_N_WORKERS, maxtasksperchild=2) as p:
+            async_results = [
+                (path, p.apply_async(_convert_file_impl, (path,))) for path in mxl_paths
+            ]
+            for path, ar in async_results:
+                try:
+                    result = ar.get(timeout=_TIMEOUT_SECONDS)
+                except multiprocessing.TimeoutError:
+                    eprint("Timeout processing", path, "skipping")
+                    result = []
+                if result:
+                    for line in result:
+                        index_f.write(line)
+                    index_f.flush()
+                else:
+                    skipped_files += 1
+                file_number += 1
+                if file_number % 10 == 0:
+                    eprint(
+                        f"Processed {file_number}/{len(mxl_paths)} files,",
+                        f"skipped {skipped_files} files",
+                    )
+
+    eprint("Done - index written to", pdmx_index)
+
+
+if __name__ == "__main__":
+    convert_pdmx()

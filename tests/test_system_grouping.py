@@ -1,0 +1,326 @@
+import unittest
+from unittest.mock import MagicMock
+
+from homr.system_grouping import (
+    GroupingResult,
+    SystemPartition,
+    assign_voice_slots,
+    find_system_grouping,
+)
+
+
+def _staffs(spans: list[tuple[float, float]], unit_size: float = 10.0) -> list[MagicMock]:
+    """Build staffs from (min_y, max_y) pairs; only geometry matters here."""
+    staffs = []
+    for min_y, max_y in spans:
+        staff = MagicMock()
+        staff.min_y = min_y
+        staff.max_y = max_y
+        staff.average_unit_size = unit_size
+        staffs.append(staff)
+    return staffs
+
+
+def _from_gaps(gaps: list[float], height: float = 45.0, unit_size: float = 10.0) -> list[MagicMock]:
+    """Build staffs whose successive gaps (in unit sizes) are exactly `gaps`."""
+    spans = [(0.0, height)]
+    for gap in gaps:
+        min_y = spans[-1][1] + gap * unit_size
+        spans.append((min_y, min_y + height))
+    return _staffs(spans, unit_size)
+
+
+def _require(result: GroupingResult | None) -> GroupingResult:
+    if result is None:
+        raise AssertionError("expected a grouping result")
+    return result
+
+
+def _require_partition(partition: SystemPartition | None) -> SystemPartition:
+    if partition is None:
+        raise AssertionError("expected a competing partition")
+    return partition
+
+
+# Measured from homr's own staff detection on sq7313978:0001.png (Andrée, String Quartet
+# in A major, page 1) - the page whose bracket detection produced the inconsistent rows
+# [3, 4, 3, 1, 4, 4]. Ground truth is five 4-staff systems; detection found 19 of the 20
+# staves, missing one inside the first system, which is what leaves the 14.80 gap.
+_ANDREE_PAGE_1_GAPS = [
+    4.87, 14.80,             # system 1: 3 staves detected of 4, the 14.80 is the missed one
+    8.70, 4.48, 4.74, 6.51,  # cut, then system 2
+    9.12, 3.65, 4.96, 3.76,  # cut, then system 3
+    9.04, 4.68, 5.92, 6.37,  # cut, then system 4
+    8.82, 5.41, 4.69, 6.65,  # cut, then system 5
+]  # fmt: skip
+
+
+class TestRealQuartetPage(unittest.TestCase):
+    def test_recovers_five_systems_from_the_page_that_collapsed(self) -> None:
+        result = _require(find_system_grouping(_from_gaps(_ANDREE_PAGE_1_GAPS), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual(result.best.staves_per_system, 4)
+        self.assertEqual([len(group) for group in result.best.groups], [3, 4, 4, 4, 4])
+
+    def test_the_missed_staff_does_not_move_a_boundary(self) -> None:
+        # The 14.80 gap is the largest on the page but sits *inside* system 1. A rule
+        # that cut at the largest gaps would put a system boundary there.
+        result = _require(find_system_grouping(_from_gaps(_ANDREE_PAGE_1_GAPS), set()))
+
+        self.assertEqual(result.best.groups[0], (0, 1, 2))
+
+    def test_bracket_evidence_that_agrees_leaves_the_answer_alone(self) -> None:
+        # The rows the bracket detector did produce, as adjacent-index pairs.
+        connected = {(0, 1), (1, 2), (3, 4), (4, 5), (5, 6), (7, 8), (8, 9)}
+        connected |= {(11, 12), (12, 13), (13, 14), (15, 16), (16, 17), (17, 18)}
+
+        result = _require(find_system_grouping(_from_gaps(_ANDREE_PAGE_1_GAPS), connected))
+
+        self.assertTrue(result.confident)
+        self.assertEqual(result.best.broken_connections, 0)
+        self.assertEqual([len(g) for g in result.best.groups], [3, 4, 4, 4, 4])
+
+
+class TestPagesThatMustNotBeRegrouped(unittest.TestCase):
+    def _assert_not_regrouped(self, gaps: list[float]) -> None:
+        result = find_system_grouping(_from_gaps(gaps), set())
+        self.assertTrue(result is None or not result.confident)
+
+    def test_evenly_spaced_single_staves(self) -> None:
+        # A solo part: every gap is a system gap, so there is no split to find.
+        self._assert_not_regrouped([7.0] * 15)
+
+    def test_slightly_irregular_single_staves(self) -> None:
+        self._assert_not_regrouped([7.0, 7.6, 6.8, 7.2, 7.9, 6.6, 7.4, 7.1, 6.9, 7.7, 7.3, 6.7])
+
+    def test_too_few_systems_to_read(self) -> None:
+        # Two 4-staff systems: real, but not enough repetition for geometry to carry it.
+        self._assert_not_regrouped([4.0, 4.0, 4.0, 9.0, 4.0, 4.0, 4.0])
+
+    def test_a_single_staff_page_returns_nothing(self) -> None:
+        self.assertIsNone(find_system_grouping(_from_gaps([]), set()))
+
+    def test_vertically_overlapping_staffs_are_declined(self) -> None:
+        # One staff line detected twice, as its left half and its right half, overlapping
+        # by 4.4 unit sizes. The list is then not a sequence of distinct staffs down the
+        # page, so there is nothing here to partition.
+        gaps = [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, -4.4, 9.0] + [4.0, 4.0, 4.0]
+        self.assertIsNone(find_system_grouping(_from_gaps(gaps), set()))
+
+    def test_a_hair_of_overlap_at_a_boundary_is_tolerated(self) -> None:
+        # Dewarping jitter can make a genuine boundary read as marginally negative; that
+        # must not throw the page away.
+        gaps = [4.0, 4.0, 4.0, 9.0] * 3 + [-0.2, 4.0, 4.0, 9.0] + [4.0, 4.0, 4.0]
+        self.assertIsNotNone(find_system_grouping(_from_gaps(gaps), set()))
+
+
+class TestOtherLayouts(unittest.TestCase):
+    def test_piano_grand_staff_pages_group_in_twos(self) -> None:
+        gaps = [3.5, 10.0, 3.6, 9.8, 3.4, 10.2, 3.5, 9.9, 3.6]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual(result.best.staves_per_system, 2)
+        self.assertEqual([len(g) for g in result.best.groups], [2, 2, 2, 2, 2])
+
+    def test_voice_plus_piano_groups_in_threes(self) -> None:
+        gaps = [4.0, 3.8, 10.5, 4.1, 3.9, 10.2, 4.0, 3.7, 10.4, 4.2, 3.8]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual(result.best.staves_per_system, 3)
+
+    def test_an_incomplete_final_system_is_allowed(self) -> None:
+        gaps = [4.0, 4.0, 4.0, 9.0] * 4 + [4.0]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual([len(g) for g in result.best.groups], [4, 4, 4, 4, 2])
+
+    def test_a_system_short_in_the_middle_of_the_page_is_allowed(self) -> None:
+        # Staff detection missing one staff out of a complete system leaves a short
+        # system nowhere near a page edge. Observed on consecutive pages of the same
+        # quartet, where the bracket rows read [4, 4, 3, 4, 4] and [4, 3, 4, 4, 4].
+        gaps = (
+            [4.0, 4.0, 4.0, 9.0]  # system 1
+            + [4.0, 4.0, 4.0, 9.0]  # system 2
+            + [4.0, 4.0, 9.0]  # system 3, one staff missing
+            + [4.0, 4.0, 4.0, 9.0]  # system 4
+            + [4.0, 4.0, 4.0]  # system 5
+        )
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual(result.best.staves_per_system, 4)
+        self.assertEqual([len(g) for g in result.best.groups], [4, 4, 3, 4, 4])
+
+    def test_a_system_short_at_the_front_is_allowed(self) -> None:
+        gaps = [4.0, 4.0, 9.0] + [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertTrue(result.confident)
+        self.assertEqual([len(g) for g in result.best.groups], [3, 4, 4, 4, 4])
+
+    def test_a_partition_that_splits_bracketed_staves_is_refused(self) -> None:
+        # Claim a bracket across every boundary the geometric answer wants to cut.
+        hostile = {(2, 3), (6, 7), (10, 11), (14, 15)}
+        result = _require(find_system_grouping(_from_gaps(_ANDREE_PAGE_1_GAPS), hostile))
+
+        self.assertFalse(result.confident)
+
+    def test_an_unambiguous_page_has_no_competing_partition(self) -> None:
+        # Only one candidate survives the per-cut ordering gate on the quartet page, so
+        # the absence of a runner-up is the signal, not a gap in the result.
+        result = _require(find_system_grouping(_from_gaps(_ANDREE_PAGE_1_GAPS), set()))
+
+        self.assertIsNone(result.runner_up)
+
+    def test_a_page_that_reads_two_ways_keeps_the_competitor(self) -> None:
+        # Gaps alternating small/large at two scales: readable as systems of 2 or of 4.
+        gaps = [3.0, 9.0, 3.0, 12.0, 3.0, 9.0, 3.0, 12.0, 3.0, 9.0, 3.0]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        runner_up = _require_partition(result.runner_up)
+        self.assertLessEqual(runner_up.score, result.best.score)
+        self.assertNotEqual(runner_up.staves_per_system, result.best.staves_per_system)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class TestVoiceSlots(unittest.TestCase):
+    """Placing a short system's staffs into voice slots, so it need not be dropped."""
+
+    def _slots(self, gaps: list[float], connected: set | None = None) -> list:
+        staffs = _from_gaps(gaps)
+        result = _require(find_system_grouping(staffs, connected or set()))
+        return assign_voice_slots(staffs, result.best)
+
+    def test_a_complete_page_is_the_identity_mapping(self) -> None:
+        slots = self._slots([4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0])
+
+        self.assertEqual(slots, [(0, 1, 2, 3)] * 4)
+
+    def test_a_missing_middle_staff_is_read_from_the_double_gap(self) -> None:
+        # The real case: staff detection missed one staff inside system 1, leaving a gap
+        # of about two ordinary gaps plus a staff height where one gap should be.
+        slots = self._slots(_ANDREE_PAGE_1_GAPS)
+
+        self.assertEqual(slots[0], (0, 1, 3))
+        self.assertEqual(slots[1:], [(0, 1, 2, 3)] * 4)
+
+    def test_the_recovered_system_skips_exactly_the_absent_voice(self) -> None:
+        # Andrée page 1: the 14.80 gap sits between the second and third detected staff,
+        # so voice 2 is the one with no staff, not voice 3.
+        slots = self._slots(_ANDREE_PAGE_1_GAPS)
+
+        self.assertNotIn(2, slots[0])
+        self.assertIn(3, slots[0])
+
+    def test_a_staff_missing_from_the_end_leaves_no_evidence_and_is_declined(self) -> None:
+        # Nothing in the spacing distinguishes "the last voice is absent" from "the first
+        # voice is absent", so the system is dropped rather than read into wrong voices.
+        gaps = [4.0, 4.0, 9.0] + [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0]
+        slots = self._slots(gaps)
+
+        self.assertIsNone(slots[0])
+        self.assertEqual(slots[1:], [(0, 1, 2, 3)] * 4)
+
+    def test_two_missing_staffs_in_one_system_are_read_together(self) -> None:
+        # Two absent staffs between two detected ones leave a gap of three ordinary gaps
+        # plus two staff heights, so voices 1 and 2 are the ones with no staff.
+        gaps = [4.0 + 2 * (4.0 + 4.5), 9.0] + [4.0, 4.0, 4.0, 9.0] * 3 + [4.0, 4.0, 4.0]
+        slots = self._slots(gaps)
+
+        self.assertEqual(slots[0], (0, 3))
+        self.assertEqual(slots[1:], [(0, 1, 2, 3)] * 4)
+
+
+class TestVoiceSlotsAtSystemEdges(unittest.TestCase):
+    """A voice missing from a system's top or bottom leaves no internal gap, but it does
+    leave an oversized boundary to the neighbouring system."""
+
+    def _slots(self, gaps: list[float]) -> list:
+        staffs = _from_gaps(gaps)
+        result = _require(find_system_grouping(staffs, set()))
+        return assign_voice_slots(staffs, result.best)
+
+    def test_a_voice_missing_from_the_bottom_is_read_from_the_next_boundary(self) -> None:
+        # Measured on sq7313978:0010.png, whose bracket rows read [4, 4, 3, 4, 4]: the
+        # short system's own gaps are ordinary, and the cut after it is 19.26 against a
+        # typical 9.15 - one staff plus one gap - so the absent voice is its last.
+        gaps = [
+            6.17, 7.91, 7.94,
+            9.52, 4.87, 7.23, 6.61,
+            11.10, 3.57, 4.13,
+            19.26, 3.90, 3.97, 4.54,
+            8.77, 5.89, 7.36, 7.37,
+        ]  # fmt: skip
+        slots = self._slots(gaps)
+
+        self.assertEqual(slots[2], (0, 1, 2))
+        self.assertEqual([s for i, s in enumerate(slots) if i != 2], [(0, 1, 2, 3)] * 4)
+
+    def test_a_voice_missing_from_the_top_shifts_the_rest_down(self) -> None:
+        ordinary, cut, stride = 4.0, 9.0, 4.0 + 4.5
+        gaps = (
+            [ordinary] * 3
+            + [cut + stride]  # oversized boundary before the short system
+            + [ordinary, ordinary]
+            + [cut]
+            + [ordinary] * 3
+            + [cut]
+            + [ordinary] * 3
+        )
+        slots = self._slots(gaps)
+
+        self.assertEqual(slots[1], (1, 2, 3))
+
+    def test_an_ordinary_boundary_on_both_sides_still_declines(self) -> None:
+        # Nothing oversized anywhere: the missing voice left no trace at all.
+        gaps = [4.0, 4.0, 4.0, 9.0] + [4.0, 4.0, 9.0] + [4.0, 4.0, 4.0, 9.0] * 2 + [4.0, 4.0, 4.0]
+        slots = self._slots(gaps)
+
+        self.assertIsNone(slots[1])
+
+
+class TestWiderEnsembles(unittest.TestCase):
+    """Pages beyond the quartets and grand staffs this was built and adapted for.
+
+    The module assumes the gap inside a system is smaller than the gap between systems.
+    Orchestral engraving strains that directly: staves are grouped by instrument family,
+    so an internal gap can approach a system gap. These pin the behaviour - including
+    where it declines, since declining falls back to the periodic reading and a wrong
+    grouping is far worse than none.
+    """
+
+    def test_family_gaps_inside_a_system_do_not_split_it(self) -> None:
+        # Six staves in families of 2/2/2: internal gaps 5, 5, 9, 5, 5 against a system
+        # gap of 12. The 9 is the one that could be mistaken for a system boundary.
+        gaps = [5, 5, 9, 5, 5, 12, 5, 5, 9, 5, 5, 12, 5, 5, 9, 5, 5]
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertEqual([len(group) for group in result.best.groups], [6, 6, 6])
+        self.assertTrue(result.confident)
+
+    def test_a_twelve_staff_system_is_read_rather_than_declined(self) -> None:
+        # Orchestral scores routinely exceed the old cap of 8.
+        gaps = ([5] * 11 + [9]) * 2 + [5] * 11
+        result = _require(find_system_grouping(_from_gaps(gaps), set()))
+
+        self.assertEqual([len(group) for group in result.best.groups], [12, 12, 12])
+
+    def test_a_tight_duo_still_groups_in_twos(self) -> None:
+        result = _require(find_system_grouping(_from_gaps([3, 10, 3, 10, 3, 10, 3]), set()))
+
+        self.assertEqual([len(group) for group in result.best.groups], [2, 2, 2, 2])
+
+    def test_systems_of_different_sizes_are_declined_not_guessed(self) -> None:
+        # A page where instruments drop out has no single period to read. Declining hands
+        # it back to the bracket evidence rather than imposing a wrong uniform split.
+        self.assertIsNone(find_system_grouping(_from_gaps([5, 5, 5, 9, 5, 5, 9, 5, 5, 5]), set()))
+
+    def test_a_lead_sheet_offers_no_multi_staff_evidence(self) -> None:
+        self.assertIsNone(find_system_grouping(_from_gaps([9, 9, 9, 9, 9]), set()))

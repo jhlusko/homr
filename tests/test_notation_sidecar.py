@@ -1,0 +1,250 @@
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from homr.transformer.structured_notation import (
+    TieState,
+    BeamLevelState,
+    NoteNotation,
+    SlurEvent,
+    SlurSide,
+    StemDirection,
+    empty_beam_levels,
+    empty_slur_slots,
+)
+from homr.transformer.vocabulary import EncodedSymbol
+from training.transformer.training_vocabulary import token_lines_to_str
+from training.omr_datasets.notation_sidecar import (
+    round_trips,
+    SidecarMismatch,
+    attach_sidecar,
+    sidecar_path,
+    write_sidecar,
+)
+
+
+def _notation(stem: StemDirection = StemDirection.UP) -> NoteNotation:
+    beams = (BeamLevelState.BEGIN,) + empty_beam_levels()[1:]
+    slurs = ((SlurEvent.START, SlurSide.ABOVE),) + empty_slur_slots()[1:]
+    return NoteNotation(beam_levels=beams, stem=stem, slurs=slurs)
+
+
+def _symbols(annotated: bool = True) -> list[EncodedSymbol]:
+    return [
+        EncodedSymbol("clef_G2"),
+        EncodedSymbol("note_8", "C5", notation=_notation() if annotated else None),
+        EncodedSymbol("barline"),
+        EncodedSymbol(
+            "rest_4", notation=_notation(StemDirection.NOT_APPLICABLE) if annotated else None
+        ),
+    ]
+
+
+class TestRoundTrip(unittest.TestCase):
+    def test_notation_survives_the_dataset_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("irrelevant", encoding="utf-8")
+            write_sidecar(tokens, _symbols())
+
+            reloaded = _symbols(annotated=False)
+            attached = attach_sidecar(tokens, reloaded)
+
+        self.assertEqual(attached, 2)
+        self.assertEqual(reloaded[1].notation, _notation())
+        rest = reloaded[3].notation
+        assert rest is not None  # noqa: S101 - narrowing after the assertion above
+        self.assertEqual(rest.stem, StemDirection.NOT_APPLICABLE)
+
+    def test_non_note_symbols_are_left_alone(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            write_sidecar(tokens, _symbols())
+            reloaded = _symbols(annotated=False)
+            attach_sidecar(tokens, reloaded)
+
+        self.assertIsNone(reloaded[0].notation)
+        self.assertIsNone(reloaded[2].notation)
+
+
+class TestAbsence(unittest.TestCase):
+    def test_a_dataset_without_a_sidecar_loads_unchanged(self) -> None:
+        # The ordinary case for anything built before the labels existed.
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            symbols = _symbols(annotated=False)
+
+            self.assertEqual(attach_sidecar(tokens, symbols), 0)
+            self.assertTrue(all(s.notation is None for s in symbols))
+
+    def test_nothing_is_written_when_no_symbol_carries_notation(self) -> None:
+        # Absence is meaningful; an empty sidecar would claim the labels exist.
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+
+            self.assertIsNone(write_sidecar(tokens, _symbols(annotated=False)))
+            self.assertFalse(sidecar_path(tokens).exists())
+
+
+class TestGuards(unittest.TestCase):
+    def _written(self, tmp: str) -> Path:
+        tokens = Path(tmp) / "sample.txt"
+        tokens.write_text("x", encoding="utf-8")
+        write_sidecar(tokens, _symbols())
+        return tokens
+
+    def test_a_different_note_count_is_refused_rather_than_misattached(self) -> None:
+        # The failure the guard exists for: pairing by position across a writer and a
+        # reader that disagree would put one note's beams on another.
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = self._written(tmp)
+            fewer = [EncodedSymbol("clef_G2"), EncodedSymbol("note_8", "C5")]
+
+            with self.assertRaises(SidecarMismatch) as ctx:
+                attach_sidecar(tokens, fewer)
+
+        self.assertIn("disagree", str(ctx.exception))
+
+    def test_a_truncated_sidecar_is_caught_by_its_own_count(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = self._written(tmp)
+            path = sidecar_path(tokens)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["notation"] = payload["notation"][:1]
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with self.assertRaises(SidecarMismatch) as ctx:
+                attach_sidecar(tokens, _symbols(annotated=False))
+
+        self.assertIn("carries", str(ctx.exception))
+
+    def test_an_unknown_schema_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = self._written(tmp)
+            path = sidecar_path(tokens)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["schemaVersion"] = "homr.notation-sidecar.v99"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with self.assertRaises(SidecarMismatch):
+                attach_sidecar(tokens, _symbols(annotated=False))
+
+    def test_the_token_file_itself_is_never_touched(self) -> None:
+        # 19.2: legacy token files remain readable, byte for byte.
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("original contents", encoding="utf-8")
+            write_sidecar(tokens, _symbols())
+
+            self.assertEqual(tokens.read_text(encoding="utf-8"), "original contents")
+
+
+
+
+class TestSchemaVersioning(unittest.TestCase):
+    """A v1 sidecar predates tie extraction and must still load.
+
+    42,000 sidecars were written before ties were represented. Refusing them would mean
+    re-converting the whole corpus to gain a field that was not in the pipeline when they
+    were written - and decoding them as "no tie" is correct for exactly that reason.
+    """
+
+    def _symbols(self) -> list[EncodedSymbol]:
+        notation = NoteNotation(
+            beam_levels=empty_beam_levels(),
+            stem=StemDirection.UP,
+            slurs=empty_slur_slots(),
+            tie=TieState.START,
+        )
+        return [EncodedSymbol("note_8", "C5", notation=notation)]
+
+    def test_a_tie_round_trips(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            symbols = self._symbols()
+            write_sidecar(tokens, symbols)
+
+            read_back = [EncodedSymbol("note_8", "C5")]
+            attach_sidecar(tokens, read_back)
+
+            self.assertEqual(read_back[0].notation.tie, TieState.START)
+
+    def test_a_v1_sidecar_still_loads_and_reads_as_no_tie(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            write_sidecar(tokens, self._symbols())
+
+            path = sidecar_path(tokens)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["schemaVersion"] = "homr.notation-sidecar.v1"
+            for record in payload["notation"]:
+                record.pop("tie", None)
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            read_back = [EncodedSymbol("note_8", "C5")]
+            attach_sidecar(tokens, read_back)
+
+            self.assertEqual(read_back[0].notation.tie, TieState.NONE)
+
+    def test_an_unknown_schema_is_still_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "sample.txt"
+            tokens.write_text("x", encoding="utf-8")
+            write_sidecar(tokens, self._symbols())
+
+            path = sidecar_path(tokens)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["schemaVersion"] = "homr.notation-sidecar.v99"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with self.assertRaises(SidecarMismatch):
+                attach_sidecar(tokens, [EncodedSymbol("note_8", "C5")])
+
+
+class TestRoundTripCheck(unittest.TestCase):
+    """A converter should find a mismatch while it can still drop the example.
+
+    attach_sidecar refuses a count mismatch rather than attaching one note's beams to
+    another. Without a check at conversion, that refusal surfaces inside a DataLoader
+    worker partway through training - which is where 282 PDMX examples would have landed.
+    """
+
+    def _write(self, tmp: str, annotated: int) -> Path:
+        notation = NoteNotation(
+            beam_levels=empty_beam_levels(), stem=StemDirection.UP, slurs=empty_slur_slots()
+        )
+        symbols = [
+            EncodedSymbol("note_8", "C5", notation=notation if i < annotated else None)
+            for i in range(2)
+        ]
+        tokens = Path(tmp) / "sample.txt"
+        tokens.write_text(token_lines_to_str(symbols), encoding="utf-8")
+        write_sidecar(tokens, symbols)
+        return tokens
+
+    def test_a_matching_pair_round_trips(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertTrue(round_trips(self._write(tmp, annotated=2)))
+
+    def test_a_mismatched_pair_does_not(self) -> None:
+        # One note-bearing symbol carries no notation, so the counts disagree.
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertFalse(round_trips(self._write(tmp, annotated=1)))
+
+    def test_a_token_file_with_no_sidecar_round_trips(self) -> None:
+        # Absence is a valid state - it means the dataset predates the labels.
+        with tempfile.TemporaryDirectory() as tmp:
+            tokens = Path(tmp) / "bare.txt"
+            tokens.write_text(token_lines_to_str([EncodedSymbol("note_8", "C5")]), encoding="utf-8")
+
+            self.assertTrue(round_trips(tokens))
+
+
+if __name__ == "__main__":
+    unittest.main()
