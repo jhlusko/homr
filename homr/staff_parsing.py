@@ -9,6 +9,7 @@ from homr import constants
 
 if TYPE_CHECKING:
     from training.architecture.transformer.staff_context import StaffContextTransformer
+from homr.cross_staff_findings import record as record_finding
 from homr.cross_staff_consistency import (
     analyze_system,
     check_barline_positions,
@@ -924,15 +925,33 @@ def _report_cross_staff_findings(
                 assignment = propose_part_assignment(score_profile, partition, [slots])[0]
                 for deviation in assignment.deviations:
                     eprint(f"System {system_index}: profile layout - {deviation}")
+                    record_finding(
+                        "profile_layout_deviation",
+                        str(deviation),
+                        system=system_index,
+                    )
         for finding in check_page_staff_counts(presence):
             eprint(f"Page: {finding.message}")
+            record_finding(finding.kind, finding.message, staff_indices=finding.staff_indices)
         if staff_to_part is not None:
             for finding in check_part_order(staff_to_part):
                 eprint(f"Page: {finding.message}")
+                record_finding(finding.kind, finding.message, staff_indices=finding.staff_indices)
         for system_index, staves in enumerate(staves_by_system(voices, presence)):
             part_map = staff_to_part[system_index] if staff_to_part else None
             for finding in analyze_system(staves, part_map):
                 eprint(f"System {system_index}: {finding.message}")
+                record_finding(
+                    finding.kind,
+                    finding.message,
+                    system=system_index,
+                    staff_indices=finding.staff_indices,
+                    part=(
+                        part_map.get(finding.staff_indices[0])
+                        if part_map and finding.staff_indices
+                        else None
+                    ),
+                )
             for proposal in propose_repairs(staves):
                 eprint(
                     f"System {system_index}: repair proposal - {proposal.reason} "
