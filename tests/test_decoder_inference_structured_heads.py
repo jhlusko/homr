@@ -146,6 +146,9 @@ class TestGetDecoderLoadsHeadsOptionally(unittest.TestCase):
 
         with mock.patch.object(ort, "InferenceSession") as fake_session:
             fake_session.return_value = mock.Mock()
+            # A real session describes its inputs, and `get_decoder` now reads the
+            # graph's own precision from them rather than trusting the filename.
+            fake_session.return_value.get_inputs.return_value = []
             result = decoder_inference.get_decoder(config)
 
         self.assertIsNone(result.structured_heads)
@@ -161,6 +164,7 @@ class TestGetDecoderLoadsHeadsOptionally(unittest.TestCase):
         config.filepaths.structured_heads_path = __file__  # any real, existing path
 
         with mock.patch.object(ort, "InferenceSession") as fake_session:
+            fake_session.return_value.get_inputs.return_value = []
             fake_session.return_value.get_outputs.return_value = [
                 type("Output", (), {"name": "beam.level.1"})()
             ]

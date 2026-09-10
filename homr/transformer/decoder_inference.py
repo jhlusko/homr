@@ -598,12 +598,44 @@ def get_decoder(config: Config) -> ScoreDecoder:
         onnx_transformer = ort.InferenceSession(config.filepaths.decoder_path)
         fp16 = False
 
+    # The graph is authoritative about its own precision. A fine-tuned export may keep
+    # HOMR's historical `_fp16` filename while exposing float32 inputs, and binding
+    # float16 from the name alone fails before the first op runs.
+    context_input = next(
+        (
+            metadata
+            for metadata in onnx_transformer.get_inputs()
+            if metadata.name == "context"
+        ),
+        None,
+    )
+    if context_input is None:
+        # A graph that does not describe a `context` input tells us nothing, so keep
+        # what the filename implied rather than failing: that is the behaviour this
+        # replaced, and it is the safe direction to degrade in.
+        eprint("Decoder graph has no 'context' input; keeping the filename's precision.")
+    elif context_input.type not in {"tensor(float)", "tensor(float16)"}:
+        raise RuntimeError(f"Unsupported HOMR decoder context type: {context_input.type}")
+    else:
+        fp16 = context_input.type == "tensor(float16)"
+
     # Optional: absent by default until a deployment actually ships this file, matching
     # the pattern download_weights already follows for the decoder/encoder themselves.
     # A missing file is normal, not an error - most deployments will not have it yet.
     structured_heads = None
-    if os.path.exists(config.filepaths.structured_heads_path):
-        structured_heads = ort.InferenceSession(config.filepaths.structured_heads_path)
+    if config.filepaths.structured_heads_path and os.path.exists(
+        config.filepaths.structured_heads_path
+    ):
+        # With no `providers=`, onnxruntime picks its default - the CPU EP - so on a
+        # GPU deployment the core decode ran on CUDA and the heads beside it ran on the
+        # CPU, for no reason other than an omitted argument. The decoder and encoder
+        # sessions above both pass providers; this one did not.
+        structured_heads = ort.InferenceSession(
+            config.filepaths.structured_heads_path,
+            providers=gpu_providers()[0] if use_gpu else ["CPUExecutionProvider"],
+        )
+        if use_gpu and "CUDAExecutionProvider" not in structured_heads.get_providers():
+            eprint("Structured heads are not using CUDAExecutionProvider; this is slow.")
 
     return ScoreDecoder(
         onnx_transformer, fp16, use_gpu, config=config, structured_heads=structured_heads

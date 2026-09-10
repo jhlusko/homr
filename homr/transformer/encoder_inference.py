@@ -55,6 +55,20 @@ class Encoder:
             self.encoder = ort.InferenceSession(config.filepaths.encoder_path)
             self.fp16 = False
 
+        # The graph is authoritative about its own precision; see the same fix in
+        # `decoder_inference.get_decoder`. A fine-tuned export may keep the historical
+        # `_fp16` filename while exposing float32 inputs, and binding float16 from the
+        # name alone fails before the first op runs. Set after every branch above, so
+        # it corrects whichever one ran.
+        inputs = self.encoder.get_inputs()
+        model_input_type = inputs[0].type if inputs else None
+        if model_input_type is None:
+            eprint("Encoder graph describes no inputs; keeping the filename's precision.")
+        elif model_input_type not in {"tensor(float)", "tensor(float16)"}:
+            raise RuntimeError(f"Unsupported HOMR encoder input type: {model_input_type}")
+        else:
+            self.fp16 = model_input_type == "tensor(float16)"
+
         self.io_binding = self.encoder.io_binding()
         self.device_id = 0
 
