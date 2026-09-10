@@ -4,6 +4,8 @@
 [Superseded documents](#superseded-documents), which are retained as published-artifact
 copies and are no longer maintained.
 **Last verified against deployed code:** 2026-09-10.
+**Work in flight:** `OurTextScores/docs/private/OTS_HOMR_WORK_SEQUENCE.md` tracks the
+approved phase sequence and what has landed.
 
 Everything below distinguishes three different claims, because conflating them is what
 made the earlier write-ups misleading:
