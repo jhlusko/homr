@@ -38,7 +38,7 @@ from homr.cross_staff_rerank import (
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
-from homr.score_profile import ScoreProfile
+from homr.score_profile import ScorePart, ScoreProfile
 from homr.score_profile_layout import propose_part_assignment, staff_to_part_by_system
 from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
@@ -161,6 +161,17 @@ class SystemPlan:
     def dense(systems: list[MultiStaff]) -> "SystemPlan":
         """Every system complete, so the nth staff is the nth voice."""
         return SystemPlan(systems, [tuple(range(len(s.staffs))) for s in systems])
+
+
+def _part_identity(part: "ScorePart | None") -> str | None:
+    """The identifier a finding carries for its part.
+
+    `staff_to_part_by_system` maps to whole `ScorePart` objects, but a finding's `part`
+    is an identifier every consumer reads as a string - it is what the review surface
+    groups by. `stable_id` is scoped to the submitted job, which is the right grain:
+    two jobs may both call a part "violin-1" and mean different scores.
+    """
+    return part.stable_id if part is not None else None
 
 
 def _group_by_geometry(
@@ -1005,7 +1016,7 @@ def _report_cross_staff_findings(
                     system=system_index,
                     staff_indices=finding.staff_indices,
                     part=(
-                        part_map.get(finding.staff_indices[0])
+                        _part_identity(part_map.get(finding.staff_indices[0]))
                         if part_map and finding.staff_indices
                         else None
                     ),

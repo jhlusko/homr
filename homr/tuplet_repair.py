@@ -27,6 +27,7 @@ Two constraints keep it honest:
 import copy
 from collections import Counter
 from fractions import Fraction
+from typing import Any
 
 #: Divider tokens, which end a bar and carry no duration.
 DIVIDERS = frozenset(
@@ -137,7 +138,9 @@ def prevailing_bar(bars: list[list[str]]) -> Fraction | None:
     return modal if modal > 0 else None
 
 
-def _runs_of(values: list[str | None], value: str, length: int, contiguous: bool):
+def _runs_of(
+    values: list[str | None], value: str, length: int, contiguous: bool
+) -> list[list[int]]:
     """Index windows holding `length` notes of `value`, contiguously if required."""
     positions = [i for i, v in enumerate(values) if v == value]
     if not contiguous:
@@ -253,7 +256,7 @@ def is_single_staff(symbols: "list") -> bool:
     return not any(getattr(s, "position", None) == "lower" for s in symbols)
 
 
-def repair_symbols(symbols: "list", **kwargs) -> tuple["list", list]:
+def repair_symbols(symbols: list[Any], **kwargs: Any) -> tuple[list[Any], list[Any]]:
     """Apply the arithmetic repair to a decoded voice's EncodedSymbol stream, in place.
 
     Only rewrites `.rhythm` - the token whose VALUE changes (note_8 -> note_12); pitch,

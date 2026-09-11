@@ -123,7 +123,7 @@ def repair_position_divergence(
     `generate_with_rhythm_margins` guarantees this). `fork(staff_index, step,
     alt_token_id)` returns a filtered candidate, or None if that fork failed.
     """
-    proposals = propose_majority_position_corrections(list(staves))
+    proposals = propose_majority_position_corrections([list(staff) for staff in staves])
     if not proposals:
         return {}
     majority = majority_barline_sequence(staves)

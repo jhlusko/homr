@@ -82,6 +82,10 @@ def deskew_page_file(image_path: str, segnet_use_gpu: bool = True) -> float:
     if angle is None or abs(angle) < SKEW_CORRECTION_THRESHOLD_DEGREES:
         return 0.0
     image = cv2.imread(image_path)
+    if image is None:
+        # Unreadable here means unreadable for detection too, which reports it with
+        # more context than this function can. Straightening is simply skipped.
+        return 0.0
     # No sign flip here despite what that might suggest: `RotatedBoundingBox.angle`'s
     # own convention and `cv2.getRotationMatrix2D`'s (which rotate_image calls
     # directly) turned out to already be each other's inverse, confirmed empirically

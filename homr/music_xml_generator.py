@@ -819,7 +819,7 @@ def _add_slur(notation: ET.Element, xml_type: str, number: int, model_note: Enco
     placement = slur_placement(model_note, xml_type)
     if placement is not None:
         attrs["placement"] = placement
-    ET.SubElement(notation, "slur", **attrs)
+    ET.SubElement(notation, "slur", attrs)
 
 
 def build_slurs(note: ET.Element, model_note: EncodedSymbol, state: ConversionState) -> None:
@@ -850,13 +850,13 @@ def build_slurs(note: ET.Element, model_note: EncodedSymbol, state: ConversionSt
             if str(side) != "unspecified":
                 attrs["placement"] = str(side)
             if event == SlurEvent.START:
-                ET.SubElement(notation, "slur", type="start", **attrs)
+                ET.SubElement(notation, "slur", {**attrs, "type": "start"})
             elif event == SlurEvent.STOP:
-                ET.SubElement(notation, "slur", type="stop", **attrs)
+                ET.SubElement(notation, "slur", {**attrs, "type": "stop"})
             elif event == SlurEvent.START_AND_STOP:
                 # Close before reopening the same slot, matching the core path.
-                ET.SubElement(notation, "slur", type="stop", **attrs)
-                ET.SubElement(notation, "slur", type="start", **attrs)
+                ET.SubElement(notation, "slur", {**attrs, "type": "stop"})
+                ET.SubElement(notation, "slur", {**attrs, "type": "start"})
     elif slurs == nonote:
         eprint("WARNING note without valid articulation", slurs)
     elif slurs == "slurStart":

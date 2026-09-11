@@ -87,6 +87,17 @@ target-version = ['py311']
 line-length = 100
 preview = true
 
+# `disallow_untyped_defs` is right for the package that ships and wrong for the trees
+# that do not: a test's `def test_x(self) -> None:` carries no information, and a
+# throwaway analysis script is not improved by annotating every local helper. The
+# checks that catch real mistakes - argument types, attribute access, return values -
+# stay on everywhere.
+[[tool.mypy.overrides]]
+module = ["tests.*", "training.*", "validation.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_decorators = false
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
@@ -161,7 +172,11 @@ profile = "black"
 sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
 
 [tool.mypy]
-python_version = "3.10"
+# The project requires >=3.11 (`requires-python`), black and ruff both target py311 and
+# CI runs 3.11. Only this said 3.10, and the cost was not cosmetic: `enum.StrEnum` is
+# 3.11, so mypy concluded it did not exist, fell back to reading every StrEnum subclass
+# as a plain `str`, and reported ~45 knock-on errors in files that were correct.
+python_version = "3.11"
 
 cache_dir = ".mypy_cache/strict"
 show_error_codes = true

@@ -58,15 +58,16 @@ def _detect_title_task(debug: Debug, top_staff: Staff) -> str:
     ocr_input: str = debug.write_model_input_image("_tesseract_input.png", above_staff)
     ocr_results = _reader(ocr_input)
 
-    if ocr_results.txts is None:
+    boxes = getattr(ocr_results, "boxes", None)
+    txts = getattr(ocr_results, "txts", None)
+    scores = getattr(ocr_results, "scores", None)
+    if boxes is None or txts is None or scores is None:
+        # RapidOCR returns one of several result shapes; only the full detection
+        # result carries all three, and a page with no text returns one that does
+        # not. No text found is an empty title, not an error.
         return ""
 
-    results = [
-        (box, txt, score)
-        for box, txt, score in zip(
-            ocr_results.boxes, ocr_results.txts, ocr_results.scores, strict=True
-        )
-    ]
+    results = [(box, txt, score) for box, txt, score in zip(boxes, txts, scores, strict=True)]
 
     filtered_results = [r for r in results if not is_tempo_marking(r[1])]
 
