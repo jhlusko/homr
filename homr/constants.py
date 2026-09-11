@@ -61,6 +61,13 @@ staff_line_segment_x_tolerance = 10
 # because if not all staffs group the same way then we break the staffs up again
 minimum_connections_to_form_combined_staff = 1
 
+# What share of a staff's width the connections joining two staffs have to span before
+# they count as evidence of one system, rather than a single vertical object touching
+# both. A scanned book's gutter is one such object and sits entirely in the margin;
+# barlines run the width of the system. Loose on purpose - see
+# `connected_pairs_from_evidence` on why the two errors are not symmetric.
+connection_x_spread_factor = 0.25
+
 duration_of_quarter = 16
 
 image_noise_limit = 50

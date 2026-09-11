@@ -25,6 +25,8 @@ from homr.bounding_boxes import (
     create_rotated_bounding_boxes,
 )
 from homr.brace_dot_detection import (
+    DetectedStaffs,
+    connected_pairs_from_evidence,
     find_braces_brackets_and_grand_staff_lines,
     prepare_brace_dot_image,
 )
@@ -229,6 +231,9 @@ def process_image(
             multi_staffs = load_staff_positions(
                 debug, image, staff_position_files, config.selected_staff
             )
+            # Positions read back from a file are already grouped; there is no
+            # pre-merge detection behind them to consult.
+            detected = None
             title = ""
             # parse_staffs() expects a grayscale image (cv2.findContours requires it),
             # matching what the normal detect_staffs_in_image() path hands it
@@ -236,7 +241,9 @@ def process_image(
             # two code paths feed the symbol-recognition encoder consistent input.
             image = color_adjust.apply_clahe(image)
         else:
-            multi_staffs, image, debug, title_future, _ = detect_staffs_in_image(image_path, config)
+            multi_staffs, image, debug, title_future, detected = detect_staffs_in_image(
+                image_path, config
+            )
         debug_cleanup = debug
 
         transformer_config = Config()
@@ -252,6 +259,7 @@ def process_image(
             score_profile=config.score_profile,
             enable_staff_context=config.enable_staff_context,
             staff_context_weights=config.staff_context_weights,
+            detected=detected,
         )
 
         if transformer_config.tuplet_repair:
@@ -285,7 +293,7 @@ def process_image(
 
 def detect_staffs_in_image(
     image_path: str, config: ProcessingConfig
-) -> tuple[list[MultiStaff], NDArray, Debug, Future[str], int]:
+) -> tuple[list[MultiStaff], NDArray, Debug, Future[str], DetectedStaffs]:
     predictions, debug = load_and_preprocess_predictions(
         image_path, config.enable_debug, config.enable_cache, config.segnet_use_gpu
     )
@@ -342,6 +350,12 @@ def detect_staffs_in_image(
         staffs, noteheads_with_stems, predictions.symbols, predictions.notehead
     )
 
+    # Captured before merging: `find_braces_brackets_and_grand_staff_lines` can fuse Staff
+    # objects, and once it has, the page's own spacing is no longer there to be read.
+    detected = DetectedStaffs(
+        staffs=list(staffs),
+        connected_pairs=connected_pairs_from_evidence(staffs, brace_dot),
+    )
     multi_staffs = find_braces_brackets_and_grand_staff_lines(debug, staffs, brace_dot)
     eprint(
         "Found",
@@ -352,7 +366,7 @@ def detect_staffs_in_image(
 
     debug.write_all_bounding_boxes_alternating_colors("notes", multi_staffs, notes)
 
-    return multi_staffs, predictions.preprocessed, debug, title_future, len(staffs)
+    return multi_staffs, predictions.preprocessed, debug, title_future, detected
 
 
 def get_all_image_files_in_folder(folder: str) -> list[str]:

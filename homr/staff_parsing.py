@@ -10,6 +10,7 @@ from homr import constants
 if TYPE_CHECKING:
     from training.architecture.transformer.staff_context import StaffContextTransformer
 
+from homr.brace_dot_detection import DetectedStaffs
 from homr.cross_staff_consistency import (
     analyze_system,
     check_barline_positions,
@@ -162,8 +163,21 @@ class SystemPlan:
         return SystemPlan(systems, [tuple(range(len(s.staffs))) for s in systems])
 
 
-def _group_by_geometry(flat_staffs: list[Staff], staffs: list[MultiStaff]) -> SystemPlan | None:
+def _group_by_geometry(
+    flat_staffs: list[Staff],
+    staffs: list[MultiStaff],
+    detected: DetectedStaffs | None = None,
+) -> SystemPlan | None:
     """Regroup the page from staff spacing, or None to leave the decision alone.
+
+    `detected` is the page as staff detection left it, before brace/bracket merging. Ask
+    it first when it is available, because by the time the rows disagree the merge has
+    usually already destroyed the evidence this function needs: `_create_grandstaffs`
+    fuses Staff objects, so what arrives here can be 11 staffs of wildly differing height
+    where detection found 16 uniform ones, and no reading of their spacing means anything.
+    Measured on the OSSQ scans, 4 of 29 pages arrive that way, and on every one of them
+    the untouched detection groups cleanly into [4, 4, 4, 4] while the merged view yields
+    no confident answer at all.
 
     A system short of a staff is not dropped when its spacing says which voice is
     missing. Detection missing one staff out of an otherwise complete system is common,
@@ -172,7 +186,17 @@ def _group_by_geometry(flat_staffs: list[Staff], staffs: list[MultiStaff]) -> Sy
     be pinned down is still dropped: guessing would read every one of its staffs into the
     wrong voice, which is worse than losing it.
     """
-    result = find_system_grouping(flat_staffs, _adjacent_connected_pairs(flat_staffs, staffs))
+    source = flat_staffs
+    result = None
+    if detected is not None and len(detected.staffs) >= len(flat_staffs):
+        result = find_system_grouping(detected.staffs, detected.connected_pairs)
+        if result is not None and result.confident:
+            source = detected.staffs
+        else:
+            result = None
+    if result is None:
+        source = flat_staffs
+        result = find_system_grouping(flat_staffs, _adjacent_connected_pairs(flat_staffs, staffs))
     if result is None:
         return None
     report_grouping(result)
@@ -180,7 +204,7 @@ def _group_by_geometry(flat_staffs: list[Staff], staffs: list[MultiStaff]) -> Sy
         return None
 
     size = result.best.staves_per_system
-    assignments = assign_voice_slots(flat_staffs, result.best)
+    assignments = assign_voice_slots(source, result.best)
     systems: list[MultiStaff] = []
     slots: list[tuple[int, ...]] = []
     recovered = dropped = 0
@@ -190,7 +214,7 @@ def _group_by_geometry(flat_staffs: list[Staff], staffs: list[MultiStaff]) -> Sy
             continue
         if len(group) < size:
             recovered += 1
-        systems.append(MultiStaff([flat_staffs[index] for index in group], []))
+        systems.append(MultiStaff([source[index] for index in group], []))
         slots.append(assigned)
     if recovered:
         eprint(
@@ -208,7 +232,7 @@ def _group_by_geometry(flat_staffs: list[Staff], staffs: list[MultiStaff]) -> Sy
     return SystemPlan(systems, slots)
 
 
-def _plan_systems(staffs: list[MultiStaff]) -> SystemPlan:
+def _plan_systems(staffs: list[MultiStaff], detected: DetectedStaffs | None = None) -> SystemPlan:
     """
     If every system already has the same number of *more than one* staff, trust that
     directly rather than re-deriving it via _find_periodic_core. That function's signature
@@ -228,10 +252,18 @@ def _plan_systems(staffs: list[MultiStaff]) -> SystemPlan:
     scratch - that's the case this function was originally written for, and it is never
     already uniform at a row length above 1.
     """
-    row_lengths = {len(multi_staff.staffs) for multi_staff in staffs}
-    if len(row_lengths) == 1 and next(iter(row_lengths)) > 1:
-        return SystemPlan.dense(staffs)
     flat_staffs = _flatten_staffs(staffs)
+    # Uniform rows are only trustworthy if the merge that produced them kept every staff
+    # detection found. `_create_grandstaffs` fuses Staff objects, and a page whose staffs
+    # all fused into one row passes the uniformity test as surely as a genuine
+    # single-system page does - `p2` and `p4` arrive here as one row of 14 and 12 where
+    # detection found 16, and taking them at their word skips the geometry that reads
+    # both correctly as [4, 4, 4, 4]. Counting the staffs tells the two apart without
+    # having to guess: on every healthy page in the OSSQ set the count is unchanged.
+    fused = detected is not None and len(flat_staffs) < len(detected.staffs)
+    row_lengths = {len(multi_staff.staffs) for multi_staff in staffs}
+    if not fused and len(row_lengths) == 1 and next(iter(row_lengths)) > 1:
+        return SystemPlan.dense(staffs)
     # Ask page geometry before the periodic signature. Once the rows disagree, that
     # signature is unreliable in both directions on the same score: on one page it reads
     # a constant is_grandstaff sequence and settles on period 1, collapsing every voice
@@ -240,7 +272,7 @@ def _plan_systems(staffs: list[MultiStaff]) -> SystemPlan:
     # music besides. Geometry is measuring the thing that actually defines a system, so
     # it goes first - and because it declines when the gaps do not separate, the periodic
     # path below still handles every page it was written for.
-    geometric = _group_by_geometry(flat_staffs, staffs)
+    geometric = _group_by_geometry(flat_staffs, staffs, detected)
     if geometric is not None:
         return geometric
     core = _find_periodic_core(flat_staffs)
@@ -565,6 +597,7 @@ def parse_staffs(
     phase1_max_forks: int = 3,
     enable_staff_context: bool = False,
     staff_context_weights: str | None = None,
+    detected: DetectedStaffs | None = None,
 ) -> list[list[EncodedSymbol]]:
     """
     Dewarps each staff and then runs it through an algorithm which extracts
@@ -608,7 +641,7 @@ def parse_staffs(
     `_report_cross_staff_findings` is skipped there too) - set to `False` explicitly to
     compare against the pre-Phase-1 decode for any other reason.
     """
-    plan = _plan_systems(staffs)
+    plan = _plan_systems(staffs, detected)
     # For simplicity we call every staff in a multi staff a voice,
     # even if it's part of a grand staff.
     number_of_voices = plan.voices

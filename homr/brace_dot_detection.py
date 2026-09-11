@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import cv2
 import numpy as np
 
@@ -82,6 +84,62 @@ def _filter_for_tall_elements(
         if symbol.size[1] > constants.min_height_for_brace(unit_size):
             result.append(symbol)
     return result
+
+
+@dataclass(frozen=True)
+class DetectedStaffs:
+    """The staffs as detection produced them, before any merging, and what joins them.
+
+    Staff parsing works from `MultiStaff` rows, which are already the output of
+    brace/bracket merging. When that merging is wrong the rows are wrong, and the geometry
+    that would have revealed it is gone with them - `_create_grandstaffs` fuses Staff
+    objects, so a page can arrive at grouping with 11 staffs where detection found 16.
+    Carrying the untouched list alongside lets `_group_by_geometry` ask the question of
+    the page rather than of the merge.
+    """
+
+    staffs: list[Staff]
+    #: Indices of adjacent staffs with credible evidence of belonging to one system, as
+    #: `find_system_grouping` wants them.
+    connected_pairs: set[tuple[int, int]]
+
+
+def connected_pairs_from_evidence(
+    staffs: list[Staff], brace_dot: list[RotatedBoundingBox]
+) -> set[tuple[int, int]]:
+    """Which adjacent staffs are joined by evidence spread across the page's width.
+
+    `find_system_grouping` penalises a partition for cutting a pair that the bracket
+    detector joined, which is what stops it inventing boundaries. That penalty is only as
+    good as the pairs it is given, and a single connection is enough to claim one - so on
+    a scanned page the dark strip down the book's gutter, which runs the height of the
+    sheet, claims every pair it touches including the ones that straddle a system break.
+    Fed those, the grouper penalises the correct partition into silence: measured on the
+    OSSQ scans, four pages whose geometry says [4, 4, 4, 4] returned no confident answer
+    at all.
+
+    A real system is joined across its width - barlines at every measure, not only at the
+    margin - so requiring the connections for a pair to span a share of the staff's width
+    keeps the barline evidence and discards the gutter. The threshold is deliberately
+    loose because the two kinds of error are not symmetric: dropping a true pair only
+    removes a penalty and leaves the decision to the spacing, while keeping a false one
+    actively argues for the wrong answer.
+    """
+    brace_dot = [_trim_symbol_to_core_span(symbol) for symbol in brace_dot]
+    brace_dot = _filter_for_tall_elements(brace_dot, staffs)
+    pairs: set[tuple[int, int]] = set()
+    for index in range(len(staffs) - 1):
+        upper, lower = staffs[index], staffs[index + 1]
+        connections = _get_connections_between_staffs(upper, lower, brace_dot)
+        if len(connections) < constants.minimum_connections_to_form_combined_staff:
+            continue
+        positions = [connection.center[0] for connection in connections]
+        width = max(upper.max_x - upper.min_x, lower.max_x - lower.min_x)
+        if width <= 0:
+            continue
+        if (max(positions) - min(positions)) > constants.connection_x_spread_factor * width:
+            pairs.add((index, index + 1))
+    return pairs
 
 
 def _get_connections_between_staffs_at_bar_lines(
