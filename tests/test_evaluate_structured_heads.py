@@ -164,13 +164,9 @@ class TestUnscoredHeadsAreStillStrippedFromTheInput(unittest.TestCase):
         # The training path passes one list because it scores everything it labels.
         model = _Model({})
 
-        result = evaluate(
-            model, [_batch(StemDirection.UP, BeamLevelState.BEGIN)], HEADS, 2, 1
-        )
+        result = evaluate(model, [_batch(StemDirection.UP, BeamLevelState.BEGIN)], HEADS, 2, 1)
 
         self.assertEqual(result.sequences, 1)
-
-
 
 
 class TestLoadingOlderHeadWeights(unittest.TestCase):

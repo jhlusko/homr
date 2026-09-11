@@ -10,12 +10,20 @@ image, so it agrees with the detector by construction. Cross-voice agreement use
 detection at all: a system's staves are the same bars of the same music, so if voice 0
 says four bars and voice 1 says five, one of them is wrong whatever the detector thinks.
 """
+
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-DIVIDERS = {"barline", "doublebarline", "bolddoublebarline",
-            "repeatStart", "repeatEnd", "repeatBoth"}
+DIVIDERS = {
+    "barline",
+    "doublebarline",
+    "bolddoublebarline",
+    "repeatStart",
+    "repeatEnd",
+    "repeatBoth",
+}
+
 
 def dividers(path):
     n = 0
@@ -25,9 +33,12 @@ def dividers(path):
             n += 1
     return n
 
-for name, manifest in (("v6 clean", "/workspace/b0/lieder-rebuild/stage2_clean_v6_manifest.txt"),
-                       ("v5 clean", "/workspace/b0/lieder-rebuild/stage2_clean_v5_manifest.txt"),
-                       ("reverse v3", "/workspace/b0/lieder-rebuild/stage2_reverse_manifest_v3.txt")):
+
+for name, manifest in (
+    ("v6 clean", "/workspace/b0/lieder-rebuild/stage2_clean_v6_manifest.txt"),
+    ("v5 clean", "/workspace/b0/lieder-rebuild/stage2_clean_v5_manifest.txt"),
+    ("reverse v3", "/workspace/b0/lieder-rebuild/stage2_reverse_manifest_v3.txt"),
+):
     p = Path(manifest)
     if not p.exists():
         print(f"{name}: manifest missing")
@@ -47,7 +58,10 @@ for name, manifest in (("v6 clean", "/workspace/b0/lieder-rebuild/stage2_clean_v
         if len(set(counts.values())) > 1:
             bad.append((key, counts))
     print(f"\n{name}: {len(systems)} systems, {len(multi)} with more than one voice")
-    print(f"  voices disagree on bar count: {len(bad)}  ({100*len(bad)/max(len(multi),1):.1f}% of multi-voice systems)")
+    print(
+        f"  voices disagree on bar count: {len(bad)}  ({100*len(bad)/max(len(multi),1):.1f}% of "
+        f"multi-voice systems)"
+    )
     if bad:
         spread = Counter(max(c.values()) - min(c.values()) for _, c in bad)
         print(f"  size of disagreement: {dict(sorted(spread.items()))}")

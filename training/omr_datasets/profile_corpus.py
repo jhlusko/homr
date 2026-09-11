@@ -50,7 +50,11 @@ def score_of(stem: str) -> str:
 
 
 def profile(manifest: Path, label: str) -> dict:
-    rows = [line.split(",", 1) for line in manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = [
+        line.split(",", 1)
+        for line in manifest.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     per_score: Counter = Counter()
     digests: Counter = Counter()
     bars: Counter = Counter()
@@ -70,9 +74,11 @@ def profile(manifest: Path, label: str) -> dict:
         symbols.append(len(body))
         bars[sum(1 for s in syms if s.rhythm in MEASURE_DIVIDERS)] += 1
         staff_kind["single" if is_single_staff(syms) else "grand"] += 1
-        digests[hashlib.sha256(
-            "\n".join(f"{s.rhythm}|{s.pitch}|{s.position}" for s in syms).encode()
-        ).hexdigest()] += 1
+        digests[
+            hashlib.sha256(
+                "\n".join(f"{s.rhythm}|{s.pitch}|{s.position}" for s in syms).encode()
+            ).hexdigest()
+        ] += 1
         if len(body) < TRIVIAL_SYMBOLS:
             trivial += 1
         if body and all(s.rhythm.startswith("rest") for s in body):
@@ -101,18 +107,37 @@ def profile(manifest: Path, label: str) -> dict:
     print(f"  trivial (<{TRIVIAL_SYMBOLS} symbols)      {trivial:,}  ({pct(trivial)})")
     print(f"  all-rest labels           {silent:,}  ({pct(silent)})")
     print(f"  unreadable                {unreadable:,}")
-    print(f"  staff type                single {staff_kind['single']:,} / grand {staff_kind['grand']:,}")
+    print(
+        f"  staff type                single {staff_kind['single']:,} / grand "
+        f"{staff_kind['grand']:,}"
+    )
     if symbols:
-        print(f"  symbols per pair          min {symbols[0]}  p25 {symbols[len(symbols)//4]}  "
-              f"median {symbols[len(symbols)//2]}  p75 {symbols[3*len(symbols)//4]}  max {symbols[-1]}")
+        print(
+            f"  symbols per pair          min {symbols[0]}  p25 {symbols[len(symbols)//4]}  "
+            f"median {symbols[len(symbols)//2]}  p75 {symbols[3*len(symbols)//4]}  max "
+            f"{symbols[-1]}"
+        )
     print(f"  bars per pair             {dict(sorted(bars.items())[:8])}")
-    print(f"  half the pairs come from  {half} score(s) ({100*half/max(len(per_score),1):.0f}% of scores)")
-    print(f"  largest score             {top_scores[0][0]} with {top_scores[0][1]} pairs" if top_scores else "")
+    print(
+        f"  half the pairs come from  {half} score(s) ({100*half/max(len(per_score),1):.0f}% of "
+        f"scores)"
+    )
+    print(
+        f"  largest score             {top_scores[0][0]} with {top_scores[0][1]} pairs"
+        if top_scores
+        else ""
+    )
     return {
-        "label": label, "pairs": total, "scores": len(per_score),
-        "distinct_labels": distinct, "pairs_sharing_a_label": repeated,
-        "trivial": trivial, "silent": silent, "unreadable": unreadable,
-        "single_staff": staff_kind["single"], "grand_staff": staff_kind["grand"],
+        "label": label,
+        "pairs": total,
+        "scores": len(per_score),
+        "distinct_labels": distinct,
+        "pairs_sharing_a_label": repeated,
+        "trivial": trivial,
+        "silent": silent,
+        "unreadable": unreadable,
+        "single_staff": staff_kind["single"],
+        "grand_staff": staff_kind["grand"],
         "scores_for_half_the_pairs": half,
     }
 

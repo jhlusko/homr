@@ -22,7 +22,9 @@ class _FakePerStaffLoader:
 
 
 def _index_line(score_id: str, page: str, system: str, part: str) -> str:
-    return f"images/{score_id}_{page}_{system}_{part}.png,tokens/{score_id}_{page}_{system}_{part}.txt"
+    return (
+        f"images/{score_id}_{page}_{system}_{part}.png,tokens/{score_id}_{page}_{system}_{part}.txt"
+    )
 
 
 class TestGroupBySystem(unittest.TestCase):
@@ -57,7 +59,9 @@ class TestSystemBatchDataset(unittest.TestCase):
 
         sample = dataset[0]
 
-        from training.architecture.transformer.staff_context import MAX_STAVES_PER_SYSTEM
+        from training.architecture.transformer.staff_context import (
+            MAX_STAVES_PER_SYSTEM,
+        )
 
         self.assertEqual(sample["rhythms"].shape[0], MAX_STAVES_PER_SYSTEM)
         self.assertTrue(torch.equal(sample["rhythms"][0], torch.full((4,), 3, dtype=torch.long)))
@@ -78,7 +82,9 @@ class TestSystemBatchDataset(unittest.TestCase):
         self.assertEqual(len(dataset), 1)
 
     def test_an_oversized_system_is_truncated_not_crashed(self) -> None:
-        from training.architecture.transformer.staff_context import MAX_STAVES_PER_SYSTEM
+        from training.architecture.transformer.staff_context import (
+            MAX_STAVES_PER_SYSTEM,
+        )
 
         big_group = list(range(MAX_STAVES_PER_SYSTEM + 3))
         dataset = SystemBatchDataset(_FakePerStaffLoader(), [big_group], min_staves=2)

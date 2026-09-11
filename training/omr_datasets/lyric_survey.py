@@ -232,8 +232,7 @@ def describe(survey: Survey) -> str:
         + ", ".join(f"{n}={c:,}" for n, c in sorted(survey.melisma_lengths.items())[:8]),
         f"notes carrying more than one verse: {multi_verse:,} of {any_verse:,}"
         f" ({multi_verse / any_verse:.1%}), highest verse number {survey.highest_verse}",
-        "syllabic position: "
-        + ", ".join(f"{k}={v:,}" for k, v in survey.syllabic.most_common()),
+        "syllabic position: " + ", ".join(f"{k}={v:,}" for k, v in survey.syllabic.most_common()),
         "",
     ]
     return "\n".join(lines)
@@ -253,8 +252,10 @@ def main() -> None:
     growth = vocabulary_growth(paths)
     for scores, _, distinct in growth:
         print(f"  {scores:>5} scores: {distinct:,} distinct syllables")
-    print(f"  Heaps exponent {heaps_exponent(growth):.3f}"
-          " (natural language is 0.4-0.6; higher means less reuse)")
+    print(
+        f"  Heaps exponent {heaps_exponent(growth):.3f}"
+        " (natural language is 0.4-0.6; higher means less reuse)"
+    )
     mass, types, size = out_of_vocabulary(paths)
     print(f"  a vocabulary of {size:,} syllables built from {1 - HOLDOUT:.0%} of the scores")
     print(f"  fails on {mass:.1%} of occurrences and {types:.1%} of types in the rest")

@@ -215,10 +215,17 @@ def render_score_page(state: ReviewState, score_id: str, base_path: str = "") ->
         confidence = entry.get("matched_fraction", entry.get("match_ratio", 0.0))
         matches_html.append(
             MATCH_TEMPLATE.format(
-                score_id=score_id, key=entry["key"], key_id=entry["key"].replace("/", "_"),
-                kind=entry["kind"], text=_escape(entry["text"]), confidence=confidence,
-                page_index=entry["page_index"], judgment_id=judgment_id,
-                css_class=css_class, current_judgment=current_judgment, base_path=base_path,
+                score_id=score_id,
+                key=entry["key"],
+                key_id=entry["key"].replace("/", "_"),
+                kind=entry["kind"],
+                text=_escape(entry["text"]),
+                confidence=confidence,
+                page_index=entry["page_index"],
+                judgment_id=judgment_id,
+                css_class=css_class,
+                current_judgment=current_judgment,
+                base_path=base_path,
             )
         )
     all_ids = state.score_ids()
@@ -324,9 +331,7 @@ class Handler(BaseHTTPRequestHandler):
         if score_id is None:
             self._send_html("bad score id", status=400)
             return
-        entry = next(
-            (e for e in self.state.by_score.get(score_id, []) if e["key"] == key), None
-        )
+        entry = next((e for e in self.state.by_score.get(score_id, []) if e["key"] == key), None)
         if entry is None:
             self._send_html("not found", status=404)
             return
@@ -344,15 +349,22 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--matches", type=Path, required=True,
+        "--matches",
+        type=Path,
+        required=True,
         help="ocr_first_text_ground_truth.py's --out dir (per-score json files).",
     )
     parser.add_argument(
-        "--judgments", type=Path, required=True,
+        "--judgments",
+        type=Path,
+        required=True,
         help="Where good/bad/unclear judgments are saved (created if missing).",
     )
     parser.add_argument(
-        "--pngs", type=Path, required=True, nargs="+",
+        "--pngs",
+        type=Path,
+        required=True,
+        nargs="+",
         help="One or more imslp_pngs dirs (both imslp_pngs and imslp_pngs_new, same "
         "split as extract_stage2_pairs.py - resolved per score by whichever dir "
         "actually has that score's own subdirectory).",

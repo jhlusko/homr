@@ -40,7 +40,6 @@ from typing import Any
 
 import torch
 from torch import nn
-from torch.utils.data import DataLoader as TorchDataLoader
 
 from training.transformer.train_profile_context import (
     build_batches,
@@ -85,26 +84,34 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--index", type=Path, required=True, help="Dataset index.txt.")
     parser.add_argument(
-        "--valid-index", type=Path, required=True,
+        "--valid-index",
+        type=Path,
+        required=True,
         help="Held-out index.txt for the with/without ablation - required here (not "
         "optional the way it is for the frozen-core script): this run's only "
         "justification for existing is that ablation, and it must not silently skip it.",
     )
     parser.add_argument(
-        "--dataset-root", type=Path, required=True,
+        "--dataset-root",
+        type=Path,
+        required=True,
         help="OSSQ corpus root (score_profile_pairing.py's dataset_root).",
     )
     parser.add_argument("--checkpoint", type=Path, required=True, help="Pinned .pth to start from.")
     parser.add_argument("--out", type=Path, required=True, help="Where to write the history JSON.")
     parser.add_argument(
-        "--checkpoint-out-dir", type=Path, required=True,
+        "--checkpoint-out-dir",
+        type=Path,
+        required=True,
         help="Directory to write a full model checkpoint after every epoch "
         "(unlike the frozen-core script's --weights, the whole decoder can have moved, "
         "not just profile_context's 8 tensors, so the full state dict is saved).",
     )
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument(
-        "--lr", type=float, default=1e-5,
+        "--lr",
+        type=float,
+        default=1e-5,
         help="Two orders of magnitude below phase20's 1e-3 frozen-core probe - the whole "
         "decoder can move here, so a much smaller step size is the conservative default.",
     )
@@ -131,14 +138,17 @@ def main() -> None:
     print(f"{examples} example(s) from {args.index}")
 
     valid_batches, valid_examples = build_batches(
-        args.valid_index, config, args.batch_size, args.workers, str(args.dataset_root),
-        shuffle=False, validation=True,
+        args.valid_index,
+        config,
+        args.batch_size,
+        args.workers,
+        str(args.dataset_root),
+        shuffle=False,
+        validation=True,
     )
     print(f"{valid_examples} validation example(s) from {args.valid_index}")
 
-    optimizer = torch.optim.Adam(
-        [p for p in model.parameters() if p.requires_grad], lr=args.lr
-    )
+    optimizer = torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=args.lr)
     history = []
     args.checkpoint_out_dir.mkdir(parents=True, exist_ok=True)
     for epoch in range(1, args.epochs + 1):
@@ -159,9 +169,7 @@ def main() -> None:
         )
         # Full checkpoint every epoch, not just at the end - the whole decoder can have
         # moved here, unlike the frozen-core script where only 8 tensors ever change.
-        torch.save(
-            model.state_dict(), args.checkpoint_out_dir / f"epoch_{epoch}.pth"
-        )
+        torch.save(model.state_dict(), args.checkpoint_out_dir / f"epoch_{epoch}.pth")
 
 
 if __name__ == "__main__":

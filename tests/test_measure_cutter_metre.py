@@ -20,9 +20,16 @@ class TestNumeratorSurvivesSlicing(unittest.TestCase):
     lost it: 77 numerators against 416 time signatures in the corpus."""
 
     def _voice(self):
-        first = [sym("clef_G2"), sym("keySignature_0"),
-                 sym("timeSignatureBeats_3"), sym("timeSignature/4"),
-                 note(), note(), note(), EncodedSymbol("barline")]
+        first = [
+            sym("clef_G2"),
+            sym("keySignature_0"),
+            sym("timeSignatureBeats_3"),
+            sym("timeSignature/4"),
+            note(),
+            note(),
+            note(),
+            EncodedSymbol("barline"),
+        ]
         rest = [note(), note(), note(), EncodedSymbol("barline")]
         return [first, list(rest), list(rest), list(rest)]
 
@@ -30,29 +37,32 @@ class TestNumeratorSurvivesSlicing(unittest.TestCase):
         """Deliberate: a courtesy signature is only visible where the source redeclares
         it, so a crop that does not show one must not be labelled with one."""
         cutter = MeasureCutter(self._voice())
-        cutter.extract_measures(1)                 # consume the measure that declares it
+        cutter.extract_measures(1)  # consume the measure that declares it
         rhythms = [s.rhythm for s in cutter.extract_measures(2)]
         self.assertNotIn("timeSignature/4", rhythms)
         self.assertNotIn("timeSignatureBeats_3", rhythms)
 
     def test_the_numerator_precedes_its_denominator(self) -> None:
         rhythms = [s.rhythm for s in MeasureCutter(self._voice()).extract_measures(1)]
-        self.assertLess(rhythms.index("timeSignatureBeats_3"),
-                        rhythms.index("timeSignature/4"))
+        self.assertLess(rhythms.index("timeSignatureBeats_3"), rhythms.index("timeSignature/4"))
 
     def test_a_mid_slice_redeclaration_keeps_both(self) -> None:
         """Where the denominator survives, the numerator must too - the pairing the
         overwrite bug broke."""
         voice = [
-            [sym("clef_G2"), sym("keySignature_0"), sym("timeSignatureBeats_4"),
-             sym("timeSignature/4"), note(), EncodedSymbol("barline")],
-            [sym("timeSignatureBeats_3"), sym("timeSignature/4"), note(),
-             EncodedSymbol("barline")],
+            [
+                sym("clef_G2"),
+                sym("keySignature_0"),
+                sym("timeSignatureBeats_4"),
+                sym("timeSignature/4"),
+                note(),
+                EncodedSymbol("barline"),
+            ],
+            [sym("timeSignatureBeats_3"), sym("timeSignature/4"), note(), EncodedSymbol("barline")],
         ]
         rhythms = [s.rhythm for s in MeasureCutter(voice).extract_measures(2)]
         self.assertEqual(rhythms.count("timeSignature/4"), 2, rhythms)
-        self.assertEqual(
-            sum(1 for r in rhythms if r.startswith("timeSignatureBeats")), 2, rhythms)
+        self.assertEqual(sum(1 for r in rhythms if r.startswith("timeSignatureBeats")), 2, rhythms)
 
     def test_the_declaring_slice_keeps_both(self) -> None:
         rhythms = [s.rhythm for s in MeasureCutter(self._voice()).extract_measures(1)]
@@ -62,13 +72,19 @@ class TestNumeratorSurvivesSlicing(unittest.TestCase):
     def test_a_voice_with_no_numerator_is_unchanged(self) -> None:
         """Sources predating the token, and any the parser could not read, must still
         slice exactly as before."""
-        voice = [[sym("clef_G2"), sym("keySignature_0"), sym("timeSignature/4"),
-                  note(), EncodedSymbol("barline")],
-                 [note(), EncodedSymbol("barline")]]
+        voice = [
+            [
+                sym("clef_G2"),
+                sym("keySignature_0"),
+                sym("timeSignature/4"),
+                note(),
+                EncodedSymbol("barline"),
+            ],
+            [note(), EncodedSymbol("barline")],
+        ]
         rhythms = [s.rhythm for s in MeasureCutter(voice).extract_measures(2)]
         self.assertNotIn("timeSignatureBeats_3", rhythms)
         self.assertIn("timeSignature/4", rhythms)
-
 
 
 class TestNumeratorSurvivesWindowing(unittest.TestCase):
@@ -83,9 +99,16 @@ class TestNumeratorSurvivesWindowing(unittest.TestCase):
     """
 
     def _voice(self):
-        first = [sym("clef_G2"), sym("keySignature_0"),
-                 sym("timeSignatureBeats_3"), sym("timeSignature/4"),
-                 note(), note(), note(), EncodedSymbol("barline")]
+        first = [
+            sym("clef_G2"),
+            sym("keySignature_0"),
+            sym("timeSignatureBeats_3"),
+            sym("timeSignature/4"),
+            note(),
+            note(),
+            note(),
+            EncodedSymbol("barline"),
+        ]
         rest = [note(), note(), note(), EncodedSymbol("barline")]
         return [first] + [list(rest) for _ in range(5)]
 
@@ -102,8 +125,7 @@ class TestNumeratorSurvivesWindowing(unittest.TestCase):
     def test_a_later_window_restates_the_whole_signature(self) -> None:
         rhythms = self._window(self._voice(), 2, 3)
         self.assertIn("timeSignature/4", rhythms)
-        self.assertLess(rhythms.index("timeSignatureBeats_3"),
-                        rhythms.index("timeSignature/4"))
+        self.assertLess(rhythms.index("timeSignatureBeats_3"), rhythms.index("timeSignature/4"))
 
     def test_the_first_window_is_unchanged(self) -> None:
         rhythms = self._window(self._voice(), 0, 3)
@@ -119,8 +141,12 @@ class TestNumeratorSurvivesWindowing(unittest.TestCase):
 
     def test_a_metre_change_carries_the_latest_numerator(self) -> None:
         voice = self._voice()
-        voice[2] = [sym("timeSignatureBeats_6"), sym("timeSignature/8"),
-                    note(), EncodedSymbol("barline")]
+        voice[2] = [
+            sym("timeSignatureBeats_6"),
+            sym("timeSignature/8"),
+            note(),
+            EncodedSymbol("barline"),
+        ]
         _clefs, _key, time_sym, time_beats = _context_at_measure(voice, 4, 1)
         self.assertEqual(time_sym.rhythm, "timeSignature/8")
         self.assertEqual(time_beats.rhythm, "timeSignatureBeats_6")

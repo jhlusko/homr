@@ -34,19 +34,26 @@ def real(sequence):
 
 
 def is_tuplet(token: str) -> bool:
-    return token.startswith(("note_", "rest_")) and \
-        token.split("_", 1)[1].rstrip(".") in TUPLET_VALUES
+    return (
+        token.startswith(("note_", "rest_")) and token.split("_", 1)[1].rstrip(".") in TUPLET_VALUES
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("scored", type=Path, nargs="+", help="scored .jsonl files")
-    parser.add_argument("--loose", action="store_true",
-                        help="drop the contiguity requirement on the run")
-    parser.add_argument("--max-overfull", type=int, default=1,
-                        help="skip staves with more overfull bars than this; 0 disables")
-    parser.add_argument("--any", action="store_true",
-                        help="rewrite even when several tuplets make the bar exact")
+    parser.add_argument(
+        "--loose", action="store_true", help="drop the contiguity requirement on the run"
+    )
+    parser.add_argument(
+        "--max-overfull",
+        type=int,
+        default=1,
+        help="skip staves with more overfull bars than this; 0 disables",
+    )
+    parser.add_argument(
+        "--any", action="store_true", help="rewrite even when several tuplets make the bar exact"
+    )
     args = parser.parse_args()
 
     for path in args.scored:
@@ -69,9 +76,12 @@ def main() -> None:
             ref_tuplet_tokens += n_ref
             ref_tuplet_staves += n_ref > 0
 
-            fixed, rewrites = repair(got, contiguous=not args.loose,
-                                     require_unique=not args.any,
-                                     max_overfull=args.max_overfull or None)
+            fixed, rewrites = repair(
+                got,
+                contiguous=not args.loose,
+                require_unique=not args.any,
+                max_overfull=args.max_overfull or None,
+            )
             if not rewrites:
                 exact_before += got == want
                 exact_after += got == want
@@ -98,22 +108,27 @@ def main() -> None:
         touched = wins + losses + neutral
         print(f"\n=== {path.name} ===")
         print(f"  staves scored                    : {staves}")
-        print(f"  staves whose REFERENCE has tuplets: {ref_tuplet_staves} "
-              f"({100 * ref_tuplet_staves / max(staves, 1):.1f}%), "
-              f"{ref_tuplet_tokens:,} tokens")
-        print(f"  staves the repair fired on       : {fired} "
-              f"({100 * fired / max(staves, 1):.1f}%)")
+        print(
+            f"  staves whose REFERENCE has tuplets: {ref_tuplet_staves} "
+            f"({100 * ref_tuplet_staves / max(staves, 1):.1f}%), "
+            f"{ref_tuplet_tokens:,} tokens"
+        )
+        print(
+            f"  staves the repair fired on       : {fired} "
+            f"({100 * fired / max(staves, 1):.1f}%)"
+        )
         print(f"  tokens rewritten                 : {touched}")
         print(f"    -> now correct  (WIN)          : {wins}")
         print(f"    -> now wrong    (LOSS)         : {losses}")
         print(f"    -> wrong either way            : {neutral}")
         if touched:
             print(f"  precision                        : {100 * wins / touched:.1f}%")
-        print(f"  exact staves  {exact_before} -> {exact_after} "
-              f"({exact_after - exact_before:+d}; +{recovered_staves} / -{broken_staves})")
+        print(
+            f"  exact staves  {exact_before} -> {exact_after} "
+            f"({exact_after - exact_before:+d}; +{recovered_staves} / -{broken_staves})"
+        )
         if shapes:
-            print("  shapes rewritten: " +
-                  ", ".join(f"{k} x{v}" for k, v in shapes.most_common(6)))
+            print("  shapes rewritten: " + ", ".join(f"{k} x{v}" for k, v in shapes.most_common(6)))
 
 
 if __name__ == "__main__":

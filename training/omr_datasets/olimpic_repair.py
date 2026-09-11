@@ -169,7 +169,7 @@ def repair_document(
     """
     before, after = [], []
     for page in (document.get("pages") or {}).values():
-        systems = [system for system in (page.get("systems") or []) if "boundingBox" in system]
+        systems = [system for system in page.get("systems") or [] if "boundingBox" in system]
         boxes = [
             Box(**{key: int(value) for key, value in system["boundingBox"].items()})
             for system in systems

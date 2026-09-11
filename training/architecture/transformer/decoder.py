@@ -118,9 +118,7 @@ class ScoreTransformerWrapper(nn.Module):
         # position via unsqueeze(1), since profile context does not vary within one
         # staff's decode. `None` (the default) leaves `x` exactly as it was before this
         # parameter existed - no caller that omits it is affected in any way.
-        profile_bias = (
-            profile_context_emb.unsqueeze(1) if profile_context_emb is not None else None
-        )
+        profile_bias = profile_context_emb.unsqueeze(1) if profile_context_emb is not None else None
         # §4/§7.4 Stage C: the same shape and broadcast rule as profile_bias above, but
         # a genuinely separate signal (this staff's own learned cross-staff context,
         # StaffContextTransformer's gated output for this staff, computed from a first
@@ -128,9 +126,7 @@ class ScoreTransformerWrapper(nn.Module):
         # profile_context_emb so the two conditioning sources stay independently
         # ablatable, not conflated into one. `None` leaves `x` exactly as it was
         # before this parameter existed.
-        staff_bias = (
-            staff_context_emb.unsqueeze(1) if staff_context_emb is not None else None
-        )
+        staff_bias = staff_context_emb.unsqueeze(1) if staff_context_emb is not None else None
         cache = kwargs.pop("cache", None)
         if cache is None:
             x = (
@@ -564,9 +560,7 @@ class ScoreDecoder(nn.Module):
                 # having one bolted on. Capped, because a model that will not produce a
                 # divider must still be able to stop; without the cap this trades a
                 # missing barline for a page of invented notes.
-                last_is_divider = (
-                    last_rhythm_id is not None and last_rhythm_id in self.divider_ids
-                )
+                last_is_divider = last_rhythm_id is not None and last_rhythm_id in self.divider_ids
                 if (
                     self.config.enforce_final_divider
                     and not last_is_divider
@@ -597,10 +591,7 @@ class ScoreDecoder(nn.Module):
             if self.structured_heads is not None:
                 head_logits = self.structured_heads(hidden[:, -1:, :])
                 prediction = decode_note(
-                    {
-                        name: tensor[0, -1, :].tolist()
-                        for name, tensor in head_logits.items()
-                    }
+                    {name: tensor[0, -1, :].tolist() for name, tensor in head_logits.items()}
                 )
                 symbol.notation = prediction.notation
                 symbol.structured_choices = prediction.choices
@@ -730,8 +721,7 @@ class ScoreDecoder(nn.Module):
         # existing loss, bit-for-bit - see calDurationAdherenceLoss's own docstring.
         duration_adherence_weight = getattr(self.config, "duration_adherence_weight", 0.0)
         loss_duration_adherence = (
-            duration_adherence_weight
-            * self.calDurationAdherenceLoss(rhythmsp, rhythmso, mask)
+            duration_adherence_weight * self.calDurationAdherenceLoss(rhythmsp, rhythmso, mask)
             if duration_adherence_weight
             else torch.zeros((), device=rhythmsp.device)
         )

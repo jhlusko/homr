@@ -178,8 +178,9 @@ class TestStructuredLossPlumbing(unittest.TestCase):
 
         expected, _ = masked_cross_entropy(logits["tie.state"], targets["tie.state"])
 
-        self.assertAlmostEqual(structured_loss(logits, targets).total.item(),
-                               expected.item(), places=6)
+        self.assertAlmostEqual(
+            structured_loss(logits, targets).total.item(), expected.item(), places=6
+        )
 
     def test_a_head_without_a_weight_vector_is_untouched(self) -> None:
         from training.architecture.transformer.structured_losses import structured_loss
@@ -188,8 +189,9 @@ class TestStructuredLossPlumbing(unittest.TestCase):
 
         with_other = structured_loss(logits, targets, alpha={"stem.direction": torch.tensor([1.0])})
 
-        self.assertAlmostEqual(with_other.total.item(),
-                               structured_loss(logits, targets).total.item(), places=6)
+        self.assertAlmostEqual(
+            with_other.total.item(), structured_loss(logits, targets).total.item(), places=6
+        )
 
 
 class TestTheCapIsTheRebalancingDial(unittest.TestCase):

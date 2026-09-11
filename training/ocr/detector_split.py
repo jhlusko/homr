@@ -23,6 +23,7 @@ from pathlib import Path
 
 from training.ocr.detector_patches import Sample, read_index
 
+
 #: The score id is the folder name up to the first "_p<digits>-s<digits>" suffix
 #: `musescore_boxes.py` writes, e.g. "4919798_p1-s3" -> "4919798".
 def score_of(sample: Sample) -> str:
@@ -66,9 +67,7 @@ def split(
 
 
 def write_index(samples: list[Sample], path: Path) -> None:
-    path.write_text(
-        "\n".join(f"{s.image},{s.mask}" for s in samples) + "\n", encoding="utf-8"
-    )
+    path.write_text("\n".join(f"{s.image},{s.mask}" for s in samples) + "\n", encoding="utf-8")
 
 
 def main() -> None:
@@ -78,9 +77,11 @@ def main() -> None:
     parser.add_argument("--valid-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
-        "--score-from", choices=sorted(SCORE_SOURCES), default="folder",
+        "--score-from",
+        choices=sorted(SCORE_SOURCES),
+        default="folder",
         help="Where the score id comes from: the image's folder (synthetic, Lieder) "
-             "or the mask filename prefix (OSSQ, whose pages share one folder name).",
+        "or the mask filename prefix (OSSQ, whose pages share one folder name).",
     )
     args = parser.parse_args()
 

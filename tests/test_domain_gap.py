@@ -26,11 +26,16 @@ class TestStaffAccuracyField(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "p.jsonl"
             path.write_text(
-                json.dumps({
-                    "tokens": "a.txt",
-                    "reference": [["x"]], "predicted": [["y"]],  # wrong, to prove it's ignored
-                    "slur_reference": [["start", "above"]], "slur_predicted": [["start", "above"]],
-                }) + "\n",
+                json.dumps(
+                    {
+                        "tokens": "a.txt",
+                        "reference": [["x"]],
+                        "predicted": [["y"]],  # wrong, to prove it's ignored
+                        "slur_reference": [["start", "above"]],
+                        "slur_predicted": [["start", "above"]],
+                    }
+                )
+                + "\n",
                 encoding="utf-8",
             )
 
@@ -53,10 +58,16 @@ class TestExcludeTrivial(unittest.TestCase):
     def _write(self, tmp: str, reference, predicted) -> Path:
         path = Path(tmp) / "p.jsonl"
         path.write_text(
-            json.dumps({
-                "tokens": "a.txt", "reference": [["x"]], "predicted": [["x"]],
-                "slur_reference": reference, "slur_predicted": predicted,
-            }) + "\n",
+            json.dumps(
+                {
+                    "tokens": "a.txt",
+                    "reference": [["x"]],
+                    "predicted": [["x"]],
+                    "slur_reference": reference,
+                    "slur_predicted": predicted,
+                }
+            )
+            + "\n",
             encoding="utf-8",
         )
         return path

@@ -4,12 +4,12 @@ from typing import Iterable, SupportsIndex, TypeVar, overload
 from homr.music_xml_generator import DURATION_NAMES
 from homr.simple_logging import eprint
 from homr.transformer.vocabulary import (
+    TIME_SIGNATURE_BEATS_PREFIX,
     VALID_TIME_SIGNATURE_DENOMINATORS,
+    VALID_TIME_SIGNATURE_NUMERATORS,
     EncodedSymbol,
     empty,
     has_rhythm_symbol_a_position,
-    TIME_SIGNATURE_BEATS_PREFIX,
-    VALID_TIME_SIGNATURE_NUMERATORS,
 )
 from training.omr_datasets.staff_merging import (
     EncodedSymbolWithPos,
@@ -492,9 +492,7 @@ def _process_attributes(part: TokensPart, attribute: ET.Element) -> None:
         # same label and the renderer has to guess from measure durations.
         beats = _text(_child(times[0], "beats"))
         if beats.isdigit() and int(beats) in VALID_TIME_SIGNATURE_NUMERATORS:
-            part.append_symbol(
-                EncodedSymbol(f"{TIME_SIGNATURE_BEATS_PREFIX}{int(beats)}")
-            )
+            part.append_symbol(EncodedSymbol(f"{TIME_SIGNATURE_BEATS_PREFIX}{int(beats)}"))
         part.append_symbol(EncodedSymbol(f"timeSignature/{beat_type}"))
 
     style = _children(attribute, "measure-style")

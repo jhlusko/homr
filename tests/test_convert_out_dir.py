@@ -38,7 +38,10 @@ class TestOutDirRedirectsEncoder(unittest.TestCase):
     def test_out_dir_redirects_away_from_the_configured_path(self) -> None:
         config = Config()
 
-        with tempfile.TemporaryDirectory() as configured_dir, tempfile.TemporaryDirectory() as redirect_dir:
+        with (
+            tempfile.TemporaryDirectory() as configured_dir,
+            tempfile.TemporaryDirectory() as redirect_dir,
+        ):
             with mock.patch("training.onnx.convert.Config", return_value=config):
                 config.filepaths.encoder_path = str(Path(configured_dir) / "encoder.onnx")
                 # Put a stale file at the redirect target so the "already exists" guard

@@ -65,8 +65,13 @@ from training.transformer.training_vocabulary import read_tokens
 #: tuplet of n notes in the time of m writes n*d where m*d sounds, so the bar runs
 #: long by exactly (n-m)*d - and there must be a real run of n equal values to carry
 #: it, or the arithmetic is a coincidence.
-TUPLETS = ((3, 2, "triplet"), (6, 4, "sextuplet"), (5, 4, "quintuplet"),
-           (7, 4, "septuplet"), (9, 8, "nonuplet"))
+TUPLETS = (
+    (3, 2, "triplet"),
+    (6, 4, "sextuplet"),
+    (5, 4, "quintuplet"),
+    (7, 4, "septuplet"),
+    (9, 8, "nonuplet"),
+)
 
 TUPLET = "tuplet"
 MISSING_BARLINE = "missing-barline"
@@ -129,8 +134,15 @@ def classify(symbols: list) -> list[dict]:
             kind, detail = METRE_CHANGE, f"{runner_up[1]} bars of {runner_up[0]}"
         else:
             kind, detail = UNEXPLAINED, f"ratio {ratio}"
-        out.append({"bar": index, "kind": kind, "detail": detail,
-                    "ratio": str(ratio), "excess": str(excess)})
+        out.append(
+            {
+                "bar": index,
+                "kind": kind,
+                "detail": detail,
+                "ratio": str(ratio),
+                "excess": str(excess),
+            }
+        )
     return out
 
 
@@ -155,7 +167,8 @@ def main() -> None:
     for stem, line in sorted(rows.items()):
         try:
             symbols = read_tokens(line.split(",", 1)[1])
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S112
+            # A staff whose tokens will not parse is skipped, not guessed at.
             continue
         findings = classify(symbols)
         if not findings:
@@ -191,10 +204,12 @@ def main() -> None:
     for kind, count in bar_counts.most_common():
         print(f"  {kind:18s} {count:4d}")
     total = sum(staff_counts.values()) or 1
-    print(f"\npairs by staff type   single {staff_counts['single']}  "
-          f"grand {staff_counts['grand']}  "
-          f"({100 * staff_counts['grand'] / total:.1f}% grand, where the duration "
-          f"arithmetic is unsound)")
+    print(
+        f"\npairs by staff type   single {staff_counts['single']}  "
+        f"grand {staff_counts['grand']}  "
+        f"({100 * staff_counts['grand'] / total:.1f}% grand, where the duration "
+        f"arithmetic is unsound)"
+    )
     for (staff, kind), count in sorted(cause_by_staff.items()):
         print(f"  {staff:7s} {kind:18s} {count:4d}")
     print("\npairs by cause")
@@ -204,17 +219,24 @@ def main() -> None:
     summary = []
     for bucket, stems in sorted(buckets.items()):
         summary.append(
-            build_set(f"overfull-{bucket}", sorted(stems), rows, None,
-                      args.out, args.limit, extra)
+            build_set(f"overfull-{bucket}", sorted(stems), rows, None, args.out, args.limit, extra)
         )
     if args.report:
-        args.report.write_text(json.dumps(
-            {"bars_by_cause": dict(bar_counts),
-             "pairs_by_staff_type": dict(staff_counts),
-             "bars_by_staff_type_and_cause": {f"{a}/{b}": c
-                                              for (a, b), c in cause_by_staff.items()},
-             "pairs_by_bucket": {k: len(v) for k, v in buckets.items()},
-             "sets": summary}, indent=2), encoding="utf-8")
+        args.report.write_text(
+            json.dumps(
+                {
+                    "bars_by_cause": dict(bar_counts),
+                    "pairs_by_staff_type": dict(staff_counts),
+                    "bars_by_staff_type_and_cause": {
+                        f"{a}/{b}": c for (a, b), c in cause_by_staff.items()
+                    },
+                    "pairs_by_bucket": {k: len(v) for k, v in buckets.items()},
+                    "sets": summary,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
         print(f"\nwrote {args.report}")
 
 

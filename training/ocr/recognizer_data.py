@@ -91,7 +91,8 @@ class SyllableCrops(Dataset):
         sample = self.samples[index]
         image = cv2.imread(str(sample.image), cv2.IMREAD_GRAYSCALE)
         image = cv2.resize(
-            image, (scaled_width(image.shape[1], image.shape[0], self.height), self.height),
+            image,
+            (scaled_width(image.shape[1], image.shape[0], self.height), self.height),
             interpolation=cv2.INTER_AREA,
         )
         tensor = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)

@@ -77,7 +77,7 @@ class TestAlignNearExpected(unittest.TestCase):
         # perfectly, and difflib prefers the earlier one - so widening in stages
         # must let the nearer candidate win first. Modelled on a real Die Forelle
         # system expected at 45 that recovered to 41.
-        measures = [["m%d" % i] for i in range(60)]
+        measures = [[f"m{i}"] for i in range(60)]
         for start in (41, 45):
             measures[start] = ["p", "q"]
             measures[start + 1] = ["r", "s"]
@@ -92,7 +92,7 @@ class TestAlignNearExpected(unittest.TestCase):
     def test_a_distant_match_is_still_reachable_when_nothing_is_near(self) -> None:
         # Widening must not become a hard proximity constraint: if the only
         # explanation of the crop is further away, it should still be found.
-        measures = [["m%d" % i] for i in range(60)]
+        measures = [[f"m{i}"] for i in range(60)]
         measures[38] = ["p", "q"]
         measures[39] = ["r", "s"]
         tokens, owner = _stream(measures)

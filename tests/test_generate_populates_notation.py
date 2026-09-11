@@ -72,9 +72,7 @@ class TestGeneratePopulatesNotation(unittest.TestCase):
         symbols = _generate(config)
 
         for symbol in symbols:
-            self.assertEqual(
-                len(symbol.notation.beam_levels), config.structured_beam_levels
-            )
+            self.assertEqual(len(symbol.notation.beam_levels), config.structured_beam_levels)
 
     def test_slur_slots_match_the_configured_count(self) -> None:
         config = _config(enable=True)

@@ -71,9 +71,7 @@ class TestAlignToGroundTruth(unittest.TestCase):
         return flat, owner
 
     def test_finds_an_exact_passage_at_its_real_offset(self) -> None:
-        gt_tokens, gt_owner = self._gt(
-            [["C4", "D4"], ["E4", "F4"], ["G4", "A4"], ["B4", "C5"]]
-        )
+        gt_tokens, gt_owner = self._gt([["C4", "D4"], ["E4", "F4"], ["G4", "A4"], ["B4", "C5"]])
 
         result = align_to_ground_truth(["G4", "A4"], gt_tokens, gt_owner)
 
@@ -84,9 +82,7 @@ class TestAlignToGroundTruth(unittest.TestCase):
     def test_recovers_a_shifted_passage_rather_than_its_assumed_position(self) -> None:
         # The whole point: the crop really contains measure 3's music, and that is
         # what it reports, regardless of which measure anyone expected.
-        gt_tokens, gt_owner = self._gt(
-            [["C4", "D4"], ["E4", "F4"], ["G4", "A4"], ["B4", "C5"]]
-        )
+        gt_tokens, gt_owner = self._gt([["C4", "D4"], ["E4", "F4"], ["G4", "A4"], ["B4", "C5"]])
 
         result = align_to_ground_truth(["B4", "C5"], gt_tokens, gt_owner)
 
@@ -94,9 +90,7 @@ class TestAlignToGroundTruth(unittest.TestCase):
         self.assertEqual(result["end_measure"], 4)
 
     def test_spans_several_measures_when_the_crop_does(self) -> None:
-        gt_tokens, gt_owner = self._gt(
-            [["C4", "D4"], ["E4", "F4"], ["G4", "A4"], ["B4", "C5"]]
-        )
+        gt_tokens, gt_owner = self._gt([["C4", "D4"], ["E4", "F4"], ["G4", "A4"], ["B4", "C5"]])
 
         result = align_to_ground_truth(["E4", "F4", "G4", "A4"], gt_tokens, gt_owner)
 
@@ -104,9 +98,7 @@ class TestAlignToGroundTruth(unittest.TestCase):
         self.assertEqual(result["end_measure"], 3)
 
     def test_tolerates_a_misread_note_inside_the_passage(self) -> None:
-        gt_tokens, gt_owner = self._gt(
-            [["C4", "D4", "E4"], ["F4", "G4", "A4"], ["B4", "C5", "D5"]]
-        )
+        gt_tokens, gt_owner = self._gt([["C4", "D4", "E4"], ["F4", "G4", "A4"], ["B4", "C5", "D5"]])
 
         # Middle note misread by the OMR - still the same passage.
         result = align_to_ground_truth(["F4", "X9", "A4"], gt_tokens, gt_owner)
@@ -115,9 +107,7 @@ class TestAlignToGroundTruth(unittest.TestCase):
         self.assertTrue(result["coverage"] > 0)
 
     def test_an_unrelated_passage_is_not_trusted(self) -> None:
-        gt_tokens, gt_owner = self._gt(
-            [["C4", "D4", "E4"], ["F4", "G4", "A4"], ["B4", "C5", "D5"]]
-        )
+        gt_tokens, gt_owner = self._gt([["C4", "D4", "E4"], ["F4", "G4", "A4"], ["B4", "C5", "D5"]])
 
         result = align_to_ground_truth(["X1", "X2", "X3", "X4"], gt_tokens, gt_owner)
 

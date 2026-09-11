@@ -89,16 +89,21 @@ def main() -> None:
                     kinds[kind(va, vb)] += 1
         total = sum(confusion.values())
         print(f"\n=== {label} ===")
-        print(f"{compared:,} note values compared, {total:,} wrong "
-              f"({100 * total / max(compared, 1):.2f}%)")
+        print(
+            f"{compared:,} note values compared, {total:,} wrong "
+            f"({100 * total / max(compared, 1):.2f}%)"
+        )
         for k, v in kinds.most_common():
             print(f"   {k:>18}: {v:5d}  ({100 * v / max(total, 1):4.1f}%)")
         print("   most confused pairs (reference -> predicted):")
         for (a, b), v in confusion.most_common(8):
             print(f"      {a:>5} -> {b:<5}  {v}")
-        report[label] = {"compared": compared, "wrong": total,
-                         "kinds": dict(kinds),
-                         "pairs": {f"{a}->{b}": v for (a, b), v in confusion.most_common(20)}}
+        report[label] = {
+            "compared": compared,
+            "wrong": total,
+            "kinds": dict(kinds),
+            "pairs": {f"{a}->{b}": v for (a, b), v in confusion.most_common(20)},
+        }
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(f"\nwrote {args.report}")

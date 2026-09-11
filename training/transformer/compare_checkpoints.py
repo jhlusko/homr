@@ -101,9 +101,7 @@ def staff_overall(per_branch: dict[str, tuple[int, int]]) -> float:
     return correct / total if total else float("nan")
 
 
-def bootstrap_delta(
-    a: list[dict], b: list[dict], rounds: int, seed: int
-) -> tuple[float, float]:
+def bootstrap_delta(a: list[dict], b: list[dict], rounds: int, seed: int) -> tuple[float, float]:
     """95% interval on the paired difference b - a, resampling staves together."""
     rng = random.Random(seed)
     n = len(a)
@@ -229,11 +227,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--name", required=True, help="benchmark name, for the report")
     parser.add_argument(
-        "--run", action="append", required=True, metavar="LABEL=PATH",
+        "--run",
+        action="append",
+        required=True,
+        metavar="LABEL=PATH",
         help="a scored .jsonl; repeat. The first is the baseline every other is paired against.",
     )
     parser.add_argument(
-        "--ignore-rhythm-prefix", action="append", default=[], metavar="PREFIX",
+        "--ignore-rhythm-prefix",
+        action="append",
+        default=[],
+        metavar="PREFIX",
         help="Drop every position whose rhythm token starts with PREFIX, from both sides "
         "and every branch. Use when the runs straddle a vocabulary change, so the "
         "comparison measures recognition rather than which checkpoint knows the token.",
@@ -283,7 +287,9 @@ def main() -> None:
     baseline = [baseline_rows[i] for i in ids]
     base_acc = accuracy(baseline)
 
-    header = f"{'run':<10}" + "".join(f"{b[:9]:>10}" for b in BRANCHES) + f"{'overall':>10}{'macro':>10}"
+    header = (
+        f"{'run':<10}" + "".join(f"{b[:9]:>10}" for b in BRANCHES) + f"{'overall':>10}{'macro':>10}"
+    )
     print(header)
     for label, rows in runs:
         staves = [rows[i] for i in ids]

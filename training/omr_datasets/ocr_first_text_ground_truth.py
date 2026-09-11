@@ -146,9 +146,7 @@ def _box_key(line: dict) -> tuple:
     return (box["left"], box["top"], box["width"], box["height"])
 
 
-def match_verses_to_ocr(
-    words_per_verse: dict[str, list[str]], ocr_lines: list[dict]
-) -> list[dict]:
+def match_verses_to_ocr(words_per_verse: dict[str, list[str]], ocr_lines: list[dict]) -> list[dict]:
     """`match_lyrics_to_ocr`, run once per verse instead of once against every
     verse's syllables pooled together - a strophic piece prints each verse as its
     own separate line under the same staff, so each verse's own word list should
@@ -205,21 +203,25 @@ def main() -> None:
     parser.add_argument("--file-tree-cache", type=Path)
     parser.add_argument("--mxl-tree-cache", type=Path)
     parser.add_argument(
-        "--ground-truth", type=Path, required=True,
+        "--ground-truth",
+        type=Path,
+        required=True,
         help="fetch_lieder_ground_truth.py's --out dir - for page/measure ranges.",
     )
     parser.add_argument("--systems", type=Path, required=True, help="imslp_systems(_repaired) dir.")
     parser.add_argument("--pngs", type=Path, required=True, help="Matching imslp_pngs dir.")
     parser.add_argument("--out", type=Path, required=True, help="Output dir for per-score JSON.")
     parser.add_argument(
-        "--ocr-threads", type=int, default=4,
+        "--ocr-threads",
+        type=int,
+        default=4,
         help="onnxruntime intra-op threads per session. The default of -1 means 'one "
-             "per core', which on a 128-core box is ~128 threads per session and three "
-             "sessions per process - about 340 threads. Running this sharded then hits "
-             "the container's pid limit (3840 here) at around eight shards and every "
-             "fork on the box starts failing, which looks like the machine dying rather "
-             "than like an OCR setting. OMP_NUM_THREADS does not bound this; only "
-             "onnxruntime's own option does.",
+        "per core', which on a 128-core box is ~128 threads per session and three "
+        "sessions per process - about 340 threads. Running this sharded then hits "
+        "the container's pid limit (3840 here) at around eight shards and every "
+        "fork on the box starts failing, which looks like the machine dying rather "
+        "than like an OCR setting. OMP_NUM_THREADS does not bound this; only "
+        "onnxruntime's own option does.",
     )
     args = parser.parse_args()
 
@@ -274,7 +276,8 @@ def main() -> None:
             ]
             words_per_verse = words_by_verse(page_lyric_entries)
             page_dynamics = [
-                e["text"] for e in expected
+                e["text"]
+                for e in expected
                 if e["kind"] == "dynamic" and start <= e["measure_index"] < end
             ]
             if not words_per_verse and not page_dynamics:

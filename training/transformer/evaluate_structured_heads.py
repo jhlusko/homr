@@ -29,11 +29,11 @@ import torch
 
 from homr.transformer.capability_manifest import CapabilityManifest
 from homr.transformer.structured_notation import BeamLevelState, NoteNotation
-from training.architecture.transformer.structured_heads import STEM_HEAD
 from training.architecture.transformer.structured_decoding import (
     decode_predictions,
     decode_reference,
 )
+from training.architecture.transformer.structured_heads import STEM_HEAD
 from training.architecture.transformer.structured_targets import align_to_decoder_output
 from training.transformer.structured_metrics import Evaluation
 from training.transformer.train_structured_heads import _target_names, build_batches
@@ -205,7 +205,6 @@ def load_head_weights(module: Any, state: dict, declared: Sequence[str]) -> None
     its head, and an error otherwise - the same allowlist rule the core checkpoint uses.
     """
     missing, unexpected = module.load_state_dict(state, strict=False)
-    scored = {name.split(".")[0] for name in declared}
     # Parameter names are "<head>.weight"; slur heads live under slur_event/slur_side.
     prefixes = {
         "beam": "beam.level.",
@@ -241,9 +240,7 @@ def trained_heads(manifest_path: Path | None, available: list[str]) -> list[str]
     if manifest_path is None:
         print("no manifest given: scoring every head, trained or not")
         return available
-    manifest = CapabilityManifest.from_dict(
-        json.loads(manifest_path.read_text(encoding="utf-8"))
-    )
+    manifest = CapabilityManifest.from_dict(json.loads(manifest_path.read_text(encoding="utf-8")))
     declared = [name for name in available if manifest.supports(name)]
     skipped = sorted(set(available) - set(declared))
     if skipped:

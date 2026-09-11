@@ -11,8 +11,7 @@ from training.omr_datasets.dynamics_placement import (
 )
 
 SEG_TEMPLATE = (
-    '<score-partwise><part id="P1"><measure number="1">{notes}</measure></part>'
-    "</score-partwise>"
+    '<score-partwise><part id="P1"><measure number="1">{notes}</measure></part>' "</score-partwise>"
 )
 
 
@@ -72,9 +71,7 @@ class TestDynamicsPlacementIndex(unittest.TestCase):
         segments = work / "musicxml" / "unaligned"
         segments.mkdir(parents=True)
         whole_notes = _direction("f") + _note("C") + _note("D") + _direction("pp") + _note("E")
-        (work / "sq1.musicxml").write_text(
-            SEG_TEMPLATE.format(notes=whole_notes), encoding="utf-8"
-        )
+        (work / "sq1.musicxml").write_text(SEG_TEMPLATE.format(notes=whole_notes), encoding="utf-8")
 
         first = _note("C") + _note("D")
         second = _note("E") if aligned else _note("G")
@@ -136,7 +133,9 @@ class TestApplyDynamics(unittest.TestCase):
         # End to end: written back into the XML the same way, then read by the ordinary
         # extractor - the whole point of writing a <direction> rather than annotating the
         # note object directly.
-        from training.omr_datasets.structured_notation_parser import parse_part  # noqa: PLC0415
+        from training.omr_datasets.structured_notation_parser import (  # noqa: PLC0415
+            parse_part,
+        )
 
         part = ET.fromstring(  # noqa: S314
             f"<part><measure>{_note('C')}{_note('D')}</measure></part>"

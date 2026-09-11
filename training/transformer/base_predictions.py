@@ -71,11 +71,12 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True, help="predictions .jsonl")
     parser.add_argument("--limit", type=int, default=0, help="0 = every row")
     parser.add_argument(
-        "--checkpoint", type=Path,
+        "--checkpoint",
+        type=Path,
         help="Base weights to score with. Overrides the pinned checkpoint rather than "
-             "replacing it on disk: the pinned file is what production and every other "
-             "run loads, and swapping it to measure one thing would silently change "
-             "all of them.",
+        "replacing it on disk: the pinned file is what production and every other "
+        "run loads, and swapping it to measure one thing would silently change "
+        "all of them.",
     )
     args = parser.parse_args()
 

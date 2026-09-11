@@ -152,9 +152,7 @@ def _is_real_note(note: ET.Element) -> bool:
     """A note eligible to carry an attached dynamic: not a rest, not a chord member (a
     dynamic marks the chord, not each of its notes), and pitched."""
     return (
-        note.find("rest") is None
-        and note.find("chord") is None
-        and note.find("pitch") is not None
+        note.find("rest") is None and note.find("chord") is None and note.find("pitch") is not None
     )
 
 

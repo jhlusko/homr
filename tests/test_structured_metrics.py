@@ -20,9 +20,9 @@ from training.transformer.structured_metrics import (
     hook_report,
     slur_endpoint_pairs,
     slur_side_report,
-    tie_report,
     slur_span_report,
     stem_report,
+    tie_report,
 )
 
 B = BeamLevelState
@@ -191,8 +191,6 @@ class TestSlurSpans(unittest.TestCase):
         self.assertEqual(slur_span_report(notation, notation, slots=2).f1, 1.0)
 
 
-
-
 class TestEvaluationAccumulates(unittest.TestCase):
     def _pair(self, beam: BeamLevelState) -> tuple[list, list]:
         return [_note(beam)], [_note(BeamLevelState.BEGIN)]
@@ -278,8 +276,6 @@ class TestStemDirectionIsComparableToTheBaseline(unittest.TestCase):
         self.assertEqual(Evaluation(beam_levels=1, slur_slots=1).stem_direction_accuracy, 0.0)
 
 
-
-
 class TestSlurSides(unittest.TestCase):
     """Which way a slur bends, over the endpoints whose reference states a direction.
 
@@ -325,8 +321,6 @@ class TestSlurSides(unittest.TestCase):
         evaluation.observe([_note()], [_note()])
 
         self.assertNotIn("slur sides", evaluation.describe())
-
-
 
 
 class TestTies(unittest.TestCase):

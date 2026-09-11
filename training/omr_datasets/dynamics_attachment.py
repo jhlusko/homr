@@ -110,7 +110,9 @@ def describe(result: dict) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    parser.add_argument("--scores", type=Path, required=True, help="Dir of .render.musicxml under score subfolders.")
+    parser.add_argument(
+        "--scores", type=Path, required=True, help="Dir of .render.musicxml under score subfolders."
+    )
     args = parser.parse_args()
 
     scores = sorted(args.scores.rglob("*.render.musicxml"))

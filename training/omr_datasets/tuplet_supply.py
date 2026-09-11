@@ -9,6 +9,7 @@ demand?
 Tuplet values in this vocabulary are 3x the plain value: 12 is a triplet eighth, 24 a
 triplet sixteenth, 6 a triplet quarter.
 """
+
 import re
 from collections import Counter
 from pathlib import Path
@@ -45,6 +46,7 @@ def from_manifest(path, label):
 
 def from_jsonl(path, label):
     import json
+
     counts = Counter()
     pairs_with = pairs = 0
     for line in Path(path).read_text().splitlines():
@@ -65,9 +67,11 @@ def from_jsonl(path, label):
 
 def report(label, counts, pairs, pairs_with):
     n = counts["notes"] or 1
-    print(f"{label:>26}: {counts['tuplet']:>6,} of {counts['notes']:>7,} notes are tuplets "
-          f"({100*counts['tuplet']/n:5.2f}%)   pairs containing one: "
-          f"{pairs_with:>5,}/{pairs:,} ({100*pairs_with/max(pairs,1):4.1f}%)")
+    print(
+        f"{label:>26}: {counts['tuplet']:>6,} of {counts['notes']:>7,} notes are tuplets "
+        f"({100*counts['tuplet']/n:5.2f}%)   pairs containing one: "
+        f"{pairs_with:>5,}/{pairs:,} ({100*pairs_with/max(pairs,1):4.1f}%)"
+    )
 
 
 R = "/workspace/b0/lieder-rebuild"

@@ -148,9 +148,7 @@ def patch_origin(
     return max(0, min(y, max(0, height - PATCH_SIZE))), max(0, min(x, max(0, width - PATCH_SIZE)))
 
 
-def extract_patch(
-    array: np.ndarray, origin: tuple[int, int], pad_value: int
-) -> np.ndarray:
+def extract_patch(array: np.ndarray, origin: tuple[int, int], pad_value: int) -> np.ndarray:
     """A `PATCH_SIZE` square from `array` at `origin`, padded past the page edge.
 
     Mirrors `SegmentationBaseDataset._get_patch`'s edge behaviour - pad rather than shrink,
@@ -241,7 +239,8 @@ class DetectorPatches(Dataset):
             center = self.rng.choice(centres_by_class[label])
         else:
             center = (
-                self.rng.randint(0, mask.shape[0] - 1), self.rng.randint(0, mask.shape[1] - 1)
+                self.rng.randint(0, mask.shape[0] - 1),
+                self.rng.randint(0, mask.shape[1] - 1),
             )
         origin = patch_origin(center, mask.shape[:2], JITTER, self.rng)
 

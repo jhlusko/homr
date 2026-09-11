@@ -89,8 +89,7 @@ def measure_count_from_barline_centers(xs: list[float], left: float, width: floa
     lo = left + width * EDGE_MARGIN_FRACTION
     hi = left + width * (1 - EDGE_MARGIN_FRACTION)
     interior = sum(
-        len(cluster) >= MIN_BARLINE_CLUSTER_SUPPORT
-        and lo < sum(cluster) / len(cluster) < hi
+        len(cluster) >= MIN_BARLINE_CLUSTER_SUPPORT and lo < sum(cluster) / len(cluster) < hi
         for cluster in clusters
     )
     return interior + 1
@@ -98,7 +97,9 @@ def measure_count_from_barline_centers(xs: list[float], left: float, width: floa
 
 def count_bar_lines_per_system(page_path: Path, systems: list[dict]) -> list[int]:
     predictions, debug = load_and_preprocess_predictions(
-        str(page_path), DEFAULT_CONFIG.enable_debug, DEFAULT_CONFIG.enable_cache,
+        str(page_path),
+        DEFAULT_CONFIG.enable_debug,
+        DEFAULT_CONFIG.enable_cache,
         DEFAULT_CONFIG.segnet_use_gpu,
     )
     symbols = predict_symbols(debug, predictions)
@@ -131,8 +132,7 @@ def count_bar_lines_per_system(page_path: Path, systems: list[dict]) -> list[int
         xs = sorted(
             bl.center[0] * scale_x
             for bl in bar_lines
-            if left <= bl.center[0] * scale_x <= right
-            and top <= bl.center[1] * scale_y <= bottom
+            if left <= bl.center[0] * scale_x <= right and top <= bl.center[1] * scale_y <= bottom
         )
         counts.append(measure_count_from_barline_centers(xs, left, box["width"]))
     return counts
@@ -173,17 +173,17 @@ def compare_one_score(
                 {
                     "score_id": score_id,
                     "page_index": page_index,
-                        "page_image": detected_page["image"],
-                        "system_index": system_index,
-                        "detected": d,
-                        "system_width_fraction": (
-                            detected_page["systems"][system_index]["boundingBox"]["width"]
-                            / detected_page["width"]
-                        ),
-                        "staff_box_count": len(
-                            detected_page["systems"][system_index].get("staffBoxes", [])
-                        ),
-                        # Diagnostic only.  Alignment no longer assumes this ordinal
+                    "page_image": detected_page["image"],
+                    "system_index": system_index,
+                    "detected": d,
+                    "system_width_fraction": (
+                        detected_page["systems"][system_index]["boundingBox"]["width"]
+                        / detected_page["width"]
+                    ),
+                    "staff_box_count": len(
+                        detected_page["systems"][system_index].get("staffBoxes", [])
+                    ),
+                    # Diagnostic only.  Alignment no longer assumes this ordinal
                     # reference system is the matching one.
                     "ground_truth": (
                         gt_flat[system_position] if system_position < len(gt_flat) else None
@@ -200,7 +200,9 @@ def compare_one_score(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--ground-truth", type=Path, required=True,
+        "--ground-truth",
+        type=Path,
+        required=True,
         help="fetch_lieder_ground_truth.py's --out dir.",
     )
     parser.add_argument("--systems", type=Path, required=True, help="imslp_systems(_repaired) dir.")
@@ -210,13 +212,15 @@ def main() -> None:
     parser.add_argument("--limit", type=int, help="Only check the first N scores (a quick run).")
     parser.add_argument("--score-ids", type=Path, help="Optional subset, one id per line.")
     parser.add_argument(
-        "--rows-out", type=Path,
+        "--rows-out",
+        type=Path,
         help="Write every compared system as one JSON row here - the raw data "
         "targeted_review_candidates.py needs; the console summary alone only has "
         "per-score aggregates.",
     )
     parser.add_argument(
-        "--failed-out", type=Path,
+        "--failed-out",
+        type=Path,
         help="Write every score this run could not compare here, as JSON. A run that "
         "loses scores must say so in a machine-readable way: a 12-way shard launch on "
         "2026-08-27 exhausted the container's pid ceiling, 130 of 330 scores died in "
@@ -224,7 +228,8 @@ def main() -> None:
         "exited 0 - indistinguishable from success until the logs were read by hand.",
     )
     parser.add_argument(
-        "--coverage-out", type=Path,
+        "--coverage-out",
+        type=Path,
         help="Write expected, completed, and failed score IDs as JSON. Use this as "
         "the machine-readable completion record before merging shard rows.",
     )
@@ -263,11 +268,7 @@ def main() -> None:
         # the systems file names.
         page_images = [systems_doc["pages"][k]["image"] for k in sorted(systems_doc["pages"])]
         png_dir = next(
-            (
-                path
-                for path in args.pngs
-                if page_images and (path / page_images[0]).exists()
-            ),
+            (path for path in args.pngs if page_images and (path / page_images[0]).exists()),
             None,
         )
         if png_dir is None:
@@ -334,7 +335,9 @@ def main() -> None:
     print()
     print(f"scores compared: {len(gt_paths) - len(failures)}")
     print(f"scores failed: {len(failures)}")
-    print(f"total-system-count mismatches: {len(system_count_mismatches)} ({system_count_mismatches})")
+    print(
+        f"total-system-count mismatches: {len(system_count_mismatches)} ({system_count_mismatches})"
+    )
     print(
         f"systems compared: {total_systems_compared}, "
         f"exact bar-count match: {exact_system_match} "
@@ -348,8 +351,10 @@ def main() -> None:
             for row in all_rows
             if row["ground_truth"] is not None
         ]
-        print(f"diff (detected - ground truth) mean: {statistics.mean(diffs):+.2f}, "
-              f"median: {statistics.median(diffs):+.1f}")
+        print(
+            f"diff (detected - ground truth) mean: {statistics.mean(diffs):+.2f}, "
+            f"median: {statistics.median(diffs):+.1f}"
+        )
         print(f"mean absolute diff: {statistics.mean(abs(x) for x in diffs):.2f}")
 
     print()

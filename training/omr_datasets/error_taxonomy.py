@@ -28,8 +28,14 @@ from collections import Counter
 from pathlib import Path
 
 PAD = "\x00"
-DIVIDERS = ("barline", "doublebarline", "bolddoublebarline",
-            "repeatStart", "repeatEnd", "repeatBoth")
+DIVIDERS = (
+    "barline",
+    "doublebarline",
+    "bolddoublebarline",
+    "repeatStart",
+    "repeatEnd",
+    "repeatBoth",
+)
 
 
 def real(seq):
@@ -57,9 +63,13 @@ def classify(row) -> tuple[str, int]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--run", action="append", required=True, metavar="LABEL=PATH")
-    parser.add_argument("--min-symbols", type=int, default=0,
-                        help="restrict to staves at least this dense; the dense cut is "
-                             "where the measurement is stable (see BENCHMARKS.md)")
+    parser.add_argument(
+        "--min-symbols",
+        type=int,
+        default=0,
+        help="restrict to staves at least this dense; the dense cut is "
+        "where the measurement is stable (see BENCHMARKS.md)",
+    )
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
 
@@ -76,10 +86,13 @@ def main() -> None:
     shared = sorted(set.intersection(*(set(r) for r in runs.values())))
     if args.min_symbols:
         first = next(iter(runs.values()))
-        shared = [i for i in shared
-                  if len(real(first[i].get("rhythm_reference", []))) >= args.min_symbols]
-    print(f"{len(shared):,} staves scored by all runs"
-          + (f", at least {args.min_symbols} symbols" if args.min_symbols else ""))
+        shared = [
+            i for i in shared if len(real(first[i].get("rhythm_reference", []))) >= args.min_symbols
+        ]
+    print(
+        f"{len(shared):,} staves scored by all runs"
+        + (f", at least {args.min_symbols} symbols" if args.min_symbols else "")
+    )
 
     kinds = ["exact", "pitch-only", "rhythm", "length", "structural"]
     header = f"{'run':<18}" + "".join(f"{k:>13}" for k in kinds)
@@ -91,20 +104,28 @@ def main() -> None:
             kind, _ = classify(rows[i])
             counts[kind] += 1
         report[label] = dict(counts)
-        print(f"{label:<18}" + "".join(
-            f"{counts[k]:>7} {100 * counts[k] / max(len(shared), 1):>4.1f}%" for k in kinds))
+        print(
+            f"{label:<18}"
+            + "".join(
+                f"{counts[k]:>7} {100 * counts[k] / max(len(shared), 1):>4.1f}%" for k in kinds
+            )
+        )
 
     base = next(iter(runs))
     print(f"\nchange against {base}, in staves")
     for label in list(runs)[1:]:
         deltas = " ".join(
-            f"{k}: {report[label].get(k, 0) - report[base].get(k, 0):+d}" for k in kinds)
+            f"{k}: {report[label].get(k, 0) - report[base].get(k, 0):+d}" for k in kinds
+        )
         print(f"  {label:<16} {deltas}")
 
     if args.report:
-        args.report.write_text(json.dumps(
-            {"staves": len(shared), "min_symbols": args.min_symbols, "runs": report},
-            indent=2), encoding="utf-8")
+        args.report.write_text(
+            json.dumps(
+                {"staves": len(shared), "min_symbols": args.min_symbols, "runs": report}, indent=2
+            ),
+            encoding="utf-8",
+        )
         print(f"\nwrote {args.report}")
 
 

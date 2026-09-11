@@ -27,9 +27,10 @@ unrelated movements together (if code keeps every match). `movement_index_for_sy
 own metadata sequence to find which movement a page/system belongs to, then matching by
 number only within that movement's own slice of measures - where numbers are unique.
 """
+
 import re
 import xml.etree.ElementTree as ET
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 import yaml
@@ -58,7 +59,12 @@ def fragment_path(piece_dir_path: Path, page: int, system_num: int) -> Path:
     is 1-based, matching the corpus's own systemwise metadata convention. Shared by the
     splitter (writer) and `score_profile_time_signature.py` (reader) so both agree on
     the one naming convention without either depending on the other's module."""
-    return piece_dir_path / "metadata" / "systemwise_ground_truth" / f"{page:04d}:{system_num:04d}.musicxml"
+    return (
+        piece_dir_path
+        / "metadata"
+        / "systemwise_ground_truth"
+        / f"{page:04d}:{system_num:04d}.musicxml"
+    )
 
 
 def measure_start_for_system(image_path: Path, system_index: int) -> int | None:
@@ -69,11 +75,19 @@ def measure_start_for_system(image_path: Path, system_index: int) -> int | None:
     score_id, page_str = score_and_page(image_path)
     system_num = system_index + 1  # corpus's own system_idx is 1-based
     candidates = [
-        piece_dir(image_path) / "metadata" / "scanned" / "systemwise"
+        piece_dir(image_path)
+        / "metadata"
+        / "scanned"
+        / "systemwise"
         / f"{score_id}:{page_str}:{system_num:04d}.yaml",
-        piece_dir(image_path) / "metadata" / "synthetic" / "systemwise"
+        piece_dir(image_path)
+        / "metadata"
+        / "synthetic"
+        / "systemwise"
         / f"{score_id}:{page_str}:{system_num:04d}.yaml",
-        piece_dir(image_path) / "metadata" / "unaligned"
+        piece_dir(image_path)
+        / "metadata"
+        / "unaligned"
         / f"{score_id}:{page_str}:{system_num:04d}.yaml",
     ]
     for path in candidates:
@@ -115,8 +129,10 @@ def _systemwise_entries(image_path: Path) -> list[tuple[int, int, int, int]]:
     return _systemwise_entries_cached(str(piece_dir(image_path)), score_id)
 
 
-@lru_cache(maxsize=None)
-def _systemwise_entries_cached(piece_dir_str: str, score_id: str) -> list[tuple[int, int, int, int]]:
+@cache
+def _systemwise_entries_cached(
+    piece_dir_str: str, score_id: str
+) -> list[tuple[int, int, int, int]]:
     base = Path(piece_dir_str) / "metadata"
     seen: dict[tuple[int, int], tuple[int, int]] = {}
     for sub in ("scanned", "synthetic"):
@@ -200,7 +216,7 @@ def _movement_boundaries(measures: list) -> list[int]:
     return bounds
 
 
-@lru_cache(maxsize=None)
+@cache
 def parse_ground_truth(gt_path_str: str) -> ET.ElementTree:
     """A real ground-truth file cached by path - some of this corpus's whole-score
     MusicXML files are several MB (multi-movement string quartets can run into the

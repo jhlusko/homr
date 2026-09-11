@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from training.omr_datasets.convert_olimpic import Example, build, partition, write_index
+from training.omr_datasets.convert_olimpic import build, partition, write_index
 from training.transformer.training_vocabulary import read_tokens, to_decoder_branches
 
 GRAND_STAFF = """<?xml version="1.0" encoding="UTF-8"?>

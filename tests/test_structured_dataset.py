@@ -16,9 +16,9 @@ from homr.transformer.structured_notation import (
     empty_slur_slots,
 )
 from homr.transformer.vocabulary import EncodedSymbol
+from training.architecture.transformer.structured_heads import head_names
 from training.architecture.transformer.structured_losses import IGNORE_INDEX
 from training.omr_datasets.notation_sidecar import write_sidecar
-from training.architecture.transformer.structured_heads import head_names
 from training.transformer.structured_dataset import (
     StructuredNotationDataset,
     target_names,
@@ -180,7 +180,9 @@ class TestHeadAndTargetNamesAgree(unittest.TestCase):
     def test_the_two_lists_are_the_same(self) -> None:
         for levels, slots in ((1, 1), (2, 1), (4, 2), (6, 6)):
             with self.subTest(levels=levels, slots=slots):
-                self.assertEqual(sorted(head_names(levels, slots)), sorted(target_names(levels, slots)))
+                self.assertEqual(
+                    sorted(head_names(levels, slots)), sorted(target_names(levels, slots))
+                )
 
 
 if __name__ == "__main__":

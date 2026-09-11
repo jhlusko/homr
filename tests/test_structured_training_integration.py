@@ -12,7 +12,6 @@ The model here is a real TrOMR, shrunk to one layer so it fits in a test. The im
 real PNGs read by the real image pipeline, and the token files carry real sidecars.
 """
 
-import os
 import tempfile
 import unittest
 from pathlib import Path

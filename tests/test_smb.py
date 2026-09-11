@@ -4,12 +4,15 @@ from validation.smb import _sample_kern
 
 
 def test_page_kern_precedes_regions() -> None:
-    assert _sample_kern(
-        {
-            "page": {"kern": "**kern\n4c\n*-"},
-            "regions": [{"kern": "**kern\n4d\n*-"}],
-        }
-    ) == "**kern\n4c\n*-"
+    assert (
+        _sample_kern(
+            {
+                "page": {"kern": "**kern\n4c\n*-"},
+                "regions": [{"kern": "**kern\n4d\n*-"}],
+            }
+        )
+        == "**kern\n4c\n*-"
+    )
 
 
 def test_old_region_only_shape_remains_supported() -> None:

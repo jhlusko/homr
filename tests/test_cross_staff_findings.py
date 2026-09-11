@@ -35,17 +35,24 @@ class TestCollector(unittest.TestCase):
 
     def test_a_collector_receives_what_is_recorded(self) -> None:
         with collect_findings() as found:
-            record("clef_profile_mismatch", "staff 3 decoded G2", system=1,
-                   staff_indices=(3,), part="cello")
+            record(
+                "clef_profile_mismatch",
+                "staff 3 decoded G2",
+                system=1,
+                staff_indices=(3,),
+                part="cello",
+            )
         self.assertEqual(
             found,
-            [{
-                "kind": "clef_profile_mismatch",
-                "message": "staff 3 decoded G2",
-                "system": 1,
-                "staffIndices": [3],
-                "part": "cello",
-            }],
+            [
+                {
+                    "kind": "clef_profile_mismatch",
+                    "message": "staff 3 decoded G2",
+                    "system": 1,
+                    "staffIndices": [3],
+                    "part": "cello",
+                }
+            ],
         )
 
     def test_optional_fields_are_omitted_rather_than_nulled(self) -> None:

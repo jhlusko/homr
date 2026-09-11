@@ -155,7 +155,9 @@ def reverse_spans(reports: list[dict]) -> dict[tuple[str, int], tuple[int, int, 
                 continue
             for item in score.get("assignments", []):
                 out[(score["score_id"], item["system"])] = (
-                    item["start_measure"], item["end_measure"], item["score"]
+                    item["start_measure"],
+                    item["end_measure"],
+                    item["score"],
                 )
     return out
 
@@ -218,13 +220,17 @@ def main() -> None:
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--min-arbiter-score", type=float, default=MIN_ARBITER_SCORE)
     parser.add_argument(
-        "--min-accompaniment-note-fraction", type=float,
+        "--min-accompaniment-note-fraction",
+        type=float,
         default=MIN_ACCOMPANIMENT_NOTE_FRACTION,
         help="Exclude a score whose voice-1 labels fall below this fraction of "
         "pitched notes - its transcription's accompaniment part is itself defective.",
     )
     parser.add_argument(
-        "--crop-readings", type=Path, nargs="+", default=[],
+        "--crop-readings",
+        type=Path,
+        nargs="+",
+        default=[],
         help="reverse_fingerprint --prediction-cache files. Tells this module whether "
         "reverse had any notes to work with, so an abstention is not read as a phantom.",
     )
@@ -244,7 +250,7 @@ def main() -> None:
 
     clean = load_manifest(args.clean_manifest)
     defective = rest_dominated_scores(clean, args.min_accompaniment_note_fraction)
-    defective.update({score: -1.0 for score in EXCLUDED_SCORES})
+    defective.update(dict.fromkeys(EXCLUDED_SCORES, -1.0))
     for score, reason in EXCLUDED_SCORES.items():
         print(f"excluding {score}: {reason}")
     for score_id, fraction in sorted(defective.items()):

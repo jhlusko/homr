@@ -94,8 +94,7 @@ class TestOutOfVocabulary(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             paths = [
-                _score(directory, f"{index}.mxl", _note("C", _lyric("known")))
-                for index in range(4)
+                _score(directory, f"{index}.mxl", _note("C", _lyric("known"))) for index in range(4)
             ]
             paths.append(_score(directory, "9.mxl", _note("C", _lyric("unseen"))))
 
@@ -109,8 +108,7 @@ class TestOutOfVocabulary(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             paths = [
-                _score(directory, f"{index}.mxl", _note("C", _lyric("same")))
-                for index in range(5)
+                _score(directory, f"{index}.mxl", _note("C", _lyric("same"))) for index in range(5)
             ]
 
             mass, types, _ = out_of_vocabulary(paths, holdout=0.2)
@@ -151,8 +149,7 @@ class TestVocabularyGrowth(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             paths = [
-                _score(directory, f"{index}.mxl", _note("C", _lyric("same")))
-                for index in range(8)
+                _score(directory, f"{index}.mxl", _note("C", _lyric("same"))) for index in range(8)
             ]
 
             self.assertAlmostEqual(heaps_exponent(vocabulary_growth(paths, steps=4)), 0.0, places=2)

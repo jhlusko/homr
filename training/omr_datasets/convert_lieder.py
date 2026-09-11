@@ -28,8 +28,8 @@ from training.omr_datasets.musescore_svg import (
 from training.omr_datasets.music_xml_parser import Measure, music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.transformer.training_vocabulary import (
-    max_tuplet_ratio,
     calc_ratio_of_tuplets,
+    max_tuplet_ratio,
     token_lines_to_str,
 )
 
@@ -522,9 +522,9 @@ def _split_file_into_staffs(
             total_staff_area.number_of_measures
         )
 
-        if calc_ratio_of_tuplets(selected_measures) <= max_tuplet_ratio() and contains_only_supported_clefs(
+        if calc_ratio_of_tuplets(
             selected_measures
-        ):
+        ) <= max_tuplet_ratio() and contains_only_supported_clefs(selected_measures):
             selected_measures = strip_naturals(selected_measures)
             tokens_content = token_lines_to_str(selected_measures)
             write_text_to_file(tokens_content, token_file_name)

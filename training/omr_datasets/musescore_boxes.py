@@ -169,9 +169,17 @@ def render(score: Path, out_dir: Path, dpi: int = DPI) -> tuple[list[Path], list
     stem = out_dir / name
     score = without_part_names(score, out_dir / f"{name}.render.musicxml")
     for suffix in (".svg", ".png"):
-        result = subprocess.run(
-            ["xvfb-run", "-a", "mscore", "-r", str(dpi), "--export-to", str(stem) + suffix,
-             str(score)],
+        result = subprocess.run(  # noqa: PLW1510
+            [
+                "xvfb-run",
+                "-a",
+                "mscore",
+                "-r",
+                str(dpi),
+                "--export-to",
+                str(stem) + suffix,
+                str(score),
+            ],
             capture_output=True,
             text=True,
             timeout=300,
@@ -242,9 +250,7 @@ def boxes_of_class(svg: str, name: str, scale: tuple[float, float]) -> list[Box]
     found = []
     for data in re.findall(rf'<path class="{name}" d="([^"]+)"', svg):
         left, top, right, bottom = _path_bounds(data)
-        found.append(
-            Box(int(left * sx), int(top * sy), int(right * sx) + 1, int(bottom * sy) + 1)
-        )
+        found.append(Box(int(left * sx), int(top * sy), int(right * sx) + 1, int(bottom * sy) + 1))
     return [box for line in _lines(found) for box in line]
 
 
@@ -294,9 +300,7 @@ def source_syllables(score: Path) -> list[tuple[str, str, str]]:
                 text = (lyric.findtext("text") or "").strip()
                 if text:
                     verse = lyric.get("number", "1")
-                    found.append(
-                        (verse, position, text, lyric.findtext("syllabic") or "single")
-                    )
+                    found.append((verse, position, text, lyric.findtext("syllabic") or "single"))
     found.sort(key=lambda entry: (entry[0], entry[1]))
     return [(text, syllabic, verse) for verse, _, text, syllabic in found]
 

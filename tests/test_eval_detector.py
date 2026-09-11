@@ -17,9 +17,7 @@ def _write_patch_bank(directory: Path, count: int = 2) -> Path:
     for i in range(count):
         image_path = directory / f"p{i}.png"
         mask_path = directory / f"p{i}.mask.png"
-        cv2.imwrite(
-            str(image_path), np.full((PATCH_SIZE, PATCH_SIZE, 3), 255, dtype=np.uint8)
-        )
+        cv2.imwrite(str(image_path), np.full((PATCH_SIZE, PATCH_SIZE, 3), 255, dtype=np.uint8))
         mask = np.zeros((PATCH_SIZE, PATCH_SIZE), dtype=np.uint8)
         mask[10:40, 10:60] = CLASS_INDEX["Lyrics"]
         cv2.imwrite(str(mask_path), mask)
@@ -31,7 +29,10 @@ def _write_patch_bank(directory: Path, count: int = 2) -> Path:
 
 def _save_untrained_checkpoint(path: Path) -> None:
     model = CamVidModel(
-        arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=NUM_CLASSES,
+        arch="Unet",
+        encoder_name="resnet18",
+        in_channels=3,
+        out_classes=NUM_CLASSES,
         skip_weights_download=True,
     )
     torch.save(model.state_dict(), path)
@@ -99,9 +100,7 @@ class TestScore(unittest.TestCase):
             directory = Path(tmp)
             image_path = directory / "p.png"
             mask_path = directory / "p.mask.png"
-            cv2.imwrite(
-                str(image_path), np.full((PATCH_SIZE, PATCH_SIZE, 3), 255, dtype=np.uint8)
-            )
+            cv2.imwrite(str(image_path), np.full((PATCH_SIZE, PATCH_SIZE, 3), 255, dtype=np.uint8))
             mask = np.full((PATCH_SIZE, PATCH_SIZE), 255, dtype=np.uint8)
             mask[10:40, 10:60] = CLASS_INDEX["Lyrics"]
             cv2.imwrite(str(mask_path), mask)

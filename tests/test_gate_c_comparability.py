@@ -19,10 +19,10 @@ import xml.etree.ElementTree as ET
 from homr.transformer.structured_notation import (
     BeamLevelState,
     NoteNotation,
+    StemDirection,
     empty_beam_levels,
     empty_slur_slots,
 )
-from homr.transformer.structured_notation import StemDirection
 from training.omr_datasets.beam_baseline import Baseline, measure_part
 from training.transformer.structured_metrics import exact_vector_accuracy
 
@@ -33,15 +33,13 @@ NOTE = """
 
 
 def _part(notes: str) -> ET.Element:
-    return ET.fromstring(
-        f"""
+    return ET.fromstring(f"""
         <part><measure>
           <attributes><divisions>2</divisions>
             <time><beats>4</beats><beat-type>4</beat-type></time></attributes>
           {notes}
         </measure></part>
-        """
-    )
+        """)
 
 
 def _notes(spec: list[tuple[str, str | None]]) -> str:

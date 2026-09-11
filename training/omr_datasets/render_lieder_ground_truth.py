@@ -36,7 +36,9 @@ def render_piece_to_pages(mscx_bytes: bytes, out_dir: Path, dpi: int = 150) -> l
         pdf_path = Path(tmp) / "score.pdf"
         subprocess.run(  # noqa: S603
             ["xvfb-run", "-a", "mscore", str(mscx_path), "-o", str(pdf_path)],
-            check=True, capture_output=True, timeout=120,
+            check=True,
+            capture_output=True,
+            timeout=120,
         )
         pdf = pdfium.PdfDocument(str(pdf_path))
         paths = []
@@ -55,7 +57,9 @@ def render_piece_to_pages(mscx_bytes: bytes, out_dir: Path, dpi: int = 150) -> l
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--candidates", type=Path, required=True,
+        "--candidates",
+        type=Path,
+        required=True,
         help="targeted_review_candidates.py's --out file - only these scores' "
         "pieces get rendered, not the whole matched corpus.",
     )

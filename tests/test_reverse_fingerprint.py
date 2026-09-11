@@ -91,6 +91,7 @@ class TestUnreadableCrops(unittest.TestCase):
             EMPTY_SPAN_SCORE,
             UNREADABLE_SPAN_SCORE,
         )
+
         gt, owner = build(MEASURES)
         self.assertGreater(span_score([], gt, 1, 3, owner), EMPTY_SPAN_SCORE)
         self.assertEqual(span_score([], gt, 1, 3, owner), UNREADABLE_SPAN_SCORE)

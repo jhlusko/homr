@@ -21,7 +21,6 @@ from training.omr_datasets.convert_lieder import (
 )
 from training.omr_datasets.convert_musetrainer import (
     _N_WORKERS,
-    _RENDER_TIMEOUT_SECONDS,
     _TIMEOUT_SECONDS,
     _VEROVIO_FONTS,
     _WINDOW_SIZE,
@@ -217,9 +216,7 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
             end = min(window_start + _WINDOW_SIZE, n_measures)
             window_measures = voice[window_start:end]
 
-            clefs, key, time_sym, time_beats = _context_at_measure(
-                voice, window_start, n_staffs
-            )
+            clefs, key, time_sym, time_beats = _context_at_measure(voice, window_start, n_staffs)
             cutter = MeasureCutter(list(window_measures))
             cutter.clefs = clefs
             cutter.key = key
@@ -238,9 +235,9 @@ def _convert_file_impl(mxl_path: Path) -> list[str]:
                     pass
                 else:
                     window_score = extract_window(source_parts[part_index], window_start, end)
-                    if window_score is None or measure_count(
-                        window_score.find("part")
-                    ) != len(window_measures):
+                    if window_score is None or measure_count(window_score.find("part")) != len(
+                        window_measures
+                    ):
                         window_start = end
                         window_idx += 1
                         continue

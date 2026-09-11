@@ -88,18 +88,14 @@ class TestExportedGraphAgrees(unittest.TestCase):
         cls.directory = tempfile.TemporaryDirectory()
         cls.path = Path(cls.directory.name) / "heads.onnx"
         cls.names = _export(cls.heads, cls.config, cls.path)
-        cls.session = ort.InferenceSession(
-            str(cls.path), providers=["CPUExecutionProvider"]
-        )
+        cls.session = ort.InferenceSession(str(cls.path), providers=["CPUExecutionProvider"])
 
     @classmethod
     def tearDownClass(cls) -> None:
         cls.directory.cleanup()
 
     def test_it_exports_every_head(self) -> None:
-        self.assertEqual(
-            {output.name for output in self.session.get_outputs()}, set(self.names)
-        )
+        self.assertEqual({output.name for output in self.session.get_outputs()}, set(self.names))
 
     def test_logits_match_torch(self) -> None:
         torch.manual_seed(0)
@@ -110,9 +106,7 @@ class TestExportedGraphAgrees(unittest.TestCase):
                 reference = self.heads(hidden)
             produced = self.session.run(self.names, {"hidden": hidden.numpy()})
             for name, array in zip(self.names, produced, strict=True):
-                worst = max(
-                    worst, (reference[name] - torch.from_numpy(array)).abs().max().item()
-                )
+                worst = max(worst, (reference[name] - torch.from_numpy(array)).abs().max().item())
 
         self.assertLess(worst, 1e-4, f"ONNX diverged from torch by {worst}")
 

@@ -75,9 +75,7 @@ class TestStaffBounds(unittest.TestCase):
         voice = _FakeStaff(min_x=20, max_x=100, min_y=50, max_y=90, average_unit_size=3)
         piano = _FakeStaff(min_x=10, max_x=110, min_y=200, max_y=260, average_unit_size=5)
 
-        group_left, group_top, group_right, group_bottom = _group_bounds(
-            _FakeGroup([voice, piano])
-        )
+        group_left, group_top, group_right, group_bottom = _group_bounds(_FakeGroup([voice, piano]))
         v_left, v_top, v_right, v_bottom = _staff_bounds(voice)
         p_left, p_top, p_right, p_bottom = _staff_bounds(piano)
 

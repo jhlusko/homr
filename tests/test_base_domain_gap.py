@@ -56,9 +56,7 @@ class TestReadScores(unittest.TestCase):
 
 class TestPairUp(unittest.TestCase):
     def test_only_shared_ids_are_paired(self) -> None:
-        pairs = pair_up(
-            {"a": {"ned": 0.1}, "b": {"ned": 0.1}}, {"a": {"ned": 0.2}}, "ned"
-        )
+        pairs = pair_up({"a": {"ned": 0.1}, "b": {"ned": 0.1}}, {"a": {"ned": 0.2}}, "ned")
 
         self.assertEqual([p.sample_id for p in pairs], ["a"])
 

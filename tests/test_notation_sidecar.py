@@ -4,24 +4,24 @@ import unittest
 from pathlib import Path
 
 from homr.transformer.structured_notation import (
-    TieState,
     BeamLevelState,
     NoteNotation,
     SlurEvent,
     SlurSide,
     StemDirection,
+    TieState,
     empty_beam_levels,
     empty_slur_slots,
 )
 from homr.transformer.vocabulary import EncodedSymbol
-from training.transformer.training_vocabulary import token_lines_to_str
 from training.omr_datasets.notation_sidecar import (
-    round_trips,
     SidecarMismatch,
     attach_sidecar,
+    round_trips,
     sidecar_path,
     write_sidecar,
 )
+from training.transformer.training_vocabulary import token_lines_to_str
 
 
 def _notation(stem: StemDirection = StemDirection.UP) -> NoteNotation:
@@ -141,8 +141,6 @@ class TestGuards(unittest.TestCase):
             write_sidecar(tokens, _symbols())
 
             self.assertEqual(tokens.read_text(encoding="utf-8"), "original contents")
-
-
 
 
 class TestSchemaVersioning(unittest.TestCase):

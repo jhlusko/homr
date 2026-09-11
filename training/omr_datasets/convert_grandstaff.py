@@ -12,8 +12,8 @@ from training.omr_datasets.humdrum_kern_parser import convert_kern_to_tokens
 from training.omr_datasets.musescore_svg import SvgValidationError
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.transformer.training_vocabulary import (
-    max_tuplet_ratio,
     calc_ratio_of_tuplets,
+    max_tuplet_ratio,
     token_lines_to_str,
 )
 

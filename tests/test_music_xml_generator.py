@@ -12,7 +12,11 @@ from homr.music_xml_generator import (
     generate_xml,
     rebalance_measure_voices,
 )
-from homr.transformer.structured_notation import AdvanceClass, NoteNotation, StemDirection
+from homr.transformer.structured_notation import (
+    AdvanceClass,
+    NoteNotation,
+    StemDirection,
+)
 from homr.transformer.vocabulary import EncodedSymbol, nonote
 from training.transformer.training_vocabulary import (
     read_token_lines,
@@ -383,10 +387,10 @@ class TestTupletParserAcrossInterleavedVoices(unittest.TestCase):
         from homr.music_xml_generator import TupletParser
 
         groups = [
-            SymbolChord([self._note("note_12")]),   # triplet note 1
+            SymbolChord([self._note("note_12")]),  # triplet note 1
             SymbolChord([self._note("note_4", "lower")]),  # other hand, no tuplet shape
-            SymbolChord([self._note("note_12")]),   # triplet note 2
-            SymbolChord([self._note("note_12")]),   # triplet note 3
+            SymbolChord([self._note("note_12")]),  # triplet note 2
+            SymbolChord([self._note("note_12")]),  # triplet note 3
         ]
         self.assertTrue(TupletParser.add_tuplets(groups))
         self.assertEqual(groups[0].tuplet_mark, "start")

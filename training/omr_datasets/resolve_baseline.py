@@ -418,7 +418,8 @@ def score_multiline(
         for index, (box, position) in enumerate(zip(line, local)):
             following = local[index + 1] if index + 1 < len(local) else position + 1
             agreement.observe(
-                nearest((box["left"] + box["right"]) / 2, centres), position,
+                nearest((box["left"] + box["right"]) / 2, centres),
+                position,
                 following - position > 1,
             )
     return True

@@ -35,7 +35,6 @@ import re
 from pathlib import Path
 
 import numpy as np
-import yaml
 from PIL import Image
 
 from homr.transformer.vocabulary import EncodedSymbol
@@ -165,11 +164,15 @@ def predict_crop(model: object, image_path: Path) -> list[EncodedSymbol]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--crops", type=Path, required=True,
+        "--crops",
+        type=Path,
+        required=True,
         help="Directory of crop pngs to fingerprint (extract_stage2_pairs.py's --out).",
     )
     parser.add_argument(
-        "--ground-truth-tokens", type=Path, required=True,
+        "--ground-truth-tokens",
+        type=Path,
+        required=True,
         help="Per-score JSON of ground-truth per-measure note tokens "
         "(build_ground_truth_tokens.py's --out).",
     )

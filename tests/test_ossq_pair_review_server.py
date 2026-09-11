@@ -43,7 +43,8 @@ class TestReadPredictions(unittest.TestCase):
     def test_accuracy_is_matches_over_reference_length(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = _predictions(
-                Path(tmp) / "p.jsonl", [("/a/s.txt", ["C4", "D4", "E4", "F4"], ["C4", "D4", "X", "Y"])]
+                Path(tmp) / "p.jsonl",
+                [("/a/s.txt", ["C4", "D4", "E4", "F4"], ["C4", "D4", "X", "Y"])],
             )
 
             self.assertAlmostEqual(read_predictions(path)["s.txt"]["accuracy"], 0.5)
@@ -68,8 +69,8 @@ class TestStaves(unittest.TestCase):
         return ReviewState(syn, scn, tmp / "j.json", None, preds)
 
     def test_only_shared_staves_are_listed(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = Path(raw_tmp)
             syn = _index(tmp / "syn.txt", [("/s/a.png", "/s/a.txt"), ("/s/z.png", "/s/z.txt")])
             scn = _index(tmp / "scn.txt", [("/c/a.png", "/c/a.txt")])
 
@@ -96,8 +97,8 @@ class TestStaves(unittest.TestCase):
 
 class TestJudgments(unittest.TestCase):
     def test_a_judgment_round_trips(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = Path(raw_tmp)
             syn = _index(tmp / "s.txt", [("/s/a.png", "/s/a.txt")])
             scn = _index(tmp / "c.txt", [("/c/a.png", "/c/a.txt")])
             state = ReviewState(syn, scn, tmp / "j.json")
@@ -107,8 +108,8 @@ class TestJudgments(unittest.TestCase):
             self.assertEqual(state.judgments()["a.txt"]["judgment"], "crops-differ")
 
     def test_judgments_survive_a_reload(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            tmp = Path(raw_tmp)
             syn = _index(tmp / "s.txt", [("/s/a.png", "/s/a.txt")])
             scn = _index(tmp / "c.txt", [("/c/a.png", "/c/a.txt")])
             ReviewState(syn, scn, tmp / "j.json").save_judgment("a.txt", "crops-match", "")

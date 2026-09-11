@@ -32,7 +32,7 @@ class TestMeasuresPerSystem(unittest.TestCase):
         mscx = _mscx(
             "<Measure></Measure>"
             "<Measure></Measure>"
-            '<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>'
+            "<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>"
             "<Measure></Measure>"
         )
 
@@ -43,7 +43,7 @@ class TestMeasuresPerSystem(unittest.TestCase):
     def test_page_breaks_close_their_own_page_after_the_break_measure(self) -> None:
         mscx = _mscx(
             "<Measure></Measure>"
-            '<Measure><LayoutBreak><subtype>page</subtype></LayoutBreak></Measure>'
+            "<Measure><LayoutBreak><subtype>page</subtype></LayoutBreak></Measure>"
             "<Measure></Measure>"
         )
 
@@ -54,7 +54,7 @@ class TestMeasuresPerSystem(unittest.TestCase):
     def test_a_break_on_the_final_measure_adds_no_trailing_empty_system(self) -> None:
         mscx = _mscx(
             "<Measure></Measure>"
-            '<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>'
+            "<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>"
         )
 
         pages = measures_per_system(mscx)
@@ -64,9 +64,9 @@ class TestMeasuresPerSystem(unittest.TestCase):
     def test_total_measures_are_preserved_across_the_split(self) -> None:
         mscx = _mscx(
             "<Measure></Measure>"
-            '<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>'
+            "<Measure><LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>"
             "<Measure></Measure>"
-            '<Measure><LayoutBreak><subtype>page</subtype></LayoutBreak></Measure>'
+            "<Measure><LayoutBreak><subtype>page</subtype></LayoutBreak></Measure>"
             "<Measure></Measure>"
         )
 

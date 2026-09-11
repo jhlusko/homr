@@ -25,14 +25,16 @@ class TestOverfullBars(unittest.TestCase):
     overfull."""
 
     def test_a_bar_longer_than_the_prevailing_one_is_flagged(self) -> None:
-        staff = bar(["note_4"] * 4) + bar(["note_4"] * 4) + bar(["note_4"] * 6) \
-              + bar(["note_4"] * 4)
+        staff = (
+            bar(["note_4"] * 4) + bar(["note_4"] * 4) + bar(["note_4"] * 6) + bar(["note_4"] * 4)
+        )
         self.assertEqual(overfull_bars(staff), [2])
 
     def test_a_short_bar_is_never_flagged(self) -> None:
         """Pickups and final bars are short, not long, and are ordinary."""
-        staff = bar(["note_4"] * 2) + bar(["note_4"] * 4) + bar(["note_4"] * 4) \
-              + bar(["note_4"] * 4)
+        staff = (
+            bar(["note_4"] * 2) + bar(["note_4"] * 4) + bar(["note_4"] * 4) + bar(["note_4"] * 4)
+        )
         self.assertEqual(overfull_bars(staff), [])
 
     def test_a_uniform_staff_is_silent(self) -> None:
@@ -56,10 +58,12 @@ class TestCrossStaffOnLabels(unittest.TestCase):
     docstring."""
 
     def _system(self):
-        upper = bar(["note_4"] * 4, "upper") + bar(["note_2."], "upper") \
-              + bar(["note_4"] * 4, "upper")
-        lower = bar(["note_4"] * 4, "lower") + bar(["note_2"], "lower") \
-              + bar(["note_4"] * 4, "lower")
+        upper = (
+            bar(["note_4"] * 4, "upper") + bar(["note_2."], "upper") + bar(["note_4"] * 4, "upper")
+        )
+        lower = (
+            bar(["note_4"] * 4, "lower") + bar(["note_2"], "lower") + bar(["note_4"] * 4, "lower")
+        )
         return [upper, lower]
 
     def test_a_single_divergent_bar_is_caught(self) -> None:
@@ -70,7 +74,8 @@ class TestCrossStaffOnLabels(unittest.TestCase):
         staff = bar(["note_4"] * 4, "upper") + bar(["note_2."], "upper")
         other = bar(["note_4"] * 4, "lower") + bar(["note_2."], "lower")
         duration_findings = [
-            f for f in analyze_system([staff, other])
+            f
+            for f in analyze_system([staff, other])
             if "duration" in f.kind or "barline_position" in f.kind
         ]
         self.assertEqual(duration_findings, [])
@@ -88,26 +93,33 @@ class TestGrandStaffReconstruction(unittest.TestCase):
 
     def _grand(self):
         return [
-            n("clef_G2", "upper"), EncodedSymbol("chord"), n("clef_F4", "lower"),
+            n("clef_G2", "upper"),
+            EncodedSymbol("chord"),
+            n("clef_F4", "lower"),
             EncodedSymbol("keySignature_0"),
-            n("note_4", "upper"), EncodedSymbol("chord"), n("note_4", "lower"),
+            n("note_4", "upper"),
+            EncodedSymbol("chord"),
+            n("note_4", "lower"),
             EncodedSymbol("barline"),
         ]
 
     def test_a_chord_spanning_both_staves_is_partitioned(self) -> None:
         from training.omr_datasets.audit_label_consistency import split_grand_staff
+
         upper, lower = split_grand_staff(self._grand())
         self.assertEqual([s.rhythm for s in upper if s.rhythm.startswith("note")], ["note_4"])
         self.assertEqual([s.rhythm for s in lower if s.rhythm.startswith("note")], ["note_4"])
 
     def test_system_wide_symbols_reach_both_staves(self) -> None:
         from training.omr_datasets.audit_label_consistency import split_grand_staff
+
         for staff in split_grand_staff(self._grand()):
             self.assertIn("keySignature_0", [s.rhythm for s in staff])
             self.assertIn("barline", [s.rhythm for s in staff])
 
     def test_each_staff_keeps_its_own_clef(self) -> None:
         from training.omr_datasets.audit_label_consistency import split_grand_staff
+
         upper, lower = split_grand_staff(self._grand())
         self.assertIn("clef_G2", [s.rhythm for s in upper])
         self.assertIn("clef_F4", [s.rhythm for s in lower])
@@ -117,16 +129,26 @@ class TestGrandStaffReconstruction(unittest.TestCase):
         """The acceptance test: an unsplit grand staff gives a nonsense duration
         because group_into_chords takes the minimum across a chord."""
         from training.omr_datasets.audit_label_consistency import (
-            measure_durations, split_grand_staff)
-        grand = [n("note_4", "upper"), EncodedSymbol("chord"), n("note_2", "lower"),
-                 n("note_4", "upper"), EncodedSymbol("chord"), n("note_2", "lower"),
-                 EncodedSymbol("barline")]
+            measure_durations,
+            split_grand_staff,
+        )
+
+        grand = [
+            n("note_4", "upper"),
+            EncodedSymbol("chord"),
+            n("note_2", "lower"),
+            n("note_4", "upper"),
+            EncodedSymbol("chord"),
+            n("note_2", "lower"),
+            EncodedSymbol("barline"),
+        ]
         upper, lower = split_grand_staff(grand)
         self.assertEqual(measure_durations(upper), [Fraction(1, 2)])
         self.assertEqual(measure_durations(lower), [Fraction(1)])
 
     def test_a_single_staff_passes_through_untouched(self) -> None:
         from training.omr_datasets.audit_label_consistency import split_grand_staff
+
         staff = bar(["note_4"] * 4)
         self.assertEqual(split_grand_staff(staff), [staff])
 
@@ -139,10 +161,12 @@ class TestSingleStaffOnly(unittest.TestCase):
 
     def test_a_single_staff_voice_qualifies(self) -> None:
         from training.omr_datasets.audit_label_consistency import is_single_staff
+
         self.assertTrue(is_single_staff(bar(["note_4"] * 4)))
 
     def test_a_grand_staff_voice_does_not(self) -> None:
         from training.omr_datasets.audit_label_consistency import is_single_staff
+
         grand = [n("note_4", "upper"), n("note_2", "lower"), EncodedSymbol("barline")]
         self.assertFalse(is_single_staff(grand))
 
@@ -163,12 +187,17 @@ class TestDurationChecksAreScoped(unittest.TestCase):
 
     def test_duration_checks_are_separated_from_symbol_checks(self) -> None:
         from training.omr_datasets.audit_label_consistency import (
-            DURATION_DEPENDENT, SYMBOL_ONLY)
+            DURATION_DEPENDENT,
+            SYMBOL_ONLY,
+        )
+
         names = {c.__name__ for c in DURATION_DEPENDENT}
-        self.assertEqual(names, {"check_measure_counts", "check_measure_durations",
-                                 "check_barline_positions"})
+        self.assertEqual(
+            names, {"check_measure_counts", "check_measure_durations", "check_barline_positions"}
+        )
         self.assertTrue(names.isdisjoint({c.__name__ for c in SYMBOL_ONLY}))
 
     def test_symbol_checks_do_not_depend_on_duration(self) -> None:
         from training.omr_datasets.audit_label_consistency import SYMBOL_ONLY
+
         self.assertIn("check_key_signatures", {c.__name__ for c in SYMBOL_ONLY})

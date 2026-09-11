@@ -16,7 +16,7 @@ either evaluated model into its labels.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from functools import lru_cache
+from functools import cache
 from math import inf
 
 MAX_GROUP = 4
@@ -129,7 +129,7 @@ def _best_path(
     source_prefix = _prefix(source_counts)
     n, m = len(scan_counts), len(source_counts)
 
-    @lru_cache(maxsize=None)
+    @cache
     def solve(i: int, j: int) -> _Path:
         if i == n and j == m:
             return _Path(0.0, ())
@@ -146,9 +146,7 @@ def _best_path(
                 if difference > MAX_COUNT_MISMATCH:
                     continue
                 exact = difference == 0
-                assignments = _move_assignments(
-                    scan_counts, source_prefix, i, a, j, b, exact=exact
-                )
+                assignments = _move_assignments(scan_counts, source_prefix, i, a, j, b, exact=exact)
                 if forbidden is not None and any(
                     (item.scan_index, item.start_measure, item.end_measure) == forbidden
                     for item in assignments
@@ -156,12 +154,9 @@ def _best_path(
                     continue
                 tail = solve(i + a, j + b)
                 move_cost = (
-                    GROUP_PENALTY * ((a - 1) + (b - 1))
-                    + COUNT_MISMATCH_PENALTY * difference
+                    GROUP_PENALTY * ((a - 1) + (b - 1)) + COUNT_MISMATCH_PENALTY * difference
                 )
-                move = AlignmentMove(
-                    "match", i, i + a, j, j + b, move_cost, assignments
-                )
+                move = AlignmentMove("match", i, i + a, j, j + b, move_cost, assignments)
                 candidates.append(_Path(move_cost + tail.cost, (move, *tail.moves)))
 
         if i < n:
@@ -212,9 +207,7 @@ def align_system_counts(
 
     best = _best_path(scan_counts, source_counts, max_group)
     chosen = {
-        assignment.scan_index: assignment
-        for move in best.moves
-        for assignment in move.assignments
+        assignment.scan_index: assignment for move in best.moves for assignment in move.assignments
     }
     systems = []
     for scan_index, detected in enumerate(scan_counts):
@@ -243,16 +236,12 @@ def align_system_counts(
         margin = alternative.cost - best.cost if alternative.cost < inf else inf
         status = (
             "aligned"
-            if (
-                assignment.count_exact
-                and assignment.boundary_certified
-                and margin >= min_margin
+            if (assignment.count_exact and assignment.boundary_certified and margin >= min_margin)
+            else (
+                "count_mismatch"
+                if not assignment.count_exact
+                else "boundary_ambiguous" if not assignment.boundary_certified else "ambiguous"
             )
-            else "count_mismatch"
-            if not assignment.count_exact
-            else "boundary_ambiguous"
-            if not assignment.boundary_certified
-            else "ambiguous"
         )
         systems.append(
             {
@@ -263,11 +252,15 @@ def align_system_counts(
                 "reason": (
                     None
                     if status == "aligned"
-                    else "physical and source measure counts disagree"
-                    if status == "count_mismatch"
-                    else "multi-scan group has no independently certified internal boundaries"
-                    if status == "boundary_ambiguous"
-                    else "equally plausible global alignment"
+                    else (
+                        "physical and source measure counts disagree"
+                        if status == "count_mismatch"
+                        else (
+                            "multi-scan group has no independently certified internal boundaries"
+                            if status == "boundary_ambiguous"
+                            else "equally plausible global alignment"
+                        )
+                    )
                 ),
             }
         )

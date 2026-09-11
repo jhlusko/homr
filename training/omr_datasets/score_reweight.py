@@ -138,7 +138,9 @@ def main() -> None:
     args = parser.parse_args()
 
     image_paths = [
-        line.split(",")[0] for line in args.index.read_text(encoding="utf-8").splitlines() if line.strip()
+        line.split(",")[0]
+        for line in args.index.read_text(encoding="utf-8").splitlines()
+        if line.strip()
     ]
     values = measure_contrast(image_paths)
     weights = repeat_counts(values, args.floor_percentile, args.max_repeats)
@@ -147,7 +149,8 @@ def main() -> None:
     print(f"{len(values):,} images measured, {len(boosted):,} boosted above x1")
     if values:
         print(
-            f"  contrast: min {min(values.values()):.0f}  median {statistics.median(values.values()):.0f}"
+            f"  contrast: min {min(values.values()):.0f}  median "
+            f"{statistics.median(values.values()):.0f}"
             f"  max {max(values.values()):.0f}"
         )
     if boosted:

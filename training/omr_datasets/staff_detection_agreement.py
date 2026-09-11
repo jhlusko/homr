@@ -54,8 +54,7 @@ class Agreement:
         lines = [
             f"systems compared: {self.total:,}",
             f"  detections match the part count: {self.matched:,} ({self.rate:.1%})",
-            f"  mismatch (system would be skipped): {self.mismatched:,} "
-            f"({1 - self.rate:.1%})",
+            f"  mismatch (system would be skipped): {self.mismatched:,} " f"({1 - self.rate:.1%})",
             "",
             "detected minus parts:",
         ]

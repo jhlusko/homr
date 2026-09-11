@@ -19,9 +19,7 @@ class TestSplitCheckpoint(unittest.TestCase):
     def test_encoder_keys_lose_their_prefix(self) -> None:
         encoder, _ = split_checkpoint(self.state())
 
-        self.assertEqual(
-            set(encoder), {"model.head.norm.bias", "model.stem.weight"}
-        )
+        self.assertEqual(set(encoder), {"model.head.norm.bias", "model.stem.weight"})
 
     def test_decoder_net_keys_lose_the_full_net_prefix(self) -> None:
         _, decoder = split_checkpoint(self.state())
@@ -39,9 +37,7 @@ class TestSplitCheckpoint(unittest.TestCase):
         encoder, decoder = split_checkpoint(self.state())
 
         self.assertTrue(torch.equal(encoder["model.stem.weight"], torch.ones(3)))
-        self.assertTrue(
-            torch.equal(decoder["articulation_emb.emb.weight"], torch.full((2,), 5.0))
-        )
+        self.assertTrue(torch.equal(decoder["articulation_emb.emb.weight"], torch.full((2,), 5.0)))
 
     def test_every_input_tensor_lands_in_exactly_one_place_or_neither(self) -> None:
         state = self.state()
@@ -67,8 +63,10 @@ class TestSplitCheckpoint(unittest.TestCase):
             argv = sys.argv
             sys.argv = [
                 "split_pinned_checkpoint.py",
-                "--checkpoint", str(checkpoint),
-                "--out", str(out),
+                "--checkpoint",
+                str(checkpoint),
+                "--out",
+                str(out),
             ]
             try:
                 main()

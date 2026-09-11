@@ -15,8 +15,7 @@ QUARTER = """
 
 
 def _part(notes: str, divisions: int = 2, beats: int = 4, beat_type: int = 4) -> ET.Element:
-    return ET.fromstring(
-        f"""
+    return ET.fromstring(f"""
         <part>
           <measure>
             <attributes>
@@ -26,8 +25,7 @@ def _part(notes: str, divisions: int = 2, beats: int = 4, beat_type: int = 4) ->
             {notes}
           </measure>
         </part>
-        """
-    )
+        """)
 
 
 def _eighths(pattern: list[str], voice: str = "1") -> str:

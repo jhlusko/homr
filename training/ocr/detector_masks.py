@@ -31,7 +31,6 @@ stable.
 
 import argparse
 import collections
-import json
 from pathlib import Path
 
 import cv2
@@ -49,8 +48,13 @@ from training.ocr.detector_data import Box, collect
 #: common non-Lyrics class in the corpus - placed early, like Fingering, since it is small
 #: and specific rather than a sprawling text class.
 CLASS_ORDER = (
-    "Dynamic", "Fingering", "Expression", "Tempo",
-    "MeasureNumber", "StaffText", "Lyrics",
+    "Dynamic",
+    "Fingering",
+    "Expression",
+    "Tempo",
+    "MeasureNumber",
+    "StaffText",
+    "Lyrics",
 )
 
 #: 27.92: SystemText stayed at exactly 0% whole-page precision/recall even after 27.90
@@ -116,9 +120,7 @@ def write_masks(boxes_dir: Path, out_dir: Path) -> list[tuple[str, str]]:
 
 
 def write_index(pairs: list[tuple[str, str]], path: Path) -> None:
-    path.write_text(
-        "\n".join(f"{image},{mask}" for image, mask in pairs) + "\n", encoding="utf-8"
-    )
+    path.write_text("\n".join(f"{image},{mask}" for image, mask in pairs) + "\n", encoding="utf-8")
 
 
 def describe(pairs: list[tuple[str, str]]) -> str:
@@ -150,7 +152,10 @@ def main() -> None:
         raise SystemExit(f"No masks produced from {args.boxes}")
     write_index(pairs, args.out / "index.txt")
     print(describe(pairs))
-    print(f"\nclass order (index: name): " + ", ".join(f"{i + 1}:{n}" for i, n in enumerate(CLASS_ORDER)))
+    print(
+        "\nclass order (index: name): "
+        + ", ".join(f"{i + 1}:{n}" for i, n in enumerate(CLASS_ORDER))
+    )
 
 
 if __name__ == "__main__":

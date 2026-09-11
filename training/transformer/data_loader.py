@@ -109,8 +109,8 @@ class DataLoader:
             context = self._resolve_profile_context(entry["tokens"])
             if not self.is_validation:
                 context = apply_context_dropout(context, random)
-            coherence_curve, coherence_curve_len, coherence_present = (
-                self._resolve_coherence_curve(entry["tokens"])
+            coherence_curve, coherence_curve_len, coherence_present = self._resolve_coherence_curve(
+                entry["tokens"]
             )
 
         if self.is_validation:
@@ -153,7 +153,7 @@ class DataLoader:
         list here would silently zip into several `(batch,)` tensors instead of one
         `(batch, MAX_COHERENCE_MEASURES)` tensor under PyTorch's default collate.
         """
-        assert self.dataset_root is not None  # only called when it is set
+        assert self.dataset_root is not None  # only called when it is set  # noqa: S101
         stem = Path(tokens_path).stem
         curve = system_measure_curve(self.dataset_root, stem)
         if not curve:
@@ -163,7 +163,7 @@ class DataLoader:
         return padded, len(truncated), 1.0
 
     def _resolve_profile_context(self, tokens_path: str) -> "ProfileContext | None":
-        assert self.dataset_root is not None  # only called when it is set
+        assert self.dataset_root is not None  # only called when it is set  # noqa: S101
         stem = Path(tokens_path).stem
         resolved = profile_and_part_for_sample(self.dataset_root, stem)
         if resolved is None:

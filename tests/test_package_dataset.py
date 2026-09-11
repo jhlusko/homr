@@ -211,9 +211,7 @@ class TestRewriteGroundTruth(Fixture):
         rewrite_ground_truth(path, self.root)
 
         doc = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(
-            doc["matches"][0]["page_image"], "pages/scores/Mozart/images/sq1:0003.png"
-        )
+        self.assertEqual(doc["matches"][0]["page_image"], "pages/scores/Mozart/images/sq1:0003.png")
 
     def test_an_unresolvable_page_is_left_absolute(self) -> None:
         path = self.document("/workspace/b0/ossq-omr/scores/Absent/images/none.png")

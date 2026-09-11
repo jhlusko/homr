@@ -80,16 +80,20 @@ def dedupe(symbols: list) -> tuple[list, int]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--out-dir", type=Path,
-                        help="write deduplicated .tokens here; omit for a dry run")
+    parser.add_argument(
+        "--out-dir", type=Path, help="write deduplicated .tokens here; omit for a dry run"
+    )
     parser.add_argument("--out-manifest", type=Path)
     args = parser.parse_args()
 
     from training.omr_datasets.notation_sidecar import write_sidecar
     from training.transformer.training_vocabulary import read_tokens, token_lines_to_str
 
-    rows = [line.split(",", 1) for line in
-            args.manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = [
+        line.split(",", 1)
+        for line in args.manifest.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     stats: Counter = Counter()
     surplus = []
     lines = []
@@ -114,13 +118,20 @@ def main() -> None:
 
     surplus.sort()
     print(f"{stats['pairs']:,} pairs, {stats['notes']:,} note tokens")
-    print(f"  duplicate notes removed : {stats['removed']:,} "
-          f"({100 * stats['removed'] / max(stats['notes'], 1):.2f}% of notes)")
-    print(f"  pairs affected          : {stats['pairs_affected']:,} "
-          f"({100 * stats['pairs_affected'] / max(stats['pairs'], 1):.1f}%)")
+    print(
+        f"  duplicate notes removed : {stats['removed']:,} "
+        f"({100 * stats['removed'] / max(stats['notes'], 1):.2f}% of notes)"
+    )
+    print(
+        f"  pairs affected          : {stats['pairs_affected']:,} "
+        f"({100 * stats['pairs_affected'] / max(stats['pairs'], 1):.1f}%)"
+    )
     if surplus:
-        print(f"  surplus within an affected pair: median "
-              f"{100 * surplus[len(surplus)//2]:.1f}%, p90 {100 * surplus[int(0.9*len(surplus))]:.1f}%")
+        print(
+            f"  surplus within an affected pair: median "
+            f"{100 * surplus[len(surplus)//2]:.1f}%, p90 "
+            f"{100 * surplus[int(0.9*len(surplus))]:.1f}%"
+        )
     if args.out_manifest:
         args.out_manifest.write_text("\n".join(lines) + "\n", encoding="utf-8")
         print(f"wrote {args.out_manifest}")

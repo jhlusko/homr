@@ -45,9 +45,7 @@ def _notation(*slots: tuple[SlurEvent, SlurSide]) -> NoteNotation:
 
 class TestSlurPlacement(unittest.TestCase):
     def test_a_start_gets_its_predicted_placement(self) -> None:
-        symbol = _note_with(
-            "slurStart", _notation((SlurEvent.START, SlurSide.BELOW))
-        )
+        symbol = _note_with("slurStart", _notation((SlurEvent.START, SlurSide.BELOW)))
 
         slurs = _slurs(symbol)
 
@@ -56,9 +54,7 @@ class TestSlurPlacement(unittest.TestCase):
         self.assertEqual(slurs[0].get("placement"), "below")
 
     def test_a_stop_gets_its_predicted_placement(self) -> None:
-        symbol = _note_with(
-            "slurStop", _notation((SlurEvent.STOP, SlurSide.ABOVE))
-        )
+        symbol = _note_with("slurStop", _notation((SlurEvent.STOP, SlurSide.ABOVE)))
 
         slurs = _slurs(symbol)
 
@@ -69,9 +65,7 @@ class TestSlurPlacement(unittest.TestCase):
         # Unspecified is the common case (most slurs in the corpus carry no explicit
         # placement) - writing a fabricated one would assert something the source
         # never said.
-        symbol = _note_with(
-            "slurStart", _notation((SlurEvent.START, SlurSide.UNSPECIFIED))
-        )
+        symbol = _note_with("slurStart", _notation((SlurEvent.START, SlurSide.UNSPECIFIED)))
 
         slurs = _slurs(symbol)
 

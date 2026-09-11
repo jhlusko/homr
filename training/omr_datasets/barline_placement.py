@@ -33,7 +33,11 @@ import copy
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from training.omr_datasets.slur_placement import concatenated, part_signature, segments_of
+from training.omr_datasets.slur_placement import (
+    concatenated,
+    part_signature,
+    segments_of,
+)
 
 
 def part_barlines(whole_part: ET.Element) -> list[list[ET.Element]]:
@@ -102,9 +106,7 @@ class BarlinePlacementIndex:
             else:
                 self.skipped_parts += 1
 
-    def for_segment(
-        self, page: int, system: int, part_index: int
-    ) -> list[list[ET.Element]] | None:
+    def for_segment(self, page: int, system: int, part_index: int) -> list[list[ET.Element]] | None:
         return self.slices.get((page, system, part_index))
 
 

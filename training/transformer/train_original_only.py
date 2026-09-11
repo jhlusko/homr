@@ -46,19 +46,30 @@ MATCHED_SAMPLES = 8289
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--index", nargs="+", default=[pdmx_train_index],
-                        help="training index/indices from homr's original corpora")
-    parser.add_argument("--weights", nargs="+", type=float,
-                        help="sampling weights; default is equal")
+    parser.add_argument(
+        "--index",
+        nargs="+",
+        default=[pdmx_train_index],
+        help="training index/indices from homr's original corpora",
+    )
+    parser.add_argument(
+        "--weights", nargs="+", type=float, help="sampling weights; default is equal"
+    )
     parser.add_argument("--val-index", default=pdmx_valid_index)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
-    parser.add_argument("--number-of-files", type=int, default=MATCHED_SAMPLES,
-                        help="samples per epoch; the default matches the Lieder runs. "
-                             "-1 uses every row.")
-    parser.add_argument("--from-scratch", action="store_true",
-                        help="train from random init instead of warm starting. Answers a "
-                             "different question - whether the architecture can learn from "
-                             "one corpus alone - and costs roughly ten times as much.")
+    parser.add_argument(
+        "--number-of-files",
+        type=int,
+        default=MATCHED_SAMPLES,
+        help="samples per epoch; the default matches the Lieder runs. " "-1 uses every row.",
+    )
+    parser.add_argument(
+        "--from-scratch",
+        action="store_true",
+        help="train from random init instead of warm starting. Answers a "
+        "different question - whether the architecture can learn from "
+        "one corpus alone - and costs roughly ten times as much.",
+    )
     args = parser.parse_args()
 
     missing = [p for p in args.index if not Path(p).is_file()]
@@ -71,7 +82,9 @@ def main() -> None:
     # exists to produce a number that can be trusted, so check rather than assume:
     # a contaminated validation set would make the control look better than it is,
     # in exactly the direction that would mislead.
-    val_rows = {line.strip() for line in Path(args.val_index).read_text().splitlines() if line.strip()}
+    val_rows = {
+        line.strip() for line in Path(args.val_index).read_text().splitlines() if line.strip()
+    }
     for path in args.index:
         train_rows = {line.strip() for line in Path(path).read_text().splitlines() if line.strip()}
         overlap = train_rows & val_rows
@@ -82,8 +95,10 @@ def main() -> None:
             )
         print(f"train {Path(path).name}: {len(train_rows):,} rows, 0 shared with validation")
     print(f"valid {Path(args.val_index).name}: {len(val_rows):,} rows")
-    print(f"{'FROM SCRATCH' if args.from_scratch else 'warm start from the pinned checkpoint'}, "
-          f"{args.epochs} epochs max, {args.number_of_files} samples per epoch")
+    print(
+        f"{'FROM SCRATCH' if args.from_scratch else 'warm start from the pinned checkpoint'}, "
+        f"{args.epochs} epochs max, {args.number_of_files} samples per epoch"
+    )
     print("none of our rebuilt Lieder data is in this mix - that is the point")
 
     train_transformer(

@@ -74,7 +74,10 @@ class TestCrossStaffRepairWiring(unittest.TestCase):
 
     def test_two_staves_are_not_enough_to_outvote_anything(self) -> None:
         decoded = {
-            (voice, 0): [_sym("clef_G2"), _sym("timeSignature_4/4" if voice == 0 else "timeSignature_3/4")]
+            (voice, 0): [
+                _sym("clef_G2"),
+                _sym("timeSignature_4/4" if voice == 0 else "timeSignature_3/4"),
+            ]
             for voice in range(2)
         }
         with patch("homr.staff_parsing.eprint"):
@@ -132,9 +135,16 @@ class TestPositionRepairWiring(unittest.TestCase):
         bad = self._staff("note_4 note_4", "note_4 note_4 note_8", "note_4 note_4")
         decoder = _FakeDecoder(good)
         present = [0, 1, 2, 3]
-        decoded = {(v, 0): (bad if v == 1 else good) for v in present}
+        decoded = {(v, 0): bad if v == 1 else good for v in present}
         voice_raw = {
-            v: (_FakeStaff(), decoded[(v, 0)], [(7, 0.5)] * len(decoded[(v, 0)]), None, decoder, None)
+            v: (
+                _FakeStaff(),
+                decoded[(v, 0)],
+                [(7, 0.5)] * len(decoded[(v, 0)]),
+                None,
+                decoder,
+                None,
+            )
             for v in present
         }
 
@@ -154,7 +164,7 @@ class TestPositionRepairWiring(unittest.TestCase):
         good = self._staff("note_4 note_4", "note_4 note_4", "note_4 note_4")
         bad = self._staff("note_4 note_4", "note_4 note_4 note_8", "note_4 note_4")
         present = [0, 1, 2, 3]
-        decoded = {(v, 0): (bad if v == 1 else good) for v in present}
+        decoded = {(v, 0): bad if v == 1 else good for v in present}
         before = {k: list(v) for k, v in decoded.items()}
 
         class _Boom:
@@ -162,7 +172,14 @@ class TestPositionRepairWiring(unittest.TestCase):
                 raise RuntimeError("boom")
 
         voice_raw = {
-            v: (_FakeStaff(), decoded[(v, 0)], [(7, 0.5)] * len(decoded[(v, 0)]), None, _Boom(), None)
+            v: (
+                _FakeStaff(),
+                decoded[(v, 0)],
+                [(7, 0.5)] * len(decoded[(v, 0)]),
+                None,
+                _Boom(),
+                None,
+            )
             for v in present
         }
 

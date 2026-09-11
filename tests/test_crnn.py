@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from training.architecture.ocr.crnn import BLANK, IMAGE_HEIGHT, CRNN, Alphabet
+from training.architecture.ocr.crnn import BLANK, CRNN, IMAGE_HEIGHT, Alphabet
 
 
 class TestAlphabet(unittest.TestCase):

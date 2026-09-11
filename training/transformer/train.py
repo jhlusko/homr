@@ -31,7 +31,11 @@ from training.omr_datasets.convert_primus import (
     primus_train_index,
 )
 from training.run_id import get_run_id
-from training.transformer.data_loader import label_names, load_dataset, load_dataset_split
+from training.transformer.data_loader import (
+    label_names,
+    load_dataset,
+    load_dataset_split,
+)
 from training.transformer.distribute import Distribute
 from training.transformer.metrics import HomrTrainer
 from training.transformer.mix_datasets import mix_training_sets
@@ -228,9 +232,7 @@ def train_transformer(
         if not os.path.exists(validation_index):
             eprint("Error: validation index does not exist:", validation_index)
             sys.exit(1)
-        datasets = load_dataset_split(
-            train_index, load_training_index(validation_index), config
-        )
+        datasets = load_dataset_split(train_index, load_training_index(validation_index), config)
     else:
         datasets = load_dataset(train_index, config, val_split=0.1)
 

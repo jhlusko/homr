@@ -56,9 +56,7 @@ def normalize(image: np.ndarray, clip_limit: float = 2.0, tile: int = 8) -> np.n
     return engine.apply(image)
 
 
-def measure_score(
-    paths: list[Path], clip_limit: float = 2.0
-) -> tuple[float, float, float, float]:
+def measure_score(paths: list[Path], clip_limit: float = 2.0) -> tuple[float, float, float, float]:
     """(ink before, ink after, contrast before, contrast after), averaged over the score."""
     before_ink, after_ink, before_con, after_con = [], [], [], []
     for path in paths:
@@ -73,8 +71,10 @@ def measure_score(
     if not before_ink:
         return (0.0, 0.0, 0.0, 0.0)
     return (
-        statistics.mean(before_ink), statistics.mean(after_ink),
-        statistics.mean(before_con), statistics.mean(after_con),
+        statistics.mean(before_ink),
+        statistics.mean(after_ink),
+        statistics.mean(before_con),
+        statistics.mean(after_con),
     )
 
 
@@ -89,7 +89,10 @@ def main() -> None:
     for path in sorted(Path(p) for p in glob.glob(str(args.images / "*.png"))):
         by_score.setdefault(path.stem.split("_")[0], []).append(path)
 
-    print(f"{'score':<12} {'ink before':>10} {'ink after':>9}   {'contrast before':>16} {'contrast after':>15}")
+    print(
+        f"{'score':<12} {'ink before':>10} {'ink after':>9}   {'contrast before':>16} "
+        f"{'contrast after':>15}"
+    )
     rows = []
     for score, paths in sorted(by_score.items()):
         before_ink, after_ink, before_con, after_con = measure_score(
@@ -103,7 +106,10 @@ def main() -> None:
 
     spread_before = max(r[3] for r in rows) - min(r[3] for r in rows)
     spread_after = max(r[4] for r in rows) - min(r[4] for r in rows)
-    print(f"\nspread in mean contrast across scores: {spread_before:.0f} before, {spread_after:.0f} after")
+    print(
+        f"\nspread in mean contrast across scores: {spread_before:.0f} before, {spread_after:.0f} "
+        f"after"
+    )
     print("  a transform that closes the gap between scores narrows this; one that damages")
     print("  the crisp scores to reach the faint ones would widen it instead")
 

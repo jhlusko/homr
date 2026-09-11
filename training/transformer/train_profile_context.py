@@ -171,9 +171,7 @@ def build_batches(
         dataset_root=dataset_root,
     )
     wrapped = datasets["validation" if validation else "train"]
-    loader = TorchDataLoader(
-        wrapped, batch_size=batch_size, shuffle=shuffle, num_workers=workers
-    )
+    loader = TorchDataLoader(wrapped, batch_size=batch_size, shuffle=shuffle, num_workers=workers)
     return loader, len(wrapped)
 
 
@@ -184,7 +182,9 @@ def main() -> None:
         "--valid-index", type=Path, help="Held-out index.txt for the with/without ablation."
     )
     parser.add_argument(
-        "--dataset-root", type=Path, required=True,
+        "--dataset-root",
+        type=Path,
+        required=True,
         help="OSSQ corpus root (score_profile_pairing.py's dataset_root).",
     )
     parser.add_argument("--checkpoint", type=Path, required=True, help="Pinned .pth to start from.")
@@ -240,8 +240,13 @@ def main() -> None:
     valid_batches = None
     if args.valid_index:
         valid_batches, valid_examples = build_batches(
-            args.valid_index, config, args.batch_size, args.workers, str(args.dataset_root),
-            shuffle=False, validation=True,
+            args.valid_index,
+            config,
+            args.batch_size,
+            args.workers,
+            str(args.dataset_root),
+            shuffle=False,
+            validation=True,
         )
         print(f"{valid_examples} validation example(s) from {args.valid_index}")
 
@@ -251,7 +256,9 @@ def main() -> None:
         report = train_epoch(model, batches, optimizer, epoch, device=args.device)
         if valid_batches is not None:
             with_profile = evaluate(model, valid_batches, device=args.device)
-            without_profile = evaluate(model, valid_batches, device=args.device, force_no_profile=True)
+            without_profile = evaluate(
+                model, valid_batches, device=args.device, force_no_profile=True
+            )
             report["valid_loss_with_profile"] = with_profile
             report["valid_loss_without_profile"] = without_profile
             print(

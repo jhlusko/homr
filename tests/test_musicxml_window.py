@@ -56,7 +56,7 @@ class TestPrevailingAttributes(unittest.TestCase):
 
     def test_both_clefs_of_a_grand_staff_survive(self) -> None:
         two = (
-            '<attributes><divisions>2</divisions>'
+            "<attributes><divisions>2</divisions>"
             '<clef number="1"><sign>G</sign></clef>'
             '<clef number="2"><sign>F</sign></clef></attributes>'
         )
@@ -123,8 +123,6 @@ class TestExtractWindow(unittest.TestCase):
         self.assertIsNone(extract_window(part, 5, 7))
 
 
-
-
 class TestEmptyFinalMeasure(unittest.TestCase):
     """A trailing bar with nothing sounding is what a truncated score looks like.
 
@@ -171,8 +169,6 @@ class TestEmptyFinalMeasure(unittest.TestCase):
 
     def test_a_part_with_no_measures_is_not_flagged(self) -> None:
         self.assertFalse(has_empty_final_measure([_part("")]))
-
-
 
 
 class TestMinimumNotes(unittest.TestCase):

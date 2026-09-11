@@ -29,9 +29,7 @@ class TestLoadStaffContext(unittest.TestCase):
             loaded = load_staff_context(str(path), dim=8)
 
         self.assertEqual(loaded.gate.item(), 1.0)
-        self.assertTrue(
-            torch.equal(loaded.projection.weight, original.projection.weight)
-        )
+        self.assertTrue(torch.equal(loaded.projection.weight, original.projection.weight))
 
 
 class TestPoolHidden(unittest.TestCase):
@@ -68,7 +66,9 @@ class TestDecodeSystemWithStaffContext(unittest.TestCase):
         # can only come from staff_context_emb actually being threaded through, not
         # from the fake handing back different data each time it's called.
         rng = np.random.default_rng(0)
-        hidden_by_index = {i: rng.standard_normal((3, dim)).astype(np.float32) for i in range(staff_count)}
+        hidden_by_index = {
+            i: rng.standard_normal((3, dim)).astype(np.float32) for i in range(staff_count)
+        }
 
         def fake_decode(staff, staff_image, config, staff_context_emb=None):  # noqa: ANN001, ARG001
             index = next(i for i, img in enumerate(images) if img is staff_image)

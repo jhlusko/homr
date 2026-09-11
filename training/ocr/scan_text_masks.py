@@ -126,20 +126,24 @@ def _find_page(score_id: str, page_image: str, pngs_dirs: list[Path]) -> Path | 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--matches", type=Path, required=True,
+        "--matches",
+        type=Path,
+        required=True,
         help="ocr_first_text_ground_truth.py's --out dir.",
     )
     parser.add_argument("--pngs", type=Path, required=True, nargs="+")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument(
-        "--background-outside", action="store_true",
+        "--background-outside",
+        action="store_true",
         help="Ablation: label unmatched pixels background instead of ignore.",
     )
     parser.add_argument(
-        "--background-blank", action="store_true",
+        "--background-blank",
+        action="store_true",
         help="Middle policy: unmatched blank-paper pixels are background, unmatched "
-             "inked pixels stay ignore. Restores the negative supervision that pure "
-             "ignore-masking gives up, without ever calling missed text background.",
+        "inked pixels stay ignore. Restores the negative supervision that pure "
+        "ignore-masking gives up, without ever calling missed text background.",
     )
     parser.add_argument("--blank-threshold", type=int, default=BLANK_THRESHOLD)
     parser.add_argument("--score-ids", type=Path)
@@ -152,7 +156,7 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     pairs: list[tuple[str, str]] = []
     pages = skipped = 0
-    class_pixels = {name: 0 for name in KIND_TO_CLASS.values()}
+    class_pixels = dict.fromkeys(KIND_TO_CLASS.values(), 0)
     supervised_pixels = 0
     total_pixels = 0
 
@@ -171,7 +175,10 @@ def main() -> None:
                 skipped += 1
                 continue
             mask = mask_for_page(
-                image.shape[1], image.shape[0], matches, args.background_outside,
+                image.shape[1],
+                image.shape[0],
+                matches,
+                args.background_outside,
                 image=image if args.background_blank else None,
                 blank_threshold=args.blank_threshold,
             )

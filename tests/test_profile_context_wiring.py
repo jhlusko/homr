@@ -39,9 +39,7 @@ def _profile_batch_fields(*contexts: "ProfileContext | None") -> dict:
     result = {}
     for key in per_sample[0]:
         values = [sample[key] for sample in per_sample]
-        result[key] = (
-            torch.stack(values) if key == "profile_clef_indices" else torch.tensor(values)
-        )
+        result[key] = torch.stack(values) if key == "profile_clef_indices" else torch.tensor(values)
     return result
 
 

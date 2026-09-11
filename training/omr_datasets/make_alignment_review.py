@@ -95,7 +95,9 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--split", default="validation-candidate")
     parser.add_argument(
-        "--statuses", nargs="+", default=["aligned"],
+        "--statuses",
+        nargs="+",
+        default=["aligned"],
         help="Alignment statuses eligible for review (default: aligned). Quarantined "
         "statuses are reviewable only when an explicitly separate label manifest is supplied.",
     )
@@ -113,9 +115,7 @@ def main() -> None:
         report = alignment["scores"].get(score_id)
         if report is None:
             continue
-        system_item = next(
-            (item for item in report["systems"] if item["system"] == system), None
-        )
+        system_item = next((item for item in report["systems"] if item["system"] == system), None)
         if system_item is None or system_item["status"] not in args.statuses:
             continue
         topologies = topology_by_system(report)
@@ -154,9 +154,7 @@ def main() -> None:
                 scores / f"{stem}__old.musicxml",
             )
             old_bars = None
-        manifest.append(
-            {**item, "corrected_bars": corrected_bars, "old_bars": old_bars}
-        )
+        manifest.append({**item, "corrected_bars": corrected_bars, "old_bars": old_bars})
     (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"{len(candidates)} eligible candidates; wrote {len(manifest)} stratified items")
 

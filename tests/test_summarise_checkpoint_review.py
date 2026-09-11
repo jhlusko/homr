@@ -57,7 +57,9 @@ class TestSummarise(unittest.TestCase):
     def test_reviewer_notes_are_surfaced(self) -> None:
         result = summarise(_export(_row("a", "v4-better", 0.1, "slur is crossed")))
 
-        self.assertEqual(result["notes"], [{"id": "a", "verdict": "v4-better", "notes": "slur is crossed"}])
+        self.assertEqual(
+            result["notes"], [{"id": "a", "verdict": "v4-better", "notes": "slur is crossed"}]
+        )
 
     def test_an_empty_export_does_not_divide_by_zero(self) -> None:
         result = summarise(_export())

@@ -18,8 +18,8 @@ from training.omr_datasets.musescore_boxes import (
     sampled_dpi,
     source_dynamics,
     source_syllables,
-    without_part_names,
     typed_boxes,
+    without_part_names,
 )
 
 SCORE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -161,9 +161,9 @@ class TestTypedBoxes(unittest.TestCase):
 class TestSourceDynamics(unittest.TestCase):
     def test_each_marking_is_read_as_its_glyph_name(self) -> None:
         notes = (
-            '<direction><direction-type><dynamics><p/></dynamics></direction-type></direction>'
+            "<direction><direction-type><dynamics><p/></dynamics></direction-type></direction>"
             + _note(_lyric("x"))
-            + '<direction><direction-type><dynamics><f/><f/></dynamics></direction-type></direction>'
+            + "<direction><direction-type><dynamics><f/><f/></dynamics></direction-type></direction>"
         )
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "s.musicxml"

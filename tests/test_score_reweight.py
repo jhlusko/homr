@@ -52,9 +52,7 @@ class TestRepeatCounts(unittest.TestCase):
         # A percentile stays stable across corpora of different average quality; a fixed
         # contrast threshold would need re-tuning for every new source.
         low_quality = repeat_counts({"a": 50, "b": 60, "c": 70, "d": 80}, floor_percentile=25)
-        high_quality = repeat_counts(
-            {"a": 200, "b": 210, "c": 220, "d": 230}, floor_percentile=25
-        )
+        high_quality = repeat_counts({"a": 200, "b": 210, "c": 220, "d": 230}, floor_percentile=25)
 
         self.assertGreater(low_quality["a"].repeats, 1)
         self.assertGreater(high_quality["a"].repeats, 1)
@@ -84,9 +82,7 @@ class TestReweightIndex(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             index = directory / "index.txt"
-            index.write_text(
-                "/data/a.png,/data/a.txt\n/data/b.png,/data/b.txt\n", encoding="utf-8"
-            )
+            index.write_text("/data/a.png,/data/a.txt\n/data/b.png,/data/b.txt\n", encoding="utf-8")
             weights = {
                 "/data/a.png": ImageWeight("/data/a.png", 50.0, 3),
                 "/data/b.png": ImageWeight("/data/b.png", 250.0, 1),

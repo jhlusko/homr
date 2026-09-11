@@ -33,6 +33,7 @@ excess of stops consistent with crops cut at system boundaries.
 
 Run this to localise the cases, not to count defects.
 """
+
 import re
 from collections import Counter
 from pathlib import Path
@@ -72,12 +73,16 @@ def analyse(tokens_path):
             else:
                 depth -= 1
     open_at_end = depth
-    return {"notes": n, "unmatched_stop_late": unmatched_stop_late,
-            "nested_start": nested_start, "open_at_end": open_at_end}
+    return {
+        "notes": n,
+        "unmatched_stop_late": unmatched_stop_late,
+        "nested_start": nested_start,
+        "open_at_end": open_at_end,
+    }
 
 
 manifest = Path("/workspace/b0/lieder-rebuild/stage2_clean_v6_manifest.txt")
-rows = [l.split(",", 1) for l in manifest.read_text().splitlines() if l.strip()]
+rows = [line.split(",", 1) for line in manifest.read_text().splitlines() if line.strip()]
 mono = 0
 defects = Counter()
 affected = set()
@@ -97,8 +102,10 @@ for image, tokens in rows:
             per_score[m.group(1)] += bad
 
 print(f"{len(rows):,} pairs, {mono:,} monophonic single-staff (where the stack model is exact)")
-print(f"pairs with an unexplainable slur marker: {len(affected):,} "
-      f"({100*len(affected)/max(mono,1):.1f}% of monophonic)")
+print(
+    f"pairs with an unexplainable slur marker: {len(affected):,} "
+    f"({100*len(affected)/max(mono,1):.1f}% of monophonic)"
+)
 for k, v in defects.most_common():
     print(f"   {k:>22}: {v}")
 print(f"scores affected: {len(per_score)}")

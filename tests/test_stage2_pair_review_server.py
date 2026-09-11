@@ -154,7 +154,9 @@ class TestRenderedPath(unittest.TestCase):
             (rendered_dir / "IMSLP1-sys0-v0.png").write_bytes(b"fake")
             state = ReviewState(manifest, Path(tmp) / "judgments.json", rendered_dir)
 
-            self.assertEqual(state.rendered_path("IMSLP1-sys0-v0"), rendered_dir / "IMSLP1-sys0-v0.png")
+            self.assertEqual(
+                state.rendered_path("IMSLP1-sys0-v0"), rendered_dir / "IMSLP1-sys0-v0.png"
+            )
 
 
 class TestPitchSummary(unittest.TestCase):
@@ -179,9 +181,7 @@ class TestPitchSummary(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             path = self._write_tokens(
                 tmp,
-                "note_4 A4 b _ _ upper\n"
-                "rest_8 _ _ _ _ upper\n"
-                "note_8 A4 b _ _ upper\n",
+                "note_4 A4 b _ _ upper\n" "rest_8 _ _ _ _ upper\n" "note_8 A4 b _ _ upper\n",
             )
 
             self.assertEqual(pitch_summary(str(path)), "A4b rest A4b")

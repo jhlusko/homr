@@ -63,7 +63,9 @@ class MatchesTheTrainingReference(unittest.TestCase):
             with self.subTest(shape=(height, width)):
                 covered = np.zeros((height, width), dtype=bool)
                 for y, x in text_detection.tile_origins(height, width):
-                    covered[y : y + text_detection.PATCH_SIZE, x : x + text_detection.PATCH_SIZE] = True
+                    covered[
+                        y : y + text_detection.PATCH_SIZE, x : x + text_detection.PATCH_SIZE
+                    ] = True
                 self.assertTrue(covered.all(), "a strip of the page is never predicted")
 
     def test_patch_size_and_stride_agree(self):
@@ -268,9 +270,7 @@ class RunsAnActualOnnxGraphOverAPage(unittest.TestCase):
         """Class gating is the fusion policy's job, versioned with the calibration it
         belongs to. This module must not filter as well, or the same rule lives in two
         places and they drift."""
-        path = export_constant_model(
-            "Fingering", Path(self.directory.name) / "fingering.onnx"
-        )
+        path = export_constant_model("Fingering", Path(self.directory.name) / "fingering.onnx")
         boxes = text_detection.TextDetector(path).detect(
             np.full((320, 320, 3), 255, dtype=np.uint8)
         )
@@ -280,9 +280,7 @@ class RunsAnActualOnnxGraphOverAPage(unittest.TestCase):
         """A page whose region is blue-dominant in BGR. If the runtime flipped to RGB,
         the same pixels would read as red-dominant and the box would vanish."""
         path = export_model(
-            ChannelSensitiveModel(
-                text_detection.CLASS_INDEX["Lyrics"], text_detection.NUM_CLASSES
-            ),
+            ChannelSensitiveModel(text_detection.CLASS_INDEX["Lyrics"], text_detection.NUM_CLASSES),
             Path(self.directory.name) / "channels.onnx",
         )
         page = np.zeros((320, 320, 3), dtype=np.uint8)
@@ -297,9 +295,7 @@ class RunsAnActualOnnxGraphOverAPage(unittest.TestCase):
     def test_tiles_are_scaled_into_unit_range_before_inference(self):
         """Fires only below 0.9, so an unscaled tile (0-255) produces nothing."""
         path = export_model(
-            ScaleSensitiveModel(
-                text_detection.CLASS_INDEX["Tempo"], text_detection.NUM_CLASSES
-            ),
+            ScaleSensitiveModel(text_detection.CLASS_INDEX["Tempo"], text_detection.NUM_CLASSES),
             Path(self.directory.name) / "scale.onnx",
         )
         page = np.full((320, 320, 3), 200, dtype=np.uint8)  # 200/255 = 0.784 < 0.9

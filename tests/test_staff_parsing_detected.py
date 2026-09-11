@@ -5,8 +5,14 @@ from homr.model import MultiStaff, Staff, StaffPoint
 from homr.staff_parsing import _plan_systems
 
 
-def _staff(index: int, *, per_system: int = 4, height: float = 45.0,
-           gap: float = 39.0, system_gap: float = 78.0) -> Staff:
+def _staff(
+    index: int,
+    *,
+    per_system: int = 4,
+    height: float = 45.0,
+    gap: float = 39.0,
+    system_gap: float = 78.0,
+) -> Staff:
     """A staff at the position index `index` would occupy in systems of `per_system`.
 
     Spacing follows the OSSQ scans scaled to a unit size of 10: within-system gaps of
@@ -21,9 +27,7 @@ def _staff(index: int, *, per_system: int = 4, height: float = 45.0,
 
 def _detected(staffs: list[Staff], per_system: int = 4) -> DetectedStaffs:
     """The detection view, with every within-system pair joined as a bracket would."""
-    pairs = {
-        (i, i + 1) for i in range(len(staffs) - 1) if (i + 1) % per_system != 0
-    }
+    pairs = {(i, i + 1) for i in range(len(staffs) - 1) if (i + 1) % per_system != 0}
     return DetectedStaffs(staffs=staffs, connected_pairs=pairs)
 
 
@@ -58,14 +62,14 @@ class TestPlanSystemsUsesDetection(unittest.TestCase):
         whenever the merge preserved every staff.
         """
         staffs = [_staff(i, per_system=2) for i in range(8)]
-        rows = [MultiStaff(staffs[i:i + 2], []) for i in range(0, 8, 2)]
+        rows = [MultiStaff(staffs[i : i + 2], []) for i in range(0, 8, 2)]
         plan = _plan_systems(rows, _detected(staffs, per_system=2))
         self.assertEqual([2, 2, 2, 2], [len(system.staffs) for system in plan.systems])
 
     def test_without_detection_the_old_path_still_runs(self) -> None:
         """Callers that have no pre-merge view - staff positions read from a file."""
         staffs = [_staff(i) for i in range(8)]
-        rows = [MultiStaff(staffs[i:i + 4], []) for i in range(0, 8, 4)]
+        rows = [MultiStaff(staffs[i : i + 4], []) for i in range(0, 8, 4)]
         plan = _plan_systems(rows, None)
         self.assertEqual([4, 4], [len(system.staffs) for system in plan.systems])
 

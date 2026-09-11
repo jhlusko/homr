@@ -12,14 +12,14 @@ from training.architecture.transformer.profile_context import (
 
 
 def _context(**overrides) -> ProfileContext:
-    defaults = dict(
-        instrument_family="strings.violin",
-        part_ordinal=0,
-        staff_within_part=0,
-        expected_staff_count=1,
-        likely_clefs=("G2",),
-        transposition_semitones=0,
-    )
+    defaults = {
+        "instrument_family": "strings.violin",
+        "part_ordinal": 0,
+        "staff_within_part": 0,
+        "expected_staff_count": 1,
+        "likely_clefs": ("G2",),
+        "transposition_semitones": 0,
+    }
     defaults.update(overrides)
     return ProfileContext(**defaults)
 
@@ -102,9 +102,7 @@ class TestBucketing(unittest.TestCase):
         with torch.no_grad():
             module.gate.fill_(1.0)
 
-        vector = module.embed_one(
-            _context(transposition_semitones=999), device=torch.device("cpu")
-        )
+        vector = module.embed_one(_context(transposition_semitones=999), device=torch.device("cpu"))
 
         self.assertEqual(vector.shape, (8,))
 
@@ -175,9 +173,7 @@ def _stack_batch_fields(*field_dicts: dict) -> dict:
     result = {}
     for key in keys:
         values = [fields[key] for fields in field_dicts]
-        result[key] = (
-            torch.stack(values) if key == "profile_clef_indices" else torch.tensor(values)
-        )
+        result[key] = torch.stack(values) if key == "profile_clef_indices" else torch.tensor(values)
     return result
 
 
@@ -212,9 +208,7 @@ class TestContextToBatchFields(unittest.TestCase):
         self.assertEqual(fields["profile_clef_count"], 1)
 
     def test_more_clefs_than_slots_are_capped_not_an_error(self) -> None:
-        fields = context_to_batch_fields(
-            _context(likely_clefs=("G2", "F4", "C3", "C4", "C5"))
-        )
+        fields = context_to_batch_fields(_context(likely_clefs=("G2", "F4", "C3", "C4", "C5")))
 
         self.assertEqual(len(fields["profile_clef_indices"]), MAX_CLEF_SLOTS)
         self.assertEqual(fields["profile_clef_count"], MAX_CLEF_SLOTS)
@@ -281,9 +275,7 @@ class TestBatchAndListAgree(unittest.TestCase):
 
 class TestFromScorePart(unittest.TestCase):
     def test_carries_the_score_parts_own_fields(self) -> None:
-        part = ScorePart(
-            "viola", instrument_family="strings.viola", likely_clefs=("C3", "G2")
-        )
+        part = ScorePart("viola", instrument_family="strings.viola", likely_clefs=("C3", "G2"))
 
         context = ProfileContext.from_score_part(part, part_ordinal=2)
 

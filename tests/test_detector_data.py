@@ -14,8 +14,13 @@ from training.ocr.detector_data import (
 
 
 def _record(lyrics=None, text_boxes=None) -> dict:
-    return {"image": "s-1.png", "width": 1000, "height": 500,
-            "lyrics": lyrics or [], "text_boxes": text_boxes or {}}
+    return {
+        "image": "s-1.png",
+        "width": 1000,
+        "height": 500,
+        "lyrics": lyrics or [],
+        "text_boxes": text_boxes or {},
+    }
 
 
 class TestDynamicIncluded(unittest.TestCase):
@@ -55,7 +60,9 @@ class TestBoxesOf(unittest.TestCase):
         self.assertEqual(boxes[0].label, "Tempo")
 
     def test_a_class_outside_the_detection_set_is_dropped(self) -> None:
-        record = _record(text_boxes={"NotARealClass": [{"left": 1, "top": 1, "right": 5, "bottom": 5}]})
+        record = _record(
+            text_boxes={"NotARealClass": [{"left": 1, "top": 1, "right": 5, "bottom": 5}]}
+        )
 
         self.assertEqual(boxes_of(record, "img.png"), [])
 
@@ -73,7 +80,11 @@ class TestCollect(unittest.TestCase):
                 system = directory / name
                 system.mkdir()
                 (system / f"{name}.boxes.json").write_text(
-                    json.dumps(_record(lyrics=[{"text": "x", "left": 0, "top": 0, "right": 1, "bottom": 1}])),
+                    json.dumps(
+                        _record(
+                            lyrics=[{"text": "x", "left": 0, "top": 0, "right": 1, "bottom": 1}]
+                        )
+                    ),
                     encoding="utf-8",
                 )
 
@@ -89,7 +100,9 @@ class TestCollect(unittest.TestCase):
             system = directory / "s1"
             system.mkdir()
             (system / "s1.boxes.json").write_text(
-                json.dumps(_record(lyrics=[{"text": "x", "left": 0, "top": 0, "right": 1, "bottom": 1}])),
+                json.dumps(
+                    _record(lyrics=[{"text": "x", "left": 0, "top": 0, "right": 1, "bottom": 1}])
+                ),
                 encoding="utf-8",
             )
 

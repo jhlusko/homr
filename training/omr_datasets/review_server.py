@@ -670,7 +670,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         length = int(self.headers.get("Content-Length", "0"))
         body = json.loads(self.rfile.read(length) or b"{}")
-        self.state.save_page(score_id, match.group(2), body.get("systems", []), body.get("status", "edited"))
+        self.state.save_page(
+            score_id, match.group(2), body.get("systems", []), body.get("status", "edited")
+        )
         self._send_json({"ok": True})
 
     def _save_compare_judgment(self) -> None:
@@ -698,7 +700,9 @@ class Handler(BaseHTTPRequestHandler):
                 f'<tr><td><a href="/score/{score_id}">{score_id}</a></td>'
                 f'<td class="{css}">{confirmed}/{total} pages</td></tr>'
             )
-        self._send_html(INDEX_TEMPLATE.format(rows="\n".join(rows) or "<tr><td>none found</td></tr>"))
+        self._send_html(
+            INDEX_TEMPLATE.format(rows="\n".join(rows) or "<tr><td>none found</td></tr>")
+        )
 
     def _targeted(self) -> None:
         candidates = self.state.targeted_candidates()
@@ -708,9 +712,7 @@ class Handler(BaseHTTPRequestHandler):
             match = re.search(r"-p(\d+)\.png$", c["page_image"])
             page_number = int(match.group(1)) if match else None
             position = (
-                "first page" if c["is_first_page"]
-                else "last page" if c["is_last_page"]
-                else ""
+                "first page" if c["is_first_page"] else "last page" if c["is_last_page"] else ""
             )
             css = ' class="edge"' if position else ""
             has_render = bool(self.state.ground_truth_pages(c["score_id"]))
@@ -756,7 +758,9 @@ class Handler(BaseHTTPRequestHandler):
                     "number": number,
                     "image": page["image"],
                     "systems": systems,
-                    "status": verified_page.get("status", "unreviewed") if verified_page else "unreviewed",
+                    "status": (
+                        verified_page.get("status", "unreviewed") if verified_page else "unreviewed"
+                    ),
                 }
             )
         if not pages:
@@ -811,8 +815,7 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
         images = "\n".join(
-            f'<img src="/ground_truth_image/{score_id}/{name}" alt="{name}">'
-            for name in page_names
+            f'<img src="/ground_truth_image/{score_id}/{name}" alt="{name}">' for name in page_names
         )
         self._send_html(GROUND_TRUTH_TEMPLATE.format(score_id=score_id, images=images))
 
@@ -837,30 +840,39 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--pngs", type=Path, required=True, help="An imslp_pngs(_new) dir.")
     parser.add_argument(
-        "--systems", type=Path, required=True,
+        "--systems",
+        type=Path,
+        required=True,
         help="Detections to review - an imslp_systems(_new) or _repaired dir.",
     )
     parser.add_argument(
         "--verified", type=Path, required=True, help="Where confirmed/edited boxes are saved."
     )
     parser.add_argument(
-        "--targeted-candidates", type=Path,
+        "--targeted-candidates",
+        type=Path,
         help="targeted_review_candidates.py's --out file - powers the /targeted page.",
     )
     parser.add_argument(
-        "--ground-truth-renders", type=Path,
+        "--ground-truth-renders",
+        type=Path,
         help="render_lieder_ground_truth.py's --out dir - powers the /ground_truth/<id> page.",
     )
     parser.add_argument(
-        "--match-review", type=Path,
+        "--match-review",
+        type=Path,
         help="Where /compare's match/no-match judgments are saved.",
     )
     parser.add_argument("--port", type=int, default=8791)
     args = parser.parse_args()
 
     Handler.state = ReviewState(
-        args.pngs, args.systems, args.verified,
-        args.targeted_candidates, args.ground_truth_renders, args.match_review,
+        args.pngs,
+        args.systems,
+        args.verified,
+        args.targeted_candidates,
+        args.ground_truth_renders,
+        args.match_review,
     )
     server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     print(f"reviewing {len(Handler.state.score_ids())} score(s) at http://localhost:{args.port}/")

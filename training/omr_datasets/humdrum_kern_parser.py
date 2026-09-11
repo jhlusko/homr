@@ -92,9 +92,7 @@ class _BeamMarkers(NamedTuple):
 
     @staticmethod
     def of(token: str) -> "_BeamMarkers":
-        return _BeamMarkers(
-            token.count("L"), token.count("J"), token.count("K"), token.count("k")
-        )
+        return _BeamMarkers(token.count("L"), token.count("J"), token.count("K"), token.count("k"))
 
     def merged_with(self, other: "_BeamMarkers") -> "_BeamMarkers":
         """The markers of a chord whose members are this and `other`.
@@ -376,14 +374,9 @@ def _merge_multiple_voices_on_the_same_staff(
             staff_lines[s].append(" ".join(tok for tok, _ in items))
             # One column id per token of the joined line: a spine holding a chord
             # contributes several tokens, all of them that spine's.
-            staff_columns[s].append(
-                [column for tok, column in items for _ in tok.split()]
-            )
+            staff_columns[s].append([column for tok, column in items for _ in tok.split()])
 
-    return [
-        _SpineTokens(staff, columns)
-        for staff, columns in zip(staff_lines, staff_columns)
-    ]
+    return [_SpineTokens(staff, columns) for staff, columns in zip(staff_lines, staff_columns)]
 
 
 def _remove_redundant_key_changes(symbols: list[EncodedSymbol]) -> list[EncodedSymbol]:
@@ -595,7 +588,11 @@ class HumdrumKernConverter:
         pitch_val = self.kern_note_to_pitch(pitch)
         articulation_val, slur_val = self._articulation_from_suffix(suffix)
         return EncodedSymbol(
-            rhythm_key, pitch_val, lift_val, articulation_val, slur_val,
+            rhythm_key,
+            pitch_val,
+            lift_val,
+            articulation_val,
+            slur_val,
             notation=notation,
         )
 
@@ -720,9 +717,8 @@ class HumdrumKernConverter:
                 # Numerator and denominator are one declaration: if either moved, both
                 # are re-emitted, so a metre change can never leave a stale numerator
                 # standing beside a fresh denominator.
-                signature_changed = (
-                    new_time != timeSignature.symbol
-                    or new_beats != (timeBeats.symbol if timeBeats is not None else None)
+                signature_changed = new_time != timeSignature.symbol or new_beats != (
+                    timeBeats.symbol if timeBeats is not None else None
                 )
                 if initial_signature_was_added and signature_changed:
                     if new_beats is not None:

@@ -20,7 +20,11 @@ from homr.music_xml_generator import XmlGeneratorArguments, generate_xml, xml_to
 from homr.simple_logging import eprint
 from homr.staff_parsing import add_image_into_tr_omr_canvas
 from homr.transformer.configs import default_config
-from homr.transformer.vocabulary import TIME_SIGNATURE_BEATS_PREFIX, EncodedSymbol, empty
+from homr.transformer.vocabulary import (
+    TIME_SIGNATURE_BEATS_PREFIX,
+    EncodedSymbol,
+    empty,
+)
 from homr.type_definitions import NDArray
 from training.omr_datasets.convert_lieder import (
     MeasureCutter,
@@ -30,9 +34,9 @@ from training.omr_datasets.convert_lieder import (
 )
 from training.omr_datasets.music_xml_parser import Measure, music_xml_string_to_tokens
 from training.transformer.training_vocabulary import (
-    max_tuplet_ratio,
     calc_ratio_of_tuplets,
     check_token_lines,
+    max_tuplet_ratio,
     token_lines_to_str,
 )
 
@@ -284,9 +288,7 @@ def _convert_file_impl(path: Path) -> list[str]:
             end = min(window_start + _WINDOW_SIZE, n_measures)
             window_measures = voice[window_start:end]
 
-            clefs, key, time_sym, time_beats = _context_at_measure(
-                voice, window_start, n_staffs
-            )
+            clefs, key, time_sym, time_beats = _context_at_measure(voice, window_start, n_staffs)
             cutter = MeasureCutter(list(window_measures))
             cutter.clefs = clefs
             cutter.key = key
@@ -295,7 +297,9 @@ def _convert_file_impl(path: Path) -> list[str]:
 
             tokens = cutter.extract_measures(len(window_measures), always_include_time=True)
 
-            if calc_ratio_of_tuplets(tokens) <= max_tuplet_ratio() and contains_only_supported_clefs(tokens):
+            if calc_ratio_of_tuplets(
+                tokens
+            ) <= max_tuplet_ratio() and contains_only_supported_clefs(tokens):
                 tokens = strip_naturals(tokens)
                 try:
                     if len(tokens) > default_config.max_seq_len - 2:

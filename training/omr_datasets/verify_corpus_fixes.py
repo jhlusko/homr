@@ -10,21 +10,29 @@ the pairs back off disk and re-derive the properties:
 
 Paths are arguments so this can check any build, not the one it was written against.
 """
-from pathlib import Path
+
+from pathlib import argparse
+
+import Path
 
 from homr.music_xml_generator import (
-    add_tuplet_start_stop, group_into_chords,
-    modal_measure_duration, stated_numerator_contradicts_bars,
+    add_tuplet_start_stop,
+    group_into_chords,
+    modal_measure_duration,
+    stated_numerator_contradicts_bars,
 )
 from homr.transformer.vocabulary import TIME_SIGNATURE_BEATS_PREFIX
-from training.omr_datasets.audit_label_consistency import is_single_staff, overfull_bars
+from training.omr_datasets.audit_label_consistency import is_single_staff
 from training.transformer.training_vocabulary import read_tokens
 
-def stems(p):
-    return {Path(l.split(",", 1)[0]).stem: Path(l.split(",", 1)[1])
-            for l in Path(p).read_text().splitlines() if l.strip()}
 
-import argparse
+def stems(p):
+    return {
+        Path(line.split(",", 1)[0]).stem: Path(line.split(",", 1)[1])
+        for line in Path(p).read_text().splitlines()
+        if line.strip()
+    }
+
 
 parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 parser.add_argument("--previous", type=Path, required=True, help="manifest built before the fixes")
@@ -45,13 +53,15 @@ still_out = set(over) - set(v6)
 single_out = sum(1 for s in still_out if s in v5 or True)
 print(f"       still excluded: {len(still_out)}")
 bad = [s for s in restored if is_single_staff(read_tokens(str(v6[s])))]
-print(f"       ASSERT no single-staff overfull pair was restored: "
-      f"{'PASS' if not bad else 'FAIL ' + str(bad[:3])}")
+print(
+    f"       ASSERT no single-staff overfull pair was restored: "
+    f"{'PASS' if not bad else 'FAIL ' + str(bad[:3])}"
+)
 
 print()
 contradicting = 0
 carries = 0
-for stem, path in v6.items():
+for _stem, path in v6.items():
     sym = read_tokens(str(path))
     if not any(s.rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX) for s in sym):
         continue
@@ -65,7 +75,7 @@ print(f"       ASSERT none remain: {'PASS' if contradicting == 0 else 'FAIL'}")
 
 print()
 v5_contra = 0
-for stem, path in v5.items():
+for _stem, path in v5.items():
     sym = read_tokens(str(path))
     if not any(s.rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX) for s in sym):
         continue

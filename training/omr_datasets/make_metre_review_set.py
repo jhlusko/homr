@@ -94,9 +94,7 @@ def disagreement(record: dict) -> tuple[Fraction, Fraction, bool]:
     predicted_bars = measure_durations(symbols_from(record, "predicted"))
     if not label_bars or not predicted_bars:
         return label, predicted, False
-    differs = any(
-        abs(a - b) > TOLERANCE for a, b in zip(label_bars, predicted_bars)
-    )
+    differs = any(abs(a - b) > TOLERANCE for a, b in zip(label_bars, predicted_bars))
     return label, predicted, differs
 
 
@@ -121,8 +119,10 @@ def main() -> None:
         if differs:
             flagged.append((abs(label - predicted), key, label, predicted))
     flagged.sort(reverse=True)
-    print(f"{len(records)} staves, {len(flagged)} with a metre disagreement "
-          f"({100 * len(flagged) / max(len(records), 1):.1f}%)")
+    print(
+        f"{len(records)} staves, {len(flagged)} with a metre disagreement "
+        f"({100 * len(flagged) / max(len(records), 1):.1f}%)"
+    )
 
     crops = args.out / "crops"
     scores = args.out / "scores"
@@ -136,17 +136,21 @@ def main() -> None:
             continue
         shutil.copy2(source, crops / f"{stem}.png")
         left = write_xml(symbols_from(records[key], "reference"), scores / f"{stem}__left.musicxml")
-        right = write_xml(symbols_from(records[key], "predicted"), scores / f"{stem}__right.musicxml")
-        manifest.append({
-            "id": stem,
-            "score_id": stem.rsplit("-sys", 1)[0],
-            "voice": int(stem.rsplit("-v", 1)[1]) if "-v" in stem else 0,
-            "left_bars": left,
-            "right_bars": right,
-            "has_right": True,
-            "label_beats": float(label),
-            "predicted_beats": float(predicted),
-        })
+        right = write_xml(
+            symbols_from(records[key], "predicted"), scores / f"{stem}__right.musicxml"
+        )
+        manifest.append(
+            {
+                "id": stem,
+                "score_id": stem.rsplit("-sys", 1)[0],
+                "voice": int(stem.rsplit("-v", 1)[1]) if "-v" in stem else 0,
+                "left_bars": left,
+                "right_bars": right,
+                "has_right": True,
+                "label_beats": float(label),
+                "predicted_beats": float(predicted),
+            }
+        )
     (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"wrote {len(manifest)} items -> {args.out}")
 

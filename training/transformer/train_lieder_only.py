@@ -42,7 +42,6 @@ rather than leaving it to be inferred from the mixture line.
 # flake8: noqa: T201
 
 import argparse
-
 from pathlib import Path
 
 from training.omr_datasets.convert_grandstaff import grandstaff_train_index
@@ -96,16 +95,24 @@ def main() -> None:
     parser.add_argument("--train-index", default=IMSLP_TRAIN_INDEX)
     parser.add_argument("--val-index", default=IMSLP_VAL_INDEX)
     parser.add_argument(
-        "--imslp-count", type=int, default=IMSLP_COUNT,
+        "--imslp-count",
+        type=int,
+        default=IMSLP_COUNT,
         help="Lieder pairs in the mix; sets the replay ratio against PDMX_REPLAY_COUNT.",
     )
     parser.add_argument(
-        "--replay-count", type=int, default=PDMX_REPLAY_COUNT,
+        "--replay-count",
+        type=int,
+        default=PDMX_REPLAY_COUNT,
         help="PDMX-only replay size. Kept so existing invocations mean what they did; "
         "ignored once --replay is given.",
     )
     parser.add_argument(
-        "--replay", action="append", metavar="CORPUS=COUNT", type=_replay_pair, default=None,
+        "--replay",
+        action="append",
+        metavar="CORPUS=COUNT",
+        type=_replay_pair,
+        default=None,
         help="Replay corpus and how many staves to draw, repeatable: "
         "--replay pdmx=1300 --replay grandstaff=1300. Known corpora: "
         + ", ".join(sorted(REPLAY_CORPORA))
@@ -116,13 +123,14 @@ def main() -> None:
     parser.add_argument(
         "--checkpoint-folder",
         help="Where the trainer keeps per-epoch checkpoints. Defaults to a name derived "
-             "from the seed so concurrent runs cannot delete each other's; pass "
-             "current_training explicitly to reproduce the old single-run behaviour.",
+        "from the seed so concurrent runs cannot delete each other's; pass "
+        "current_training explicitly to reproduce the old single-run behaviour.",
     )
     parser.add_argument(
-        "--seed", type=int,
+        "--seed",
+        type=int,
         help="Trainer seed. Repeating a corpus at two seeds measures the noise floor, "
-             "without which a 1pp corpus difference cannot be called a result.",
+        "without which a 1pp corpus difference cannot be called a result.",
     )
     args = parser.parse_args()
 
@@ -141,8 +149,7 @@ def main() -> None:
         # A silently absent corpus would train a different mixture than the one reported,
         # and the log would still claim it was included.
         raise SystemExit(
-            "replay corpus not built: "
-            + ", ".join(f"{n} ({REPLAY_CORPORA[n]})" for n in missing)
+            "replay corpus not built: " + ", ".join(f"{n} ({REPLAY_CORPORA[n]})" for n in missing)
         )
 
     replay_names = sorted(replay)
@@ -155,8 +162,11 @@ def main() -> None:
         f"({100 * replay_total / total:.1f}%), total {total}"
     )
     for name in replay_names:
-        available = sum(1 for line in Path(REPLAY_CORPORA[name]).read_text(
-            encoding="utf-8").splitlines() if line.strip())
+        available = sum(
+            1
+            for line in Path(REPLAY_CORPORA[name]).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
         if replay[name] > available:
             # Asking for more than a corpus holds is oversampling, not an error - but it
             # is worth saying out loud, since musetrainer holds a few hundred staves and

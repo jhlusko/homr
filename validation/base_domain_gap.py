@@ -120,7 +120,9 @@ def main() -> None:
     parser.add_argument("--synthetic", type=Path, required=True, help="ossq.py --output db")
     parser.add_argument("--scanned", type=Path, required=True)
     parser.add_argument(
-        "--component", default="ned", choices=COMPONENTS,
+        "--component",
+        default="ned",
+        choices=COMPONENTS,
         help="Which NED figure to compare (default: overall).",
     )
     args = parser.parse_args()

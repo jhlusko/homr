@@ -81,22 +81,37 @@ class TestPerMeasureComparison(unittest.TestCase):
     two changed measures in a system of six do not move it."""
 
     def test_measure_durations_are_returned_in_order(self) -> None:
-        syms = [note("note_4")] * 4 + [EncodedSymbol("barline")] \
-             + [note("note_4")] * 3 + [EncodedSymbol("barline")]
+        syms = (
+            [note("note_4")] * 4
+            + [EncodedSymbol("barline")]
+            + [note("note_4")] * 3
+            + [EncodedSymbol("barline")]
+        )
         self.assertEqual(measure_durations(syms), [Fraction(1), Fraction(3, 4)])
 
     def test_a_change_in_the_last_bars_is_caught(self) -> None:
-        ref = bar(["note_4"] * 4) + bar(["note_4"] * 4) + bar(["note_4"] * 4) \
-            + bar(["note_4"] * 3) + bar(["note_4"] * 3)
+        ref = (
+            bar(["note_4"] * 4)
+            + bar(["note_4"] * 4)
+            + bar(["note_4"] * 4)
+            + bar(["note_4"] * 3)
+            + bar(["note_4"] * 3)
+        )
         pred = bar(["note_4"] * 4) * 5
         _, _, differs = disagreement(record(ref, pred))
         self.assertTrue(differs, "a metre change in the tail must be caught")
 
     def test_that_same_case_is_invisible_to_the_median(self) -> None:
-        ref = bar(["note_4"] * 4) + bar(["note_4"] * 4) + bar(["note_4"] * 4) \
-            + bar(["note_4"] * 3) + bar(["note_4"] * 3)
+        ref = (
+            bar(["note_4"] * 4)
+            + bar(["note_4"] * 4)
+            + bar(["note_4"] * 4)
+            + bar(["note_4"] * 3)
+            + bar(["note_4"] * 3)
+        )
         pred = bar(["note_4"] * 4) * 5
         from training.omr_datasets.make_metre_review_set import symbols_from
+
         a = implied_numerator(symbols_from(record(ref, pred), "reference"))
         b = implied_numerator(symbols_from(record(ref, pred), "predicted"))
         self.assertEqual(a, b, "the median is blind here, which is why it is not the test")

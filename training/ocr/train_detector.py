@@ -68,7 +68,9 @@ def collate(batch: list[tuple[np.ndarray, np.ndarray]]) -> dict:
 
 
 def per_class_iou(
-    model: CamVidModel, logits: torch.Tensor, masks: torch.Tensor,
+    model: CamVidModel,
+    logits: torch.Tensor,
+    masks: torch.Tensor,
     ignore_index: int | None = None,
 ) -> dict[str, float]:
     """IoU for every class the model has, whether or not it appeared in this batch.
@@ -80,7 +82,10 @@ def per_class_iou(
     """
     predicted = logits.softmax(dim=1).argmax(dim=1)
     tp, fp, fn, _ = smp.metrics.get_stats(
-        predicted, masks, mode="multiclass", num_classes=NUM_CLASSES,
+        predicted,
+        masks,
+        mode="multiclass",
+        num_classes=NUM_CLASSES,
         ignore_index=ignore_index,
     )
     iou = smp.metrics.iou_score(tp, fp, fn, torch.zeros_like(tp), reduction="none")
@@ -91,9 +96,7 @@ def per_class_iou(
     present = tp.sum(dim=0) + fn.sum(dim=0) > 0
     mean_iou = iou.mean(dim=0)
     return {
-        CLASS_NAMES[index]: float(mean_iou[index])
-        for index in range(NUM_CLASSES)
-        if present[index]
+        CLASS_NAMES[index]: float(mean_iou[index]) for index in range(NUM_CLASSES) if present[index]
     }
 
 
@@ -140,7 +143,10 @@ def train(args: argparse.Namespace) -> dict:
         # batches that mix pages rather than coming from one or two.
         dataset = PreExtractedPatches(samples)
         loader = DataLoader(
-            dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers,
+            dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.workers,
             collate_fn=collate,
         )
     else:
@@ -159,7 +165,10 @@ def train(args: argparse.Namespace) -> dict:
         # consecutive, so the cache actually hits.
         sampler = ImageBlockSampler(len(samples), args.patches_per_image, seed=args.seed)
         loader = DataLoader(
-            dataset, batch_size=args.batch_size, sampler=sampler, num_workers=args.workers,
+            dataset,
+            batch_size=args.batch_size,
+            sampler=sampler,
+            num_workers=args.workers,
             collate_fn=collate,
         )
     valid_loader = None
@@ -176,12 +185,18 @@ def train(args: argparse.Namespace) -> dict:
             )
         )
         valid_loader = DataLoader(
-            valid_dataset, batch_size=args.batch_size, shuffle=False,
-            num_workers=args.workers, collate_fn=collate,
+            valid_dataset,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.workers,
+            collate_fn=collate,
         )
 
     model = CamVidModel(
-        arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=NUM_CLASSES,
+        arch="Unet",
+        encoder_name="resnet18",
+        in_channels=3,
+        out_classes=NUM_CLASSES,
         skip_weights_download=args.skip_pretrained,
     ).to(args.device)
     # Read defensively: callers (including tests) build this Namespace directly
@@ -199,11 +214,14 @@ def train(args: argparse.Namespace) -> dict:
         # CamVidModel builds a plain multiclass Dice loss; rebuild it here rather than
         # editing the shared model, so every other user of CamVidModel is unaffected.
         model.loss_fn = smp.losses.DiceLoss(
-            smp.losses.MULTICLASS_MODE, from_logits=True,
-            classes=loss_classes, ignore_index=ignore_index,
+            smp.losses.MULTICLASS_MODE,
+            from_logits=True,
+            classes=loss_classes,
+            ignore_index=ignore_index,
         )
-        print(f"loss: Dice over {loss_classes_arg or 'all classes'}"
-              f", ignore_index={ignore_index}")
+        print(
+            f"loss: Dice over {loss_classes_arg or 'all classes'}" f", ignore_index={ignore_index}"
+        )
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
     print(f"{len(dataset):,} patches from {len(samples):,} images, {NUM_CLASSES} classes")
@@ -230,7 +248,9 @@ def train(args: argparse.Namespace) -> dict:
             running_loss += float(loss.item())
             batches += 1
             with torch.no_grad():
-                for name, value in per_class_iou(model, logits.detach(), masks, ignore_index).items():
+                for name, value in per_class_iou(
+                    model, logits.detach(), masks, ignore_index
+                ).items():
                     totals[name].append(value)
 
         per_class = {name: sum(values) / len(values) for name, values in totals.items()}
@@ -281,7 +301,9 @@ def main() -> None:
     parser.add_argument("--out", type=Path)
     parser.add_argument("--patches-per-image", type=int, default=8)
     parser.add_argument(
-        "--positive-ratio", type=float, default=POSITIVE_RATIO,
+        "--positive-ratio",
+        type=float,
+        default=POSITIVE_RATIO,
         help=(
             "Share of drawn training patches centred on a box rather than a random "
             "page location (DetectorPatches.positive_ratio). 27.87's leading, still-"
@@ -296,7 +318,8 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
-        "--class-weighted-sampling", action="store_true",
+        "--class-weighted-sampling",
+        action="store_true",
         help=(
             "Weight DetectorPatches' per-page positive-class choice by inverse distinct "
             "-page count (class_draw_weights), so a class spread across far more pages "
@@ -306,20 +329,26 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--skip-pretrained", action="store_true",
+        "--skip-pretrained",
+        action="store_true",
         help="Skip downloading imagenet encoder weights (offline runs, or tests).",
     )
     parser.add_argument(
-        "--pre-extracted", action="store_true",
+        "--pre-extracted",
+        action="store_true",
         help="--index lists patches from extract_patch_bank.py, not full pages.",
     )
     parser.add_argument(
-        "--ignore-index", type=int, default=None,
+        "--ignore-index",
+        type=int,
+        default=None,
         help="Mask value meaning 'no supervision here' (scan_text_masks.py writes 255). "
         "Excluded from both the loss and the IoU metric.",
     )
     parser.add_argument(
-        "--loss-classes", type=str, default=None,
+        "--loss-classes",
+        type=str,
+        default=None,
         help="Comma-separated class names to compute the loss over, e.g. 'Lyrics,Dynamic'. "
         "Default: every class. Only meaningful together with --ignore-index, since "
         "restricting classes without ignoring unlabelled pixels still trains them as "

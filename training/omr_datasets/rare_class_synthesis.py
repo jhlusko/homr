@@ -67,9 +67,7 @@ def inject_fingering(root: ET.Element, count: int, rng: random.Random) -> int:
         # MusicXML's declared order puts <notations> before <lyric> - a lyric-bearing
         # note (this corpus is Lieder) would fail MuseScore's strict schema validation if
         # notations were simply appended after an existing lyric.
-        lyric_index = next(
-            (i for i, child in enumerate(note) if child.tag == "lyric"), len(note)
-        )
+        lyric_index = next((i for i, child in enumerate(note) if child.tag == "lyric"), len(note))
         note.insert(lyric_index, notations)
         added += 1
     return added
@@ -89,7 +87,9 @@ def verify_svg_classes(svg_path: Path) -> Counter:
     injection at scale, the way this module's own SystemText attempt should have been
     trusted less readily (27.92)."""
     text = svg_path.read_text(encoding="utf-8")
-    return Counter(cls for cls in ("Fingering", "StaffText", "Expression", "Tempo") if f'class="{cls}"' in text)
+    return Counter(
+        cls for cls in ("Fingering", "StaffText", "Expression", "Tempo") if f'class="{cls}"' in text
+    )
 
 
 def build_batch(sources: list[Path], out_root: Path, fingering: int, seed: int) -> dict:
@@ -134,7 +134,12 @@ def main() -> None:
     one.add_argument("--seed", type=int, default=0)
 
     batch = sub.add_parser("batch", help="Augment and render a batch of scores.")
-    batch.add_argument("--sources", type=Path, required=True, help="Dir of .render.musicxml under score subfolders.")
+    batch.add_argument(
+        "--sources",
+        type=Path,
+        required=True,
+        help="Dir of .render.musicxml under score subfolders.",
+    )
     batch.add_argument("--count", type=int, default=80)
     batch.add_argument("--out", type=Path, required=True)
     batch.add_argument("--fingering", type=int, default=4)
@@ -153,7 +158,10 @@ def main() -> None:
         if not sources:
             raise SystemExit(f"No .render.musicxml under {args.sources}")
         result = build_batch(sources, args.out, args.fingering, args.seed)
-        print(f"{result['written']}/{len(sources)} scores rendered, {result['fingering_added']} fingering boxes added")
+        print(
+            f"{result['written']}/{len(sources)} scores rendered, {result['fingering_added']} "
+            f"fingering boxes added"
+        )
         if result["refused"]:
             print(f"  refused: {result['refused']}")
 

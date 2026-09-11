@@ -30,9 +30,7 @@ class TestMeasureCountFromBarlineCenters(unittest.TestCase):
         )
 
     def test_a_lone_stem_like_vertical_is_not_a_measure_divider(self) -> None:
-        self.assertEqual(
-            measure_count_from_barline_centers([25, 25.5, 50, 75, 75.5], 0, 100), 3
-        )
+        self.assertEqual(measure_count_from_barline_centers([25, 25.5, 50, 75, 75.5], 0, 100), 3)
 
     def test_no_detection_is_unknown_not_one_measure(self) -> None:
         self.assertEqual(measure_count_from_barline_centers([], 0, 100), 0)
@@ -68,16 +66,26 @@ class TestFailuresAreNotSilent(unittest.TestCase):
         gt_dir, systems_dir, png_dir = self._fixture(root)
         argv = [
             "compare_bar_counts",
-            "--ground-truth", str(gt_dir),
-            "--systems", str(systems_dir),
-            "--pngs", str(png_dir),
-            "--rows-out", str(rows_out),
-            "--failed-out", str(failed_out),
+            "--ground-truth",
+            str(gt_dir),
+            "--systems",
+            str(systems_dir),
+            "--pngs",
+            str(png_dir),
+            "--rows-out",
+            str(rows_out),
+            "--failed-out",
+            str(failed_out),
         ]
         if coverage_out:
             argv.extend(["--coverage-out", str(coverage_out)])
-        with mock.patch.object(sys, "argv", argv), mock.patch.object(
-            compare_bar_counts, "compare_one_score", side_effect=RuntimeError("pthread_create failed")
+        with (
+            mock.patch.object(sys, "argv", argv),
+            mock.patch.object(
+                compare_bar_counts,
+                "compare_one_score",
+                side_effect=RuntimeError("pthread_create failed"),
+            ),
         ):
             try:
                 compare_bar_counts.main()

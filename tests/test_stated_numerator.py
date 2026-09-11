@@ -12,7 +12,6 @@ right and the rule would otherwise contradict it.
 """
 
 import unittest
-import xml.etree.ElementTree as ET
 from fractions import Fraction
 
 from homr.music_xml_generator import (
@@ -54,24 +53,29 @@ class TestStatedNumerator(unittest.TestCase):
             "clef_G2 keySignature_0 timeSignatureBeats_4 timeSignature/4 "
             + " ".join(bar("note_4@C4", 3) for _ in range(4))
         )
-        self.assertEqual({t for t in times_in(voice)}, {("3", "4")})
+        self.assertEqual(set(times_in(voice)), {("3", "4")})
 
     def test_a_real_metre_change_still_renders_what_the_label_states(self) -> None:
         # 3/4, 3/4, 2/4, 2/4 - the shape of IMSLP632171-sys17-v0. No strict majority,
         # so there is no prevailing bar for the rule to rest on and the label wins.
         voice = symbols(
             "clef_G2 keySignature_0 timeSignatureBeats_2 timeSignature/4 "
-            + bar("note_4@C4", 3) + " " + bar("note_4@C4", 3) + " "
-            + bar("note_4@C4", 2) + " " + bar("note_4@C4", 2)
+            + bar("note_4@C4", 3)
+            + " "
+            + bar("note_4@C4", 3)
+            + " "
+            + bar("note_4@C4", 2)
+            + " "
+            + bar("note_4@C4", 2)
         )
-        self.assertEqual({t for t in times_in(voice)}, {("2", "4")})
+        self.assertEqual(set(times_in(voice)), {("2", "4")})
 
     def test_an_agreeing_stated_numerator_is_kept(self) -> None:
         voice = symbols(
             "clef_G2 keySignature_0 timeSignatureBeats_3 timeSignature/4 "
             + " ".join(bar("note_4@C4", 3) for _ in range(4))
         )
-        self.assertEqual({t for t in times_in(voice)}, {("3", "4")})
+        self.assertEqual(set(times_in(voice)), {("3", "4")})
 
 
 class TestModalMeasureDuration(unittest.TestCase):
@@ -83,8 +87,15 @@ class TestModalMeasureDuration(unittest.TestCase):
         self.assertEqual(modal_measure_duration(self.chords(spec)), Fraction(3, 4))
 
     def test_a_tie_has_no_modal_bar(self) -> None:
-        spec = (bar("note_4@C4", 3) + " " + bar("note_4@C4", 3) + " "
-                + bar("note_4@C4", 2) + " " + bar("note_4@C4", 2))
+        spec = (
+            bar("note_4@C4", 3)
+            + " "
+            + bar("note_4@C4", 3)
+            + " "
+            + bar("note_4@C4", 2)
+            + " "
+            + bar("note_4@C4", 2)
+        )
         self.assertIsNone(modal_measure_duration(self.chords(spec)))
 
     def test_too_few_bars_has_no_modal_bar(self) -> None:

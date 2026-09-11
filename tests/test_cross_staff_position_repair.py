@@ -113,13 +113,17 @@ class TestRepairPositionDivergence(unittest.TestCase):
         def fork(staff_index: int, step: int, alt: int):
             return _staff(GOOD, "note_4 note_4 note_4", GOOD)
 
-        self.assertEqual(repair_position_divergence(self.staves, self.staves, self.margins, fork), {})
+        self.assertEqual(
+            repair_position_divergence(self.staves, self.staves, self.margins, fork), {}
+        )
 
     def test_a_failed_fork_is_survivable(self) -> None:
         def fork(staff_index: int, step: int, alt: int):
             return None
 
-        self.assertEqual(repair_position_divergence(self.staves, self.staves, self.margins, fork), {})
+        self.assertEqual(
+            repair_position_divergence(self.staves, self.staves, self.margins, fork), {}
+        )
 
     def test_agreeing_staves_are_never_forked(self) -> None:
         calls = []
@@ -154,9 +158,7 @@ class TestRepairPositionDivergence(unittest.TestCase):
 
         raw = list(self.staves)
         raw[1] = _staff(GOOD, GOOD)  # fewer measures than the filtered staff
-        out = repair_position_divergence(
-            self.staves, raw, [[(7, 0.5)] * len(s) for s in raw], fork
-        )
+        out = repair_position_divergence(self.staves, raw, [[(7, 0.5)] * len(s) for s in raw], fork)
         self.assertEqual(out, {})
         self.assertEqual(calls, [])
 
@@ -165,7 +167,6 @@ class TestRepairPositionDivergence(unittest.TestCase):
 
         def fork(staff_index: int, step: int, alt: int):
             calls.append(step)
-            return None
 
         repair_position_divergence(self.staves, self.staves, self.margins, fork, max_forks=2)
         self.assertEqual(len(calls), 2)

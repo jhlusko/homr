@@ -12,9 +12,14 @@ from training.omr_datasets.musicxml_text_ground_truth import (
 
 def _lyric(text: str, syllabic: str, verse: str = "1") -> dict:
     return {
-        "kind": "lyric", "text": text, "part_id": "P1", "measure_index": 0,
-        "syllabic": syllabic, "verse": verse,
+        "kind": "lyric",
+        "text": text,
+        "part_id": "P1",
+        "measure_index": 0,
+        "syllabic": syllabic,
+        "verse": verse,
     }
+
 
 _MUSICXML = """<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise>
@@ -151,7 +156,9 @@ class TestWordsFromSyllables(unittest.TestCase):
 class TestWordsByVerse(unittest.TestCase):
     def test_a_single_verse_reconstructs_the_same_as_words_from_syllables(self) -> None:
         entries = [
-            _lyric("Fried", "begin"), _lyric("li", "middle"), _lyric("cher", "end"),
+            _lyric("Fried", "begin"),
+            _lyric("li", "middle"),
+            _lyric("cher", "end"),
         ]
 
         self.assertEqual(words_by_verse(entries), {"1": ["Friedlicher"]})

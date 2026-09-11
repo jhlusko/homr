@@ -32,7 +32,6 @@ from training.architecture.transformer.tromr_arch import TrOMR
 from training.transformer.data_loader import DataLoader
 from training.transformer.train_structured_heads import load_pinned
 
-
 FIELDS = ("tie", "stem", "slur")
 
 
@@ -79,14 +78,18 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
-    tokens = [line.strip() for line in args.sample.read_text(encoding="utf-8").splitlines() if line.strip()]
+    tokens = [
+        line.strip()
+        for line in args.sample.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "crops").mkdir(exist_ok=True)
     config = Config()
     config.enable_structured_heads = True
     model = TrOMR(config)
     load_pinned(model, args.checkpoint)
-    assert model.decoder.structured_heads is not None
+    assert model.decoder.structured_heads is not None  # noqa: S101
     model.decoder.structured_heads.load_state_dict(
         torch.load(args.weights, map_location="cpu", weights_only=True), strict=True
     )
@@ -103,7 +106,9 @@ def main() -> None:
         key = f"pdmx_{number:02d}"
         crop = args.out / "crops" / f"{key}{image.suffix}"
         shutil.copy2(image, crop)
-        control = xml_to_string(generate_xml(XmlGeneratorArguments(), [symbols_for(None, decoded)], key))
+        control = xml_to_string(
+            generate_xml(XmlGeneratorArguments(), [symbols_for(None, decoded)], key)
+        )
         (args.out / f"{key}__none.musicxml").write_text(control, encoding="utf-8")
         record = {"id": key, "tokens": token_path, "crop": crop.name, "effects": {}}
         for field in FIELDS:
@@ -112,7 +117,10 @@ def main() -> None:
             )
             (args.out / f"{key}__{field}.musicxml").write_text(rendered, encoding="utf-8")
             tag = {"tie": "tie", "stem": "stem", "slur": "slur"}[field]
-            record["effects"][field] = {"control": count(control, tag), "with": count(rendered, tag)}
+            record["effects"][field] = {
+                "control": count(control, tag),
+                "with": count(rendered, tag),
+            }
         manifest.append(record)
     (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 

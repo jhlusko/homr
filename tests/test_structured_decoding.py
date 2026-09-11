@@ -46,9 +46,11 @@ def _notation(
 def _logits(name_to_class: dict[str, int], length: int, sizes: dict[str, int]) -> dict:
     """One-hot logits that pick the named class at every position."""
     return {
-        name: torch.nn.functional.one_hot(
-            torch.full((1, length), name_to_class.get(name, 0)), sizes[name]
-        ).float()
+        name: (
+            torch.nn.functional.one_hot(
+                torch.full((1, length), name_to_class.get(name, 0)), sizes[name]
+            ).float()
+        )
         for name in sizes
     }
 

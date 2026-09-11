@@ -22,9 +22,9 @@ robustness idiom `homr.cross_staff_consistency.check_measure_durations` and
 `propose_majority_position_corrections` already use for the equivalent cross-staff
 problem at inference/audit time.
 """
+
 import statistics
 from fractions import Fraction
-from pathlib import Path
 
 from training.omr_datasets.ossq_ground_truth import fragment_path, parse_ground_truth
 from training.omr_datasets.ossq_measure_length_audit import measure_length_by_part

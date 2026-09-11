@@ -30,6 +30,7 @@ specific divergence would have cleared propose_majority_position_corrections' ow
 (constant offset, 3+ agreeing majority) - so the narrow and broad results stay directly
 comparable.
 """
+
 import json
 import sys
 import traceback
@@ -38,12 +39,13 @@ from pathlib import Path
 
 sys.path.insert(0, "/workspace/b0/homr")
 
+import xml.etree.ElementTree as ET
+
 from homr.cross_staff_consistency import _cumulative_barline_positions, staves_by_system
 from homr.main import ProcessingConfig, detect_staffs_in_image
 from homr.staff_parsing import _plan_systems, parse_staffs
 from homr.transformer.configs import Config as TransformerConfig
 from training.omr_datasets.ossq_measure_length_audit import measure_length_by_part
-import xml.etree.ElementTree as ET
 
 
 def analyze_page(image_path: str) -> list[dict]:
@@ -84,17 +86,15 @@ def analyze_page(image_path: str) -> list[dict]:
                             majority_seq[i] - seq[i] for i in range(divergence_index, shortest)
                         }
                         constant_offset = len(offsets) == 1
-                        stage_b_eligible = (
-                            majority_n >= 3 and not tied and constant_offset
-                        )
+                        stage_b_eligible = majority_n >= 3 and not tied and constant_offset
                         results.append(
                             {
                                 "system_index": system_index,
                                 "staff_index": staff_index,
                                 "divergence_index_in_system": divergence_index,
-                                "absolute_measure_number": barlines_before_this_system
-                                + divergence_index
-                                + 1,
+                                "absolute_measure_number": (
+                                    barlines_before_this_system + divergence_index + 1
+                                ),
                                 "majority_size": majority_n,
                                 "majority_tied": tied,
                                 "constant_offset": constant_offset,
@@ -170,16 +170,30 @@ def main() -> None:
 
     print("\n===== SUMMARY (all barline-position divergences, not just Stage-B-eligible) =====")
     print(f"total divergences: {len(all_results)}")
-    print(f"  stage_b_eligible (3+ majority, constant offset): {bucket(lambda r: r['stage_b_eligible'])}")
-    print(f"  NOT stage_b_eligible (the messier, previously-unmeasured cases): {bucket(lambda r: not r['stage_b_eligible'])}")
+    print(
+        f"  stage_b_eligible (3+ majority, constant offset): "
+        f"{bucket(lambda r: r['stage_b_eligible'])}"
+    )
+    print(
+        f"  NOT stage_b_eligible (the messier, previously-unmeasured cases): "
+        f"{bucket(lambda r: not r['stage_b_eligible'])}"
+    )
     print()
     for label, pred in [
         ("all divergences", lambda r: True),
         ("stage_b_eligible only", lambda r: r["stage_b_eligible"]),
         ("NOT stage_b_eligible only", lambda r: not r["stage_b_eligible"]),
     ]:
-        disagrees = bucket(lambda r, pred=pred: pred(r) and r["ground_truth_check"] and not r["ground_truth_check"]["agrees"])
-        agrees = bucket(lambda r, pred=pred: pred(r) and r["ground_truth_check"] and r["ground_truth_check"]["agrees"])
+        disagrees = bucket(
+            lambda r, pred=pred: pred(r)
+            and r["ground_truth_check"]
+            and not r["ground_truth_check"]["agrees"]
+        )
+        agrees = bucket(
+            lambda r, pred=pred: pred(r)
+            and r["ground_truth_check"]
+            and r["ground_truth_check"]["agrees"]
+        )
         no_gt = bucket(lambda r, pred=pred: pred(r) and r["ground_truth_check"] is None)
         total = bucket(pred)
         print(f"{label} (n={total}): gt_disagrees={disagrees}, gt_agrees={agrees}, no_gt={no_gt}")

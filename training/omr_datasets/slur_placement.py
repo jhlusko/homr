@@ -161,9 +161,7 @@ def check_score(work: Path, score_id: str, whole: Path, alignment: Alignment) ->
         if len(expected) != len(found):
             alignment.length_mismatch += 1
             continue
-        divergence = next(
-            ((a, b) for a, b in zip(expected, found, strict=True) if a != b), None
-        )
+        divergence = next(((a, b) for a, b in zip(expected, found, strict=True) if a != b), None)
         if divergence is not None:
             alignment.signature_mismatch += 1
             alignment.first_divergence[f"{divergence[0]} -> {divergence[1]}"] += 1

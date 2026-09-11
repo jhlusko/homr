@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, "/workspace/b0/homr")
 
 from homr.music_xml_generator import XmlGeneratorArguments, generate_xml, xml_to_string
+from homr.transformer.vocabulary import sort_token_chords
 from training.omr_datasets.fetch_lieder_ground_truth import (
     fetch_mxl,
     load_lieder_file_tree,
@@ -37,7 +38,6 @@ from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
 from training.omr_datasets.system_count_alignment import aligned_ranges
-from homr.transformer.vocabulary import sort_token_chords
 from validation.ned_score import _events_for_parts
 
 
@@ -48,7 +48,9 @@ def _canonical(symbols: list) -> list:
     mismatches when nothing was actually lost - confirmed as a pure measurement
     artifact of this tool, not a real corpus or renderer defect: real training pairs are
     never written any other way."""
-    return [symbol for chord in sort_token_chords(symbols, keep_chord_symbol=True) for symbol in chord]
+    return [
+        symbol for chord in sort_token_chords(symbols, keep_chord_symbol=True) for symbol in chord
+    ]
 
 
 def main() -> None:
@@ -87,7 +89,7 @@ def main() -> None:
         try:
             musicxml = unzip_mxl(fetch_mxl(entry, key, mxl_tree or file_tree))
             voices = music_xml_string_to_tokens(musicxml.decode("utf-8"))
-        except Exception as exc:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             crops_failed += 1
             continue
 
@@ -169,28 +171,41 @@ def main() -> None:
                             f"rhythm={event[f'{side}_rhythm']!r} pitch={event[f'{side}_pitch']!r}"
                         )
 
-    print(f"scores sampled: {len(sample_ids)}, crops tested: {crops_tested}, "
-          f"failed to prepare: {crops_failed}")
-    print(f"EXACT roundtrip (every token matched): {crops_exact}/{crops_tested} "
-          f"({100*crops_exact/max(crops_tested,1):.1f}%)")
+    print(
+        f"scores sampled: {len(sample_ids)}, crops tested: {crops_tested}, "
+        f"failed to prepare: {crops_failed}"
+    )
+    print(
+        f"EXACT roundtrip (every token matched): {crops_exact}/{crops_tested} "
+        f"({100*crops_exact/max(crops_tested,1):.1f}%)"
+    )
     print(f"bar-count mismatches (gt vs roundtripped): {bar_count_mismatches}")
-    print(f"\nevent types across all mismatched crops:")
+    print("\nevent types across all mismatched crops:")
     for k, n in event_types.most_common():
         print(f"  {k:15s} {n:6,}")
-    print(f"\nmismatch categories (most common first):")
+    print("\nmismatch categories (most common first):")
     for k, n in field_mismatches.most_common(30):
         print(f"  {k:30s} {n:6,}")
         for ex in examples.get(k, [])[:3]:
             print(f"      {ex}")
 
     if args.report:
-        args.report.write_text(json.dumps({
-            "scores_sampled": len(sample_ids), "crops_tested": crops_tested,
-            "crops_exact": crops_exact, "crops_failed": crops_failed,
-            "bar_count_mismatches": bar_count_mismatches,
-            "event_types": dict(event_types), "field_mismatches": dict(field_mismatches),
-            "examples": examples,
-        }, indent=2), encoding="utf-8")
+        args.report.write_text(
+            json.dumps(
+                {
+                    "scores_sampled": len(sample_ids),
+                    "crops_tested": crops_tested,
+                    "crops_exact": crops_exact,
+                    "crops_failed": crops_failed,
+                    "bar_count_mismatches": bar_count_mismatches,
+                    "event_types": dict(event_types),
+                    "field_mismatches": dict(field_mismatches),
+                    "examples": examples,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
         print(f"\nwrote {args.report}")
 
 

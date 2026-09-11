@@ -128,8 +128,10 @@ def main() -> None:
         out_path.write_text(
             json.dumps({"score_id": score_id, "matches": matches}, indent=1), encoding="utf-8"
         )
-        print(f"{score_id}: {len(matches)} match(es) over {len(pages_of(work_dir))} page(s)",
-              flush=True)
+        print(
+            f"{score_id}: {len(matches)} match(es) over {len(pages_of(work_dir))} page(s)",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

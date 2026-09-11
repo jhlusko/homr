@@ -1,7 +1,6 @@
 import unittest
 
 from homr.transformer.structured_notation import AdvanceClass
-
 from homr.transformer.vocabulary import EncodedSymbol, empty
 from training.omr_datasets.staff_merging import create_chord_over_two_staffs
 
@@ -46,7 +45,11 @@ class TestAdvanceComputation(unittest.TestCase):
     """
 
     def _note(self, rhythm: str) -> EncodedSymbol:
-        from homr.transformer.structured_notation import NoteNotation, empty_beam_levels, empty_slur_slots
+        from homr.transformer.structured_notation import (
+            NoteNotation,
+            empty_beam_levels,
+            empty_slur_slots,
+        )
 
         notation = NoteNotation(
             beam_levels=empty_beam_levels(), stem="not_applicable", slurs=empty_slur_slots()
@@ -79,8 +82,8 @@ class TestAdvanceComputation(unittest.TestCase):
             self._advances([upper, lower]),
             [
                 ("note_4", "not_applicable"),  # upper q @0: not the group's LAST member
-                ("note_4.", "4"),              # group @0's last member: true gap = 1/4
-                ("note_4", "8"),               # group @24: true gap = 1/8, NOT 1/4
+                ("note_4.", "4"),  # group @0's last member: true gap = 1/4
+                ("note_4", "8"),  # group @24: true gap = 1/8, NOT 1/4
                 ("note_8", "not_applicable"),  # last onset of the measure: no next group
             ],
         )
@@ -102,7 +105,10 @@ class TestAdvanceComputation(unittest.TestCase):
         """Every existing caller that does not pass `divisions` must see no change at
         all - this is what makes adding the parameter safe to land without touching the
         kern converters that never learned it."""
-        from training.omr_datasets.staff_merging import EncodedSymbolWithPos, merge_upper_and_lower_staff
+        from training.omr_datasets.staff_merging import (
+            EncodedSymbolWithPos,
+            merge_upper_and_lower_staff,
+        )
 
         voice = [
             EncodedSymbolWithPos(0, self._note("note_4")),
@@ -121,9 +127,9 @@ class TestAdvanceComputation(unittest.TestCase):
         from training.omr_datasets.staff_merging import _quantize_advance
 
         self.assertEqual(str(_quantize_advance(0, 24)), "zero")
-        self.assertEqual(str(_quantize_advance(24, 24)), "4")   # quarter
-        self.assertEqual(str(_quantize_advance(12, 24)), "8")   # eighth
-        self.assertEqual(str(_quantize_advance(96, 24)), "1")   # whole
+        self.assertEqual(str(_quantize_advance(24, 24)), "4")  # quarter
+        self.assertEqual(str(_quantize_advance(12, 24)), "8")  # eighth
+        self.assertEqual(str(_quantize_advance(96, 24)), "1")  # whole
         self.assertEqual(str(_quantize_advance(36, 24)), "4.")  # dotted quarter
 
 
@@ -133,7 +139,11 @@ class TestAdvanceFromOwnDuration(unittest.TestCase):
     docstring for the real GrandStaff example this is built from)."""
 
     def _note(self, rhythm: str) -> EncodedSymbol:
-        from homr.transformer.structured_notation import NoteNotation, empty_beam_levels, empty_slur_slots
+        from homr.transformer.structured_notation import (
+            NoteNotation,
+            empty_beam_levels,
+            empty_slur_slots,
+        )
 
         notation = NoteNotation(
             beam_levels=empty_beam_levels(), stem="not_applicable", slurs=empty_slur_slots()
@@ -143,7 +153,10 @@ class TestAdvanceFromOwnDuration(unittest.TestCase):
     def test_bass_sixteenths_under_a_treble_quarter(self) -> None:
         """The real GrandStaff shape: bass plays four 16ths in the time of one treble
         quarter. Every group's advance should read 1/16 - a new onset every 16th."""
-        from training.omr_datasets.staff_merging import EncodedSymbolWithPos, merge_upper_and_lower_staff
+        from training.omr_datasets.staff_merging import (
+            EncodedSymbolWithPos,
+            merge_upper_and_lower_staff,
+        )
 
         treble = [EncodedSymbolWithPos(0, self._note("note_4"))]
         bass = [EncodedSymbolWithPos(i, self._note("note_16")) for i in range(4)]
@@ -163,7 +176,10 @@ class TestAdvanceFromOwnDuration(unittest.TestCase):
         )
 
     def test_a_solo_line_gets_its_own_duration_back(self) -> None:
-        from training.omr_datasets.staff_merging import EncodedSymbolWithPos, merge_upper_and_lower_staff
+        from training.omr_datasets.staff_merging import (
+            EncodedSymbolWithPos,
+            merge_upper_and_lower_staff,
+        )
 
         voice = [
             EncodedSymbolWithPos(0, self._note("note_8")),
@@ -182,7 +198,10 @@ class TestAdvanceFromOwnDuration(unittest.TestCase):
         )
 
     def test_divisions_and_advance_from_own_duration_are_mutually_exclusive(self) -> None:
-        from training.omr_datasets.staff_merging import EncodedSymbolWithPos, merge_upper_and_lower_staff
+        from training.omr_datasets.staff_merging import (
+            EncodedSymbolWithPos,
+            merge_upper_and_lower_staff,
+        )
 
         voice = [EncodedSymbolWithPos(0, self._note("note_4"))]
         with self.assertRaises(ValueError):

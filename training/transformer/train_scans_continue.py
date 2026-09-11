@@ -49,13 +49,16 @@ EPOCHS = 10
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--checkpoint", type=Path, required=True,
+        "--checkpoint",
+        type=Path,
+        required=True,
         help="The previous run's saved weights to continue from.",
     )
     args = parser.parse_args()
 
     ossq_count = sum(
-        1 for line in Path(OSSQ_SCANNED_INDEX).read_text(encoding="utf-8").splitlines()
+        1
+        for line in Path(OSSQ_SCANNED_INDEX).read_text(encoding="utf-8").splitlines()
         if line.strip()
     )
     counts = [ossq_count, IMSLP_COUNT, PDMX_REPLAY_COUNT]

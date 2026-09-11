@@ -78,7 +78,8 @@ class TestIsOffered(unittest.TestCase):
 class TestDecodeHead(unittest.TestCase):
     def test_a_confident_head_offers_no_alternatives(self) -> None:
         choice = decode_head(
-            "beam.level.1", peaked(BEAM_LEVEL_CLASSES, BeamLevelState.BEGIN),
+            "beam.level.1",
+            peaked(BEAM_LEVEL_CLASSES, BeamLevelState.BEGIN),
             BEAM_LEVEL_CLASSES,
         )
 
@@ -130,7 +131,8 @@ class TestDecodeHead(unittest.TestCase):
 
     def test_confidence_is_the_probability_not_the_logit(self) -> None:
         choice = decode_head(
-            "beam.level.1", peaked(BEAM_LEVEL_CLASSES, BeamLevelState.BEGIN, mass=0.90),
+            "beam.level.1",
+            peaked(BEAM_LEVEL_CLASSES, BeamLevelState.BEGIN, mass=0.90),
             BEAM_LEVEL_CLASSES,
         )
 
@@ -184,9 +186,7 @@ class TestDecodeNote(unittest.TestCase):
         self.assertEqual(prediction.notation.dynamic, DynamicMark.NONE)
 
     def test_advance_is_carried_to_the_renderer_policy(self) -> None:
-        prediction = decode_note(
-            {"advance.delta": peaked(ADVANCE_CLASSES, AdvanceClass.QUARTER)}
-        )
+        prediction = decode_note({"advance.delta": peaked(ADVANCE_CLASSES, AdvanceClass.QUARTER)})
 
         self.assertEqual(prediction.notation.advance, AdvanceClass.QUARTER)
 

@@ -91,8 +91,13 @@ def crop_syllables(record_path: Path, out_dir: Path) -> list[Crop]:
         path = out_dir / f"{system}-{index:03d}.png"
         cv2.imwrite(str(path), page[top:bottom, left:right])
         crops.append(
-            Crop(path, box["text"], box.get("syllabic", "single"), box.get("verse", "1"),
-                 score_of(system))
+            Crop(
+                path,
+                box["text"],
+                box.get("syllabic", "single"),
+                box.get("verse", "1"),
+                score_of(system),
+            )
         )
     return crops
 
@@ -173,9 +178,7 @@ def main() -> None:
     print(describe(train, valid))
 
     scripts = collections.Counter(
-        unicodedata.category(character)
-        for crop in train + valid
-        for character in crop.text
+        unicodedata.category(character) for crop in train + valid for character in crop.text
     )
     print("character categories: " + ", ".join(f"{k}={v:,}" for k, v in scripts.most_common(6)))
 

@@ -31,7 +31,10 @@ from training.omr_datasets.convert_ossq import (
 )
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import round_trips, write_sidecar
-from training.transformer.training_vocabulary import to_decoder_branches, token_lines_to_str
+from training.transformer.training_vocabulary import (
+    to_decoder_branches,
+    token_lines_to_str,
+)
 
 
 @dataclass(frozen=True)
@@ -51,7 +54,9 @@ def partition(root: Path, name: str) -> list[str]:
     listing = root / f"samples.{name}.txt"
     if not listing.is_file():
         return []
-    return [line.strip() for line in listing.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        line.strip() for line in listing.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def _write_example(score: Path, out_dir: Path, stem: str) -> tuple[Path | None, int]:

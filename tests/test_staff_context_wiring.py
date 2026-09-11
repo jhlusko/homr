@@ -92,7 +92,9 @@ class TestStaffContextEmbWiring(unittest.TestCase):
         with torch.no_grad():
             baseline = net(**batch)[0]
             with_profile_only = net(**batch, profile_context_emb=profile_bias)[0]
-            with_both = net(**batch, profile_context_emb=profile_bias, staff_context_emb=staff_bias)[0]
+            with_both = net(
+                **batch, profile_context_emb=profile_bias, staff_context_emb=staff_bias
+            )[0]
 
         self.assertFalse(torch.allclose(baseline, with_profile_only, atol=1e-4))
         self.assertFalse(torch.allclose(with_profile_only, with_both, atol=1e-4))

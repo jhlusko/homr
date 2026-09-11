@@ -61,8 +61,8 @@ def load_manifest(manifest_path: Path) -> list[dict]:
     review tool's own per-score grouping does).
     """
     entries = []
-    for line in manifest_path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
+    for raw_line in manifest_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
         if not line:
             continue
         image_path, tokens_path = line.split(",", 1)
@@ -275,7 +275,8 @@ class Handler(BaseHTTPRequestHandler):
             score_id = _safe_score_id(rest.removeprefix("/score/"))
             page = (
                 stage3_render_score_page(self.stage3_state, score_id, base_path="/text")
-                if score_id else None
+                if score_id
+                else None
             )
             if page is None:
                 self._send_html("unknown score id", status=404)
@@ -351,9 +352,7 @@ class Handler(BaseHTTPRequestHandler):
                 f'<tr><td><a href="/score/{score_id}">{score_id}</a></td>'
                 f'<td class="{css}">{done}/{total}</td></tr>'
             )
-        text_link = (
-            ' <a href="/text">Stage 3 text review &rarr;</a>' if self.stage3_state else ""
-        )
+        text_link = ' <a href="/text">Stage 3 text review &rarr;</a>' if self.stage3_state else ""
         self._send_html(
             INDEX_TEMPLATE.format(
                 rows="\n".join(rows) or "<tr><td>none found</td></tr>",
@@ -378,11 +377,17 @@ class Handler(BaseHTTPRequestHandler):
             current_judgment = f"(marked {record['judgment']})" if record else ""
             summary = _escape(pitch_summary(entry["tokens_path"]))
             tokens_text = _escape(Path(entry["tokens_path"]).read_text(encoding="utf-8"))
-            rendered = _HAS_RENDER.format(stem=stem) if self.state.rendered_path(stem) else _NO_RENDER
+            rendered = (
+                _HAS_RENDER.format(stem=stem) if self.state.rendered_path(stem) else _NO_RENDER
+            )
             pairs_html.append(
                 PAIR_TEMPLATE.format(
-                    stem=stem, css_class=css_class, summary=summary, tokens=tokens_text,
-                    current_judgment=current_judgment, rendered=rendered,
+                    stem=stem,
+                    css_class=css_class,
+                    summary=summary,
+                    tokens=tokens_text,
+                    current_judgment=current_judgment,
+                    rendered=rendered,
                 )
             )
         all_ids = self.state.score_ids()
@@ -434,33 +439,42 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--manifest", type=Path, required=True,
+        "--manifest",
+        type=Path,
+        required=True,
         help="extract_stage2_pairs.py's --manifest output.",
     )
     parser.add_argument(
-        "--judgments", type=Path, required=True,
+        "--judgments",
+        type=Path,
+        required=True,
         help="Where good/bad/unclear judgments are saved (created if missing).",
     )
     parser.add_argument(
-        "--rendered", type=Path,
+        "--rendered",
+        type=Path,
         help="render_stage2_tokens.py's --out dir - shows notation rendered from "
         "each pair's own tokens if given. Optional: a pair with no render yet just "
         "shows 'not rendered yet' instead of failing.",
     )
     parser.add_argument(
-        "--text-matches", type=Path,
+        "--text-matches",
+        type=Path,
         help="ocr_first_text_ground_truth.py's --out dir - mounts "
         "stage3_text_review_server.py's own review pages under /text in this same "
         "process/port if given (so reviewing both efforts needs only one forwarded "
         "port). Omit to skip the /text section entirely.",
     )
     parser.add_argument(
-        "--text-judgments", type=Path,
+        "--text-judgments",
+        type=Path,
         help="Where the /text section's good/bad/unclear judgments are saved. "
         "Required if --text-matches is given.",
     )
     parser.add_argument(
-        "--text-pngs", type=Path, nargs="+",
+        "--text-pngs",
+        type=Path,
+        nargs="+",
         help="One or more imslp_pngs dirs for the /text section's crops. "
         "Required if --text-matches is given.",
     )
@@ -473,9 +487,7 @@ def main() -> None:
         Handler.stage3_state = Stage3ReviewState(
             args.text_matches, args.text_judgments, args.text_pngs
         )
-        text_note = (
-            f" + {len(Handler.stage3_state.entries)} text match(es) at /text"
-        )
+        text_note = f" + {len(Handler.stage3_state.entries)} text match(es) at /text"
     server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     print(
         f"reviewing {len(Handler.state.entries)} pair(s) across "

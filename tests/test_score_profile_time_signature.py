@@ -2,7 +2,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from training.omr_datasets.score_profile_pairing import _find_score_musicxml, _profile_for_score
+from training.omr_datasets.score_profile_pairing import (
+    _find_score_musicxml,
+    _profile_for_score,
+)
 from training.omr_datasets.score_profile_time_signature import (
     parse_ossq_stem_full,
     time_signature_for_sample,
@@ -80,24 +83,18 @@ class TestTimeSignatureForSample(unittest.TestCase):
     def test_an_unresolvable_score_resolves_to_empty(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             _make_corpus(tmp)
-            self.assertEqual(
-                time_signature_for_sample(tmp, "nonexistent_0005_0001_1"), ""
-            )
+            self.assertEqual(time_signature_for_sample(tmp, "nonexistent_0005_0001_1"), "")
 
     def test_no_alignment_metadata_for_this_system_resolves_to_empty(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             _make_corpus(tmp)
             # system_index 5 (stem system "0006") has no systemwise metadata at all.
-            self.assertEqual(
-                time_signature_for_sample(tmp, "sq123_0005_0006_1"), ""
-            )
+            self.assertEqual(time_signature_for_sample(tmp, "sq123_0005_0006_1"), "")
 
     def test_an_out_of_range_part_index_resolves_to_empty(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             _make_corpus(tmp)
-            self.assertEqual(
-                time_signature_for_sample(tmp, "sq123_0005_0001_9"), ""
-            )
+            self.assertEqual(time_signature_for_sample(tmp, "sq123_0005_0001_9"), "")
 
 
 if __name__ == "__main__":

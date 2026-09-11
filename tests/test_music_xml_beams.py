@@ -1,8 +1,24 @@
 import unittest
 import xml.etree.ElementTree as ET
 
-from homr.music_xml_generator import BEAM_VALUES, build_beams, build_note_or_rest, build_slurs, build_stem, build_tied_notations, build_ties, ConversionState
-from homr.transformer.structured_notation import BeamLevelState, NoteNotation, SlurEvent, SlurSide, StemDirection, TieState
+from homr.music_xml_generator import (
+    BEAM_VALUES,
+    ConversionState,
+    build_beams,
+    build_note_or_rest,
+    build_slurs,
+    build_stem,
+    build_tied_notations,
+    build_ties,
+)
+from homr.transformer.structured_notation import (
+    BeamLevelState,
+    NoteNotation,
+    SlurEvent,
+    SlurSide,
+    StemDirection,
+    TieState,
+)
 from homr.transformer.vocabulary import EncodedSymbol
 
 
@@ -37,12 +53,8 @@ class TestBuildBeams(unittest.TestCase):
     def test_hooks_use_musicxml_spelling_not_ours(self) -> None:
         # Our labels are snake_case; MusicXML wants a space. Writing "forward_hook"
         # produces a file MuseScore silently ignores.
-        self.assertEqual(
-            _beams(_note_with(BeamLevelState.FORWARD_HOOK)), [("1", "forward hook")]
-        )
-        self.assertEqual(
-            _beams(_note_with(BeamLevelState.BACKWARD_HOOK)), [("1", "backward hook")]
-        )
+        self.assertEqual(_beams(_note_with(BeamLevelState.FORWARD_HOOK)), [("1", "forward hook")])
+        self.assertEqual(_beams(_note_with(BeamLevelState.BACKWARD_HOOK)), [("1", "backward hook")])
 
     def test_a_flag_writes_no_beam(self) -> None:
         # MusicXML has no element meaning "flagged"; absence is how it is expressed, and
@@ -124,9 +136,7 @@ class TestMixedSidecarExport(unittest.TestCase):
 
         self.assertEqual(note.findtext("stem"), "down")
         self.assertEqual([(x.get("type")) for x in note.findall("tie")], ["start"])
-        self.assertEqual(
-            [(x.get("type")) for x in note.findall("notations/tied")], ["start"]
-        )
+        self.assertEqual([(x.get("type")) for x in note.findall("notations/tied")], ["start"])
 
     def test_structured_slur_is_emitted_when_core_has_no_slur_token(self) -> None:
         symbol = _note_with(BeamLevelState.NOT_APPLICABLE)

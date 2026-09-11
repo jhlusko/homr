@@ -193,7 +193,7 @@ class TestDetectorPatches(unittest.TestCase):
         self.assertLess(hits, 20)
 
     def test_a_missing_file_raises_rather_than_returning_something_wrong(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory():
             dataset = DetectorPatches([Sample("absent.png", "absent.mask.png")])
 
             with self.assertRaises(FileNotFoundError):

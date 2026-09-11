@@ -9,8 +9,8 @@ from training.omr_datasets.lieder_voice import (
     join,
     piano_part_id,
     read_mxl,
-    slice_part,
     reassign_ids,
+    slice_part,
     system_measures,
     voice_parts,
 )
@@ -118,9 +118,7 @@ class TestSlicePart(unittest.TestCase):
     def test_the_lyrics_come_with_them(self) -> None:
         sliced = slice_part(voice_parts(_full())[0], ("1", "2"))
 
-        self.assertEqual(
-            [t.text for t in sliced.findall(".//lyric/text")], ["ter", "nel"]
-        )
+        self.assertEqual([t.text for t in sliced.findall(".//lyric/text")], ["ter", "nel"])
 
     def test_a_missing_measure_is_refused_rather_than_dropped(self) -> None:
         # This is the 27.11 failure in a new place: a voice one measure short would put
@@ -176,9 +174,7 @@ class TestJoin(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             result = join(_sample(Path(tmp)), _full())
 
-            declared = [
-                entry.get("id") for entry in result.score.getroot().iter("score-part")
-            ]
+            declared = [entry.get("id") for entry in result.score.getroot().iter("score-part")]
 
         self.assertEqual(sorted(declared), ["P1", "P2"])
 
@@ -231,15 +227,16 @@ class TestPartIdCollision(unittest.TestCase):
 
     def test_renumbering_pairs_entries_with_parts_by_position(self) -> None:
         combined = ET.fromstring(
-            '<score-partwise><part-list>'
+            "<score-partwise><part-list>"
             '<score-part id="X"/><score-part id="Y"/></part-list>'
             '<part id="X"/><part id="Y"/></score-partwise>'
         )
 
         reassign_ids(combined)
 
-        self.assertEqual([e.get("id") for e in combined.findall("part-list/score-part")],
-                         ["P1", "P2"])
+        self.assertEqual(
+            [e.get("id") for e in combined.findall("part-list/score-part")], ["P1", "P2"]
+        )
         self.assertEqual([p.get("id") for p in combined.findall("part")], ["P1", "P2"])
 
     def test_the_published_score_is_not_renamed(self) -> None:

@@ -347,8 +347,11 @@ class TestApplyArticulationProposal(unittest.TestCase):
     def test_replaces_exactly_the_proposed_positions_articulation(self) -> None:
         staff = [_note("note_4", "C5", "accent"), _note("note_4", "D5")]
         proposal = ArticulationRepairProposal(
-            staff_index=0, position=0, current_articulation="accent",
-            proposed_articulation="staccato", reason="test",
+            staff_index=0,
+            position=0,
+            current_articulation="accent",
+            proposed_articulation="staccato",
+            reason="test",
         )
 
         corrected = apply_articulation_proposal(staff, proposal)

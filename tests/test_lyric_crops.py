@@ -19,18 +19,32 @@ from training.omr_datasets.lyric_crops import (
 def _system(directory: Path, name: str, boxes: list[dict]) -> Path:
     page = np.full((200, 400, 3), 255, dtype=np.uint8)
     for box in boxes:
-        page[box["top"]:box["bottom"], box["left"]:box["right"]] = 0
+        page[box["top"] : box["bottom"], box["left"] : box["right"]] = 0
     cv2.imwrite(str(directory / f"{name}-1.png"), page)
-    record = {"image": f"{name}-1.png", "width": 400, "height": 200, "dpi": 300,
-              "lyrics": boxes, "text_boxes": {}, "extenders": []}
+    record = {
+        "image": f"{name}-1.png",
+        "width": 400,
+        "height": 200,
+        "dpi": 300,
+        "lyrics": boxes,
+        "text_boxes": {},
+        "extenders": [],
+    }
     path = directory / f"{name}.boxes.json"
     path.write_text(json.dumps(record), encoding="utf-8")
     return path
 
 
 def _box(text: str, left: int, top: int = 50) -> dict:
-    return {"text": text, "syllabic": "single", "verse": "1",
-            "left": left, "top": top, "right": left + 30, "bottom": top + 20}
+    return {
+        "text": text,
+        "syllabic": "single",
+        "verse": "1",
+        "left": left,
+        "top": top,
+        "right": left + 30,
+        "bottom": top + 20,
+    }
 
 
 class TestScoreOf(unittest.TestCase):
@@ -149,10 +163,12 @@ class TestDescribe(unittest.TestCase):
     def test_it_reports_how_much_of_valid_is_unseen(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
-            train = crop_syllables(_system(directory, "a_p1-s1", [_box("known", 10)]),
-                                   directory / "t")
-            valid = crop_syllables(_system(directory, "b_p1-s1", [_box("unseen", 10)]),
-                                   directory / "v")
+            train = crop_syllables(
+                _system(directory, "a_p1-s1", [_box("known", 10)]), directory / "t"
+            )
+            valid = crop_syllables(
+                _system(directory, "b_p1-s1", [_box("unseen", 10)]), directory / "v"
+            )
 
             report = describe(train, valid)
 

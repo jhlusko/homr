@@ -47,9 +47,7 @@ def _score_bucket(score_id: str) -> float:
 #: reference line.  They are the cases the whole-score DP was built for, and the
 #: cases a naive ordinal pairing gets wrong, so a validation set that contains none
 #: of them cannot detect the defect this corpus was rebuilt to remove.
-RARE_TOPOLOGIES = frozenset(
-    {"many-to-many", "reference-line-split", "reference-lines-merged"}
-)
+RARE_TOPOLOGIES = frozenset({"many-to-many", "reference-line-split", "reference-lines-merged"})
 
 
 def topology_by_system(score_report: dict) -> dict[int, str]:
@@ -158,7 +156,10 @@ def split_by_score(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--manifest", type=Path, required=True, nargs="+",
+        "--manifest",
+        type=Path,
+        required=True,
+        nargs="+",
         help="One or more manifests to combine and split (e.g. the extracted and "
         "recovered manifests together).",
     )
@@ -166,7 +167,8 @@ def main() -> None:
     parser.add_argument("--val-out", type=Path, required=True)
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument(
-        "--alignment", type=Path,
+        "--alignment",
+        type=Path,
         help="align_lieder_systems output. Stratifies the split so validation "
         "carries the corpus's non-one-to-one systems instead of possibly none.",
     )

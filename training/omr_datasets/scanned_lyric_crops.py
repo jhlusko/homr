@@ -145,10 +145,10 @@ def describe(train: list[ScannedCrop], valid: list[ScannedCrop]) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--matches", type=Path, required=True,
-                        help="A lieder_vocal_text directory of <score>.json.")
-    parser.add_argument("--pages", type=Path,
-                        help="Page images root; defaults to <matches>/pages.")
+    parser.add_argument(
+        "--matches", type=Path, required=True, help="A lieder_vocal_text directory of <score>.json."
+    )
+    parser.add_argument("--pages", type=Path, help="Page images root; defaults to <matches>/pages.")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--valid-share", type=float, default=0.15)
     args = parser.parse_args()

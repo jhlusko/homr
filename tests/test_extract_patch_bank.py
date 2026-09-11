@@ -6,7 +6,12 @@ import cv2
 import numpy as np
 
 from training.ocr.detector_masks import CLASS_INDEX
-from training.ocr.detector_patches import PATCH_SIZE, PreExtractedPatches, Sample, read_index
+from training.ocr.detector_patches import (
+    PATCH_SIZE,
+    PreExtractedPatches,
+    Sample,
+    read_index,
+)
 from training.ocr.extract_patch_bank import _draw_one, seed_for_image
 
 

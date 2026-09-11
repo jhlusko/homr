@@ -88,8 +88,12 @@ class ReviewState:
         self.scanned = read_index(scanned_index)
         self.judgments_path = judgments_path
         self.rendered_dir = rendered_dir
-        self.synthetic_predictions = read_predictions(synthetic_predictions) if synthetic_predictions else {}
-        self.scanned_predictions = read_predictions(scanned_predictions) if scanned_predictions else {}
+        self.synthetic_predictions = (
+            read_predictions(synthetic_predictions) if synthetic_predictions else {}
+        )
+        self.scanned_predictions = (
+            read_predictions(scanned_predictions) if scanned_predictions else {}
+        )
 
     def staves(self) -> list[str]:
         """Shared staves, worst scanned accuracy first.
@@ -318,15 +322,20 @@ def main() -> None:
     parser.add_argument("--synthetic-predictions", type=Path)
     parser.add_argument("--scanned-predictions", type=Path)
     parser.add_argument(
-        "--rendered", type=Path,
+        "--rendered",
+        type=Path,
         help="Directory of label renderings from render_ossq_labels.py.",
     )
     parser.add_argument("--port", type=int, default=8793)
     args = parser.parse_args()
 
     Handler.state = ReviewState(
-        args.synthetic_index, args.scanned_index, args.judgments,
-        args.synthetic_predictions, args.scanned_predictions, args.rendered,
+        args.synthetic_index,
+        args.scanned_index,
+        args.judgments,
+        args.synthetic_predictions,
+        args.scanned_predictions,
+        args.rendered,
     )
     print(
         f"reviewing {len(Handler.state.staves()):,} paired staves "

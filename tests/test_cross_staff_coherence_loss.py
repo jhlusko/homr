@@ -118,7 +118,15 @@ class TestCrossStaffCoherenceLoss(unittest.TestCase):
         rhythmso = torch.tensor([tokens])
         # Second measure predicted wildly wrong - should not move the loss at all,
         # since only the first (in-range) barline is compared.
-        wrong_second_measure = [_NOTE_4, _NOTE_4, _NOTE_4, _NOTE_4, _BARLINE, *([_NOTE_8] * 4), _BARLINE]
+        wrong_second_measure = [
+            _NOTE_4,
+            _NOTE_4,
+            _NOTE_4,
+            _NOTE_4,
+            _BARLINE,
+            *([_NOTE_8] * 4),
+            _BARLINE,
+        ]
         rhythmsp = _one_hot_logits(wrong_second_measure)
         mask = torch.ones(1, len(tokens))
         curve = torch.tensor([[1.0] + [0.0] * 31])

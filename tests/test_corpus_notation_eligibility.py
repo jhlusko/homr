@@ -111,7 +111,7 @@ class TestConvertersImportWhatTheyUse(unittest.TestCase):
             '<score-partwise version="3.1"><part-list><score-part id="P1">'
             "<part-name>P</part-name></score-part></part-list>"
             '<part id="P1"><measure number="1"><attributes><divisions>1</divisions>'
-            '<clef><sign>G</sign><line>2</line></clef></attributes>'
+            "<clef><sign>G</sign><line>2</line></clef></attributes>"
             "<note><pitch><step>C</step><octave>5</octave></pitch>"
             "<duration>1</duration><type>quarter</type></note></measure></part>"
             "</score-partwise>"

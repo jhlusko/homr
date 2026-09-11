@@ -76,18 +76,20 @@ def main() -> None:
     parser.add_argument("--matches", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument(
-        "--score-ids", type=Path,
+        "--score-ids",
+        type=Path,
         help="Restrict to these scores, e.g. a validation split's own ids.",
     )
     parser.add_argument(
-        "--index-out", type=Path,
+        "--index-out",
+        type=Path,
         help="Write an index naming the symlinked pages. Required in practice: "
-             "`detector_box_eval` keys ground truth on the path recorded in the "
-             "boxes.json (which resolves next to it) and looks it up by the path in "
-             "the index. Handing it the corpus's own index instead pairs two different "
-             "spellings of the same page, matches nothing, and reports 0.0% across "
-             "every class with `gt boxes = 0` - a total failure that looks like a "
-             "uselessly bad model.",
+        "`detector_box_eval` keys ground truth on the path recorded in the "
+        "boxes.json (which resolves next to it) and looks it up by the path in "
+        "the index. Handing it the corpus's own index instead pairs two different "
+        "spellings of the same page, matches nothing, and reports 0.0% across "
+        "every class with `gt boxes = 0` - a total failure that looks like a "
+        "uselessly bad model.",
     )
     args = parser.parse_args()
 

@@ -168,15 +168,15 @@ class TestStaffToPartBySystem(unittest.TestCase):
         # from this page's only system) contributes no chunks at all, which is exactly
         # what an empty symbol list means to split_by_system.
         voices = [
-            [EncodedSymbol(f"clef_{clef_by_voice[voice]}"), EncodedSymbol("newline")]
-            if voice in clef_by_voice
-            else []
+            (
+                [EncodedSymbol(f"clef_{clef_by_voice[voice]}"), EncodedSymbol("newline")]
+                if voice in clef_by_voice
+                else []
+            )
             for voice in range(4)
         ]
 
-        results = findings_by_page(
-            voices, presence, staff_to_part_by_system(QUARTET, presence)
-        )
+        results = findings_by_page(voices, presence, staff_to_part_by_system(QUARTET, presence))
 
         self.assertEqual(results, [[]])
 

@@ -46,9 +46,7 @@ class TestDescribe(unittest.TestCase):
         # The priority row must not hide what was given up - both totals are reported.
         totals = _totals(Lyrics=(90, 100, 100), Tempo=(1, 10_000, 10))
 
-        overall_line = [
-            ln for ln in describe(totals).splitlines() if ln.startswith("overall")
-        ][0]
+        overall_line = [ln for ln in describe(totals).splitlines() if ln.startswith("overall")][0]
 
         self.assertIn("0.9%", overall_line)
 

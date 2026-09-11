@@ -21,7 +21,6 @@ reason entirely.
 
 import argparse
 import json
-import statistics
 from collections import defaultdict
 from pathlib import Path
 
@@ -37,15 +36,13 @@ def group_by_score(rows: list[dict]) -> dict[str, list[dict]]:
     return by_score
 
 
-def targeted_candidates(
-    rows: list[dict], min_score_exact_fraction: float = 0.7
-) -> list[dict]:
+def targeted_candidates(rows: list[dict], min_score_exact_fraction: float = 0.7) -> list[dict]:
     """One row per *mismatching system*, restricted to scores whose other systems
     mostly agree - the targeted, "this specific page is probably wrong" list, not
     a blanket "this whole score scored low" list.
     """
     candidates = []
-    for score_id, score_rows in group_by_score(rows).items():
+    for _score_id, score_rows in group_by_score(rows).items():
         exact = sum(1 for row in score_rows if row["detected"] == row["ground_truth"])
         total = len(score_rows)
         if total == 0 or exact / total < min_score_exact_fraction:
@@ -62,7 +59,9 @@ def main() -> None:
         "--rows", type=Path, required=True, help="compare_bar_counts.py's --rows-out file."
     )
     parser.add_argument(
-        "--min-score-exact-fraction", type=float, default=0.7,
+        "--min-score-exact-fraction",
+        type=float,
+        default=0.7,
         help="Only surface mismatches from scores whose other systems agree at "
         "least this often - below that, the whole score is suspect, not one page.",
     )
@@ -72,15 +71,19 @@ def main() -> None:
     rows = load_rows(args.rows)
     candidates = targeted_candidates(rows, args.min_score_exact_fraction)
 
-    print(f"{len(candidates)} targeted review candidate(s) "
-          f"(from scores with >= {args.min_score_exact_fraction:.0%} of systems agreeing)")
+    print(
+        f"{len(candidates)} targeted review candidate(s) "
+        f"(from scores with >= {args.min_score_exact_fraction:.0%} of systems agreeing)"
+    )
 
     first_or_last = sum(1 for c in candidates if c["is_first_page"] or c["is_last_page"])
     print(f"{first_or_last}/{len(candidates)} are on a piece's first or last page")
 
     candidates.sort(key=lambda c: (c["score_id"], c["page_index"], c["system_index"]))
     for c in candidates:
-        position = "first page" if c["is_first_page"] else "last page" if c["is_last_page"] else "middle"
+        position = (
+            "first page" if c["is_first_page"] else "last page" if c["is_last_page"] else "middle"
+        )
         print(
             f"  {c['score_id']} / {c['page_image']} / system {c['system_index']} "
             f"({position}): detected {c['detected']}, ground truth {c['ground_truth']} "

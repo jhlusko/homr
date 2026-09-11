@@ -80,11 +80,13 @@ class TestSymbolsFrom(unittest.TestCase):
 
     def test_a_symbol_is_rebuilt_per_position(self) -> None:
         from training.omr_datasets.make_checkpoint_diff_page import symbols_from
+
         got = symbols_from(self._record(["note_4"], ["note_8"]), "predicted")
         self.assertEqual([s.rhythm for s in got], ["note_8"])
 
     def test_the_reference_side_is_selectable(self) -> None:
         from training.omr_datasets.make_checkpoint_diff_page import symbols_from
+
         got = symbols_from(self._record(["note_4"], ["note_8"]), "reference")
         self.assertEqual([s.rhythm for s in got], ["note_4"])
 
@@ -92,6 +94,7 @@ class TestSymbolsFrom(unittest.TestCase):
         """A padded slot marks an absence; engraving it would put a nonsense symbol
         into the rendered score."""
         from training.omr_datasets.make_checkpoint_diff_page import PAD, symbols_from
+
         rec = self._record(["note_4", PAD], ["note_4", PAD + "p"])
         self.assertEqual(len(symbols_from(rec, "predicted")), 1)
         self.assertEqual(len(symbols_from(rec, "reference")), 1)

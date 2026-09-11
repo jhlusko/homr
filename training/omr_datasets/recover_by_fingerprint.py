@@ -60,7 +60,11 @@ from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
-from training.transformer.training_vocabulary import max_tuplet_ratio, calc_ratio_of_tuplets, token_lines_to_str
+from training.transformer.training_vocabulary import (
+    calc_ratio_of_tuplets,
+    max_tuplet_ratio,
+    token_lines_to_str,
+)
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -142,8 +146,12 @@ def main() -> None:
     manifest_lines: list[str] = []
     records: list[dict] = []
     counts = {
-        "attempted": 0, "trusted": 0, "written": 0, "rejected": 0,
-        "no_notes": 0, "disagreement": 0,
+        "attempted": 0,
+        "trusted": 0,
+        "written": 0,
+        "rejected": 0,
+        "no_notes": 0,
+        "disagreement": 0,
     }
 
     for score_id in score_ids:
@@ -260,10 +268,15 @@ def main() -> None:
                     counts["rejected"] += 1
                     records.append(
                         {
-                            "stem": p["stem"], "score_id": score_id, "system": position,
-                            "voice": p["voice"], "prior_status": item.get("status"),
-                            "prior_margin": item.get("margin"), "predicted_notes": p["notes"],
-                            "match": p["match"], "outcome": "no trusted match in system",
+                            "stem": p["stem"],
+                            "score_id": score_id,
+                            "system": position,
+                            "voice": p["voice"],
+                            "prior_status": item.get("status"),
+                            "prior_margin": item.get("margin"),
+                            "predicted_notes": p["notes"],
+                            "match": p["match"],
+                            "outcome": "no trusted match in system",
                         }
                     )
                 continue
@@ -273,13 +286,15 @@ def main() -> None:
                 own = p["match"] if p["trusted"] else None
                 # A staff that read cleanly on its own but landed somewhere else is a
                 # genuine disagreement - record it rather than silently overriding.
-                disagrees = bool(
-                    own and (own["start_measure"], own["end_measure"]) != (start, end)
-                )
+                disagrees = bool(own and (own["start_measure"], own["end_measure"]) != (start, end))
                 record = {
-                    "stem": p["stem"], "score_id": score_id, "system": position,
-                    "voice": p["voice"], "prior_status": item.get("status"),
-                    "prior_margin": item.get("margin"), "predicted_notes": p["notes"],
+                    "stem": p["stem"],
+                    "score_id": score_id,
+                    "system": position,
+                    "voice": p["voice"],
+                    "prior_status": item.get("status"),
+                    "prior_margin": item.get("margin"),
+                    "predicted_notes": p["notes"],
                     "match": p["match"],
                     "range_source": "own" if p is best else f"system voice v{best['voice']}",
                     "sibling_disagreement": disagrees,

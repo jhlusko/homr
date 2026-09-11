@@ -22,6 +22,8 @@ from homr.music_xml_generator import (
     stated_numerator_contradicts_bars,
 )
 from homr.transformer.vocabulary import TIME_SIGNATURE_BEATS_PREFIX
+from training.omr_datasets.audit_clean_stage2_pairs import MEASURE_DIVIDERS
+from training.omr_datasets.audit_label_consistency import is_single_staff, overfull_bars
 from training.omr_datasets.convert_lieder import (
     contains_only_supported_clefs,
     is_grandstaff,
@@ -41,10 +43,12 @@ from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
-from training.omr_datasets.audit_clean_stage2_pairs import MEASURE_DIVIDERS
-from training.omr_datasets.audit_label_consistency import is_single_staff, overfull_bars
 from training.omr_datasets.system_count_alignment import aligned_ranges
-from training.transformer.training_vocabulary import max_tuplet_ratio, calc_ratio_of_tuplets, token_lines_to_str
+from training.transformer.training_vocabulary import (
+    calc_ratio_of_tuplets,
+    max_tuplet_ratio,
+    token_lines_to_str,
+)
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -63,14 +67,18 @@ def pick_png_root(roots: list[Path], detected: list[dict]) -> Path | None:
 
 
 def quarantine_recovered(source: Path, destination: Path, report_path: Path | None) -> int:
-    lines = [line.strip() for line in source.read_text(encoding="utf-8").splitlines() if line.strip()]
+    lines = [
+        line.strip() for line in source.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
     if report_path:
         report_path.write_text(
             json.dumps(
                 {
-                    "reason": "model-derived partial-span labels; excluded from training and evaluation",
+                    "reason": (
+                        "model-derived partial-span labels; excluded from training and evaluation"
+                    ),
                     "recoverable_files_deleted": False,
                     "pairs": len(lines),
                     "source_manifest": str(source),
@@ -94,8 +102,9 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
-    parser.add_argument("--overfull-out", type=Path,
-                        help="Where to quarantine pairs with an overfull bar.")
+    parser.add_argument(
+        "--overfull-out", type=Path, help="Where to quarantine pairs with an overfull bar."
+    )
     parser.add_argument("--overfull-manifest", type=Path)
     parser.add_argument("--recovered-manifest", type=Path)
     parser.add_argument("--quarantine-manifest", type=Path)
@@ -194,7 +203,8 @@ def main() -> None:
                 modal = modal_measure_duration(add_tuplet_start_stop(group_into_chords(cleaned)))
                 if stated_numerator_contradicts_bars(cleaned, modal):
                     cleaned = [
-                        symbol for symbol in cleaned
+                        symbol
+                        for symbol in cleaned
                         if not symbol.rhythm.startswith(TIME_SIGNATURE_BEATS_PREFIX)
                     ]
                     stale_numerators += 1
@@ -235,19 +245,25 @@ def main() -> None:
                         image_path = args.overfull_out / f"{stem}.png"
                         tokens_path = args.overfull_out / f"{stem}.tokens"
                         crop = page.crop(
-                            (box["left"], box["top"],
-                             box["left"] + box["width"], box["top"] + box["height"])
+                            (
+                                box["left"],
+                                box["top"],
+                                box["left"] + box["width"],
+                                box["top"] + box["height"],
+                            )
                         )
                         crop.save(image_path)
                         tokens_path.write_text(token_lines_to_str(cleaned), encoding="utf-8")
                         write_sidecar(tokens_path, cleaned)
                         overfull_lines.append(f"{image_path},{tokens_path}")
-                        overfull_detail.append({"stem": stem, "bars": overfull,
-                                                "measures": end - start})
+                        overfull_detail.append(
+                            {"stem": stem, "bars": overfull, "measures": end - start}
+                        )
                     overfull_skipped += 1
                     continue
                 divider_count = sum(
-                    1 for line in token_lines_to_str(cleaned).splitlines()
+                    1
+                    for line in token_lines_to_str(cleaned).splitlines()
                     if line.split() and line.split()[0] in MEASURE_DIVIDERS
                 )
                 if divider_count != end - start:

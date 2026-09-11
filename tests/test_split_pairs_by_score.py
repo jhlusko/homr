@@ -28,8 +28,7 @@ class TestRareTopologiesOfScore(unittest.TestCase):
         self.assertEqual(rare_topologies_of_score(lines, self.TOPO), {})
 
     def test_each_scores_own_rare_kinds_are_reported(self) -> None:
-        lines = ["/p/A-sys1-v0.png,/p/A-sys1-v0.tokens",
-                 "/p/B-sys0-v0.png,/p/B-sys0-v0.tokens"]
+        lines = ["/p/A-sys1-v0.png,/p/A-sys1-v0.tokens", "/p/B-sys0-v0.png,/p/B-sys0-v0.tokens"]
         self.assertEqual(
             rare_topologies_of_score(lines, self.TOPO),
             {"A": frozenset({"many-to-many"}), "B": frozenset({"reference-line-split"})},
@@ -53,8 +52,11 @@ class TestSplit(unittest.TestCase):
         lines = lines_for({f"S{i}": 3 for i in range(40)})
         _, val = split_by_score(lines, 0.1)
         val_scores = {score_of(x) for x in val}
-        rare = {s: frozenset({"many-to-many"})
-                for s in (f"S{i}" for i in range(40)) if s not in val_scores}
+        rare = {
+            s: frozenset({"many-to-many"})
+            for s in (f"S{i}" for i in range(40))
+            if s not in val_scores
+        }
         self.assertTrue(rare, "expected some scores outside validation")
         # Those same scores DO reach validation once the split is told about them.
         _, val2 = split_by_score(lines, 0.1, rare_by_score=rare)
@@ -64,8 +66,9 @@ class TestSplit(unittest.TestCase):
         rare = {"S3": frozenset({"many-to-many"}), "S7": frozenset({"many-to-many"})}
         lines = lines_for({f"S{i}": 3 for i in range(40)})
         _, val = split_by_score(lines, 0.1, rare_by_score=rare)
-        self.assertTrue(set(rare) & {score_of(x) for x in val},
-                        "a rare-topology score must reach validation")
+        self.assertTrue(
+            set(rare) & {score_of(x) for x in val}, "a rare-topology score must reach validation"
+        )
 
     def test_a_small_rare_stratum_still_yields_a_validation_score(self) -> None:
         """18 rare scores at 10% can hash to none; the guarantee must not depend
@@ -95,8 +98,7 @@ class TestEachRareKindReachesValidation(unittest.TestCase):
     def test_both_kinds_get_their_own_stratum(self) -> None:
         """A single rare/not-rare split gave validation four reference-line-split
         pairs and zero many-to-many.  Each kind needs its own stratum."""
-        rare = {"M1": frozenset({"many-to-many"}),
-                "R1": frozenset({"reference-line-split"})}
+        rare = {"M1": frozenset({"many-to-many"}), "R1": frozenset({"reference-line-split"})}
         lines = lines_for({"M1": 3, "R1": 3, **{f"S{i}": 3 for i in range(40)}})
         _, val = split_by_score(lines, 0.0001, rare_by_score=rare)
         val_scores = {score_of(x) for x in val}

@@ -11,6 +11,7 @@ protects the rest of the vocabulary from a narrowly targeted update.
 import argparse
 from pathlib import Path
 
+from training.omr_datasets.convert_pdmx import pdmx_train_index
 from training.transformer.train import train_transformer
 from training.transformer.train_scans import (
     IMSLP_COUNT,
@@ -20,7 +21,6 @@ from training.transformer.train_scans import (
     OSSQ_SCANNED_INDEX,
     PDMX_REPLAY_COUNT,
 )
-from training.omr_datasets.convert_pdmx import pdmx_train_index
 
 RARE_NUMERATOR_INDEX = "/workspace/b0/lieder-rebuild/rare_numerator_replay_index.txt"
 RARE_NUMERATOR_COUNT = 796
@@ -29,7 +29,9 @@ EPOCHS = 3
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--checkpoint", required=True, help="Completed .pth checkpoint to continue.")
+    parser.add_argument(
+        "--checkpoint", required=True, help="Completed .pth checkpoint to continue."
+    )
     parser.add_argument("--rare-index", default=RARE_NUMERATOR_INDEX)
     parser.add_argument("--rare-count", type=int, default=RARE_NUMERATOR_COUNT)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
@@ -54,8 +56,9 @@ def main() -> None:
     counts = [OSSQ_COUNT, IMSLP_COUNT, PDMX_REPLAY_COUNT, args.rare_count]
     total = sum(counts)
     print(
-        "mix: OSSQ scanned %d, Lieder %d, PDMX replay %d, balanced rare numerators %d "
-        "(%.1f%%), total %d" % (*counts, 100 * args.rare_count / total, total)
+        f"mix: OSSQ scanned {counts[0]}, Lieder {counts[1]}, PDMX replay {counts[2]}, "
+        f"balanced rare numerators {counts[3]} "
+        f"({100 * args.rare_count / total:.1f}%), total {total}"
     )
     print(f"continuing from: {args.checkpoint}")
     train_transformer(

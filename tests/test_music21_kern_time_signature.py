@@ -30,12 +30,8 @@ class TestMusic21TimeSignature(unittest.TestCase):
     def test_an_unusable_numerator_is_dropped_rather_than_invented(self) -> None:
         from training.omr_datasets.music21_kern_parser import _time_signature_symbols
 
-        self.assertEqual(
-            [s.rhythm for s in _time_signature_symbols(None, 4)], ["timeSignature/4"]
-        )
-        self.assertEqual(
-            [s.rhythm for s in _time_signature_symbols(99, 4)], ["timeSignature/4"]
-        )
+        self.assertEqual([s.rhythm for s in _time_signature_symbols(None, 4)], ["timeSignature/4"])
+        self.assertEqual([s.rhythm for s in _time_signature_symbols(99, 4)], ["timeSignature/4"])
 
     def test_both_kern_backends_state_the_same_metre(self) -> None:
         # The whole point: a cross-format comparison is only fair if the kern side can

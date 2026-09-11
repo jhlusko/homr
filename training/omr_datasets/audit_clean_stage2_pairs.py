@@ -10,7 +10,6 @@ from training.omr_datasets.notation_sidecar import sidecar_path
 from training.omr_datasets.stage2_pair_review_server import parse_stem
 from training.transformer.training_vocabulary import read_tokens
 
-
 #: Every glyph that closes a measure, not just the plain one.  Counting only
 #: "barline" undercounted 400 of 3189 rebuilt pairs on 2026-08-27 - each of them
 #: ends on a repeat, double, or bold-double barline - and reported them as span
@@ -63,10 +62,14 @@ def audit(manifest: Path, alignment_path: Path, recovered_manifest: Path) -> dic
             continue
         score_id, system, _voice = parsed
         score = alignment.get("scores", {}).get(score_id)
-        item = next(
-            (entry for entry in score.get("systems", []) if entry["system"] == system),
-            None,
-        ) if score else None
+        item = (
+            next(
+                (entry for entry in score.get("systems", []) if entry["system"] == system),
+                None,
+            )
+            if score
+            else None
+        )
         if item is None or item.get("status") != "aligned":
             problems.append({"stem": stem, "problem": "not backed by an aligned system"})
             continue
@@ -74,8 +77,12 @@ def audit(manifest: Path, alignment_path: Path, recovered_manifest: Path) -> dic
         actual = sum(symbol.rhythm in MEASURE_DIVIDERS for symbol in read_tokens(str(tokens)))
         if actual != expected:
             problems.append(
-                {"stem": stem, "problem": "bar count differs from aligned span",
-                 "expected": expected, "actual": actual}
+                {
+                    "stem": stem,
+                    "problem": "bar count differs from aligned span",
+                    "expected": expected,
+                    "actual": actual,
+                }
             )
         if not sidecar_path(tokens).is_file():
             problems.append({"stem": stem, "problem": "missing notation sidecar"})

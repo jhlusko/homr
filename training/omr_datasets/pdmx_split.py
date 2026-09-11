@@ -12,6 +12,7 @@ generalisation.
 
 The score is the directory-and-hash prefix of the file name, which is what PDMX names by.
 """
+
 import random
 import sys
 from collections import defaultdict
@@ -33,14 +34,14 @@ random.Random(0).shuffle(scores)
 cut = max(1, int(len(scores) * fraction))
 valid_scores, train_scores = set(scores[:cut]), scores[cut:]
 
-train = [l for s in train_scores for l in by_score[s]]
-valid = [l for s in valid_scores for l in by_score[s]]
+train = [line for s in train_scores for line in by_score[s]]
+valid = [line for s in valid_scores for line in by_score[s]]
 
 out = index.parent
-(out / "index_train.txt").write_text("".join(l + "\n" for l in train), encoding="utf-8")
-(out / "index_valid.txt").write_text("".join(l + "\n" for l in valid), encoding="utf-8")
+(out / "index_train.txt").write_text("".join(line + "\n" for line in train), encoding="utf-8")
+(out / "index_valid.txt").write_text("".join(line + "\n" for line in valid), encoding="utf-8")
 
 print(f"{len(scores):,} scores -> {len(train_scores):,} train / {len(valid_scores):,} valid")
 print(f"{len(train):,} train windows / {len(valid):,} valid windows")
-overlap = {Path(l.split(',')[0]).name.rsplit('-v', 1)[0] for l in train} & valid_scores
+overlap = {Path(line.split(",")[0]).name.rsplit("-v", 1)[0] for line in train} & valid_scores
 print(f"scores appearing on both sides: {len(overlap)}")

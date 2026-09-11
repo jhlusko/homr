@@ -136,8 +136,9 @@ def build_set(
         # identical panes is correct wastes a reviewer's attention on a question with
         # no answer. Six of a hundred arbitrated items were this, and the reviewer
         # spotted it before the generator did.
-        identical = [s for s in stems if s in left and s in right
-                     and _same_label(left[s], right[s])]
+        identical = [
+            s for s in stems if s in left and s in right and _same_label(left[s], right[s])
+        ]
         if identical:
             print(f"{name:9s} dropping {len(identical)} item(s) whose two labels are identical")
             stems = [s for s in stems if s not in set(identical)]
@@ -181,9 +182,7 @@ def build_set(
             # Keep the compare view functional, but the manifest records that there
             # is nothing to compare - the UI must say so rather than show two
             # identical panes that read as agreement.
-            shutil.copy2(
-                scores / f"{stem}__left.musicxml", scores / f"{stem}__right.musicxml"
-            )
+            shutil.copy2(scores / f"{stem}__left.musicxml", scores / f"{stem}__right.musicxml")
 
         manifest.append(
             {
@@ -202,12 +201,14 @@ def build_set(
     if unrenderable:
         # Named, not merely counted: a pair that will not render is a defect to chase,
         # and a bare count reads as acceptable attrition.
-        (out / "unrenderable.json").write_text(
-            json.dumps(unrenderable, indent=2), encoding="utf-8"
-        )
+        (out / "unrenderable.json").write_text(json.dumps(unrenderable, indent=2), encoding="utf-8")
         print(f"{'':9s} {len(unrenderable):4d} skipped, unrenderable -> {out}/unrenderable.json")
-    return {"set": name, "items": len(manifest), "candidates": len(stems),
-            "unrenderable": len(unrenderable)}
+    return {
+        "set": name,
+        "items": len(manifest),
+        "candidates": len(stems),
+        "unrenderable": len(unrenderable),
+    }
 
 
 def main() -> None:
@@ -263,11 +264,10 @@ def main() -> None:
 
     octave_stems: list[str] = []
     if args.octave_scores and args.octave_scores.exists():
-        recovered = {l.strip() for l in args.octave_scores.read_text().splitlines() if l.strip()}
-        octave_stems = sorted(
-            s for s in clean
-            if (parse_stem(s) or ("",))[0] in recovered
-        )
+        recovered = {
+            line.strip() for line in args.octave_scores.read_text().splitlines() if line.strip()
+        }
+        octave_stems = sorted(s for s in clean if (parse_stem(s) or ("",))[0] in recovered)
 
     args.out.mkdir(parents=True, exist_ok=True)
     summary = [
@@ -277,8 +277,14 @@ def main() -> None:
         build_set("abstained", abstained, clean, None, args.out, args.limit),
         build_set("arbitrated", disagree, clean, reverse, args.out, args.limit),
         build_set("rejected", discarded, {**reverse, **clean}, None, args.out, args.limit),
-        build_set("pseudo", sorted(s for s in by_verdict[REVERSE_ONLY] if s in reverse),
-                  reverse, None, args.out, args.limit),
+        build_set(
+            "pseudo",
+            sorted(s for s in by_verdict[REVERSE_ONLY] if s in reverse),
+            reverse,
+            None,
+            args.out,
+            args.limit,
+        ),
         build_set("phantom", phantom, clean, None, args.out, args.phantom_limit),
         build_set("octave", octave_stems, clean, None, args.out, args.limit),
     ]

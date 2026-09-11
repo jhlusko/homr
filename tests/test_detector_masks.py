@@ -91,11 +91,14 @@ class TestWriteMasks(unittest.TestCase):
             image_path = system / "s1-1.png"
             cv2.imwrite(str(image_path), np.full((20, 20, 3), 255, dtype=np.uint8))
             record = {
-                "image": "s1-1.png", "width": 20, "height": 20,
+                "image": "s1-1.png",
+                "width": 20,
+                "height": 20,
                 "lyrics": [{"text": "x", "left": 2, "top": 2, "right": 6, "bottom": 6}],
                 "text_boxes": {},
             }
             import json
+
             (system / "s1.boxes.json").write_text(json.dumps(record), encoding="utf-8")
 
             pairs = write_masks(directory, directory / "out")
@@ -110,11 +113,14 @@ class TestWriteMasks(unittest.TestCase):
             system = directory / "s1"
             system.mkdir()
             record = {
-                "image": "missing.png", "width": 20, "height": 20,
+                "image": "missing.png",
+                "width": 20,
+                "height": 20,
                 "lyrics": [{"text": "x", "left": 0, "top": 0, "right": 5, "bottom": 5}],
                 "text_boxes": {},
             }
             import json
+
             (system / "s1.boxes.json").write_text(json.dumps(record), encoding="utf-8")
 
             pairs = write_masks(directory, directory / "out")

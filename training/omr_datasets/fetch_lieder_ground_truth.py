@@ -119,9 +119,7 @@ def fetch_mxl(entry: dict, key: str, file_tree: dict[str, str] | None = None) ->
         return resp.read()
 
 
-def match_single_piece_scores(
-    lieder: dict, score_ids: list[str]
-) -> dict[str, tuple[str, dict]]:
+def match_single_piece_scores(lieder: dict, score_ids: list[str]) -> dict[str, tuple[str, dict]]:
     """`score_id -> (lieder_key, entry)` for every score with exactly one Lieder
     match - a score mapping to more than one piece (a collection) is dropped here,
     not guessed at."""
@@ -207,11 +205,13 @@ def main() -> None:
         "--score-ids", type=Path, required=True, help="Text file, one score id per line."
     )
     parser.add_argument(
-        "--scores-yaml-cache", type=Path,
+        "--scores-yaml-cache",
+        type=Path,
         help="Local cache of Lieder's scores.yaml - fetched once, reused after.",
     )
     parser.add_argument(
-        "--file-tree-cache", type=Path,
+        "--file-tree-cache",
+        type=Path,
         help="Local cache of the Lieder repo's own file tree - fetched once, reused after.",
     )
     parser.add_argument("--out", type=Path, required=True, help="Output dir for per-score JSON.")

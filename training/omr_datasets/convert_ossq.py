@@ -28,14 +28,23 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from homr.transformer.structured_notation import DynamicMark
+from training.omr_datasets.barline_placement import (
+    BarlinePlacementIndex,
+    apply_barlines,
+)
 from training.omr_datasets.convert_lieder import _count_staffs, is_grandstaff
-from training.omr_datasets.barline_placement import BarlinePlacementIndex, apply_barlines
-from training.omr_datasets.dynamics_placement import DynamicsPlacementIndex, apply_dynamics
+from training.omr_datasets.dynamics_placement import (
+    DynamicsPlacementIndex,
+    apply_dynamics,
+)
 from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar
 from training.omr_datasets.ossq_splits import load_split_manifest
 from training.omr_datasets.slur_placement import PlacementIndex, apply_placements
-from training.transformer.training_vocabulary import to_decoder_branches, token_lines_to_str
+from training.transformer.training_vocabulary import (
+    to_decoder_branches,
+    token_lines_to_str,
+)
 
 #: <score>:<page>:<system>:<part>.png, with the part 1-based from the top of the system.
 CROP_NAME = "{score}:{page:04d}:{system:04d}:{part}.png"
@@ -370,20 +379,22 @@ def build(
                     index.for_segment(int(page), int(system), part_index) if index else None
                 )
                 dynamics = (
-                    dyn_index.for_segment(int(page), int(system), part_index)
-                    if dyn_index
-                    else None
+                    dyn_index.for_segment(int(page), int(system), part_index) if dyn_index else None
                 )
                 barlines = (
-                    bar_index.for_segment(int(page), int(system), part_index)
-                    if bar_index
-                    else None
+                    bar_index.for_segment(int(page), int(system), part_index) if bar_index else None
                 )
                 carried = clef_carry.get(part_index)
                 try:
                     tokens, collapsed, carried = _write_example(
-                        segment_path, part_index, out_dir, stem, placements, dynamics,
-                        carried, barlines,
+                        segment_path,
+                        part_index,
+                        out_dir,
+                        stem,
+                        placements,
+                        dynamics,
+                        carried,
+                        barlines,
                     )
                 except UnconvertibleStaff as refused:
                     unconvertible[refused.reason] += 1

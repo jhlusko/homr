@@ -414,8 +414,14 @@ def main() -> None:
                 head_name, _, value = entry.partition("=")
                 gamma[head_name] = float(value)
         report = train_epoch(
-            model, batches, optimizer, names, epoch,
-            device=args.device, gamma=gamma, alpha=alpha,
+            model,
+            batches,
+            optimizer,
+            names,
+            epoch,
+            device=args.device,
+            gamma=gamma,
+            alpha=alpha,
         )
         print(report.describe())
         reports.append(report)

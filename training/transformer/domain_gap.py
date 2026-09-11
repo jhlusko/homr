@@ -101,10 +101,7 @@ def staff_accuracy(
 
 def pair_up(synthetic: dict, scanned: dict) -> list[Pair]:
     shared = sorted(set(synthetic) & set(scanned))
-    return [
-        Pair(name, synthetic[name][0], scanned[name][0], synthetic[name][1])
-        for name in shared
-    ]
+    return [Pair(name, synthetic[name][0], scanned[name][0], synthetic[name][1]) for name in shared]
 
 
 def describe(pairs: list[Pair]) -> str:
@@ -130,11 +127,13 @@ def describe(pairs: list[Pair]) -> str:
         "drop per staff (synthetic minus scanned):",
         f"  median {statistics.median(drops):.1%}"
         f"   quartiles {drops[len(drops) // 4]:.1%} / {drops[3 * len(drops) // 4]:.1%}",
-        f"  unchanged or nearly so (<= 10 points): {len(steady):,} ({len(steady) / len(pairs):.1%})",
+        f"  unchanged or nearly so (<= 10 points): {len(steady):,} "
+        f"({len(steady) / len(pairs):.1%})",
         f"  collapsed (> 50 points):               {len(collapsed):,}"
         f" ({len(collapsed) / len(pairs):.1%})",
         "",
-        f"share of all lost notes falling in the worst 10% of staves: {worst_loss / max(1e-9, total_loss):.1%}",
+        f"share of all lost notes falling in the worst 10% of staves: "
+        f"{worst_loss / max(1e-9, total_loss):.1%}",
         "  a gap spread evenly over every staff would put about 10% here;",
         "  a gap caused by broken crops would put most of it here.",
     ]
@@ -163,21 +162,27 @@ def main() -> None:
     parser.add_argument("--synthetic", type=Path, required=True, help="predictions.jsonl")
     parser.add_argument("--scanned", type=Path, required=True)
     parser.add_argument(
-        "--field", default="reference",
+        "--field",
+        default="reference",
         help="'reference' for beams (default), or a head name like 'slur' to read "
         "{field}_reference/{field}_predicted.",
     )
     parser.add_argument(
-        "--exclude-trivial", action="store_true",
+        "--exclude-trivial",
+        action="store_true",
         help="Drop all-none/unspecified positions before comparing - required for slur, "
         "since it is supervised on every note and 98.6%% carry no slur content at all.",
     )
     args = parser.parse_args()
 
-    print(describe(pair_up(
-        staff_accuracy(args.synthetic, args.field, args.exclude_trivial),
-        staff_accuracy(args.scanned, args.field, args.exclude_trivial),
-    )))
+    print(
+        describe(
+            pair_up(
+                staff_accuracy(args.synthetic, args.field, args.exclude_trivial),
+                staff_accuracy(args.scanned, args.field, args.exclude_trivial),
+            )
+        )
+    )
 
 
 if __name__ == "__main__":

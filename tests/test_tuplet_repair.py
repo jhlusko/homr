@@ -155,11 +155,20 @@ def test_repair_symbols_rewrites_rhythm_only_and_preserves_other_branches() -> N
 def test_repair_symbols_invalidates_a_previously_cached_duration() -> None:
     """The live decoder often populates this cache before the late repair pass."""
     symbols = [
-        EncodedSymbol("note_8"), EncodedSymbol("note_8"), EncodedSymbol("note_8"),
-        EncodedSymbol("note_4"), EncodedSymbol(BAR),
-        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
-        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
-        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
+        EncodedSymbol("note_8"),
+        EncodedSymbol("note_8"),
+        EncodedSymbol("note_8"),
+        EncodedSymbol("note_4"),
+        EncodedSymbol(BAR),
+        EncodedSymbol("note_4"),
+        EncodedSymbol("note_4"),
+        EncodedSymbol(BAR),
+        EncodedSymbol("note_4"),
+        EncodedSymbol("note_4"),
+        EncodedSymbol(BAR),
+        EncodedSymbol("note_4"),
+        EncodedSymbol("note_4"),
+        EncodedSymbol(BAR),
     ]
     for symbol in symbols:
         symbol.get_duration()
@@ -173,9 +182,15 @@ def test_repair_symbols_invalidates_a_previously_cached_duration() -> None:
 
 def test_repair_symbols_no_rewrite_returns_same_object() -> None:
     symbols = [
-        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
-        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
-        EncodedSymbol("note_4"), EncodedSymbol("note_4"), EncodedSymbol(BAR),
+        EncodedSymbol("note_4"),
+        EncodedSymbol("note_4"),
+        EncodedSymbol(BAR),
+        EncodedSymbol("note_4"),
+        EncodedSymbol("note_4"),
+        EncodedSymbol(BAR),
+        EncodedSymbol("note_4"),
+        EncodedSymbol("note_4"),
+        EncodedSymbol(BAR),
     ]
     out, rewrites = repair_symbols(symbols)
     assert rewrites == []

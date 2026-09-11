@@ -132,9 +132,7 @@ class Report:
         self.crop_signatures[" + ".join(sorted(signature))] += 1
 
     def print(self) -> None:
-        print(
-            f"crops tested: {self.crops_tested}, failed to render/reparse: {self.crops_failed}"
-        )
+        print(f"crops tested: {self.crops_tested}, failed to render/reparse: {self.crops_failed}")
         print(
             f"EXACT roundtrip (every token matched): {self.crops_exact}/{self.crops_tested} "
             f"({100 * self.crops_exact / max(self.crops_tested, 1):.1f}%)"
@@ -176,7 +174,7 @@ def _cause(category: str, exp_rhythm: str, act_rhythm: str) -> str:
         return "time signature"
     if exp_rhythm == "chord" or act_rhythm == "chord" or exp_rhythm.startswith("rest"):
         return f"{category}:rest/chord"
-    return f"{category}:{exp_rhythm.split('_')[0]}"
+    return f"{category}:{exp_rhythm.split('_', maxsplit=1)[0]}"
 
 
 def _drop_forced_courtesy_time(rt_slice: list, gt_slice: list) -> list:
@@ -227,8 +225,14 @@ def pdmx_crops(
         contains_only_supported_clefs,
         is_grandstaff,
     )
-    from training.omr_datasets.convert_musetrainer import _WINDOW_SIZE, _context_at_measure
-    from training.transformer.training_vocabulary import calc_ratio_of_tuplets, check_token_lines
+    from training.omr_datasets.convert_musetrainer import (
+        _WINDOW_SIZE,
+        _context_at_measure,
+    )
+    from training.transformer.training_vocabulary import (
+        calc_ratio_of_tuplets,
+        check_token_lines,
+    )
 
     print("reading PDMX.csv and applying the converter's pre-filters", file=sys.stderr)
     paths = pdmx._load_filtered_paths()
@@ -273,9 +277,7 @@ def pdmx_crops(
                 cutter.time_beats = time_beats
                 tokens = cutter.extract_measures(end - window_start, always_include_time=True)
                 window_start, window_idx = end, window_idx + 1
-                if calc_ratio_of_tuplets(tokens) > 0.2 or not contains_only_supported_clefs(
-                    tokens
-                ):
+                if calc_ratio_of_tuplets(tokens) > 0.2 or not contains_only_supported_clefs(tokens):
                     continue
                 tokens = strip_naturals(tokens)
                 if len(tokens) > default_config.max_seq_len - 2:
@@ -302,9 +304,15 @@ def ossq_crops(
     every helper it calls, so the tokens produced here are the tokens that ship.
     """
     from training.omr_datasets import convert_ossq as ossq
-    from training.omr_datasets.barline_placement import BarlinePlacementIndex, apply_barlines
+    from training.omr_datasets.barline_placement import (
+        BarlinePlacementIndex,
+        apply_barlines,
+    )
     from training.omr_datasets.convert_lieder import is_grandstaff
-    from training.omr_datasets.dynamics_placement import DynamicsPlacementIndex, apply_dynamics
+    from training.omr_datasets.dynamics_placement import (
+        DynamicsPlacementIndex,
+        apply_dynamics,
+    )
     from training.omr_datasets.music_xml_parser import music_xml_file_to_tokens
     from training.omr_datasets.slur_placement import PlacementIndex, apply_placements
 
@@ -396,7 +404,9 @@ def ossq_crops(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--corpus", choices=["pdmx", "ossq"], required=True)
-    parser.add_argument("--sample", type=int, default=50, help="source files (pdmx) / staves (ossq)")
+    parser.add_argument(
+        "--sample", type=int, default=50, help="source files (pdmx) / staves (ossq)"
+    )
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--examples", type=int, default=6, help="mismatch examples per category")
     parser.add_argument("--report", type=Path)

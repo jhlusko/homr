@@ -61,6 +61,4 @@ class TestScansConfig(unittest.TestCase):
         # They differ in what they warm start from, not in which labels are true.
         from training.transformer import train_scans
 
-        self.assertEqual(
-            train_scans.OSSQ_SCANNED_INDEX, train_scans_continue.OSSQ_SCANNED_INDEX
-        )
+        self.assertEqual(train_scans.OSSQ_SCANNED_INDEX, train_scans_continue.OSSQ_SCANNED_INDEX)

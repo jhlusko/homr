@@ -36,7 +36,12 @@ from pathlib import Path
 
 import cv2
 
-from training.ocr.detector_patches import PATCH_SIZE, DetectorPatches, Sample, read_index
+from training.ocr.detector_patches import (
+    PATCH_SIZE,
+    DetectorPatches,
+    Sample,
+    read_index,
+)
 
 
 def seed_for_image(seed: int, image_index: int) -> int:

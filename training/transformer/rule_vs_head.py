@@ -191,9 +191,7 @@ def rule_vectors(
 
         beat = beat_divisions(beats, beat_type, divisions)
         wide = wide_unit(beats, beat_type, divisions)
-        computed = {
-            voice: automatic_beams(notes, beat, wide) for voice, notes in by_voice.items()
-        }
+        computed = {voice: automatic_beams(notes, beat, wide) for voice, notes in by_voice.items()}
         for voice, index, is_chord_member in slots:
             vectors.append((computed[voice][index], is_chord_member))
     return vectors, (divisions, beats, beat_type)

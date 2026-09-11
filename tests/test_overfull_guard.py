@@ -38,16 +38,20 @@ class TestOverfullGuard(unittest.TestCase):
         self.assertEqual(overfull_bars(voice), [3])
 
     def test_a_grand_staff_is_recognised_as_such(self) -> None:
-        voice = symbols("note_4@C5:upper chord note_4@C3:lower barline "
-                        "note_4@C5:upper chord note_4@C3:lower barline "
-                        "note_4@C5:upper chord note_4@C3:lower barline")
+        voice = symbols(
+            "note_4@C5:upper chord note_4@C3:lower barline "
+            "note_4@C5:upper chord note_4@C3:lower barline "
+            "note_4@C5:upper chord note_4@C3:lower barline"
+        )
         self.assertFalse(is_single_staff(voice))
 
     def test_the_builder_guard_skips_grand_staves(self) -> None:
         """The guard the builder applies, stated as the test that failing it breaks."""
-        grand = symbols("note_4@C5:upper chord note_4@C3:lower barline "
-                        "note_4@C5:upper chord note_4@C3:lower barline "
-                        "note_4@C5:upper chord note_4@C3:lower barline")
+        grand = symbols(
+            "note_4@C5:upper chord note_4@C3:lower barline "
+            "note_4@C5:upper chord note_4@C3:lower barline "
+            "note_4@C5:upper chord note_4@C3:lower barline"
+        )
         guarded = overfull_bars(grand) if is_single_staff(grand) else []
         self.assertEqual(guarded, [])
 

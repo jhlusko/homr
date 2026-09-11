@@ -54,7 +54,6 @@ class FakeHeadsSession:
 def _bare_decoder() -> ScoreDecoder:
     """A ScoreDecoder with no real ONNX transformer - only what _attach_structured_notation
     and __init__ touch are exercised, so a real decoder graph is not needed."""
-    config = Config()
     return ScoreDecoder.__new__(ScoreDecoder)
 
 

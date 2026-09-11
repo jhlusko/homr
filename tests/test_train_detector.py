@@ -158,9 +158,7 @@ class TestTrainEntryPoint(unittest.TestCase):
     def _args(self, directory: Path, **overrides) -> Namespace:
         index = directory / "index.txt"
         samples = [_write_sample(directory, f"s{i}") for i in range(2)]
-        index.write_text(
-            "\n".join(f"{s.image},{s.mask}" for s in samples) + "\n", encoding="utf-8"
-        )
+        index.write_text("\n".join(f"{s.image},{s.mask}" for s in samples) + "\n", encoding="utf-8")
         defaults = {
             "index": index,
             "valid_index": None,

@@ -27,7 +27,7 @@ import numpy as np
 import torch
 
 from training.architecture.segmentation.model import CamVidModel
-from training.ocr.detector_masks import BACKGROUND, CLASS_INDEX, CLASS_ORDER
+from training.ocr.detector_masks import CLASS_INDEX, CLASS_ORDER
 from training.ocr.detector_patches import PATCH_SIZE, extract_patch
 
 NUM_CLASSES = len(CLASS_ORDER) + 1
@@ -47,7 +47,10 @@ class PredictedBox:
 
 def load_model(weights: Path, device: str) -> CamVidModel:
     model = CamVidModel(
-        arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=NUM_CLASSES,
+        arch="Unet",
+        encoder_name="resnet18",
+        in_channels=3,
+        out_classes=NUM_CLASSES,
         skip_weights_download=True,
     )
     model.load_state_dict(torch.load(weights, map_location=device))
@@ -80,9 +83,7 @@ def predict_mask(
 
     for start in range(0, len(origins), batch_size):
         batch_origins = origins[start : start + batch_size]
-        tiles = np.stack(
-            [extract_patch(image, origin, 255) for origin in batch_origins]
-        )
+        tiles = np.stack([extract_patch(image, origin, 255) for origin in batch_origins])
         tensor = torch.from_numpy(tiles).permute(0, 3, 1, 2).float().to(device) / 255.0
         logits = model(tensor)
         probs = logits.softmax(dim=1).cpu().numpy()
@@ -114,7 +115,9 @@ def boxes_from_probs(probs: np.ndarray, min_area: int = 4) -> list[PredictedBox]
                 continue
             region = binary[top : top + h, left : left + w] > 0
             confidence = float(confidence_map[top : top + h, left : left + w][region].mean())
-            boxes.append(PredictedBox(label, int(left), int(top), int(left + w), int(top + h), confidence))
+            boxes.append(
+                PredictedBox(label, int(left), int(top), int(left + w), int(top + h), confidence)
+            )
     return boxes
 
 
@@ -144,9 +147,7 @@ def main() -> None:
     print(f"{len(boxes)} boxes: " + ", ".join(f"{k}={v}" for k, v in sorted(by_class.items())))
 
     if args.out:
-        args.out.write_text(
-            json.dumps([box.__dict__ for box in boxes], indent=1), encoding="utf-8"
-        )
+        args.out.write_text(json.dumps([box.__dict__ for box in boxes], indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -4,7 +4,10 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from training.omr_datasets.ossq_ground_truth import _systemwise_entries_cached
-from training.omr_datasets.split_ground_truth_by_system import fragment_path, split_piece
+from training.omr_datasets.split_ground_truth_by_system import (
+    fragment_path,
+    split_piece,
+)
 
 _SCORE = """<score-partwise>
   <part-list>

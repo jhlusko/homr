@@ -141,9 +141,7 @@ class TestEvaluationEntryPoint(unittest.TestCase):
             report = directory / "report.json"
             predictions = directory / "predictions.jsonl"
 
-            run_evaluation(
-                self._args(directory, out=report, predictions=predictions), self.config
-            )
+            run_evaluation(self._args(directory, out=report, predictions=predictions), self.config)
 
             self.assertIn("exact_beam_vector", json.loads(report.read_text(encoding="utf-8")))
             self.assertEqual(len(predictions.read_text(encoding="utf-8").splitlines()), 2)

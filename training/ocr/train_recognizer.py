@@ -32,7 +32,7 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from torch.utils.data import DataLoader
 
-from training.architecture.ocr.crnn import BLANK, IMAGE_HEIGHT, CRNN, Alphabet
+from training.architecture.ocr.crnn import BLANK, CRNN, IMAGE_HEIGHT, Alphabet
 from training.ocr.recognizer_data import (
     SyllableCrops,
     alphabet_of,
@@ -49,9 +49,7 @@ def edit_distance(first: str, second: str) -> int:
     for i, a in enumerate(first, start=1):
         current = [i]
         for j, b in enumerate(second, start=1):
-            current.append(
-                min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a != b))
-            )
+            current.append(min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a != b)))
         previous = current
     return previous[-1]
 
@@ -125,7 +123,9 @@ def train(args: argparse.Namespace) -> dict:
     train_set = SyllableCrops(train_samples, alphabet, model.frame_count, height=args.height)
     valid_set = SyllableCrops(
         [s for s in valid_samples if s.text not in unrepresentable],
-        alphabet, model.frame_count, height=args.height,
+        alphabet,
+        model.frame_count,
+        height=args.height,
     )
 
     print(f"train {len(train_set):,} crops, valid {len(valid_set):,}")
@@ -137,8 +137,11 @@ def train(args: argparse.Namespace) -> dict:
 
     loaders = {
         "train": DataLoader(
-            train_set, batch_size=args.batch_size, shuffle=True,
-            num_workers=args.workers, collate_fn=collate,
+            train_set,
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.workers,
+            collate_fn=collate,
         ),
         "valid": DataLoader(
             valid_set, batch_size=args.batch_size, num_workers=args.workers, collate_fn=collate

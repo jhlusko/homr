@@ -12,6 +12,7 @@ ground_truth_agrees (candidate: could be a genuine HOMR decode error - now actua
 trustworthy), no_ground_truth (no real ground truth file, or no corpus measure-mapping
 metadata for this page/system).
 """
+
 import json
 import sys
 import traceback
@@ -20,14 +21,16 @@ from pathlib import Path
 sys.path.insert(0, "/workspace/b0/homr")
 sys.path.insert(0, "/workspace/b0/homr/training/omr_datasets")
 
-from homr.cross_staff_consistency import _cumulative_barline_positions, staves_by_system
+import xml.etree.ElementTree as ET
+
+from ossq_ground_truth import measure_start_for_system, real_ground_truth_path
+from ossq_measure_length_audit import measure_length_by_part
+
+from homr.cross_staff_consistency import staves_by_system
 from homr.cross_staff_repair import propose_majority_position_corrections
 from homr.main import ProcessingConfig, detect_staffs_in_image
 from homr.staff_parsing import _plan_systems, parse_staffs
 from homr.transformer.configs import Config as TransformerConfig
-from ossq_ground_truth import measure_start_for_system, real_ground_truth_path
-from ossq_measure_length_audit import measure_length_by_part
-import xml.etree.ElementTree as ET
 
 
 def analyze_page(image_path: str) -> list[dict]:

@@ -136,8 +136,16 @@ class TestRepairDocument(unittest.TestCase):
 
     def test_a_page_with_one_system_is_left_alone(self) -> None:
         # Nothing to measure a gap against, and guessing would be worse than declining.
-        document = {"pages": {1: {"height": 3069, "systems": [
-            {"boundingBox": {"left": 66, "top": 482, "width": 1853, "height": 251}}]}}}
+        document = {
+            "pages": {
+                1: {
+                    "height": 3069,
+                    "systems": [
+                        {"boundingBox": {"left": 66, "top": 482, "width": 1853, "height": 251}}
+                    ],
+                }
+            }
+        }
 
         repaired, before, after = repair_document(document)
 

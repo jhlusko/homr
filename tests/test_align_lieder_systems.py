@@ -15,10 +15,22 @@ class TestBuildAlignmentDocument(unittest.TestCase):
             root = Path(tmp)
             (root / "A.json").write_text(json.dumps({"pages": [[3, 3, 4]]}))
             rows = [
-                {"score_id": "A", "detected": 6, "ground_truth": 999,
-                 "page_index": 0, "page_image": "p.png", "system_index": 0},
-                {"score_id": "A", "detected": 4, "ground_truth": 999,
-                 "page_index": 0, "page_image": "p.png", "system_index": 1},
+                {
+                    "score_id": "A",
+                    "detected": 6,
+                    "ground_truth": 999,
+                    "page_index": 0,
+                    "page_image": "p.png",
+                    "system_index": 0,
+                },
+                {
+                    "score_id": "A",
+                    "detected": 4,
+                    "ground_truth": 999,
+                    "page_index": 0,
+                    "page_image": "p.png",
+                    "system_index": 1,
+                },
             ]
 
             doc = build_alignment_document(rows, root, max_group=4, min_margin=1)
@@ -33,12 +45,30 @@ class TestBuildAlignmentDocument(unittest.TestCase):
             root = Path(tmp)
             (root / "A.json").write_text(json.dumps({"pages": [[3, 4]]}))
             rows = [
-                {"score_id": "A", "detected": 7, "system_width_fraction": 0.1,
-                 "page_index": 0, "page_image": "art.png", "system_index": 0},
-                {"score_id": "A", "detected": 3, "system_width_fraction": 0.9,
-                 "page_index": 1, "page_image": "score.png", "system_index": 0},
-                {"score_id": "A", "detected": 4, "system_width_fraction": 0.9,
-                 "page_index": 1, "page_image": "score.png", "system_index": 1},
+                {
+                    "score_id": "A",
+                    "detected": 7,
+                    "system_width_fraction": 0.1,
+                    "page_index": 0,
+                    "page_image": "art.png",
+                    "system_index": 0,
+                },
+                {
+                    "score_id": "A",
+                    "detected": 3,
+                    "system_width_fraction": 0.9,
+                    "page_index": 1,
+                    "page_image": "score.png",
+                    "system_index": 0,
+                },
+                {
+                    "score_id": "A",
+                    "detected": 4,
+                    "system_width_fraction": 0.9,
+                    "page_index": 1,
+                    "page_image": "score.png",
+                    "system_index": 1,
+                },
             ]
 
             doc = build_alignment_document(rows, root, max_group=4, min_margin=1)

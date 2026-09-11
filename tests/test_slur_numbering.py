@@ -1,5 +1,5 @@
 import unittest
-import xml.etree.ElementTree as ET
+from fractions import Fraction
 
 from homr.music_xml_generator import (
     ConversionState,
@@ -15,7 +15,6 @@ from homr.transformer.structured_notation import (
     empty_slur_slots,
 )
 from homr.transformer.vocabulary import EncodedSymbol
-from fractions import Fraction
 
 
 def note(pitch, position, slur="_", notation=None):

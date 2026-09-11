@@ -326,9 +326,7 @@ class TestTiesAreDistinguishedFromSlurs(unittest.TestCase):
         self.assertEqual(notes[0].slurs[0][0], SlurEvent.START)
 
     def test_the_middle_of_a_tie_chain_does_both(self) -> None:
-        notes, _ = parse_part(
-            _part(_note(notations="<tied type='stop'/><tied type='start'/>"))
-        )
+        notes, _ = parse_part(_part(_note(notations="<tied type='stop'/><tied type='start'/>")))
 
         self.assertEqual(notes[0].tie, TieState.START_AND_STOP)
 
@@ -402,9 +400,7 @@ class TestDynamics(unittest.TestCase):
         # dynamics per hand; a direction on staff 1 must not be claimed by staff 2's next
         # note, only by staff 1's.
         part = _part(
-            _direction("f", staff="1")
-            + _staffed_note(staff="2")
-            + _staffed_note(staff="1")
+            _direction("f", staff="1") + _staffed_note(staff="2") + _staffed_note(staff="1")
         )
         notes, _ = parse_part(part)
 

@@ -93,7 +93,10 @@ class TestFlatDetectedSystems(unittest.TestCase):
         doc = {
             "pages": {
                 2: {"image": "p2.png", "systems": [{"boundingBox": {"a": 1}}]},
-                1: {"image": "p1.png", "systems": [{"boundingBox": {"a": 0}}, {"boundingBox": {"a": 2}}]},
+                1: {
+                    "image": "p1.png",
+                    "systems": [{"boundingBox": {"a": 0}}, {"boundingBox": {"a": 2}}],
+                },
             }
         }
 

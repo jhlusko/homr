@@ -27,9 +27,7 @@ class TestReplayCorpora(unittest.TestCase):
     def test_every_corpus_the_project_converts_is_offered(self) -> None:
         # A corpus missing from this map cannot be replayed at all, and the omission is
         # invisible - there is no error, just a narrower mixture than intended.
-        self.assertEqual(
-            sorted(REPLAY_CORPORA), ["grandstaff", "musetrainer", "pdmx", "primus"]
-        )
+        self.assertEqual(sorted(REPLAY_CORPORA), ["grandstaff", "musetrainer", "pdmx", "primus"])
 
     def test_pdmx_stays_the_default(self) -> None:
         # Existing invocations must keep meaning what they meant.

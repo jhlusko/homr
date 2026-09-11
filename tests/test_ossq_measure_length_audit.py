@@ -12,9 +12,7 @@ _HEADER = """<?xml version="1.0" encoding="UTF-8"?>
   </part-list>
 """
 
-_AGREEING = (
-    _HEADER
-    + """
+_AGREEING = _HEADER + """
   <part id="P1"><measure number="1">
     <attributes><divisions>2</divisions></attributes>
     <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>quarter</type></note>
@@ -25,11 +23,8 @@ _AGREEING = (
     <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>half</type></note>
   </measure></part>
 </score-partwise>"""
-)
 
-_DISAGREEING = (
-    _HEADER
-    + """
+_DISAGREEING = _HEADER + """
   <part id="P1"><measure number="1">
     <attributes><divisions>2</divisions></attributes>
     <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>quarter</type></note>
@@ -40,14 +35,11 @@ _DISAGREEING = (
     <note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><type>quarter</type></note>
   </measure></part>
 </score-partwise>"""
-)
 
 # Two voices sharing a part via <backup> - voice 1 is a quarter+eighth chord, voice 2
 # is a dotted-quarter; both should reach the same peak (3 eighths) if the ground truth
 # is internally consistent.
-_BACKUP_AGREEING = (
-    _HEADER
-    + """
+_BACKUP_AGREEING = _HEADER + """
   <part id="P1"><measure number="1">
     <attributes><divisions>2</divisions></attributes>
     <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>quarter</type><voice>1</voice></note>
@@ -60,7 +52,6 @@ _BACKUP_AGREEING = (
     <note><pitch><step>F</step><octave>4</octave></pitch><duration>3</duration><type>quarter</type></note>
   </measure></part>
 </score-partwise>"""
-)
 
 
 def _audit(xml: str) -> list:
@@ -79,7 +70,9 @@ class TestAuditFile(unittest.TestCase):
 
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["measure_index"], 0)
-        lengths = {name.split(" (")[0]: length for name, (_, length) in findings[0]["per_part"].items()}
+        lengths = {
+            name.split(" (")[0]: length for name, (_, length) in findings[0]["per_part"].items()
+        }
         self.assertEqual(lengths["P1"], "2")
         self.assertEqual(lengths["P2"], "1")
 
@@ -90,15 +83,12 @@ class TestAuditFile(unittest.TestCase):
         self.assertEqual(_audit(_BACKUP_AGREEING), [])
 
     def test_a_single_part_has_nothing_to_compare(self) -> None:
-        single_part = (
-            _HEADER
-            + """
+        single_part = _HEADER + """
   <part id="P1"><measure number="1">
     <attributes><divisions>2</divisions></attributes>
     <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><type>quarter</type></note>
   </measure></part>
 </score-partwise>"""
-        )
         self.assertEqual(_audit(single_part), [])
 
 

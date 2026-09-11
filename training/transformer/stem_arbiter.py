@@ -28,8 +28,6 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from homr.transformer.structured_notation import StemDirection
-from training.omr_datasets.stem_baseline import _predict
 from training.transformer.derived_stems import (
     _vectors,
     derive,
@@ -162,8 +160,10 @@ def main() -> None:
     half = len(staves) // 2
     tune = Sweep([row for stave in staves[:half] for row in stave])
     report = Sweep([row for stave in staves[half:] for row in stave])
-    print(f"{len(staves):,} staves: {len(tune.rows):,} notes to tune on, "
-          f"{len(report.rows):,} to report on")
+    print(
+        f"{len(staves):,} staves: {len(tune.rows):,} notes to tune on, "
+        f"{len(report.rows):,} to report on"
+    )
 
     fixed = {
         "head alone": lambda row: True,
@@ -176,13 +176,17 @@ def main() -> None:
 
     print("\ntuning:")
     best_confidence = max(
-        (tune.evaluate(lambda row, t=t: row.confidence >= t, f"head if confidence >= {t}") for t in
-         (0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99)),
+        (
+            tune.evaluate(lambda row, t=t: row.confidence >= t, f"head if confidence >= {t}")
+            for t in (0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99)
+        ),
         key=lambda policy: policy.rate,
     )
     best_margin = max(
-        (tune.evaluate(lambda row, k=k: row.margin <= k, f"head if margin <= {k}") for k in
-         range(0, 6)),
+        (
+            tune.evaluate(lambda row, k=k: row.margin <= k, f"head if margin <= {k}")
+            for k in range(6)
+        ),
         key=lambda policy: policy.rate,
     )
     print(f"  best by confidence: {best_confidence.name} -> {best_confidence.rate:.2%}")

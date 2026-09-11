@@ -39,9 +39,7 @@ class TestSplit(unittest.TestCase):
 
         train, valid = split(samples, valid_fraction=0.2, seed=0)
 
-        self.assertEqual(
-            {score_of(s) for s in train} & {score_of(s) for s in valid}, set()
-        )
+        self.assertEqual({score_of(s) for s in train} & {score_of(s) for s in valid}, set())
 
     def test_mixed_synthetic_and_scan_stay_score_disjoint(self) -> None:
         samples = [_synthetic(str(i), 1, 1) for i in range(100)]
@@ -49,9 +47,7 @@ class TestSplit(unittest.TestCase):
 
         train, valid = split(samples, valid_fraction=0.2, seed=0)
 
-        self.assertEqual(
-            {score_of(s) for s in train} & {score_of(s) for s in valid}, set()
-        )
+        self.assertEqual({score_of(s) for s in train} & {score_of(s) for s in valid}, set())
 
     def test_the_assignment_is_stable_as_the_corpus_grows(self) -> None:
         # The reason for hashing rather than shuffling: adding scores later must not

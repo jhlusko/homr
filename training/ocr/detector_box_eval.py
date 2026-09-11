@@ -78,14 +78,17 @@ def match_one_page(
         for g_index, gt in enumerate(ground_truth):
             if pred.label != gt.label:
                 continue
-            score = iou((pred.left, pred.top, pred.right, pred.bottom), (gt.left, gt.top, gt.right, gt.bottom))
+            score = iou(
+                (pred.left, pred.top, pred.right, pred.bottom),
+                (gt.left, gt.top, gt.right, gt.bottom),
+            )
             if score >= iou_threshold:
                 candidates.append((score, p_index, g_index))
     candidates.sort(reverse=True)
 
     used_pred: set[int] = set()
     used_gt: set[int] = set()
-    for score, p_index, g_index in candidates:
+    for _score, p_index, g_index in candidates:
         if p_index in used_pred or g_index in used_gt:
             continue
         used_pred.add(p_index)

@@ -6,11 +6,11 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from torch.utils.data import DataLoader
 
-from training.architecture.ocr.crnn import Alphabet, CRNN
+from training.architecture.ocr.crnn import CRNN, Alphabet
 from training.ocr.recognizer_data import SyllableCrops, collate, read_manifest
 from training.ocr.train_recognizer import Accuracy, edit_distance, evaluate, train
-from torch.utils.data import DataLoader
 
 
 def _corpus(directory: Path, name: str, rows: list[str]) -> Path:
@@ -82,7 +82,8 @@ class TestSeenUnseenSplit(unittest.TestCase):
             model = CRNN(len(alphabet))
             loader = DataLoader(
                 SyllableCrops(samples, alphabet, model.frame_count),
-                batch_size=2, collate_fn=collate,
+                batch_size=2,
+                collate_fn=collate,
             )
 
             known, novel = evaluate(model, loader, alphabet, {"va"}, "cpu")
@@ -142,9 +143,7 @@ class TestTrainEntryPoint(unittest.TestCase):
         # it would inflate the output layer while pretending it is learnable.
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
-            report = train(
-                self._args(directory, valid=_corpus(directory, "valid", ["va", "Zzz"]))
-            )
+            report = train(self._args(directory, valid=_corpus(directory, "valid", ["va", "Zzz"])))
 
         self.assertNotIn("Z", report["alphabet"])
 
@@ -192,12 +191,13 @@ class TestPaddingIsNotDecoded(unittest.TestCase):
 
             loader = DataLoader(
                 SyllableCrops(samples, alphabet, model.frame_count, height=32),
-                batch_size=2, collate_fn=collate,
+                batch_size=2,
+                collate_fn=collate,
             )
             known, novel = evaluate(model, loader, alphabet, set(), "cpu")
 
         # Both decode to "a" (CTC collapses the repeat). The point is that the short crop's
         # prediction is not longer than the long crop's because of padding.
         self.assertEqual(novel.total, 2)
-        for truth, predicted in novel.examples:
+        for _truth, predicted in novel.examples:
             self.assertLessEqual(len(predicted), 1)

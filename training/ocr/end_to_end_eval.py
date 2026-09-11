@@ -32,9 +32,9 @@ import torch
 from training.architecture.ocr.crnn import CRNN, IMAGE_HEIGHT, Alphabet
 from training.ocr.detector_box_eval import iou
 from training.ocr.detector_inference import PredictedBox, load_model, predict_boxes
-from training.omr_datasets.lyric_crops import MARGIN
 from training.ocr.recognizer_data import scaled_width
-from training.ocr.train_recognizer import Accuracy, edit_distance
+from training.ocr.train_recognizer import Accuracy
+from training.omr_datasets.lyric_crops import MARGIN
 
 
 @dataclass(frozen=True)
@@ -82,7 +82,7 @@ def match_with_text(
     used_pred: set[int] = set()
     used_gt: set[int] = set()
     pairs = []
-    for score, p_index, g_index in candidates:
+    for _score, p_index, g_index in candidates:
         if p_index in used_pred or g_index in used_gt:
             continue
         used_pred.add(p_index)
@@ -91,7 +91,9 @@ def match_with_text(
     return pairs
 
 
-def crop_for_recognizer(image: np.ndarray, box: tuple[int, int, int, int], height: int) -> torch.Tensor:
+def crop_for_recognizer(
+    image: np.ndarray, box: tuple[int, int, int, int], height: int
+) -> torch.Tensor:
     """Same preprocessing the training crops went through: `lyric_crops.py`'s `MARGIN` of
     air kept around the tight box (a recogniser reads better with room for a hyphen or a
     descender than a box cut exactly to the ink - cropping tight here was the first version
@@ -140,7 +142,11 @@ def evaluate(
     oracle = Accuracy()  # same matched syllables, ground-truth box instead
     match_counts: dict[str, int] = collections.defaultdict(int)
 
-    images = [line.split(",")[0] for line in index.read_text(encoding="utf-8").splitlines() if line.strip()]
+    images = [
+        line.split(",")[0]
+        for line in index.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     for page_index, image_path_str in enumerate(images):
         if page_index % 20 == 0:
             print(f"  page {page_index}/{len(images)}")

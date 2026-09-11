@@ -41,8 +41,20 @@ from pathlib import Path
 #: how it gets read afterwards, and at 5,013 boxes it is the most common non-Lyrics class
 #: in the corpus.
 DETECTION_CLASSES = frozenset(
-    {"Lyrics", "Tempo", "StaffText", "SystemText", "Expression", "Text",
-     "InstrumentName", "MeasureNumber", "RehearsalMark", "Fingering", "Harmony", "Dynamic"}
+    {
+        "Lyrics",
+        "Tempo",
+        "StaffText",
+        "SystemText",
+        "Expression",
+        "Text",
+        "InstrumentName",
+        "MeasureNumber",
+        "RehearsalMark",
+        "Fingering",
+        "Harmony",
+        "Dynamic",
+    }
 )
 
 
@@ -72,7 +84,9 @@ def boxes_of(record: dict, image_path: str) -> list[Box]:
         if label not in DETECTION_CLASSES:
             continue
         for box in boxes:
-            found.append(Box(image_path, label, box["left"], box["top"], box["right"], box["bottom"]))
+            found.append(
+                Box(image_path, label, box["left"], box["top"], box["right"], box["bottom"])
+            )
     return found
 
 
@@ -91,9 +105,12 @@ def write_manifest(boxes: list[Box], path: Path) -> None:
             handle.write(
                 json.dumps(
                     {
-                        "image": box.image, "label": box.label,
-                        "left": box.left, "top": box.top,
-                        "right": box.right, "bottom": box.bottom,
+                        "image": box.image,
+                        "label": box.label,
+                        "left": box.left,
+                        "top": box.top,
+                        "right": box.right,
+                        "bottom": box.bottom,
                     }
                 )
                 + "\n"

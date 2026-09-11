@@ -37,12 +37,27 @@ from homr.score_profile import ScorePart
 #: in the table falls into a shared "other/unknown" bucket (index 0) rather than growing
 #: the table at training time, the same way a rare token would.
 INSTRUMENT_FAMILIES = (
-    "strings.violin", "strings.viola", "strings.cello", "strings.contrabass",
-    "strings.harp", "keyboard.piano", "keyboard.organ", "keyboard.harpsichord",
-    "voice.vocals", "wind.flutes.flute", "wind.flutes.piccolo", "wind.reed.oboe",
-    "wind.reed.clarinet", "wind.reed.bassoon", "wind.reed.saxophone",
-    "brass.french-horn", "brass.trumpet", "brass.trombone", "brass.tuba",
-    "drum.timpani", "pluck.guitar",
+    "strings.violin",
+    "strings.viola",
+    "strings.cello",
+    "strings.contrabass",
+    "strings.harp",
+    "keyboard.piano",
+    "keyboard.organ",
+    "keyboard.harpsichord",
+    "voice.vocals",
+    "wind.flutes.flute",
+    "wind.flutes.piccolo",
+    "wind.reed.oboe",
+    "wind.reed.clarinet",
+    "wind.reed.bassoon",
+    "wind.reed.saxophone",
+    "brass.french-horn",
+    "brass.trumpet",
+    "brass.trombone",
+    "brass.tuba",
+    "drum.timpani",
+    "pluck.guitar",
 )
 CLEFS = ("G2", "F4", "C1", "C2", "C3", "C4", "C5", "TAB5")
 #: DECODER_RHYTHM_ACCURACY_DESIGN.md §7.3's refinement: an explicit conditioning input
@@ -55,7 +70,16 @@ CLEFS = ("G2", "F4", "C1", "C2", "C3", "C4", "C5", "TAB5")
 #: this is an input feature, not constrained to match the output vocabulary, and the
 #: numerator is exactly the part a self-consistent wrong subdivision gets wrong.
 TIME_SIGNATURES = (
-    "4/4", "3/4", "2/4", "6/8", "9/8", "12/8", "2/2", "3/8", "5/4", "6/4",
+    "4/4",
+    "3/4",
+    "2/4",
+    "6/8",
+    "9/8",
+    "12/8",
+    "2/2",
+    "3/8",
+    "5/4",
+    "6/4",
 )
 
 MAX_PART_ORDINAL = 8  # clipped, not truncated - a 9th part still gets the 8th bucket
@@ -213,10 +237,10 @@ def context_to_batch_fields(context: "ProfileContext | None") -> dict[str, "int 
         "profile_staff_count_index": min(max(context.expected_staff_count, 0), MAX_STAFF_COUNT),
         "profile_clef_indices": torch.tensor(clef_indices, dtype=torch.long),
         "profile_clef_count": len(clefs),
-        "profile_transposition_index": min(
-            max(context.transposition_semitones, MIN_TRANSPOSITION), MAX_TRANSPOSITION
-        )
-        - MIN_TRANSPOSITION,
+        "profile_transposition_index": (
+            min(max(context.transposition_semitones, MIN_TRANSPOSITION), MAX_TRANSPOSITION)
+            - MIN_TRANSPOSITION
+        ),
         "profile_time_signature_index": _bucket_index(
             context.expected_time_signature, TIME_SIGNATURES
         ),

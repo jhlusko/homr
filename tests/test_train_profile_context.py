@@ -82,9 +82,7 @@ class TestProfileContextParameters(unittest.TestCase):
 
         params = profile_context_parameters(model)
         names = [
-            name
-            for name, param in model.named_parameters()
-            if any(param is p for p in params)
+            name for name, param in model.named_parameters() if any(param is p for p in params)
         ]
 
         self.assertTrue(names)

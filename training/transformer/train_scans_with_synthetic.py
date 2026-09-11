@@ -55,7 +55,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument(
-        "--synthetic-weight", type=float, default=1.0,
+        "--synthetic-weight",
+        type=float,
+        default=1.0,
         help="Fraction of the synthetic track to include. 1.0 adds all of it.",
     )
     args = parser.parse_args()
@@ -76,7 +78,10 @@ def main() -> None:
     train_transformer(
         warm_start=True,
         dataset_index=[
-            OSSQ_SCANNED_INDEX, OSSQ_SYNTHETIC_INDEX, IMSLP_TRAIN_INDEX, pdmx_train_index
+            OSSQ_SCANNED_INDEX,
+            OSSQ_SYNTHETIC_INDEX,
+            IMSLP_TRAIN_INDEX,
+            pdmx_train_index,
         ],
         dataset_weights=[float(c) for c in counts],
         number_of_files=total,

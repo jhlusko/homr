@@ -112,9 +112,7 @@ class TestNonBeamHeadsAlsoArrive(unittest.TestCase):
         self.assertEqual(prediction.uncertain_choices(), ())
 
     def test_slur_events_are_carried(self) -> None:
-        prediction = decode_note(
-            {"slur.slot.1.event": peaked(SLUR_EVENT_CLASSES, SlurEvent.STOP)}
-        )
+        prediction = decode_note({"slur.slot.1.event": peaked(SLUR_EVENT_CLASSES, SlurEvent.STOP)})
 
         self.assertEqual(prediction.notation.slurs[0][0], SlurEvent.STOP)
 

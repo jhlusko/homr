@@ -139,7 +139,8 @@ def main() -> None:
     samples = [s for s in read_manifest(args.valid) if not (set(s.text) - known)]
     loader = DataLoader(
         SyllableCrops(samples, alphabet, model.frame_count, height=args.height),
-        batch_size=64, collate_fn=collate,
+        batch_size=64,
+        collate_fn=collate,
     )
     seen = {sample.text for sample in read_manifest(args.train)}
     print(report(predictions(model, alphabet, loader, args.device), seen))

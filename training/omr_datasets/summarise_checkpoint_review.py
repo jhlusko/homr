@@ -78,7 +78,9 @@ def main() -> None:
     print()
     print(f"{'verdict':<14}{'n':>5}{'sum delta':>12}{'mean':>10}")
     for verdict, stats in result["by_verdict"].items():
-        print(f"{verdict:<14}{stats['n']:>5}{stats['sum_delta']:>+12.3f}{stats['mean_delta']:>+10.3f}")
+        print(
+            f"{verdict:<14}{stats['n']:>5}{stats['sum_delta']:>+12.3f}{stats['mean_delta']:>+10.3f}"
+        )
 
     movement = result["movement"]
     print()

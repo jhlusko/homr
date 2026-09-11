@@ -564,22 +564,26 @@ class TestHumdrumKernBeams(unittest.TestCase):
         )
         # A 16th engages exactly two levels; the rest of the representation stays absent.
         for _, _, notation in notes:
-            self.assertEqual(
-                list(notation.beam_levels[2:]), [BeamLevelState.NOT_APPLICABLE] * 4
-            )
+            self.assertEqual(list(notation.beam_levels[2:]), [BeamLevelState.NOT_APPLICABLE] * 4)
 
     def test_inner_level_opens_and_closes_inside_an_eighth_beam(self) -> None:
         """The second beam of a 16th pair nested inside a beamed run of eighths."""
         notes = _notes(_HEADER + "8ccL\n16ddL\n16eeJ\n8ffJ\n*-\n")
-        self.assertEqual(_levels(notes[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(
+            _levels(notes[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE]
+        )
         self.assertEqual(_levels(notes[1][2], 2), [BeamLevelState.CONTINUE, BeamLevelState.BEGIN])
         self.assertEqual(_levels(notes[2][2], 2), [BeamLevelState.CONTINUE, BeamLevelState.END])
-        self.assertEqual(_levels(notes[3][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(
+            _levels(notes[3][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE]
+        )
 
     def test_partial_beams_become_hooks(self) -> None:
         """`k`/`K` are the stub beams a dotted eighth's partner draws back or forward."""
         backward = _notes(_HEADER + "8.ccL\n16ddJk\n*-\n")
-        self.assertEqual(_levels(backward[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(
+            _levels(backward[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE]
+        )
         self.assertEqual(
             _levels(backward[1][2], 2), [BeamLevelState.END, BeamLevelState.BACKWARD_HOOK]
         )
@@ -588,11 +592,15 @@ class TestHumdrumKernBeams(unittest.TestCase):
         self.assertEqual(
             _levels(forward[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.FORWARD_HOOK]
         )
-        self.assertEqual(_levels(forward[1][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(
+            _levels(forward[1][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE]
+        )
 
     def test_unbeamed_note_carries_flags_not_beams(self) -> None:
         notes = _notes(_HEADER + "8cc\n16dd\n4ee\n2ff\n*-\n")
-        self.assertEqual(_levels(notes[0][2], 2), [BeamLevelState.FLAG, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(
+            _levels(notes[0][2], 2), [BeamLevelState.FLAG, BeamLevelState.NOT_APPLICABLE]
+        )
         self.assertEqual(_levels(notes[1][2], 2), [BeamLevelState.FLAG, BeamLevelState.FLAG])
         self.assertEqual(_levels(notes[2][2], 2), [BeamLevelState.NOT_APPLICABLE] * 2)
         self.assertEqual(_levels(notes[3][2], 2), [BeamLevelState.NOT_APPLICABLE] * 2)
@@ -600,8 +608,12 @@ class TestHumdrumKernBeams(unittest.TestCase):
     def test_triplet_duration_beams_like_the_note_it_is_drawn_as(self) -> None:
         """A `12` is drawn as an eighth and a `24` as a 16th, so that is what they beam."""
         notes = _notes(_HEADER + "12ccL\n12dd\n12eeJ\n24ffLL\n24gg\n24aaJJ\n*-\n")
-        self.assertEqual(_levels(notes[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE])
-        self.assertEqual(_levels(notes[2][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE])
+        self.assertEqual(
+            _levels(notes[0][2], 2), [BeamLevelState.BEGIN, BeamLevelState.NOT_APPLICABLE]
+        )
+        self.assertEqual(
+            _levels(notes[2][2], 2), [BeamLevelState.END, BeamLevelState.NOT_APPLICABLE]
+        )
         self.assertEqual(_levels(notes[3][2], 2), [BeamLevelState.BEGIN, BeamLevelState.BEGIN])
         self.assertEqual(_levels(notes[5][2], 2), [BeamLevelState.END, BeamLevelState.END])
 
@@ -648,9 +660,10 @@ class TestHumdrumKernStemsAndTies(unittest.TestCase):
 
     def test_explicit_stem_direction(self) -> None:
         notes = _notes(_HEADER + "4cc/\n4dd\\\n4ee\n*-\n")
-        self.assertEqual([n.stem for _, _, n in notes], [
-            StemDirection.UP, StemDirection.DOWN, StemDirection.UNKNOWN
-        ])
+        self.assertEqual(
+            [n.stem for _, _, n in notes],
+            [StemDirection.UP, StemDirection.DOWN, StemDirection.UNKNOWN],
+        )
 
     def test_stem_markup_does_not_disturb_the_tokens(self) -> None:
         with_stems = token_lines_to_str(
@@ -663,16 +676,16 @@ class TestHumdrumKernStemsAndTies(unittest.TestCase):
 
     def test_tied_pair(self) -> None:
         notes = _notes(_HEADER + "4cc[\n4cc]\n4dd\n*-\n")
-        self.assertEqual([n.tie for _, _, n in notes], [
-            TieState.START, TieState.STOP, TieState.NONE
-        ])
+        self.assertEqual(
+            [n.tie for _, _, n in notes], [TieState.START, TieState.STOP, TieState.NONE]
+        )
 
     def test_tie_continue_is_start_and_stop(self) -> None:
         """`_` is the middle of a chain; so is a `[` and `]` written onto one token."""
         notes = _notes(_HEADER + "4cc[\n4cc_\n4cc]\n*-\n")
-        self.assertEqual([n.tie for _, _, n in notes], [
-            TieState.START, TieState.START_AND_STOP, TieState.STOP
-        ])
+        self.assertEqual(
+            [n.tie for _, _, n in notes], [TieState.START, TieState.START_AND_STOP, TieState.STOP]
+        )
         both = _notes(_HEADER + "4cc[]\n*-\n")
         self.assertEqual(both[0][2].tie, TieState.START_AND_STOP)
 
@@ -683,9 +696,9 @@ class TestHumdrumKernStemsAndTies(unittest.TestCase):
 
     def test_ties_are_per_note_inside_a_chord(self) -> None:
         notes = _notes(_HEADER + "4cc[ 4ee 4gg[\n4cc] 4ff 4gg]\n*-\n")
-        self.assertEqual([n.tie for _, _, n in notes[:3]], [
-            TieState.START, TieState.NONE, TieState.START
-        ])
-        self.assertEqual([n.tie for _, _, n in notes[3:]], [
-            TieState.STOP, TieState.NONE, TieState.STOP
-        ])
+        self.assertEqual(
+            [n.tie for _, _, n in notes[:3]], [TieState.START, TieState.NONE, TieState.START]
+        )
+        self.assertEqual(
+            [n.tie for _, _, n in notes[3:]], [TieState.STOP, TieState.NONE, TieState.STOP]
+        )

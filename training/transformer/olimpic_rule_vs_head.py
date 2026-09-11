@@ -128,9 +128,7 @@ def ordered_rule_vectors(
         (computed[voice][index], is_chord, onset, staff)
         for voice, index, is_chord, onset, staff in slots
     ]
-    reordered = sorted(
-        enumerate(doc_ordered), key=lambda pair: (pair[1][2], pair[1][3], pair[0])
-    )
+    reordered = sorted(enumerate(doc_ordered), key=lambda pair: (pair[1][2], pair[1][3], pair[0]))
     vectors = [(vector, is_chord) for _, (vector, is_chord, _onset, _staff) in reordered]
     return vectors, (divisions, beats, beat_type)
 
@@ -202,7 +200,9 @@ def compare_olimpic(predictions: Path, samples_root: Path, levels: int) -> Cross
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--predictions", type=Path, required=True)
-    parser.add_argument("--samples-root", type=Path, required=True, help="An olimpic-1.0-scanned samples dir.")
+    parser.add_argument(
+        "--samples-root", type=Path, required=True, help="An olimpic-1.0-scanned samples dir."
+    )
     parser.add_argument("--levels", type=int, default=4)
     args = parser.parse_args()
 

@@ -58,20 +58,40 @@ class TestClassifySystem(unittest.TestCase):
 
 class TestSpanExtraction(unittest.TestCase):
     def test_only_aligned_systems_contribute_count_spans(self) -> None:
-        alignment = {"scores": {"A": {"systems": [
-            {"system": 0, "status": "aligned", "start_measure": 0, "end_measure": 3},
-            {"system": 1, "status": "ambiguous", "start_measure": 3, "end_measure": 6},
-            {"system": 2, "status": "skipped"},
-        ]}}}
+        alignment = {
+            "scores": {
+                "A": {
+                    "systems": [
+                        {"system": 0, "status": "aligned", "start_measure": 0, "end_measure": 3},
+                        {"system": 1, "status": "ambiguous", "start_measure": 3, "end_measure": 6},
+                        {"system": 2, "status": "skipped"},
+                    ]
+                }
+            }
+        }
         self.assertEqual(aligned_spans(alignment), {("A", 0): (0, 3)})
 
     def test_only_accepted_scores_contribute_reverse_spans(self) -> None:
-        reports = [{"scores": [
-            {"score_id": "A", "accepted": True,
-             "assignments": [{"system": 0, "start_measure": 0, "end_measure": 3, "score": 0.9}]},
-            {"score_id": "B", "accepted": False,
-             "assignments": [{"system": 0, "start_measure": 0, "end_measure": 3, "score": 0.9}]},
-        ]}]
+        reports = [
+            {
+                "scores": [
+                    {
+                        "score_id": "A",
+                        "accepted": True,
+                        "assignments": [
+                            {"system": 0, "start_measure": 0, "end_measure": 3, "score": 0.9}
+                        ],
+                    },
+                    {
+                        "score_id": "B",
+                        "accepted": False,
+                        "assignments": [
+                            {"system": 0, "start_measure": 0, "end_measure": 3, "score": 0.9}
+                        ],
+                    },
+                ]
+            }
+        ]
         self.assertEqual(reverse_spans(reports), {("A", 0): (0, 3, 0.9)})
 
 
@@ -87,26 +107,33 @@ class TestRestDominatedScores(unittest.TestCase):
 
     def _manifest(self, tmp, voice, notes, rests, pairs):
         from pathlib import Path
+
         out = {}
         for i in range(pairs):
             stem = f"IMSLPX-sys{i}-v{voice}"
             tok = Path(tmp) / f"{stem}.tokens"
-            tok.write_text("\n".join(["note_4 C4 _ _ _ upper"] * notes
-                                     + ["rest_4 _ _ _ _ upper"] * rests) + "\n",
-                           encoding="utf-8")
+            tok.write_text(
+                "\n".join(["note_4 C4 _ _ _ upper"] * notes + ["rest_4 _ _ _ _ upper"] * rests)
+                + "\n",
+                encoding="utf-8",
+            )
             out[stem] = f"{tmp}/{stem}.png,{tok}"
         return out
 
     def test_a_rest_dominated_accompaniment_is_flagged(self) -> None:
         import tempfile
+
         from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+
         with tempfile.TemporaryDirectory() as tmp:
             m = self._manifest(tmp, voice=1, notes=1, rests=9, pairs=6)
             self.assertIn("IMSLPX", rest_dominated_scores(m))
 
     def test_a_normal_accompaniment_is_not(self) -> None:
         import tempfile
+
         from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+
         with tempfile.TemporaryDirectory() as tmp:
             m = self._manifest(tmp, voice=1, notes=9, rests=1, pairs=6)
             self.assertEqual(rest_dominated_scores(m), {})
@@ -115,14 +142,18 @@ class TestRestDominatedScores(unittest.TestCase):
         """Only the accompaniment is judged: a vocal line resting under a piano
         introduction is ordinary, and 56 of 56 such labels were correct on review."""
         import tempfile
+
         from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+
         with tempfile.TemporaryDirectory() as tmp:
             m = self._manifest(tmp, voice=0, notes=0, rests=10, pairs=6)
             self.assertEqual(rest_dominated_scores(m), {})
 
     def test_too_few_pairs_to_judge(self) -> None:
         import tempfile
+
         from training.omr_datasets.build_consensus_corpus import rest_dominated_scores
+
         with tempfile.TemporaryDirectory() as tmp:
             m = self._manifest(tmp, voice=1, notes=1, rests=9, pairs=2)
             self.assertEqual(rest_dominated_scores(m), {})

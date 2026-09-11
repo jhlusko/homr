@@ -177,9 +177,7 @@ def stem_report(
     return report
 
 
-def tie_report(
-    predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]
-) -> PerClassReport:
+def tie_report(predicted: Sequence[NoteNotation], actual: Sequence[NoteNotation]) -> PerClassReport:
     """Tie state over every SUPERVISED note, including the ones with no tie.
 
     NONE is scored here, unlike UNSPECIFIED for a slur side, because it is a real

@@ -23,15 +23,14 @@ import csv
 import json
 import re
 import time
+import unicodedata
 import urllib.parse
 import urllib.request
-import unicodedata
 from collections import Counter
 from pathlib import Path
 
 import yaml
 from bs4 import BeautifulSoup
-
 
 API = "https://imslp.org/api.php"
 FILE_RE = re.compile(r"\{\{#fte:imslpfile\s*\n(.*?)\n\}\}", re.DOTALL)
@@ -89,19 +88,46 @@ def resolve_work_page(cache: Path, score_id: str, title: str, pause: float) -> t
     ordinal (``4 Fischerweise``) that differs from IMSLP.  ``allpages`` is used only
     as a constrained fallback, matched on its composer suffix and work-title stem.
     """
-    query = cached_api(cache, f"query_{score_id}", {"action": "query", "titles": title, "prop": "revisions", "rvprop": "content", "format": "json"}, pause)
+    query = cached_api(
+        cache,
+        f"query_{score_id}",
+        {
+            "action": "query",
+            "titles": title,
+            "prop": "revisions",
+            "rvprop": "content",
+            "format": "json",
+        },
+        pause,
+    )
     page = next(iter(query.get("query", {}).get("pages", {}).values()), {})
     if page.get("pageid") and page.get("revisions"):
         return page, title
     work, composer = title.rsplit(" (", 1)
     composer = composer.removesuffix(")")
-    stems = [work, re.sub(r"^\d+\s+", "", work), work.split(",", 1)[0], re.sub(r"^\d+\s+", "", work).split(",", 1)[0]]
+    stems = [
+        work,
+        re.sub(r"^\d+\s+", "", work),
+        work.split(",", 1)[0],
+        re.sub(r"^\d+\s+", "", work).split(",", 1)[0],
+    ]
     seen = set()
     for stem in stems:
         if not stem or stem in seen:
             continue
         seen.add(stem)
-        listing = cached_api(cache, f"allpages_{score_id}_{len(seen)}", {"action": "query", "list": "allpages", "apprefix": stem.replace("’", "'"), "aplimit": "50", "format": "json"}, pause)
+        listing = cached_api(
+            cache,
+            f"allpages_{score_id}_{len(seen)}",
+            {
+                "action": "query",
+                "list": "allpages",
+                "apprefix": stem.replace("’", "'"),
+                "aplimit": "50",
+                "format": "json",
+            },
+            pause,
+        )
         for candidate in listing.get("query", {}).get("allpages", []):
             candidate_title = candidate["title"]
             if " (" not in candidate_title:
@@ -112,7 +138,18 @@ def resolve_work_page(cache: Path, score_id: str, title: str, pause: float) -> t
             # Prefix agreement prevents selecting another work by the same composer.
             if not normalized(candidate_work).startswith(normalized(stem)):
                 continue
-            resolved = cached_api(cache, f"resolved_{score_id}", {"action": "query", "pageids": str(candidate["pageid"]), "prop": "revisions", "rvprop": "content", "format": "json"}, pause)
+            resolved = cached_api(
+                cache,
+                f"resolved_{score_id}",
+                {
+                    "action": "query",
+                    "pageids": str(candidate["pageid"]),
+                    "prop": "revisions",
+                    "rvprop": "content",
+                    "format": "json",
+                },
+                pause,
+            )
             resolved_page = next(iter(resolved.get("query", {}).get("pages", {}).values()), {})
             if resolved_page.get("revisions"):
                 return resolved_page, candidate_title
@@ -151,7 +188,9 @@ def extract_rows(score_id: str, title: str, raw: str, html: str) -> tuple[dict |
         "date_submitted": fields.get("Date Submitted", ""),
         "publisher_information": fields.get("Publisher Information", ""),
         "copyright": fields.get("Copyright", ""),
-        "source_url": f"https://imslp.org/wiki/Special:ImagefromIndex/{score_id.removeprefix('IMSLP')}",
+        "source_url": (
+            f"https://imslp.org/wiki/Special:ImagefromIndex/{score_id.removeprefix('IMSLP')}"
+        ),
         "work_url": "https://imslp.org/wiki/" + urllib.parse.quote(title.replace(" ", "_")),
     }, ""
 
@@ -159,7 +198,7 @@ def extract_rows(score_id: str, title: str, raw: str, html: str) -> tuple[dict |
 def classify(row: dict | None, error: str) -> tuple[str, str]:
     if error:
         return "needs_manual_review", error
-    assert row is not None
+    assert row is not None  # noqa: S101
     if row["copyright"].strip().casefold() != "public domain":
         return "exclude", "file record is not explicitly Public Domain"
     if row["image_type"].strip().casefold() != "normal scan":
@@ -176,7 +215,9 @@ def main() -> None:
     parser.add_argument("--cache", type=Path, required=True)
     parser.add_argument("--out-jsonl", type=Path, required=True)
     parser.add_argument("--out-csv", type=Path, required=True)
-    parser.add_argument("--pause", type=float, default=0.35, help="seconds between uncached API calls")
+    parser.add_argument(
+        "--pause", type=float, default=0.35, help="seconds between uncached API calls"
+    )
     args = parser.parse_args()
 
     args.cache.mkdir(parents=True, exist_ok=True)
@@ -191,9 +232,15 @@ def main() -> None:
     rows = []
     for number, score_id in enumerate(sorted(ids), start=1):
         entry = entries.get(score_id)
-        base = {"imslp_id": score_id, "crop_count": crops[score_id], "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        base = {
+            "imslp_id": score_id,
+            "crop_count": crops[score_id],
+            "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
         if not entry:
-            base.update(status="needs_manual_review", reason="not mapped by OpenScore Lieder", work_title="")
+            base.update(
+                status="needs_manual_review", reason="not mapped by OpenScore Lieder", work_title=""
+            )
             rows.append(base)
             continue
         title = work_title(entry)
@@ -201,10 +248,20 @@ def main() -> None:
         page_id = page.get("pageid")
         raw = (page.get("revisions") or [{}])[0].get("*", "")
         if not page_id or not raw:
-            base.update(work_title=title, resolved_work_title=resolved_title, status="needs_manual_review", reason="IMSLP work page not resolved")
+            base.update(
+                work_title=title,
+                resolved_work_title=resolved_title,
+                status="needs_manual_review",
+                reason="IMSLP work page not resolved",
+            )
             rows.append(base)
             continue
-        parsed = cached_api(args.cache, f"parse_{score_id}", {"action": "parse", "pageid": str(page_id), "prop": "text", "format": "json"}, args.pause)
+        parsed = cached_api(
+            args.cache,
+            f"parse_{score_id}",
+            {"action": "parse", "pageid": str(page_id), "prop": "text", "format": "json"},
+            args.pause,
+        )
         html = parsed.get("parse", {}).get("text", {}).get("*", "")
         row, error = extract_rows(score_id, resolved_title, raw, html)
         status, reason = classify(row, error)
@@ -214,7 +271,10 @@ def main() -> None:
         print(f"[{number}/{len(ids)}] {score_id}: {status}")
 
     columns = sorted({key for row in rows for key in row})
-    args.out_jsonl.write_text("\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in rows) + "\n", encoding="utf-8")
+    args.out_jsonl.write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in rows) + "\n",
+        encoding="utf-8",
+    )
     with args.out_csv.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns)
         writer.writeheader()

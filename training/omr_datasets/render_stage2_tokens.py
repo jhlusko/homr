@@ -75,7 +75,8 @@ def render_batch(
     job_path.write_text(json.dumps(job), encoding="utf-8")
     subprocess.run(  # noqa: S603
         ["xvfb-run", "-a", "mscore", "-j", str(job_path)],  # noqa: S607
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     for entry in job:
         destage_output(out_dir, Path(entry["in"]).stem)
@@ -96,12 +97,16 @@ def render_order_key(path: Path) -> tuple:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
-        "--tokens-dir", type=Path, required=True,
+        "--tokens-dir",
+        type=Path,
+        required=True,
         help="extract_stage2_pairs.py's --out dir (holds the .tokens files).",
     )
     parser.add_argument("--out", type=Path, required=True, help="Where rendered pngs go.")
     parser.add_argument(
-        "--scratch", type=Path, required=True,
+        "--scratch",
+        type=Path,
+        required=True,
         help="Scratch dir for generated .musicxml + job files (not needed afterward).",
     )
     parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)

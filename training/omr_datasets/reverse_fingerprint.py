@@ -54,8 +54,9 @@ class Assignment:
 UNREADABLE_SPAN_SCORE = 0.2
 
 
-def span_score(crop_tokens: list[str], gt_tokens: list[str], start: int, end: int,
-               owner: list[int]) -> float:
+def span_score(
+    crop_tokens: list[str], gt_tokens: list[str], start: int, end: int, owner: list[int]
+) -> float:
     """How well this crop's reading explains the label's measures ``[start, end)``.
 
     Uses `difflib`'s similarity on the flat note sequence rather than a per-measure
@@ -172,7 +173,10 @@ def main() -> None:  # noqa: C901
 
     from homr.circle_of_fifths import strip_naturals
     from training.omr_datasets.build_clean_stage2_pairs import pick_png_root
-    from training.omr_datasets.convert_lieder import contains_only_supported_clefs, is_grandstaff
+    from training.omr_datasets.convert_lieder import (
+        contains_only_supported_clefs,
+        is_grandstaff,
+    )
     from training.omr_datasets.extract_stage2_pairs import (
         flat_detected_systems,
         group_staff_boxes_into_voices,
@@ -189,7 +193,10 @@ def main() -> None:  # noqa: C901
     from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
     from training.omr_datasets.notation_sidecar import write_sidecar
     from training.omr_datasets.recover_excluded_pairs import slice_voice_measures
-    from training.transformer.training_vocabulary import calc_ratio_of_tuplets, token_lines_to_str
+    from training.transformer.training_vocabulary import (
+        calc_ratio_of_tuplets,
+        token_lines_to_str,
+    )
 
     Image.MAX_IMAGE_PIXELS = None
 
@@ -203,11 +210,15 @@ def main() -> None:  # noqa: C901
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
-    parser.add_argument("--prediction-cache", type=Path, help="Reuse and update crop readings here.")
+    parser.add_argument(
+        "--prediction-cache", type=Path, help="Reuse and update crop readings here."
+    )
     parser.add_argument("--score-ids", type=Path)
     parser.add_argument("--limit-scores", type=int)
     parser.add_argument(
-        "--min-mean-score", type=float, default=0.45,
+        "--min-mean-score",
+        type=float,
+        default=0.45,
         help="Reject a score's whole segmentation below this mean span score - a "
         "global solution is only as trustworthy as its overall fit.",
     )
@@ -320,8 +331,12 @@ def main() -> None:  # noqa: C901
                 "unclaimed_measures": missing,
                 "accepted": accepted,
                 "assignments": [
-                    {"system": a.system, "start_measure": a.start_measure,
-                     "end_measure": a.end_measure, "score": round(a.score, 3)}
+                    {
+                        "system": a.system,
+                        "start_measure": a.start_measure,
+                        "end_measure": a.end_measure,
+                        "score": round(a.score, 3),
+                    }
                     for a in assignments
                 ],
             }
@@ -349,9 +364,7 @@ def main() -> None:  # noqa: C901
             for voice_index, box in enumerate(groups):
                 if voice_index >= len(voices):
                     continue
-                measures = slice_voice_measures(
-                    voices[voice_index], a.start_measure, a.end_measure
-                )
+                measures = slice_voice_measures(voices[voice_index], a.start_measure, a.end_measure)
                 if not measures or calc_ratio_of_tuplets(measures) > 0.2:
                     continue
                 if not contains_only_supported_clefs(measures):
@@ -361,8 +374,12 @@ def main() -> None:  # noqa: C901
                 image_path = args.out / f"{stem}.png"
                 tokens_path = args.out / f"{stem}.tokens"
                 page.crop(
-                    (box["left"], box["top"], box["left"] + box["width"],
-                     box["top"] + box["height"])
+                    (
+                        box["left"],
+                        box["top"],
+                        box["left"] + box["width"],
+                        box["top"] + box["height"],
+                    )
                 ).save(image_path)
                 tokens_path.write_text(token_lines_to_str(cleaned), encoding="utf-8")
                 write_sidecar(tokens_path, cleaned)

@@ -85,17 +85,15 @@ class TestDataLoaderProfileContext(unittest.TestCase):
             image, tokens = _write_sample(directory, "sq123_0001_0001_1")
             entry = f"{image},{tokens}"
 
-            first = DataLoader(
-                [entry], Config(), is_validation=True, dataset_root=str(directory)
-            )[0]
-            second = DataLoader(
-                [entry], Config(), is_validation=True, dataset_root=str(directory)
-            )[0]
+            first = DataLoader([entry], Config(), is_validation=True, dataset_root=str(directory))[
+                0
+            ]
+            second = DataLoader([entry], Config(), is_validation=True, dataset_root=str(directory))[
+                0
+            ]
 
         self.assertEqual(int(first["profile_present"]), int(second["profile_present"]))
-        self.assertEqual(
-            int(first["profile_family_index"]), int(second["profile_family_index"])
-        )
+        self.assertEqual(int(first["profile_family_index"]), int(second["profile_family_index"]))
 
 
 if __name__ == "__main__":

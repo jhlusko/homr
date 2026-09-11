@@ -112,9 +112,7 @@ def _part_names_and_instruments(score_root: ET.Element) -> dict[str, tuple[str, 
         instrument_name = (
             _text(_child(instrument, "instrument-name")) if instrument is not None else ""
         )
-        family = (
-            _text(_child(instrument, "instrument-sound")) if instrument is not None else ""
-        )
+        family = _text(_child(instrument, "instrument-sound")) if instrument is not None else ""
         if not family:
             family = _family_from_name(instrument_name, display_name)
         result[part_id] = (display_name, family)

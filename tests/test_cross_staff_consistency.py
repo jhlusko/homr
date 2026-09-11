@@ -85,9 +85,7 @@ class TestKeyAndTimeSignatures(unittest.TestCase):
         self.assertEqual(check_key_signatures([staff, list(staff)]), [])
 
     def test_a_different_key_is_reported(self) -> None:
-        findings = check_key_signatures(
-            [[_sym("keySignature_-2")], [_sym("keySignature_0")]]
-        )
+        findings = check_key_signatures([[_sym("keySignature_-2")], [_sym("keySignature_0")]])
 
         self.assertEqual(findings[0].kind, "key_signature_mismatch")
 
@@ -107,9 +105,7 @@ class TestKeyAndTimeSignatures(unittest.TestCase):
         self.assertEqual(check_time_signatures([staff, list(staff)]), [])
 
     def test_a_different_time_signature_is_reported(self) -> None:
-        findings = check_time_signatures(
-            [[_sym("timeSignature/4")], [_sym("timeSignature/8")]]
-        )
+        findings = check_time_signatures([[_sym("timeSignature/4")], [_sym("timeSignature/8")]])
 
         self.assertEqual(findings[0].kind, "time_signature_mismatch")
 
@@ -507,9 +503,10 @@ class TestFindingsByPage(unittest.TestCase):
             + [_sym("keySignature_0"), _sym("newline")]
             + [_sym("keySignature_-3"), _sym("newline")]
         )
-        voice_b = (
-            [_sym("keySignature_0"), _sym("newline")] + [_sym("keySignature_-3"), _sym("newline")]
-        )
+        voice_b = [_sym("keySignature_0"), _sym("newline")] + [
+            _sym("keySignature_-3"),
+            _sym("newline"),
+        ]
         presence = [[True, True], [True, False], [True, True]]
 
         results = findings_by_page([voice_a, voice_b], presence)

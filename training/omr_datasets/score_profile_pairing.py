@@ -20,11 +20,13 @@ routinely (`mix_datasets.py`), and most samples in a mixed batch will not be OSS
 """
 
 import re
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 from homr.score_profile import ScorePart, ScoreProfile
-from training.omr_datasets.score_profile_extraction import extract_score_profile_from_file
+from training.omr_datasets.score_profile_extraction import (
+    extract_score_profile_from_file,
+)
 
 _STEM_PATTERN = re.compile(r"^(?P<score_id>.+)_(?P<page>\d+)_(?P<system>\d+)_(?P<part>\d+)$")
 
@@ -40,7 +42,7 @@ def parse_ossq_stem(stem: str) -> tuple[str, int] | None:
     return match.group("score_id"), int(match.group("part"))
 
 
-@lru_cache(maxsize=None)
+@cache
 def _find_score_musicxml(dataset_root: str, score_id: str) -> Path | None:
     """The one whole-score MusicXML `convert_ossq.py` itself locates as
     `work / f"{score_id}.musicxml"` - cached, since every part of every system in one
@@ -51,7 +53,7 @@ def _find_score_musicxml(dataset_root: str, score_id: str) -> Path | None:
     return matches[0] if matches else None
 
 
-@lru_cache(maxsize=None)
+@cache
 def _profile_for_score(dataset_root: str, score_id: str) -> ScoreProfile | None:
     path = _find_score_musicxml(dataset_root, score_id)
     if path is None:

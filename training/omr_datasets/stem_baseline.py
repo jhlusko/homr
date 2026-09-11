@@ -132,7 +132,11 @@ def measure_part(
         if clef is not None:
             sign = clef.findtext("sign") or "G"
             line_text = clef.findtext("line")
-            line = int(line_text) if line_text and line_text.strip().isdigit() else _CLEF_LINE.get(sign, 3)
+            line = (
+                int(line_text)
+                if line_text and line_text.strip().isdigit()
+                else _CLEF_LINE.get(sign, 3)
+            )
             middle = middle_line(sign, line)
 
         voices = {note.findtext("voice") or "1" for note in measure.findall("note")}

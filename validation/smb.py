@@ -43,9 +43,7 @@ def _sample_kern(sample: dict[object, object]) -> str:
     return "\n".join(
         kern
         for region in regions
-        if isinstance(region, dict)
-        and isinstance(kern := region.get("kern"), str)
-        and kern.strip()
+        if isinstance(region, dict) and isinstance(kern := region.get("kern"), str) and kern.strip()
     )
 
 

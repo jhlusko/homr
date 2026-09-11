@@ -53,7 +53,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--checkpoint", type=Path, required=True, help="A full TrOMR .pth.")
     parser.add_argument(
-        "--out", type=Path, default=Path("."),
+        "--out",
+        type=Path,
+        default=Path("."),
         help="Directory to write encoder_weights.pt/decoder_weights.pt into "
         "(convert_encoder/convert_decoder expect them in the current directory).",
     )

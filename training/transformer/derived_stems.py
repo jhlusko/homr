@@ -38,7 +38,7 @@ from training.omr_datasets.stem_baseline import (
     note_position,
     stated_stem,
 )
-from training.transformer.rule_vs_head import DEFAULT_TIME, _ordering, segment_for
+from training.transformer.rule_vs_head import _ordering, segment_for
 
 
 @dataclass
@@ -132,8 +132,7 @@ def walk_part(part: ET.Element, levels: int) -> tuple[list[Note], list[bool]]:
             if actual is None or position is None:
                 continue
             flagged = (
-                applicable_beam_levels(note.findtext("type")) > 0
-                and note.find("rest") is None
+                applicable_beam_levels(note.findtext("type")) > 0 and note.find("rest") is None
             )
             notes.append(Note(position, actual, len(beamable) if flagged else None))
             if flagged:

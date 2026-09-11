@@ -20,6 +20,7 @@ carried-forward and movement-disambiguated (`extract_ground_truth_window`, the s
 machinery `build_review_assets.py`/`time_signature_for_sample` already use per-sample,
 run once here instead).
 """
+
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -108,7 +109,8 @@ def main() -> None:
                 elapsed = time.time() - t0
                 print(
                     f"[{idx}/{len(scores)}] {score_id}: {written} written, {skipped} skipped "
-                    f"(total {total_written} written, {total_skipped} skipped, {elapsed:.1f}s elapsed)",
+                    f"(total {total_written} written, {total_skipped} skipped, {elapsed:.1f}s "
+                    f"elapsed)",
                     flush=True,
                 )
     else:
@@ -133,11 +135,12 @@ def main() -> None:
                     elapsed = time.time() - t0
                     print(
                         f"[{done}/{len(tasks)}] {score_id}: {written} written, {skipped} skipped "
-                        f"(total {total_written} written, {total_skipped} skipped, {elapsed:.1f}s elapsed)",
+                        f"(total {total_written} written, {total_skipped} skipped, {elapsed:.1f}s "
+                        f"elapsed)",
                         flush=True,
                     )
 
-    print(f"\n===== SPLIT SUMMARY =====")
+    print("\n===== SPLIT SUMMARY =====")
     print(f"pieces: {len(scores)}")
     print(f"fragments written: {total_written}")
     print(f"fragments skipped (no measure in range / error): {total_skipped}")

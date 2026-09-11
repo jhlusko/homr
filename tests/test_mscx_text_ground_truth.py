@@ -7,7 +7,9 @@ from training.omr_datasets.mscx_text_ground_truth import (
 
 
 def _score(body: str) -> bytes:
-    return f"<museScore><Score><Staff><Measure>{body}</Measure></Staff></Score></museScore>".encode()
+    return (
+        f"<museScore><Score><Staff><Measure>{body}</Measure></Staff></Score></museScore>".encode()
+    )
 
 
 class TestTextsFromMscx(unittest.TestCase):
@@ -87,9 +89,7 @@ class TestTextsByKind(unittest.TestCase):
             {"kind": "tempo", "text": "Allegro"},
         ]
 
-        self.assertEqual(
-            texts_by_kind(entries), {"dynamic": ["p", "f"], "tempo": ["Allegro"]}
-        )
+        self.assertEqual(texts_by_kind(entries), {"dynamic": ["p", "f"], "tempo": ["Allegro"]})
 
     def test_duplicates_collapse_within_a_kind(self) -> None:
         entries = [{"kind": "dynamic", "text": "p"}] * 5

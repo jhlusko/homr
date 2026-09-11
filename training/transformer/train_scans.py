@@ -28,7 +28,6 @@ alone specialises the model at the expense of everything else.
 import argparse
 from pathlib import Path
 
-from training.omr_datasets.convert_pdmx import pdmx_train_index
 from training.transformer.train import train_transformer
 from training.transformer.train_lieder_only import REPLAY_CORPORA, _replay_pair
 
@@ -68,7 +67,11 @@ def main() -> None:
     parser.add_argument("--train-index", default=IMSLP_TRAIN_INDEX)
     parser.add_argument("--val-index", default=IMSLP_VAL_INDEX)
     parser.add_argument(
-        "--replay", action="append", metavar="CORPUS=COUNT", type=_replay_pair, default=None,
+        "--replay",
+        action="append",
+        metavar="CORPUS=COUNT",
+        type=_replay_pair,
+        default=None,
         help="Replay corpus and count, repeatable. Defaults to pdmx alone at "
         f"{PDMX_REPLAY_COUNT}. Known: " + ", ".join(sorted(REPLAY_CORPORA)),
     )
@@ -84,8 +87,7 @@ def main() -> None:
     missing = [n for n in replay if not Path(REPLAY_CORPORA[n]).exists()]
     if missing:
         raise SystemExit(
-            "replay corpus not built: "
-            + ", ".join(f"{n} ({REPLAY_CORPORA[n]})" for n in missing)
+            "replay corpus not built: " + ", ".join(f"{n} ({REPLAY_CORPORA[n]})" for n in missing)
         )
 
     replay_names = sorted(replay)
@@ -93,8 +95,10 @@ def main() -> None:
     total = sum(counts)
     replayed = total - args.ossq_count - args.imslp_count
     described = ", ".join(f"{n} {replay[n]}" for n in replay_names)
-    print(f"mix: OSSQ scanned {args.ossq_count}, IMSLP scans {args.imslp_count}, "
-          f"replay [{described}] ({100 * replayed / total:.1f}%) = {total} files")
+    print(
+        f"mix: OSSQ scanned {args.ossq_count}, IMSLP scans {args.imslp_count}, "
+        f"replay [{described}] ({100 * replayed / total:.1f}%) = {total} files"
+    )
     print(f"  ossq index:  {OSSQ_SCANNED_INDEX}")
     print(f"  lieder index:{args.train_index}")
     print(f"  val index:   {args.val_index}")

@@ -85,8 +85,9 @@ class TestDiscovery(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             d = _work(Path(tmp), "Beethoven", "Op.133", "sq1", pages=3)
 
-            self.assertEqual([p.name for p in pages_of(d)], ["sq1:0000.png", "sq1:0001.png",
-                                                             "sq1:0002.png"])
+            self.assertEqual(
+                [p.name for p in pages_of(d)], ["sq1:0000.png", "sq1:0001.png", "sq1:0002.png"]
+            )
 
 
 class TestMatchesForScore(unittest.TestCase):
@@ -96,9 +97,7 @@ class TestMatchesForScore(unittest.TestCase):
 
             matches = matches_for_score(_Reader(["ff", "Allegro", "ben marcato"]), d)
 
-        self.assertEqual(
-            sorted(m["kind"] for m in matches), ["dynamic", "expression", "tempo"]
-        )
+        self.assertEqual(sorted(m["kind"] for m in matches), ["dynamic", "expression", "tempo"])
 
     def test_ocr_text_that_matches_nothing_is_dropped(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

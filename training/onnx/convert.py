@@ -206,7 +206,17 @@ def convert_decoder(overwrite: bool, out_dir: str | None = None) -> str | None:
 
     torch.onnx.export(
         wrapped_model,
-        (rhythms, pitchs, lifts, articulations, slurs, context, cache_len, staff_context_emb, *cache),
+        (
+            rhythms,
+            pitchs,
+            lifts,
+            articulations,
+            slurs,
+            context,
+            cache_len,
+            staff_context_emb,
+            *cache,
+        ),
         path_out,
         input_names=[
             "rhythms",
@@ -418,8 +428,12 @@ def convert_detector(
     # decoder and structured-head exports usable without pytorch_lightning installed.
     from training.architecture.segmentation.model import CamVidModel
 
-    model = CamVidModel(arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=out_classes)
-    model.load_state_dict(torch.load(checkpoint, weights_only=True, map_location="cpu"), strict=True)
+    model = CamVidModel(
+        arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=out_classes
+    )
+    model.load_state_dict(
+        torch.load(checkpoint, weights_only=True, map_location="cpu"), strict=True
+    )
     model.eval()
 
     sample_inputs = torch.randn(1, 3, 320, 320)

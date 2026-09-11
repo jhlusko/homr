@@ -122,6 +122,37 @@ ignore = [
 
 ]
 
+# The rules below are right for `homr/`, which ships, and wrong for the trees that do
+# not. Scoping them per directory keeps the shipping package strict instead of relaxing
+# a rule everywhere to accommodate a script.
+[tool.ruff.lint.per-file-ignores]
+"training/**" = [
+    "T201",  # these are command-line scripts; printing their results is the point, and many already carry a file-level noqa for it
+    "PLC0415",  # imports are deferred on purpose, so a script that never touches torch does not pay for importing it
+    "S314",  # the XML being parsed is our own corpus, produced by MuseScore, not untrusted input
+    "S603",  # subprocess calls are to tools the developer running the script already has
+    "S607",  # and are invoked by name so they resolve on the developer's own PATH
+    "S104",  # the review servers bind 0.0.0.0 to be reachable from the host while running in a container
+    "B905",  # 34 call sites that each need their own answer on whether the lengths are guaranteed equal - see the note below
+]
+"validation/**" = ["S608", "B905"]
+# E501 cannot be suppressed inline where the long line is *inside* a string literal -
+# a `# noqa` there would become part of the string. These two cases are exactly that:
+# XML/YAML fixtures written literally so a reader can see what is being parsed, and the
+# review servers' embedded CSS/JS, which cannot be wrapped without changing what the
+# page does. Everywhere else the long lines were wrapped rather than excused.
+"tests/**" = ["S101", "PLC0415", "S314", "B905", "E501"]
+"training/omr_datasets/review_server.py" = ["E501"]
+"training/omr_datasets/stage2_pair_review_server.py" = ["E501"]
+"training/omr_datasets/stage3_text_review_server.py" = ["E501"]
+"training/omr_datasets/ossq_pair_review_server.py" = ["E501"]
+
+# On B905: `zip()` without `strict=` is a real correctness lint and `homr/` enforces it -
+# `tuplet_repair` gained a `strict=True` that turned a documented invariant into an
+# enforced one. Each remaining call site needs the same question asked of it, and
+# answering 34 of them with a blanket `strict=False` would look like a decision had been
+# made when none had. Deferred deliberately rather than papered over.
+
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 

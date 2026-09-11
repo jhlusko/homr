@@ -54,11 +54,18 @@ from training.omr_datasets.fetch_lieder_ground_truth import (
     load_lieder_scores,
     match_single_piece_scores,
 )
-from training.omr_datasets.fingerprint_measures import align_to_ground_truth, note_tokens
+from training.omr_datasets.fingerprint_measures import (
+    align_to_ground_truth,
+    note_tokens,
+)
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
-from training.transformer.training_vocabulary import max_tuplet_ratio, calc_ratio_of_tuplets, token_lines_to_str
+from training.transformer.training_vocabulary import (
+    calc_ratio_of_tuplets,
+    max_tuplet_ratio,
+    token_lines_to_str,
+)
 
 #: How far either side of the expected position an alignment may land, in measures.
 #: Wide enough to absorb real drift from a miscounted neighbour, narrow enough that
@@ -195,17 +202,17 @@ def main() -> None:
     )
     parser.add_argument("--score-ids", type=Path)
     parser.add_argument(
-        "--skip-logged", type=Path,
+        "--skip-logged",
+        type=Path,
         help="A previous run's log; scores it already reported are skipped. Lets a "
         "killed run resume without redoing work or duplicating manifest lines.",
     )
     parser.add_argument("--window", type=int, default=WINDOW_MEASURES)
     args = parser.parse_args()
 
+    from homr.staff_parsing import add_image_into_tr_omr_canvas
     from homr.transformer.configs import Config
     from homr.transformer.staff2score import Staff2Score
-
-    from homr.staff_parsing import add_image_into_tr_omr_canvas
 
     model = Staff2Score(Config())
 
@@ -306,9 +313,7 @@ def main() -> None:
                     try:
                         import numpy as np
 
-                        predicted = model.predict(
-                            add_image_into_tr_omr_canvas(np.array(crop))
-                        )
+                        predicted = model.predict(add_image_into_tr_omr_canvas(np.array(crop)))
                     except Exception as e:  # noqa: BLE001
                         print(f"{score_id}-sys{position}-v{voice_index}: PREDICT FAILED ({e})")
                         continue

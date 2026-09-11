@@ -29,6 +29,7 @@ see `OSSQ_GROUND_TRUTH_ERRORS.md`'s retraction and `DECODER_RHYTHM_ACCURACY_DESI
 §7.1 for the full account. Do not point `--dataset-root` at a directory that mixes
 page images and homr.main output without addressing this first.
 """
+
 import xml.etree.ElementTree as ET
 from fractions import Fraction
 from pathlib import Path
@@ -127,9 +128,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    files = sorted(
-        p for p in args.dataset_root.rglob("*.musicxml") if "/musicxml/" not in str(p)
-    )
+    files = sorted(p for p in args.dataset_root.rglob("*.musicxml") if "/musicxml/" not in str(p))
     if not files:
         raise SystemExit(f"No ground-truth MusicXML found under {args.dataset_root}.")
     print(f"scanning {len(files)} ground-truth files")
@@ -140,8 +139,10 @@ def main() -> None:
         if idx % 50 == 0:
             print(f"  [{idx}/{len(files)}] ... {len(all_findings)} findings so far")
 
-    print(f"\n===== {len(all_findings)} measure(s) with disagreeing part lengths, "
-          f"across {len({f['file'] for f in all_findings})} file(s) =====")
+    print(
+        f"\n===== {len(all_findings)} measure(s) with disagreeing part lengths, "
+        f"across {len({f['file'] for f in all_findings})} file(s) ====="
+    )
     for f in all_findings:
         print(f"{f['file']}  measure_index={f['measure_index']}")
         for part, (num, length) in f["per_part"].items():

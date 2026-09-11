@@ -38,6 +38,7 @@ Three buckets result:
     measure number falls outside what the ground truth has (e.g. HOMR mis-detected
     the number of systems and hoos double-counted its own measures).
 """
+
 import json
 import sys
 import traceback
@@ -45,13 +46,14 @@ from pathlib import Path
 
 sys.path.insert(0, "/workspace/b0/homr")
 
+import xml.etree.ElementTree as ET
+
 from homr.cross_staff_consistency import _cumulative_barline_positions, staves_by_system
 from homr.cross_staff_repair import propose_majority_position_corrections
 from homr.main import ProcessingConfig, detect_staffs_in_image
 from homr.staff_parsing import _plan_systems, parse_staffs
 from homr.transformer.configs import Config as TransformerConfig
 from training.omr_datasets.ossq_measure_length_audit import measure_length_by_part
-import xml.etree.ElementTree as ET
 
 
 def analyze_page(image_path: str) -> list[dict]:
@@ -78,9 +80,9 @@ def analyze_page(image_path: str) -> list[dict]:
                     "system_index": system_index,
                     "staff_index": proposal.staff_index,
                     "measure_index_in_system": proposal.measure_index,
-                    "absolute_measure_number": barlines_before_this_system
-                    + proposal.measure_index
-                    + 1,
+                    "absolute_measure_number": (
+                        barlines_before_this_system + proposal.measure_index + 1
+                    ),
                     "offset": str(proposal.offset),
                     "corroborating_staves": proposal.corroborating_staves,
                 }
@@ -110,7 +112,9 @@ def check_ground_truth(gt_path: Path, measure_number: int) -> dict | None:
         measures = [m for m in p.findall("measure") if m.get("number") == str(measure_number)]
         if not measures:
             return None
-        lengths[p.get("id")] = str(measure_length_by_part(measures[0], per_part_divisions[p.get("id")]))
+        lengths[p.get("id")] = str(
+            measure_length_by_part(measures[0], per_part_divisions[p.get("id")])
+        )
     distinct = set(lengths.values())
     return {"per_part_lengths": lengths, "agrees": len(distinct) == 1}
 
@@ -157,7 +161,9 @@ def main() -> None:
     print("\n===== SUMMARY =====")
     print(f"total majority_position_correction proposals: {len(all_results)}")
     print(f"  ground truth disagrees (known corpus defect by the invariant): {disagrees}")
-    print(f"  ground truth agrees (candidate: real decode error, or hidden content defect): {agrees}")
+    print(
+        f"  ground truth agrees (candidate: real decode error, or hidden content defect): {agrees}"
+    )
     print(f"  no ground truth available / measure out of range: {no_gt}")
 
 

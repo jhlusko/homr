@@ -114,9 +114,7 @@ class _FakeModel(nn.Module):
 
 
 def _batch(staff_count: int = 3, real_staves: int = 2, seq_len: int = 5) -> dict:
-    staff_mask = torch.tensor(
-        [[True] * real_staves + [False] * (staff_count - real_staves)]
-    )
+    staff_mask = torch.tensor([[True] * real_staves + [False] * (staff_count - real_staves)])
     token_field = torch.zeros(1, staff_count, seq_len, dtype=torch.long)
     return {
         "inputs": torch.randn(1, staff_count, seq_len, 4),
@@ -192,9 +190,7 @@ class TestStaffContextParameters(unittest.TestCase):
 
         params = staff_context_parameters(model)
         names = [
-            name
-            for name, param in model.named_parameters()
-            if any(param is p for p in params)
+            name for name, param in model.named_parameters() if any(param is p for p in params)
         ]
 
         self.assertTrue(names)
@@ -220,9 +216,7 @@ class TestTwoPassForward(unittest.TestCase):
 
         outputs = two_pass_forward(model, _batch(), device="cpu")
 
-        self.assertTrue(
-            torch.equal(outputs["first_pass"]["loss"], outputs["second_pass"]["loss"])
-        )
+        self.assertTrue(torch.equal(outputs["first_pass"]["loss"], outputs["second_pass"]["loss"]))
 
     def test_moving_the_gate_changes_the_second_pass(self) -> None:
         model = _FakeModel()
@@ -232,9 +226,7 @@ class TestTwoPassForward(unittest.TestCase):
 
         outputs = two_pass_forward(model, _batch(), device="cpu")
 
-        self.assertFalse(
-            torch.equal(outputs["first_pass"]["loss"], outputs["second_pass"]["loss"])
-        )
+        self.assertFalse(torch.equal(outputs["first_pass"]["loss"], outputs["second_pass"]["loss"]))
 
 
 class TestMixedFirstPassHidden(unittest.TestCase):
@@ -318,7 +310,11 @@ class TestTrainEpoch(unittest.TestCase):
 
         with contextlib.redirect_stdout(io.StringIO()) as out:
             train_epoch(
-                model, [_batch(), _batch()], optimizer, epoch=1, device="cpu",
+                model,
+                [_batch(), _batch()],
+                optimizer,
+                epoch=1,
+                device="cpu",
                 progress_every=1,
             )
 
@@ -332,7 +328,11 @@ class TestTrainEpoch(unittest.TestCase):
 
         with contextlib.redirect_stdout(io.StringIO()) as out:
             train_epoch(
-                model, [_batch(), _batch()], optimizer, epoch=1, device="cpu",
+                model,
+                [_batch(), _batch()],
+                optimizer,
+                epoch=1,
+                device="cpu",
                 progress_every=0,
             )
 

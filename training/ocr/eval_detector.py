@@ -38,7 +38,10 @@ from training.ocr.train_detector import (
 
 def load_checkpoint(path: Path, device: str) -> CamVidModel:
     model = CamVidModel(
-        arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=NUM_CLASSES,
+        arch="Unet",
+        encoder_name="resnet18",
+        in_channels=3,
+        out_classes=NUM_CLASSES,
         skip_weights_download=True,
     ).to(device)
     model.load_state_dict(torch.load(path, map_location=device))
@@ -47,12 +50,19 @@ def load_checkpoint(path: Path, device: str) -> CamVidModel:
 
 
 def score(
-    checkpoint: Path, index: Path, device: str = "cpu", ignore_index: int | None = 255,
-    batch_size: int = 16, workers: int = 4,
+    checkpoint: Path,
+    index: Path,
+    device: str = "cpu",
+    ignore_index: int | None = 255,
+    batch_size: int = 16,
+    workers: int = 4,
 ) -> dict[str, float]:
     dataset = PreExtractedPatches(read_index(index))
     loader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=False, num_workers=workers,
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=workers,
         collate_fn=collate,
     )
     return evaluate(load_checkpoint(checkpoint, device), loader, device, ignore_index)
@@ -61,20 +71,24 @@ def score(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--checkpoint", type=Path, required=True, nargs="+",
+        "--checkpoint",
+        type=Path,
+        required=True,
+        nargs="+",
         help="One or more saved .pth files, scored in turn.",
     )
     parser.add_argument(
-        "--index", type=Path, required=True, nargs="+",
+        "--index",
+        type=Path,
+        required=True,
+        nargs="+",
         help="One or more pre-extracted bank indexes, each scored separately.",
     )
     parser.add_argument("--ignore-index", type=int, default=255)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--out", type=Path)
-    parser.add_argument(
-        "--device", default="cuda" if torch.cuda.is_available() else "cpu"
-    )
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
     results: dict[str, dict[str, dict[str, float]]] = {}
@@ -90,8 +104,12 @@ def main() -> None:
         results[set_name] = {}
         for checkpoint in args.checkpoint:
             per_class = score(
-                checkpoint, index, args.device, args.ignore_index,
-                args.batch_size, args.workers,
+                checkpoint,
+                index,
+                args.device,
+                args.ignore_index,
+                args.batch_size,
+                args.workers,
             )
             results[set_name][checkpoint.stem] = per_class
             print(f"{set_name} / {checkpoint.stem}")

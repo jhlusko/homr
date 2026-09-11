@@ -7,9 +7,7 @@ class TestSampleSpreadAcrossScores(unittest.TestCase):
     def test_one_prolific_score_cannot_dominate(self) -> None:
         """The previous review drew 22 of 50 judged items from two scores, which made
         the many-to-many signal impossible to separate from a per-score failure."""
-        stems = [f"BIG-sys{i}-v0" for i in range(90)] + [
-            f"S{j}-sys0-v0" for j in range(9)
-        ]
+        stems = [f"BIG-sys{i}-v0" for i in range(90)] + [f"S{j}-sys0-v0" for j in range(9)]
         picked = sample_spread_across_scores(stems, 10, "eval")
         from_big = sum(1 for s in picked if s.startswith("BIG-"))
         self.assertEqual(len(picked), 10)
@@ -59,12 +57,11 @@ class TestIdenticalPanesAreDropped(unittest.TestCase):
             same.write_text("rest_4 _ _ _ _ upper\n", encoding="utf-8")
             other = root / "other.tokens"
             other.write_text("note_4 C4 _ _ _ upper\n", encoding="utf-8")
-            left = {"S-sys0-v0": f"{root/'a.png'},{same}",
-                    "S-sys1-v0": f"{root/'a.png'},{same}"}
-            right = {"S-sys0-v0": f"{root/'a.png'},{same}",
-                     "S-sys1-v0": f"{root/'a.png'},{other}"}
+            left = {"S-sys0-v0": f"{root/'a.png'},{same}", "S-sys1-v0": f"{root/'a.png'},{same}"}
+            right = {"S-sys0-v0": f"{root/'a.png'},{same}", "S-sys1-v0": f"{root/'a.png'},{other}"}
             out = root / "out"
             build_set("t", ["S-sys0-v0", "S-sys1-v0"], left, right, out, 10)
             import json
+
             ids = [x["id"] for x in json.load(open(out / "t" / "manifest.json"))]
             self.assertEqual(ids, ["S-sys1-v0"])

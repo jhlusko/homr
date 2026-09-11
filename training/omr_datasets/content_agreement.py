@@ -40,15 +40,13 @@ def content_agreement(record: dict) -> tuple[float, int]:
     ref_pitch, got_pitch = record["pitch_reference"], record["pitch_predicted"]
     ref_rhythm, got_rhythm = record["rhythm_reference"], record["rhythm_predicted"]
     real = [
-        i for i, (a, b) in enumerate(zip(ref_rhythm, got_rhythm))
+        i
+        for i, (a, b) in enumerate(zip(ref_rhythm, got_rhythm))
         if not a.startswith(PAD) and not b.startswith(PAD)
     ]
     if not real:
         return 1.0, 0
-    hit = sum(
-        1 for i in real
-        if ref_pitch[i] == got_pitch[i] and ref_rhythm[i] == got_rhythm[i]
-    )
+    hit = sum(1 for i in real if ref_pitch[i] == got_pitch[i] and ref_rhythm[i] == got_rhythm[i])
     return hit / len(real), len(real)
 
 
@@ -56,8 +54,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--predictions", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
-    parser.add_argument("--min-notes", type=int, default=8,
-                        help="Ignore staves too short for a rate to mean anything.")
+    parser.add_argument(
+        "--min-notes",
+        type=int,
+        default=8,
+        help="Ignore staves too short for a rate to mean anything.",
+    )
     args = parser.parse_args()
 
     rows = []
@@ -67,8 +69,13 @@ def main() -> None:
         record = json.loads(line)
         agreement, notes = content_agreement(record)
         if notes >= args.min_notes:
-            rows.append({"stem": Path(record["tokens"]).stem,
-                         "agreement": round(agreement, 4), "notes": notes})
+            rows.append(
+                {
+                    "stem": Path(record["tokens"]).stem,
+                    "agreement": round(agreement, 4),
+                    "notes": notes,
+                }
+            )
     rows.sort(key=lambda r: r["agreement"])
 
     values = [r["agreement"] for r in rows]

@@ -51,15 +51,22 @@ def render_score(pdf: Path, out_dir: Path, dpi: int = DPI) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--pdfs", type=Path, required=True,
-                        help="The archive's pdfs/ directory of <score>.pdf.")
-    parser.add_argument("--pages", type=Path, required=True,
-                        help="lieder_vocal_text/pages, one directory per score.")
-    parser.add_argument("--labels", type=Path,
-                        help="If given, only restore scores that have a label file here.")
+    parser.add_argument(
+        "--pdfs", type=Path, required=True, help="The archive's pdfs/ directory of <score>.pdf."
+    )
+    parser.add_argument(
+        "--pages",
+        type=Path,
+        required=True,
+        help="lieder_vocal_text/pages, one directory per score.",
+    )
+    parser.add_argument(
+        "--labels", type=Path, help="If given, only restore scores that have a label file here."
+    )
     parser.add_argument("--dpi", type=int, default=DPI)
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Re-render scores that already have pages.")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Re-render scores that already have pages."
+    )
     args = parser.parse_args()
 
     pdfs = sorted(args.pdfs.glob("*.pdf"))
@@ -84,14 +91,19 @@ def main() -> None:
             count = render_score(pdf, out_dir, args.dpi)
         except subprocess.CalledProcessError as error:
             failed.append(pdf.stem)
-            print(f"[{index}/{len(pdfs)}] {pdf.stem}: FAILED "
-                  f"{error.stderr.decode(errors='replace').strip()[:200]}", flush=True)
+            print(
+                f"[{index}/{len(pdfs)}] {pdf.stem}: FAILED "
+                f"{error.stderr.decode(errors='replace').strip()[:200]}",
+                flush=True,
+            )
             continue
         rendered += count
         print(f"[{index}/{len(pdfs)}] {pdf.stem}: {count} page(s)", flush=True)
 
-    print(f"\n{rendered:,} pages rendered; {present} score(s) already had pages, "
-          f"{unlabelled} unlabelled, {len(failed)} failed")
+    print(
+        f"\n{rendered:,} pages rendered; {present} score(s) already had pages, "
+        f"{unlabelled} unlabelled, {len(failed)} failed"
+    )
     if failed:
         print("failed: " + ", ".join(failed))
         sys.exit(1)

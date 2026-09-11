@@ -224,14 +224,14 @@ def detect_score(pdf_path: Path, pngs_root: Path) -> dict:
             angle = deskew_page_file(str(page_path))
             if angle:
                 print(f"  {page_path.name}: corrected {angle:+.2f} degree skew")
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110
             # Same reasoning as the detection try/except below - a page this pipeline
             # can't even estimate a skew angle for (no staffs/noteheads at all) is left
             # as rasterized and handed to detection unchanged, not aborted here.
             pass
         try:
             width, height, systems = detect_systems_on_page(page_path)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S112
             # A title page, a blank leaf, or anything else with no notation at all
             # raises inside homr's own pipeline ("No staffs found"/"No noteheads
             # found") - that is a property of this one page, not the whole score, so

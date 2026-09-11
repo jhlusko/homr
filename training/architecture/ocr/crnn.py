@@ -18,7 +18,7 @@ language prior this design is avoiding.
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 #: Every crop is scaled to this height, keeping its aspect ratio.
 #:
@@ -72,7 +72,7 @@ class Alphabet:
         text = []
         previous = None
         for index in indices:
-            if index != previous and index != BLANK:
+            if index not in (previous, BLANK):
                 text.append(self._to_character.get(index, ""))
             previous = index
         return "".join(text)
@@ -94,19 +94,30 @@ class CRNN(nn.Module):
         # Width is halved only twice, so a 3-character syllable still gets several frames
         # per character and CTC has room to place them.
         self.features = nn.Sequential(
-            nn.Conv2d(channels, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
+            nn.Conv2d(channels, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
             nn.MaxPool2d(2, 2),
-            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
             nn.MaxPool2d(2, 2),
-            nn.Conv2d(64, 128, 3, padding=1), nn.BatchNorm2d(128), nn.ReLU(),
+            nn.Conv2d(64, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
             nn.MaxPool2d((2, 1), (2, 1)),
-            nn.Conv2d(128, 128, 3, padding=1), nn.BatchNorm2d(128), nn.ReLU(),
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
             nn.MaxPool2d((2, 1), (2, 1)),
         )
         # Four height-halving pools, so each frame is the surviving rows times the
         # channels. Hardcoding this to the 32px case is what made the height unswappable.
         self.recurrent = nn.GRU(
-            128 * (image_height // 16), hidden, num_layers=2, bidirectional=True,
+            128 * (image_height // 16),
+            hidden,
+            num_layers=2,
+            bidirectional=True,
             batch_first=True,
         )
         self.classify = nn.Linear(hidden * 2, alphabet_size)

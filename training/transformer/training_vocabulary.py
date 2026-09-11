@@ -1,8 +1,8 @@
 import json
+import os
 import re
 from collections import defaultdict
 
-import os
 import torch
 
 from homr.transformer.configs import default_config

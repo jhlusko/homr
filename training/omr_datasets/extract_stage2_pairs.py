@@ -74,8 +74,10 @@ from training.omr_datasets.fetch_lieder_ground_truth import (
 from training.omr_datasets.music_xml_parser import Measure, music_xml_string_to_tokens
 from training.omr_datasets.musicxml_text_ground_truth import unzip_mxl
 from training.omr_datasets.notation_sidecar import write_sidecar
-from training.transformer.training_vocabulary import calc_ratio_of_tuplets, token_lines_to_str
-
+from training.transformer.training_vocabulary import (
+    calc_ratio_of_tuplets,
+    token_lines_to_str,
+)
 
 # See recover_excluded_pairs.py: PIL's ~179M-pixel "decompression bomb" guard
 # rejects some of our own full-resolution IMSLP page scans by raising, which would
@@ -83,9 +85,7 @@ from training.transformer.training_vocabulary import calc_ratio_of_tuplets, toke
 Image.MAX_IMAGE_PIXELS = None
 
 
-def eligible_system_positions(
-    rows: list[dict], review: dict[str, dict]
-) -> dict[str, set[int]]:
+def eligible_system_positions(rows: list[dict], review: dict[str, dict]) -> dict[str, set[int]]:
     """`{score_id: {system_position, ...}}` - the flat (whole-piece, not per-page)
     positions eligible for extraction, per this module's own eligibility rule.
 
@@ -208,9 +208,7 @@ def extract_score_pairs(
             continue
 
         system = detected[position]
-        groups = group_staff_boxes_into_voices(
-            system.get("staffBoxes", []), voice_is_grandstaff
-        )
+        groups = group_staff_boxes_into_voices(system.get("staffBoxes", []), voice_is_grandstaff)
         if groups is None:
             continue
 
@@ -246,25 +244,36 @@ def extract_score_pairs(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    parser.add_argument("--rows", type=Path, required=True, help="compare_bar_counts.py --rows-out.")
+    parser.add_argument(
+        "--rows", type=Path, required=True, help="compare_bar_counts.py --rows-out."
+    )
     parser.add_argument("--review", type=Path, required=True, help="imslp_match_review.json.")
     parser.add_argument("--scores-yaml-cache", type=Path)
     parser.add_argument("--file-tree-cache", type=Path)
     parser.add_argument("--mxl-tree-cache", type=Path)
     parser.add_argument(
-        "--ground-truth", type=Path, required=True,
+        "--ground-truth",
+        type=Path,
+        required=True,
         help="fetch_lieder_ground_truth.py's --out dir.",
     )
-    parser.add_argument("--systems", type=Path, required=True, help="imslp_systems_with_staff_boxes dir.")
     parser.add_argument(
-        "--pngs", type=Path, required=True, nargs="+",
+        "--systems", type=Path, required=True, help="imslp_systems_with_staff_boxes dir."
+    )
+    parser.add_argument(
+        "--pngs",
+        type=Path,
+        required=True,
+        nargs="+",
         help="One or more imslp_pngs dirs (e.g. both imslp_pngs and imslp_pngs_new - the "
         "355-score and 121-OLiMPiC corpora keep separate png dirs even though "
         "imslp_systems_with_staff_boxes is shared). Resolved per score by whichever "
         "dir actually has that score's own subdirectory.",
     )
     parser.add_argument("--out", type=Path, required=True, help="Output dir for crops/tokens.")
-    parser.add_argument("--manifest", type=Path, required=True, help="Output manifest (image,tokens csv).")
+    parser.add_argument(
+        "--manifest", type=Path, required=True, help="Output manifest (image,tokens csv)."
+    )
     parser.add_argument("--score-ids", type=Path, help="Optional subset, one id per line.")
     args = parser.parse_args()
 
@@ -302,8 +311,16 @@ def main() -> None:
                 ground_truth = json.loads(gt_path.read_text(encoding="utf-8"))
                 systems_doc = yaml.safe_load(systems_path.read_text(encoding="utf-8"))
                 lines = extract_score_pairs(
-                    score_id, key, entry, file_tree, mxl_tree, ground_truth,
-                    systems_doc, eligible, pngs_dir, args.out,
+                    score_id,
+                    key,
+                    entry,
+                    file_tree,
+                    mxl_tree,
+                    ground_truth,
+                    systems_doc,
+                    eligible,
+                    pngs_dir,
+                    args.out,
                 )
             except Exception as e:  # noqa: BLE001
                 print(f"{score_id}: FAILED ({e})")

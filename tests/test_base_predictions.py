@@ -85,9 +85,13 @@ class TestReadableByDomainGap(unittest.TestCase):
     def test_domain_gap_scores_a_perfect_staff_as_one(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = self._jsonl(
-                Path(tmp), "p.jsonl",
-                [record_for(Path("/d/a.txt"), [_note("C4"), _note("D4")],
-                            [_note("C4"), _note("D4")])],
+                Path(tmp),
+                "p.jsonl",
+                [
+                    record_for(
+                        Path("/d/a.txt"), [_note("C4"), _note("D4")], [_note("C4"), _note("D4")]
+                    )
+                ],
             )
 
             scored = staff_accuracy(path, "pitch")
@@ -97,9 +101,13 @@ class TestReadableByDomainGap(unittest.TestCase):
     def test_domain_gap_sees_a_collapsed_staff_as_near_zero(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = self._jsonl(
-                Path(tmp), "p.jsonl",
-                [record_for(Path("/d/a.txt"), [_note("C4"), _note("D4"), _note("E4")],
-                            [_note("G5")])],
+                Path(tmp),
+                "p.jsonl",
+                [
+                    record_for(
+                        Path("/d/a.txt"), [_note("C4"), _note("D4"), _note("E4")], [_note("G5")]
+                    )
+                ],
             )
 
             scored = staff_accuracy(path, "pitch")
@@ -109,9 +117,13 @@ class TestReadableByDomainGap(unittest.TestCase):
     def test_the_reported_count_is_the_padded_length(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = self._jsonl(
-                Path(tmp), "p.jsonl",
-                [record_for(Path("/d/a.txt"), [_note("C4"), _note("D4"), _note("E4")],
-                            [_note("C4")])],
+                Path(tmp),
+                "p.jsonl",
+                [
+                    record_for(
+                        Path("/d/a.txt"), [_note("C4"), _note("D4"), _note("E4")], [_note("C4")]
+                    )
+                ],
             )
 
             scored = staff_accuracy(path, "pitch")
@@ -149,9 +161,7 @@ class TestCheckpointIsActuallyLoaded(unittest.TestCase):
 
         import training.architecture.transformer.staff2score as loader
 
-        self.assertIn(
-            "config.filepaths.checkpoint", P(loader.__file__).read_text(encoding="utf-8")
-        )
+        self.assertIn("config.filepaths.checkpoint", P(loader.__file__).read_text(encoding="utf-8"))
 
     def test_the_inference_class_does_not(self) -> None:
         # Pinning the asymmetry itself: if the homr-side class ever gains checkpoint
@@ -160,6 +170,4 @@ class TestCheckpointIsActuallyLoaded(unittest.TestCase):
 
         import homr.transformer.staff2score as inference
 
-        self.assertNotIn(
-            "filepaths.checkpoint", P(inference.__file__).read_text(encoding="utf-8")
-        )
+        self.assertNotIn("filepaths.checkpoint", P(inference.__file__).read_text(encoding="utf-8"))

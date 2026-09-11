@@ -82,7 +82,10 @@ def order_key(entry: dict) -> tuple[int, str]:
 def page_system_counts(systems_doc: dict) -> list[int]:
     """Per-page system count, in page order, from an already-detected
     `imslp_systems(_repaired)/*.yaml` document - no new detection needed."""
-    return [len(systems_doc["pages"][page_number]["systems"]) for page_number in sorted(systems_doc["pages"])]
+    return [
+        len(systems_doc["pages"][page_number]["systems"])
+        for page_number in sorted(systems_doc["pages"])
+    ]
 
 
 def piece_page_signature(pages: list[list[int]]) -> list[int]:
@@ -150,11 +153,13 @@ def main() -> None:
         "--score-ids", type=Path, required=True, help="Text file, one score id per line."
     )
     parser.add_argument(
-        "--scores-yaml-cache", type=Path,
+        "--scores-yaml-cache",
+        type=Path,
         help="Local cache of Lieder's scores.yaml - fetched once, reused after.",
     )
     parser.add_argument(
-        "--file-tree-cache", type=Path,
+        "--file-tree-cache",
+        type=Path,
         help="Local cache of the Lieder repo's own file tree - fetched once, reused after.",
     )
     parser.add_argument("--systems", type=Path, required=True, help="imslp_systems(_repaired) dir.")

@@ -3,19 +3,19 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from training.transformer.training_vocabulary import read_tokens, to_decoder_branches
 from homr.transformer.vocabulary import EncodedSymbol, Vocabulary
 from training.omr_datasets.convert_ossq import (
     CROP_NAME,
     Example,
     UnconvertibleStaff,
-    collapse_unrepresentable_slurs,
-    link_image,
     build,
+    collapse_unrepresentable_slurs,
     crop_numbers,
     extract_part,
+    link_image,
     write_index,
 )
+from training.transformer.training_vocabulary import read_tokens, to_decoder_branches
 
 
 def _segment(parts: int = 3) -> ET.Element:
@@ -504,8 +504,6 @@ class TestGrandStaffIsRefused(unittest.TestCase):
             self.assertEqual(len(build(root, out, track="synthetic")), 3)
 
 
-
-
 class TestCollapsingUnrepresentableSlurs(unittest.TestCase):
     """homr's slur field has three values, and real music needs more.
 
@@ -557,8 +555,13 @@ class TestCollapsingUnrepresentableSlurs(unittest.TestCase):
     def test_everything_it_produces_is_in_the_vocabulary(self) -> None:
         # The property that matters: whatever comes out must load.
         vocab = Vocabulary()
-        for field in ("slurStop_slurStop", "slurStart_slurStart_slurStart",
-                      "slurStart_slurStart_slurStop", "slurStart_slurStop", "slurStart"):
+        for field in (
+            "slurStop_slurStop",
+            "slurStart_slurStart_slurStart",
+            "slurStart_slurStart_slurStop",
+            "slurStart_slurStop",
+            "slurStart",
+        ):
             symbols = [self._symbol(field)]
             collapse_unrepresentable_slurs(symbols)
             self.assertIn(symbols[0].slur, vocab.slur, field)

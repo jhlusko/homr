@@ -33,9 +33,7 @@ class TestSystemCountAlignment(unittest.TestCase):
         report = align_system_counts([3, 2], [2, 3], min_margin=0)
 
         self.assertEqual(aligned_ranges(report), {})
-        self.assertTrue(
-            all(item["status"] == "boundary_ambiguous" for item in report["systems"])
-        )
+        self.assertTrue(all(item["status"] == "boundary_ambiguous" for item in report["systems"]))
 
     def test_false_positive_scan_system_is_skipped_without_shifting_the_score(self) -> None:
         report = align_system_counts([8, 3, 4], [3, 4])

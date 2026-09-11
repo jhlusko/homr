@@ -36,15 +36,15 @@ from fractions import Fraction
 from pathlib import Path
 
 from homr.cross_staff_consistency import (
+    check_barline_positions,
     check_key_signatures,
     check_measure_counts,
     check_measure_durations,
-    check_barline_positions,
     check_shared_motifs,
     check_time_signatures,
 )
-from homr.transformer.vocabulary import EncodedSymbol
 from homr.music_xml_generator import add_tuplet_start_stop, group_into_chords
+from homr.transformer.vocabulary import EncodedSymbol
 from training.transformer.training_vocabulary import read_tokens
 
 STEM_RE = re.compile(r"^(?P<score>.+)-sys(?P<system>\d+)-v(?P<voice>\d+)$")
@@ -246,8 +246,9 @@ def main() -> None:
                 continue
             bars = overfull_bars(staff, ratio)
             if bars:
-                overfull.append({"score_id": score, "system": system,
-                                 "voice": staff_voice[index], "bars": bars})
+                overfull.append(
+                    {"score_id": score, "system": system, "voice": staff_voice[index], "bars": bars}
+                )
                 kinds["overfull_bar"] += 1
         if len(staves) < 2:
             continue
@@ -260,17 +261,29 @@ def main() -> None:
                 findings.extend(check(duration_staves))
         for finding in findings:
             kinds[finding.kind] += 1
-            cross_staff.append({"score_id": score, "system": system,
-                                "kind": finding.kind, "message": finding.message,
-                                "staff_indices": list(finding.staff_indices)})
+            cross_staff.append(
+                {
+                    "score_id": score,
+                    "system": system,
+                    "kind": finding.kind,
+                    "message": finding.message,
+                    "staff_indices": list(finding.staff_indices),
+                }
+            )
 
-    args.report.write_text(json.dumps({
-        "systems_examined": systems,
-        "grand_staff_voices_reconstructed": reconstructed,
-        "findings_by_kind": dict(kinds),
-        "cross_staff": cross_staff,
-        "overfull": overfull,
-    }, indent=2), encoding="utf-8")
+    args.report.write_text(
+        json.dumps(
+            {
+                "systems_examined": systems,
+                "grand_staff_voices_reconstructed": reconstructed,
+                "findings_by_kind": dict(kinds),
+                "cross_staff": cross_staff,
+                "overfull": overfull,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     print(f"systems examined: {systems}")
     print(f"grand-staff voices split into two staves: {reconstructed}")
     for kind, count in kinds.most_common():

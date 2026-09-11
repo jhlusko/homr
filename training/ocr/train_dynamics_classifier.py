@@ -61,8 +61,11 @@ def train(args: argparse.Namespace) -> dict:
 
     loaders = {
         "train": DataLoader(
-            train_set, batch_size=args.batch_size, shuffle=True,
-            num_workers=args.workers, collate_fn=collate,
+            train_set,
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.workers,
+            collate_fn=collate,
         ),
         "valid": DataLoader(
             valid_set, batch_size=args.batch_size, num_workers=args.workers, collate_fn=collate
@@ -108,7 +111,9 @@ def train(args: argparse.Namespace) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    parser.add_argument("--train", type=Path, required=True, help="train.jsonl from dynamics_crops.")
+    parser.add_argument(
+        "--train", type=Path, required=True, help="train.jsonl from dynamics_crops."
+    )
     parser.add_argument("--valid", type=Path, required=True)
     parser.add_argument("--weights", type=Path)
     parser.add_argument("--out", type=Path)

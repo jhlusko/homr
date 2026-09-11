@@ -8,14 +8,14 @@ from training.architecture.transformer.profile_context import (
 
 
 def _context(**overrides) -> ProfileContext:
-    defaults = dict(
-        instrument_family="strings.violin",
-        part_ordinal=0,
-        staff_within_part=0,
-        expected_staff_count=1,
-        likely_clefs=("G2",),
-        transposition_semitones=0,
-    )
+    defaults = {
+        "instrument_family": "strings.violin",
+        "part_ordinal": 0,
+        "staff_within_part": 0,
+        "expected_staff_count": 1,
+        "likely_clefs": ("G2",),
+        "transposition_semitones": 0,
+    }
     defaults.update(overrides)
     return ProfileContext(**defaults)
 
@@ -36,9 +36,7 @@ class TestApplyContextDropout(unittest.TestCase):
         rng = random.Random(0)
         rng.random = lambda: 0.4  # type: ignore[method-assign]
 
-        result = apply_context_dropout(
-            _context(), rng, no_profile_prob=0.3, partial_mask_prob=0.3
-        )
+        result = apply_context_dropout(_context(), rng, no_profile_prob=0.3, partial_mask_prob=0.3)
 
         self.assertIsNotNone(result)
         assert result is not None
@@ -52,9 +50,7 @@ class TestApplyContextDropout(unittest.TestCase):
         rng = random.Random(0)
         rng.random = lambda: 0.9  # type: ignore[method-assign]
 
-        result = apply_context_dropout(
-            _context(), rng, no_profile_prob=0.3, partial_mask_prob=0.3
-        )
+        result = apply_context_dropout(_context(), rng, no_profile_prob=0.3, partial_mask_prob=0.3)
 
         self.assertEqual(result, _context())
 
@@ -62,9 +58,7 @@ class TestApplyContextDropout(unittest.TestCase):
         rng = random.Random(0)
         rng.random = lambda: 0.3  # type: ignore[method-assign]
 
-        result = apply_context_dropout(
-            _context(), rng, no_profile_prob=0.3, partial_mask_prob=0.3
-        )
+        result = apply_context_dropout(_context(), rng, no_profile_prob=0.3, partial_mask_prob=0.3)
 
         self.assertIsNotNone(result)
         assert result is not None
@@ -83,9 +77,7 @@ class TestApplyContextDropout(unittest.TestCase):
         rng = random.Random(0)
 
         for _ in range(50):
-            self.assertIsNone(
-                apply_context_dropout(_context(), rng, no_profile_prob=1.0)
-            )
+            self.assertIsNone(apply_context_dropout(_context(), rng, no_profile_prob=1.0))
 
 
 if __name__ == "__main__":

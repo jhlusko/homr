@@ -1,7 +1,7 @@
 import tempfile
 import unittest
-from pathlib import Path
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from training.omr_datasets.slur_placement import (
     Alignment,
@@ -56,14 +56,12 @@ class TestSignature(unittest.TestCase):
         # A count alone cannot: a dropped note and an added one cancel out.
         first = note_signature(
             ET.fromstring(
-                "<note><pitch><step>C</step><octave>5</octave></pitch>"
-                "<type>eighth</type></note>"
+                "<note><pitch><step>C</step><octave>5</octave></pitch>" "<type>eighth</type></note>"
             )
         )
         second = note_signature(
             ET.fromstring(
-                "<note><pitch><step>D</step><octave>5</octave></pitch>"
-                "<type>eighth</type></note>"
+                "<note><pitch><step>D</step><octave>5</octave></pitch>" "<type>eighth</type></note>"
             )
         )
 
@@ -106,9 +104,7 @@ class TestPlacements(unittest.TestCase):
         notations = '<notations><slur type="start" number="1" placement="below"/></notations>'
         notes = VISIBLE.format(notations=notations) + INVISIBLE + VISIBLE.format(notations="")
 
-        self.assertEqual(
-            len(part_placements(_part(notes))), len(part_signature(_part(notes)))
-        )
+        self.assertEqual(len(part_placements(_part(notes))), len(part_signature(_part(notes))))
 
 
 class TestAlignmentReport(unittest.TestCase):
@@ -122,17 +118,14 @@ class TestAlignmentReport(unittest.TestCase):
         self.assertIn("0", Alignment().describe())
 
 
-
-
 SEG_TEMPLATE = (
-    '<score-partwise><part id="P1"><measure number="1">{notes}</measure></part>'
-    "</score-partwise>"
+    '<score-partwise><part id="P1"><measure number="1">{notes}</measure></part>' "</score-partwise>"
 )
 
 
 def _slurred(step: str, number: str = "1", kind: str = "start") -> str:
     return (
-        f'<note><pitch><step>{step}</step><octave>5</octave></pitch>'
+        f"<note><pitch><step>{step}</step><octave>5</octave></pitch>"
         f"<duration>1</duration><type>eighth</type>"
         f'<notations><slur type="{kind}" number="{number}"/></notations></note>'
     )
@@ -151,7 +144,9 @@ class TestPlacementIndex(unittest.TestCase):
         segments = work / "musicxml" / "unaligned"
         segments.mkdir(parents=True)
         whole_notes = _slurred("C") + _slurred("D", kind="stop") + _slurred("E")
-        placement = whole_notes.replace('type="start" number="1"', 'type="start" number="1" placement="above"')
+        placement = whole_notes.replace(
+            'type="start" number="1"', 'type="start" number="1" placement="above"'
+        )
         (work / "sq1.musicxml").write_text(SEG_TEMPLATE.format(notes=placement), encoding="utf-8")
 
         first = _slurred("C") + _slurred("D", kind="stop")
@@ -226,8 +221,6 @@ class TestApplyPlacements(unittest.TestCase):
         apply_placements(part, [{"1": "below"}])
 
         self.assertEqual(part.find(".//slur").get("placement"), "above")
-
-
 
 
 class TestApplyPlacementsRefusesTheWrongElement(unittest.TestCase):

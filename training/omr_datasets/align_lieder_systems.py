@@ -48,9 +48,11 @@ def build_alignment_document(
         # crop by two positions in the old flat zip.  A zero cannot enter an exact
         # match, so the global aligner must skip it without consuming score music.
         scan_counts = [
-            0
-            if float(row.get("system_width_fraction", 1.0)) < min_width_fraction
-            else int(row["detected"])
+            (
+                0
+                if float(row.get("system_width_fraction", 1.0)) < min_width_fraction
+                else int(row["detected"])
+            )
             for row in score_rows
         ]
         report = align_system_counts(
@@ -112,7 +114,8 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--score-ids", type=Path)
     parser.add_argument(
-        "--require-score-ids", type=Path,
+        "--require-score-ids",
+        type=Path,
         help="Require the rows file to contain exactly these score IDs before alignment. "
         "Use after merging recount shards so dropped scores cannot be invisible.",
     )

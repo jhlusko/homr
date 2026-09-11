@@ -19,6 +19,7 @@ matching ground truth for the majority staves vs the flagged staff - a large gap
 (majority near-perfect, flagged staff poor) is the Beethoven signature; both being poor
 is the Moeran signature.
 """
+
 import json
 import subprocess
 import sys
@@ -29,12 +30,14 @@ from pathlib import Path
 sys.path.insert(0, "/workspace/b0/homr")
 sys.path.insert(0, "/workspace/b0/homr/training/omr_datasets")
 
+import xml.etree.ElementTree as ET
+
+from ossq_ground_truth import real_ground_truth_path, resolve_flat_measure_range
+
 from homr.cross_staff_consistency import _cumulative_barline_positions, staves_by_system
 from homr.main import ProcessingConfig, detect_staffs_in_image
 from homr.staff_parsing import _plan_systems, parse_staffs
 from homr.transformer.configs import Config as TransformerConfig
-from ossq_ground_truth import real_ground_truth_path, resolve_flat_measure_range
-import xml.etree.ElementTree as ET
 
 
 def page_local_measure_starts(image_path: str) -> list[int]:
@@ -150,7 +153,11 @@ def verify_entry(entry: dict, homr_page_local_starts: dict) -> dict:
         # recurs once per movement and a naive whole-file match silently picks whichever
         # movement's measure happens to come first (or splices several together).
         flat_range = resolve_flat_measure_range(
-            gt_path, movement_index, i, entry["absolute_measure_number"], entry["absolute_measure_number"]
+            gt_path,
+            movement_index,
+            i,
+            entry["absolute_measure_number"],
+            entry["absolute_measure_number"],
         )
         gt_target_measure = gt_all[flat_range[0]] if flat_range is not None else None
 
@@ -191,9 +198,9 @@ def verify_entry(entry: dict, homr_page_local_starts: dict) -> dict:
         "page_local_measure": page_local_measure,
         "content_check": {
             "per_part_overlap": per_part_overlap,
-            "majority_mean_overlap": round(sum(majority_scores) / len(majority_scores), 3)
-            if majority_scores
-            else None,
+            "majority_mean_overlap": (
+                round(sum(majority_scores) / len(majority_scores), 3) if majority_scores else None
+            ),
             "flagged_overlap": flagged_score,
         },
     }

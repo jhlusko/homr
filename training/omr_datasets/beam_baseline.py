@@ -38,8 +38,8 @@ from homr.transformer.automatic_beaming import (
     wide_unit,
 )
 from homr.transformer.structured_notation import BeamLevelState, applicable_beam_levels
-from training.omr_datasets.structured_notation_parser import NotationExtractor
 from training.omr_datasets.ossq_splits import load_split_manifest
+from training.omr_datasets.structured_notation_parser import NotationExtractor
 
 #: A part with no explicit time signature. 4/4 is the overwhelming default in this
 #: corpus, and a part that never states one is measured rather than skipped - skipping it

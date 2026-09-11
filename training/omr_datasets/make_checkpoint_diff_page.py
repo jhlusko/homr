@@ -19,7 +19,6 @@ drawn only from regressions cannot show where the newer checkpoint is strongest.
 # flake8: noqa: T201
 
 import argparse
-import html
 import json
 import shutil
 from pathlib import Path
@@ -83,8 +82,6 @@ def diff_rows(old: dict, new: dict) -> list[dict]:
     return rows
 
 
-
-
 def symbols_from(record: dict, side: str) -> list:
     """Rebuild EncodedSymbols from one side of a scored record.
 
@@ -104,8 +101,12 @@ def symbols_from(record: dict, side: str) -> list:
             continue
         out.append(
             EncodedSymbol(
-                values["rhythm"], values["pitch"], values["lift"],
-                values["articulation"], values["slur"], values["position"],
+                values["rhythm"],
+                values["pitch"],
+                values["lift"],
+                values["articulation"],
+                values["slur"],
+                values["position"],
             )
         )
     return out
@@ -128,11 +129,15 @@ def main() -> None:
     parser.add_argument("--index", type=Path, required=True, help="image,tokens index")
     parser.add_argument("--out", type=Path, required=True, help="review set directory")
     parser.add_argument(
-        "--limit", type=int, default=100,
+        "--limit",
+        type=int,
+        default=100,
         help="Items to emit, in --order. 0 = every differing stave.",
     )
     parser.add_argument(
-        "--order", choices=["regressions", "absolute"], default="regressions",
+        "--order",
+        choices=["regressions", "absolute"],
+        default="regressions",
         help="regressions: worst net loss first, for a ship/no-ship read. absolute: "
         "largest change either way first, so the set carries the strongest evidence "
         "for each checkpoint instead of only against the new one.",
@@ -167,14 +172,16 @@ def main() -> None:
         regs = sum(1 for r in rows for c in r["cells"] if c["cls"] == "regression")
         if not (gains or regs):
             continue
-        candidates.append({
-            "key": key,
-            "delta": hit_new / max(total, 1) - hit_old / max(total, 1),
-            "old_accuracy": round(hit_old / max(total, 1), 4),
-            "new_accuracy": round(hit_new / max(total, 1), 4),
-            "gains": gains,
-            "regressions": regs,
-        })
+        candidates.append(
+            {
+                "key": key,
+                "delta": hit_new / max(total, 1) - hit_old / max(total, 1),
+                "old_accuracy": round(hit_old / max(total, 1), 4),
+                "new_accuracy": round(hit_new / max(total, 1), 4),
+                "gains": gains,
+                "regressions": regs,
+            }
+        )
 
     if args.order == "absolute":
         # Largest movement either way. Ranking by signed delta answers "should this
@@ -195,30 +202,38 @@ def main() -> None:
         if not source or not source.is_file():
             continue
         shutil.copy2(source, crops / f"{stem}.png")
-        left_bars = write_xml(symbols_from(old[key], "predicted"), scores / f"{stem}__left.musicxml")
-        right_bars = write_xml(symbols_from(new[key], "predicted"), scores / f"{stem}__right.musicxml")
+        left_bars = write_xml(
+            symbols_from(old[key], "predicted"), scores / f"{stem}__left.musicxml"
+        )
+        right_bars = write_xml(
+            symbols_from(new[key], "predicted"), scores / f"{stem}__right.musicxml"
+        )
         write_xml(symbols_from(old[key], "reference"), scores / f"{stem}__reference.musicxml")
         parsed = stem.rsplit("-sys", 1)
-        manifest.append({
-            "id": stem,
-            "score_id": parsed[0],
-            "system": int(parsed[1].split("-v")[0]) if len(parsed) > 1 else 0,
-            # PDMX appends a window suffix (``-v0-w2``); only the numeric part after
-            # ``-v`` is the voice identifier.
-            "voice": int(stem.rsplit("-v", 1)[1].split("-", 1)[0]) if "-v" in stem else 0,
-            "left_bars": left_bars,
-            "right_bars": right_bars,
-            "has_right": True,
-            "delta": round(item["delta"], 4),
-            "old_accuracy": item["old_accuracy"],
-            "new_accuracy": item["new_accuracy"],
-            "gains": item["gains"],
-            "regressions": item["regressions"],
-        })
+        manifest.append(
+            {
+                "id": stem,
+                "score_id": parsed[0],
+                "system": int(parsed[1].split("-v")[0]) if len(parsed) > 1 else 0,
+                # PDMX appends a window suffix (``-v0-w2``); only the numeric part after
+                # ``-v`` is the voice identifier.
+                "voice": int(stem.rsplit("-v", 1)[1].split("-", 1)[0]) if "-v" in stem else 0,
+                "left_bars": left_bars,
+                "right_bars": right_bars,
+                "has_right": True,
+                "delta": round(item["delta"], 4),
+                "old_accuracy": item["old_accuracy"],
+                "new_accuracy": item["new_accuracy"],
+                "gains": item["gains"],
+                "regressions": item["regressions"],
+            }
+        )
 
     (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    print(f"{len(set(old) & set(new))} staves: {improved} improved, {regressed} regressed, "
-          f"{unchanged} unchanged")
+    print(
+        f"{len(set(old) & set(new))} staves: {improved} improved, {regressed} regressed, "
+        f"{unchanged} unchanged"
+    )
     print(f"wrote {len(manifest)} items -> {args.out}")
 
 

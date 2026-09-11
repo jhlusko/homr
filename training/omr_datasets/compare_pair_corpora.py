@@ -94,8 +94,10 @@ def main() -> None:
     shared = sorted(set(old) & set(new))
     print(f"old {len(old):,} pairs / {len({score_of(s) for s in old})} scores")
     print(f"new {len(new):,} pairs / {len({score_of(s) for s in new})} scores")
-    print(f"shared stems {len(shared):,}; only-old {len(set(old) - set(new)):,}; "
-          f"only-new {len(set(new) - set(old)):,}")
+    print(
+        f"shared stems {len(shared):,}; only-old {len(set(old) - set(new)):,}; "
+        f"only-new {len(set(new) - set(old)):,}"
+    )
 
     kinds: Counter = Counter()
     bar_delta: Counter = Counter()
@@ -120,13 +122,26 @@ def main() -> None:
             kinds["same crop, different bar count"] += 1
             bar_delta[new_bars - old_bars] += 1
             if len(examples) < args.samples:
-                examples.append({"stem": stem, "old_bars": old_bars, "new_bars": new_bars,
-                                 "old_symbols": len(old_body), "new_symbols": len(new_body)})
+                examples.append(
+                    {
+                        "stem": stem,
+                        "old_bars": old_bars,
+                        "new_bars": new_bars,
+                        "old_symbols": len(old_body),
+                        "new_symbols": len(new_body),
+                    }
+                )
         else:
             kinds["same crop, same bar count, different content"] += 1
             if len(examples) < args.samples:
-                examples.append({"stem": stem, "bars": old_bars,
-                                 "old_symbols": len(old_body), "new_symbols": len(new_body)})
+                examples.append(
+                    {
+                        "stem": stem,
+                        "bars": old_bars,
+                        "old_symbols": len(old_body),
+                        "new_symbols": len(new_body),
+                    }
+                )
 
     print("\nwhat changed, on the systems both corpora contain")
     for kind, count in kinds.most_common():
@@ -140,13 +155,26 @@ def main() -> None:
         for entry in examples:
             print(f"  {entry}")
     if args.report:
-        args.report.write_text(json.dumps(
-            {"old": str(args.old), "new": str(args.new),
-             "counts": {"old": len(old), "new": len(new), "shared": len(shared),
+        args.report.write_text(
+            json.dumps(
+                {
+                    "old": str(args.old),
+                    "new": str(args.new),
+                    "counts": {
+                        "old": len(old),
+                        "new": len(new),
+                        "shared": len(shared),
                         "only_old": len(set(old) - set(new)),
-                        "only_new": len(set(new) - set(old))},
-             "kinds": dict(kinds), "bar_delta": {str(k): v for k, v in bar_delta.items()},
-             "examples": examples}, indent=2), encoding="utf-8")
+                        "only_new": len(set(new) - set(old)),
+                    },
+                    "kinds": dict(kinds),
+                    "bar_delta": {str(k): v for k, v in bar_delta.items()},
+                    "examples": examples,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
         print(f"\nwrote {args.report}")
 
 

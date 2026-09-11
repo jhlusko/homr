@@ -136,7 +136,9 @@ def main() -> None:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
-        "--root", type=Path, default=Path.cwd(),
+        "--root",
+        type=Path,
+        default=Path.cwd(),
         help="Base for relative source/index token paths (default: current directory).",
     )
     args = parser.parse_args()
@@ -159,9 +161,13 @@ def main() -> None:
         "missing_token_files": missing,
     }
     metadata_path = args.output.with_suffix(args.output.suffix + ".metadata.json")
-    metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    metadata_path.write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(f"wrote {len(selected)} rows to {args.output}")  # noqa: T201
-    print(f"coverage: {metadata['selected_coverage']}; missing token files: {missing}")  # noqa: T201
+    print(
+        f"coverage: {metadata['selected_coverage']}; missing token files: {missing}"
+    )  # noqa: T201
 
 
 if __name__ == "__main__":

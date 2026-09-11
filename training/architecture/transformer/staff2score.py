@@ -17,7 +17,6 @@ from training.transformer.image_utils import (
     prepare_for_tensor,
     read_image_to_ndarray,
 )
-from homr.simple_logging import eprint
 from training.transformer.training_vocabulary import token_lines_to_str
 
 

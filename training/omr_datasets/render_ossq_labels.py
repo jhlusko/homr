@@ -122,8 +122,7 @@ def main() -> None:
                     recovered += 1
                 except Exception:  # noqa: BLE001, PERF203
                     failed += 1
-            print(f"batch at {start} failed; {recovered}/{len(batch)} recovered singly",
-                  flush=True)
+            print(f"batch at {start} failed; {recovered}/{len(batch)} recovered singly", flush=True)
         for p in batch:
             rendered = args.out / f"{p.stem}.png"
             if rendered.is_file():

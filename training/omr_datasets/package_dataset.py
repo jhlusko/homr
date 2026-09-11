@@ -96,9 +96,7 @@ def rewrite_index(index_path: Path, root: Path) -> int:
         if not line.strip():
             continue
         left, right = line.rsplit(",", 1)
-        new = (
-            f"{relocate(left, index_dir, root)},{relocate(right, index_dir, root)}"
-        )
+        new = f"{relocate(left, index_dir, root)},{relocate(right, index_dir, root)}"
         changed += new != line
         rows.append(new)
     index_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
@@ -163,9 +161,7 @@ def verify(root: Path) -> list[str]:
 
     for index_path in root.rglob("*index*.txt"):
         index_dir = index_path.parent
-        for number, line in enumerate(
-            index_path.read_text(encoding="utf-8").splitlines(), start=1
-        ):
+        for number, line in enumerate(index_path.read_text(encoding="utf-8").splitlines(), start=1):
             if not line.strip():
                 continue
             for field in line.rsplit(",", 1):
@@ -233,7 +229,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, required=True, help="Dataset root to package.")
     parser.add_argument(
-        "--verify-only", action="store_true",
+        "--verify-only",
+        action="store_true",
         help="Report problems without changing anything.",
     )
     args = parser.parse_args()

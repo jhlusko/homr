@@ -5,7 +5,12 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from homr.transformer.structured_notation import BeamLevelState
-from training.transformer.rule_vs_head import Crosstab, compare, rule_vectors, segment_for
+from training.transformer.rule_vs_head import (
+    Crosstab,
+    compare,
+    rule_vectors,
+    segment_for,
+)
 
 LEVELS = 4
 
@@ -53,21 +58,17 @@ class TestCrosstab(unittest.TestCase):
 
 
 def _part(notes: str) -> ET.Element:
-    return ET.fromstring(
-        f"""
+    return ET.fromstring(f"""
         <part><measure>
           <attributes><divisions>2</divisions>
             <time><beats>4</beats><beat-type>4</beat-type></time></attributes>
           {notes}
         </measure></part>
-        """
-    )
+        """)
 
 
 EIGHTH = "<note><duration>1</duration><voice>1</voice><type>eighth</type></note>"
-CHORD_EIGHTH = (
-    "<note><chord/><duration>1</duration><voice>1</voice><type>eighth</type></note>"
-)
+CHORD_EIGHTH = "<note><chord/><duration>1</duration><voice>1</voice><type>eighth</type></note>"
 
 
 class TestRuleVectors(unittest.TestCase):
@@ -123,7 +124,9 @@ class TestJoinSafety(unittest.TestCase):
         root = Path(tmp)
         segments = root / "scores" / "C" / "W" / "musicxml" / "unaligned"
         segments.mkdir(parents=True)
-        body = f"<score-partwise>{ET.tostring(_part(EIGHTH * 2), encoding='unicode')}</score-partwise>"
+        body = (
+            f"<score-partwise>{ET.tostring(_part(EIGHTH * 2), encoding='unicode')}</score-partwise>"
+        )
         (segments / "sq1:0001:0001.musicxml").write_text(body, encoding="utf-8")
 
         predictions = root / "predictions.jsonl"

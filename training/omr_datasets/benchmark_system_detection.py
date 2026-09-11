@@ -19,7 +19,10 @@ from pathlib import Path
 
 import yaml
 
-from training.omr_datasets.detect_imslp_systems import DetectedSystem, detect_systems_on_page
+from training.omr_datasets.detect_imslp_systems import (
+    DetectedSystem,
+    detect_systems_on_page,
+)
 
 
 def iou(a: DetectedSystem, b: dict) -> float:
@@ -82,9 +85,13 @@ def paired_coverage(detected: list[DetectedSystem], ground_truth: list[dict]) ->
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    parser.add_argument("--systems", type=Path, required=True, help="Ground-truth imslp_systems dir.")
+    parser.add_argument(
+        "--systems", type=Path, required=True, help="Ground-truth imslp_systems dir."
+    )
     parser.add_argument("--pngs", type=Path, required=True, help="Matching imslp_pngs dir.")
-    parser.add_argument("--limit", type=int, help="Only check the first N scores (for a quick run).")
+    parser.add_argument(
+        "--limit", type=int, help="Only check the first N scores (for a quick run)."
+    )
     args = parser.parse_args()
 
     score_paths = sorted(args.systems.glob("*.yaml"))
@@ -103,8 +110,8 @@ def main() -> None:
     for score_index, path in enumerate(score_paths, start=1):
         score_id = path.stem
         doc = yaml.safe_load(path.read_text()) or {}
-        for page_num, page in sorted((doc.get("pages") or {}).items()):
-            gt_systems = [s["boundingBox"] for s in (page.get("systems") or [])]
+        for _page_num, page in sorted((doc.get("pages") or {}).items()):
+            gt_systems = [s["boundingBox"] for s in page.get("systems") or []]
             if not gt_systems:
                 continue
             image_path = args.pngs / page["image"]
@@ -177,7 +184,10 @@ def main() -> None:
         )
     print(f"ground-truth coverage, all pairable systems ({len(all_coverage)} pair(s)):")
     if all_coverage:
-        print(f"  mean {statistics.mean(all_coverage):.1%}, median {statistics.median(all_coverage):.1%}")
+        print(
+            f"  mean {statistics.mean(all_coverage):.1%}, median "
+            f"{statistics.median(all_coverage):.1%}"
+        )
 
 
 if __name__ == "__main__":

@@ -123,8 +123,6 @@ class TestRoundTrip(unittest.TestCase):
         self.assertEqual(_manifest().to_dict()["schemaVersion"], SCHEMA_VERSION)
 
 
-
-
 class TestEveryHeadHasAClassList(unittest.TestCase):
     """A head the manifest cannot describe cannot be declared.
 

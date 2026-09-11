@@ -119,8 +119,13 @@ def octave(token: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--train", type=Path, required=True, help="training manifest")
-    parser.add_argument("--bench", action="append", required=True, metavar="LABEL=PATH",
-                        help="a scored .jsonl; its REFERENCE side is the demand")
+    parser.add_argument(
+        "--bench",
+        action="append",
+        required=True,
+        metavar="LABEL=PATH",
+        help="a scored .jsonl; its REFERENCE side is the demand",
+    )
     parser.add_argument("--top", type=int, default=8)
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
@@ -156,19 +161,32 @@ def main() -> None:
                 # badly the model does on it. A token it already reads well is not a
                 # problem however undersupplied it is.
                 cost = d_rate * math.log(ratio) * (1 - recall)
-                rows.append((cost, branch, token, d_rate, s_rate, ratio, n, recall,
-                             pr.get(token, 0)))
+                rows.append(
+                    (cost, branch, token, d_rate, s_rate, ratio, n, recall, pr.get(token, 0))
+                )
         rows.sort(reverse=True)
-        print(f"{'branch':>13} {'token':>20} {'demand':>8} {'supply':>8} {'ratio':>7} "
-              f"{'count':>7} {'recall':>8} {'predicted':>10}")
-        for _, branch, token, d_rate, s_rate, ratio, n, recall, npred in rows[:args.top]:
+        print(
+            f"{'branch':>13} {'token':>20} {'demand':>8} {'supply':>8} {'ratio':>7} "
+            f"{'count':>7} {'recall':>8} {'predicted':>10}"
+        )
+        for _, branch, token, d_rate, s_rate, ratio, n, recall, npred in rows[: args.top]:
             supply_str = f"{100*s_rate:6.3f}%" if s_rate else "  ABSENT"
-            print(f"{branch:>13} {token:>20} {100*d_rate:7.3f}% {supply_str} "
-                  f"{ratio:6.1f}x {n:7,} {100*recall:7.1f}% {npred:10,}")
+            print(
+                f"{branch:>13} {token:>20} {100*d_rate:7.3f}% {supply_str} "
+                f"{ratio:6.1f}x {n:7,} {100*recall:7.1f}% {npred:10,}"
+            )
         report[label] = [
-            {"branch": b, "token": t, "demand": d, "supply": s, "ratio": r,
-             "count": n, "recall": rec, "predicted": npred}
-            for _, b, t, d, s, r, n, rec, npred in rows[:args.top]
+            {
+                "branch": b,
+                "token": t,
+                "demand": d,
+                "supply": s,
+                "ratio": r,
+                "count": n,
+                "recall": rec,
+                "predicted": npred,
+            }
+            for _, b, t, d, s, r, n, rec, npred in rows[: args.top]
         ]
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")

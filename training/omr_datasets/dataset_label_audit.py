@@ -127,9 +127,7 @@ def _slur_table(counts: DatasetCounts) -> str:
 
 
 def describe(counts: DatasetCounts) -> str:
-    stems = "  ".join(
-        f"{name}={count:,}" for name, count in counts.stems.most_common() if count
-    )
+    stems = "  ".join(f"{name}={count:,}" for name, count in counts.stems.most_common() if count)
     sides = "  ".join(f"{name}={count:,}" for name, count in counts.slur_sides.most_common())
     ties = "  ".join(f"{name}={count:,}" for name, count in counts.ties.most_common())
     parts = [
@@ -164,9 +162,7 @@ def unsupported(counts: DatasetCounts, beam_levels: int, slur_slots: int) -> lis
     for slot in range(1, slur_slots + 1):
         if not counts.slur_events.get(slot):
             missing.append(f"slur.slot.{slot}")
-    if not any(
-        count for name, count in counts.stems.items() if name != str(StemDirection.UNKNOWN)
-    ):
+    if not any(count for name, count in counts.stems.items() if name != str(StemDirection.UNKNOWN)):
         missing.append("stem.direction")
     return missing
 

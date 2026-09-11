@@ -603,10 +603,12 @@ barline . . . . ."""
   </part>
 </score-partwise>"""
         result = music_xml_string_to_tokens(example)
-        first_note = next(s for part in result for measure in part for s in measure
-                          if s.rhythm.startswith("note"))
+        first_note = next(
+            s for part in result for measure in part for s in measure if s.rhythm.startswith("note")
+        )
         self.assertEqual(first_note.slur, "slurStart")
 
         from homr.music_xml_generator import XmlGeneratorArguments, generate_xml
+
         voice = [symbol for measure in result[0] for symbol in measure]
         generate_xml(XmlGeneratorArguments(True), [voice], "")  # must not raise
