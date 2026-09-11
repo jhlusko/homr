@@ -9,7 +9,7 @@ from homr import constants
 
 if TYPE_CHECKING:
     from training.architecture.transformer.staff_context import StaffContextTransformer
-from homr.cross_staff_findings import record as record_finding
+
 from homr.cross_staff_consistency import (
     analyze_system,
     check_barline_positions,
@@ -18,6 +18,8 @@ from homr.cross_staff_consistency import (
     check_part_order,
     staves_by_system,
 )
+from homr.cross_staff_findings import record as record_finding
+from homr.cross_staff_position_repair import repair_position_divergence
 from homr.cross_staff_repair import (
     RepairProposal,
     apply_articulation_proposal,
@@ -28,8 +30,10 @@ from homr.cross_staff_repair import (
     propose_motif_articulation_corrections,
     propose_repairs,
 )
-from homr.cross_staff_position_repair import repair_position_divergence
-from homr.cross_staff_rerank import fork_candidates_from_margins, rerank_staff_candidates
+from homr.cross_staff_rerank import (
+    fork_candidates_from_margins,
+    rerank_staff_candidates,
+)
 from homr.debug import Debug
 from homr.image_utils import crop_image_and_return_new_top
 from homr.model import MultiStaff, Staff
@@ -37,7 +41,10 @@ from homr.score_profile import ScoreProfile
 from homr.score_profile_layout import propose_part_assignment, staff_to_part_by_system
 from homr.simple_logging import eprint
 from homr.staff_dewarping import StaffDewarping, dewarp_staff_image
-from homr.staff_parsing_tromr import parse_staff_tromr, parse_staff_tromr_greedy_with_margins
+from homr.staff_parsing_tromr import (
+    parse_staff_tromr,
+    parse_staff_tromr_greedy_with_margins,
+)
 from homr.staff_regions import StaffRegions
 from homr.system_grouping import (
     SystemPartition,
@@ -541,7 +548,7 @@ _staff_context_cache: dict[str, "StaffContextTransformer"] = {}
 
 def _get_staff_context_module(weights_path: str, dim: int) -> "StaffContextTransformer":
     if weights_path not in _staff_context_cache:
-        from homr.staff_context_decode import load_staff_context
+        from homr.staff_context_decode import load_staff_context  # noqa: PLC0415
 
         _staff_context_cache[weights_path] = load_staff_context(weights_path, dim)
     return _staff_context_cache[weights_path]
@@ -614,7 +621,9 @@ def parse_staffs(
         # spacing said which one. That voice simply has no music from that system,
         # which is a gap in one part rather than the whole system's music going missing.
         return [
-            system for system in range(len(plan.systems)) if plan.staff_for_voice(system, voice) is not None
+            system
+            for system in range(len(plan.systems))
+            if plan.staff_for_voice(system, voice) is not None
         ]
 
     decoded: dict[tuple[int, int], list[EncodedSymbol]] = {}
@@ -625,7 +634,7 @@ def parse_staffs(
     for voice in range(number_of_voices):
         for staff_index, system in enumerate(systems_for_voice(voice)):
             staff = plan.staff_for_voice(system, voice)
-            assert staff is not None  # systems_for_voice already filtered on this
+            assert staff is not None  # noqa: S101  # systems_for_voice filtered on this
             if selected_staff >= 0 and staff_index != selected_staff:
                 eprint("Ignoring staff due to selected_staff argument", i)
                 i += 1
@@ -636,10 +645,17 @@ def parse_staffs(
                 )
                 decoded[(voice, system)] = filtered
                 raw_by_system.setdefault(system, {})[voice] = (
-                    staff, raw, margins, context, decoder, hidden_states,
+                    staff,
+                    raw,
+                    margins,
+                    context,
+                    decoder,
+                    hidden_states,
                 )
             else:
-                decoded[(voice, system)] = parse_staff_image(debug, i, staff, image, regions, config)
+                decoded[(voice, system)] = parse_staff_image(
+                    debug, i, staff, image, regions, config
+                )
             i += 1
 
     if enable_phase1_rerank and do_rerank:
@@ -673,7 +689,11 @@ def parse_staffs(
                 # grandstaff/lower filter parse_staff_tromr already applies to a plain
                 # decode, to every candidate, so reranking compares like with like.
                 candidates_by_staff[staff_index] = [
-                    candidate if staff.is_grandstaff else [r for r in candidate if r.position != "lower"]
+                    (
+                        candidate
+                        if staff.is_grandstaff
+                        else [r for r in candidate if r.position != "lower"]
+                    )
                     for candidate in forks
                 ]
 
@@ -689,9 +709,9 @@ def parse_staffs(
     if enable_staff_context and do_rerank:
         if not staff_context_weights:
             raise ValueError("enable_staff_context requires staff_context_weights")
-        import torch
+        import torch  # noqa: PLC0415
 
-        from homr.staff_context_decode import pool_hidden
+        from homr.staff_context_decode import pool_hidden  # noqa: PLC0415
 
         staff_context_module = _get_staff_context_module(staff_context_weights, config.decoder_dim)
         for system_index, voice_raw in raw_by_system.items():
@@ -712,7 +732,12 @@ def parse_staffs(
             for slot, voice in enumerate(present_voices):
                 staff = voice_raw[voice][0]
                 filtered2, *_rest = parse_staff_image_greedy_with_margins(
-                    debug, i, staff, image, regions, config,
+                    debug,
+                    i,
+                    staff,
+                    image,
+                    regions,
+                    config,
                     staff_context_emb=context_np[slot : slot + 1],
                 )
                 decoded[(voice, system_index)] = filtered2

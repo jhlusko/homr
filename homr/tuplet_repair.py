@@ -29,10 +29,16 @@ from collections import Counter
 from fractions import Fraction
 
 #: Divider tokens, which end a bar and carry no duration.
-DIVIDERS = frozenset({
-    "barline", "doublebarline", "bolddoublebarline",
-    "repeatStart", "repeatEnd", "repeatBoth",
-})
+DIVIDERS = frozenset(
+    {
+        "barline",
+        "doublebarline",
+        "bolddoublebarline",
+        "repeatStart",
+        "repeatEnd",
+        "repeatBoth",
+    }
+)
 
 #: (written, sounded) for the tuplets engraving actually uses. Ordered most common first
 #: so the cheapest hypothesis is tested before the exotic ones.
@@ -138,14 +144,15 @@ def _runs_of(values: list[str | None], value: str, length: int, contiguous: bool
         return [positions[:length]] if len(positions) >= length else []
     windows = []
     for start in range(len(positions) - length + 1):
-        window = positions[start:start + length]
+        window = positions[start : start + length]
         if window[-1] - window[0] == length - 1:
             windows.append(window)
     return windows
 
 
-def repair_bar(bar: list[str], prevailing: Fraction, *, contiguous: bool = True,
-               require_unique: bool = True) -> tuple[list[str], tuple | None]:
+def repair_bar(
+    bar: list[str], prevailing: Fraction, *, contiguous: bool = True, require_unique: bool = True
+) -> tuple[list[str], tuple | None]:
     """Rewrite one overfull bar as a tuplet, if exactly one rewrite makes it exact.
 
     Returns the (possibly unchanged) bar and a description of what was rewritten.
@@ -196,8 +203,13 @@ def count_overfull(bars: list[list[str]], prevailing: Fraction) -> int:
     return sum(1 for bar in bars if bar_duration(bar) > prevailing * OVERFULL_RATIO)
 
 
-def repair(tokens: list[str], *, contiguous: bool = True, require_unique: bool = True,
-           max_overfull: int | None = 1) -> tuple[list[str], list]:
+def repair(
+    tokens: list[str],
+    *,
+    contiguous: bool = True,
+    require_unique: bool = True,
+    max_overfull: int | None = 1,
+) -> tuple[list[str], list]:
     """Apply the repair across a single staff. Returns (tokens, rewrites applied).
 
     Token count is preserved exactly: a tuplet rewrite renames values, it never inserts
@@ -219,8 +231,9 @@ def repair(tokens: list[str], *, contiguous: bool = True, require_unique: bool =
     out: list[str] = []
     rewrites = []
     for bar in bars:
-        fixed, what = repair_bar(bar, prevailing, contiguous=contiguous,
-                                 require_unique=require_unique)
+        fixed, what = repair_bar(
+            bar, prevailing, contiguous=contiguous, require_unique=require_unique
+        )
         if what and what[0] != "ambiguous":
             rewrites.append(what)
         out.extend(fixed)
@@ -259,7 +272,7 @@ def repair_symbols(symbols: "list", **kwargs) -> tuple["list", list]:
     if not rewrites:
         return symbols, []
     out = list(symbols)
-    for i, (before, after) in enumerate(zip(rhythms, fixed)):
+    for i, (before, after) in enumerate(zip(rhythms, fixed, strict=True)):
         if before != after:
             out[i] = copy.copy(out[i])
             out[i].rhythm = after

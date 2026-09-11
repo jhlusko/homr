@@ -22,8 +22,8 @@ more thoroughly, and demands exactness rather than improvement.
 The decoder is injected as `fork`, so every rule here is testable without one.
 """
 
-from collections.abc import Callable, Sequence
 from collections import Counter
+from collections.abc import Callable, Sequence
 from fractions import Fraction
 
 from homr.cross_staff_consistency import _cumulative_barline_positions
@@ -95,9 +95,7 @@ def majority_barline_sequence(
     return majority
 
 
-def agrees_exactly(
-    candidate: Sequence[EncodedSymbol], majority: Sequence[Fraction]
-) -> bool:
+def agrees_exactly(candidate: Sequence[EncodedSymbol], majority: Sequence[Fraction]) -> bool:
     """Whether this candidate's barlines land exactly where the majority's do.
 
     Compared over the majority's length: a candidate that reproduces every barline

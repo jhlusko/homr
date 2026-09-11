@@ -22,6 +22,7 @@ Deliberately does not fix Type 2 (systematic misread - not a narrow-margin call)
 Type 3 (chaotic disagreement) - see this module's own benchmark results for whether
 that prediction holds.
 """
+
 from collections import Counter
 from typing import Any
 
@@ -123,8 +124,7 @@ def rerank_staff_candidates(
         if shortest == 0:
             continue
         majority = [
-            Counter(p[idx] for p in other_positions).most_common(1)[0][0]
-            for idx in range(shortest)
+            Counter(p[idx] for p in other_positions).most_common(1)[0][0] for idx in range(shortest)
         ]
 
         def agreement(candidate: list[EncodedSymbol], majority: list = majority) -> int:

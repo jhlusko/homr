@@ -193,9 +193,7 @@ def boxes_from_probs(probs: NDArray, min_area: int = MIN_AREA) -> list[DetectedB
             region = binary[top : top + h, left : left + w] > 0
             confidence = float(confidence_map[top : top + h, left : left + w][region].mean())
             boxes.append(
-                DetectedBox(
-                    label, int(left), int(top), int(left + w), int(top + h), confidence
-                )
+                DetectedBox(label, int(left), int(top), int(left + w), int(top + h), confidence)
             )
     return boxes
 

@@ -32,8 +32,8 @@ from homr.transformer.structured_notation import (
     SLUR_SIDE_CLASSES,
     STEM_CLASSES,
     TIE_CLASSES,
-    BeamLevelState,
     AdvanceClass,
+    BeamLevelState,
     DynamicMark,
     NoteNotation,
     SlurEvent,
@@ -166,9 +166,7 @@ def decode_head(
         # Every class is included, not only the runners-up: a user deciding between two
         # readings is better served by seeing that the third was near-zero than by having
         # it hidden. Ordering carries the emphasis.
-        alternatives = tuple(
-            Alternative(str(value), probability) for value, probability in ranked
-        )
+        alternatives = tuple(Alternative(str(value), probability) for value, probability in ranked)
 
     return HeadChoice(head, str(best), confidence, alternatives)
 
@@ -216,7 +214,11 @@ def decode_note(
     slurs = tuple(
         (
             SlurEvent(by_head[SLUR_EVENT_HEAD.format(slot=slot)].value),
-            SlurSide(side.value) if (side := by_head.get(SLUR_SIDE_HEAD.format(slot=slot))) else SlurSide.UNSPECIFIED,
+            (
+                SlurSide(side.value)
+                if (side := by_head.get(SLUR_SIDE_HEAD.format(slot=slot)))
+                else SlurSide.UNSPECIFIED
+            ),
         )
         for slot in slots
     )

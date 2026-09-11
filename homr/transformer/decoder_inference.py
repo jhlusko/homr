@@ -502,9 +502,7 @@ class ScoreDecoder:
                     rhythm=detokenize(rhythm_sample, self.inv_rhythm_vocab)[0],
                     pitch=detokenize(pitch_sample, self.inv_pitch_vocab)[0],
                     lift=detokenize(lift_sample, self.inv_lift_vocab)[0],
-                    articulation=detokenize(
-                        articulation_sample, self.inv_articulation_vocab
-                    )[0],
+                    articulation=detokenize(articulation_sample, self.inv_articulation_vocab)[0],
                     slur=detokenize(slur_sample, self.inv_slur_vocab)[0],
                     position=detokenize(position_sample, self.inv_position_vocab)[0],
                     coordinates=attention,
@@ -602,11 +600,7 @@ def get_decoder(config: Config) -> ScoreDecoder:
     # HOMR's historical `_fp16` filename while exposing float32 inputs, and binding
     # float16 from the name alone fails before the first op runs.
     context_input = next(
-        (
-            metadata
-            for metadata in onnx_transformer.get_inputs()
-            if metadata.name == "context"
-        ),
+        (metadata for metadata in onnx_transformer.get_inputs() if metadata.name == "context"),
         None,
     )
     if context_input is None:

@@ -81,9 +81,7 @@ def propose_part_assignment(
             for staff_index, slot in zip(group, slots, strict=True)
         }
         assignments.append(
-            SystemPartAssignment(
-                staff_to_part=staff_to_part, deviations=(), evidence_score=1.0
-            )
+            SystemPartAssignment(staff_to_part=staff_to_part, deviations=(), evidence_score=1.0)
         )
     return assignments
 

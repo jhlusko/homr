@@ -29,7 +29,7 @@ def collect_findings() -> Iterator[list[dict[str, Any]]]:
     a finding, and there is no caller that needs both. The previous sink is restored on
     exit so a nested use degrades to the outer one rather than losing findings entirely.
     """
-    global _SINK
+    global _SINK  # noqa: PLW0603
     previous = _SINK
     collected: list[dict[str, Any]] = []
     _SINK = collected

@@ -16,14 +16,13 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-import homr.staff_parsing_tromr as staff_parsing_tromr
+from homr import staff_parsing_tromr
 from homr.model import Staff
 from homr.staff_parsing_tromr import parse_staff_tromr_greedy_with_margins
 from homr.transformer.configs import Config
 from homr.transformer.vocabulary import EncodedSymbol
 from homr.type_definitions import NDArray
 from training.architecture.transformer.staff_context import StaffContextTransformer
-
 
 #: `train_staff_context.py` saves every trainable parameter under this prefix
 #: (`decoder.staff_context.*`, matching the full model's own attribute path) -
@@ -95,9 +94,7 @@ def decode_system_with_staff_context(
         for staff, image in zip(staffs, staff_images, strict=True)
     ]
     first_pass = [filtered for filtered, *_rest in first_pass_raw]
-    pooled = np.stack(
-        [pool_hidden(hidden_states) for *_rest, hidden_states in first_pass_raw]
-    )
+    pooled = np.stack([pool_hidden(hidden_states) for *_rest, hidden_states in first_pass_raw])
 
     with torch.no_grad():
         mask = torch.ones(1, len(staffs), dtype=torch.bool)

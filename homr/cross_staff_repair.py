@@ -462,9 +462,7 @@ def propose_majority_position_corrections(
         if sequence == majority_sequence:
             continue
         divergence_index = next(i for i in range(shortest) if sequence[i] != majority_sequence[i])
-        offsets = {
-            majority_sequence[i] - sequence[i] for i in range(divergence_index, shortest)
-        }
+        offsets = {majority_sequence[i] - sequence[i] for i in range(divergence_index, shortest)}
         if len(offsets) != 1:
             continue  # not a clean, localized divergence - decline rather than guess
         offset = next(iter(offsets))

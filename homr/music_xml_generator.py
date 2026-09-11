@@ -11,6 +11,7 @@ import numpy as np
 
 from homr import constants
 from homr.simple_logging import eprint
+from homr.transformer.structured_notation import AdvanceClass, SlurEvent, TieState
 from homr.transformer.vocabulary import (
     TIME_SIGNATURE_BEATS_PREFIX,
     EncodedSymbol,
@@ -18,8 +19,6 @@ from homr.transformer.vocabulary import (
     empty,
     nonote,
 )
-from homr.transformer.structured_notation import AdvanceClass, SlurEvent, TieState
-
 
 # The held-out promotion run established the following common gaps as reliable.  The
 # remaining exact spellings are deliberately *not* rendered yet: `1`, `64` and `32.`
@@ -137,7 +136,9 @@ class SymbolChord:
         # Chord members are sorted before rendering for the historical stable XML
         # order, but advance was trained on the last member in *decode* order.  Keep
         # that carrier separately so sorting cannot silently move the head target.
-        self.advance_symbol = advance_symbol if advance_symbol is not None else (symbols[-1] if symbols else None)
+        self.advance_symbol = (
+            advance_symbol if advance_symbol is not None else (symbols[-1] if symbols else None)
+        )
 
     def __str__(self) -> str:
         return str.join("&", [str(s) for s in self.symbols])
@@ -176,11 +177,7 @@ class SymbolChord:
         if not structured_export_enabled("advance"):
             return fallback
         if advance == AdvanceClass.ZERO:
-            return (
-                Fraction(0)
-                if any("G" in symbol.rhythm for symbol in self.symbols)
-                else fallback
-            )
+            return Fraction(0) if any("G" in symbol.rhythm for symbol in self.symbols) else fallback
         return _RENDERABLE_ADVANCE_DURATIONS.get(advance, fallback)
 
     def into_positions(self) -> list["SymbolChord"]:
@@ -1097,13 +1094,12 @@ def build_note_chord(
                 )
             else:
                 if notes:
-                    # There are other notes, so to avoid rest being merged into chord, we emit a backup
+                    # There are other notes, so to avoid the rest being merged into the
+                    # chord, we emit a backup
                     result.append(build_backup(group_duration, state))
                 # Ideally we expect len(rests) == 1, but in dataset we see cases where
                 # there are multiple rests. So here we just take the first rest
-                result.append(
-                    build_note_or_rest(rests[0], i, False, state, note_chord.tuplet_mark)
-                )
+                result.append(build_note_or_rest(rests[0], i, False, state, note_chord.tuplet_mark))
 
         if i != len(by_duration) - 1 and group_duration > Fraction(0):
             result.append(build_backup(group_duration, state))
@@ -1226,9 +1222,7 @@ def modal_measure_duration(voice: list[SymbolChord]) -> Fraction | None:
     return length
 
 
-def stated_numerator_contradicts_bars(
-    voice: list[EncodedSymbol], modal: Fraction | None
-) -> bool:
+def stated_numerator_contradicts_bars(voice: list[EncodedSymbol], modal: Fraction | None) -> bool:
     """Whether the ONE numerator this label states disagrees with what it writes.
 
     Deliberately narrow. Only a voice stating a single numerator is judged: where a
@@ -1271,9 +1265,7 @@ def group_into_chords(voice: list[EncodedSymbol]) -> list[SymbolChord]:
             is_in_chord = False
         else:
             raw_groups.append([symbol])
-    return [
-        SymbolChord(sorted(group), advance_symbol=group[-1]) for group in raw_groups
-    ]
+    return [SymbolChord(sorted(group), advance_symbol=group[-1]) for group in raw_groups]
 
 
 class TupletParser:

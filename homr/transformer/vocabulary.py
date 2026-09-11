@@ -104,9 +104,7 @@ def build_rhythm() -> dict[str, int]:
     # Appended LAST, deliberately: build_dict assigns indices in list order, so adding
     # these anywhere earlier would renumber every token after them and silently
     # invalidate existing checkpoints.
-    rhythm.extend(
-        [f"{TIME_SIGNATURE_BEATS_PREFIX}{c}" for c in VALID_TIME_SIGNATURE_NUMERATORS]
-    )
+    rhythm.extend([f"{TIME_SIGNATURE_BEATS_PREFIX}{c}" for c in VALID_TIME_SIGNATURE_NUMERATORS])
 
     return build_dict(rhythm)
 
