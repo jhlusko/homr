@@ -145,9 +145,15 @@ def mixed_first_pass_hidden(
     mask = mask.bool()
 
     r_logits, p_logits, l_logits, _pos, a_logits, s_logits, _, _, _ = net(
-        rhythms=rhythmsi, pitchs=pitchsi, lifts=liftsi,
-        articulations=articulationsi, slurs=slursi,
-        context=context, mask=mask, cache=None, return_center_of_attention=False,
+        rhythms=rhythmsi,
+        pitchs=pitchsi,
+        lifts=liftsi,
+        articulations=articulationsi,
+        slurs=slursi,
+        context=context,
+        mask=mask,
+        cache=None,
+        return_center_of_attention=False,
     )
     r_sample = r_logits[:, :-1].argmax(dim=-1)
     p_sample = p_logits[:, :-1].argmax(dim=-1)
@@ -166,9 +172,15 @@ def mixed_first_pass_hidden(
     slursi[:, 1:] = (1 - mix_mask) * slursi[:, 1:] + mix_mask * s_sample
 
     _, _, _, _, _, _, x, _, _ = net(
-        rhythms=rhythmsi, pitchs=pitchsi, lifts=liftsi,
-        articulations=articulationsi, slurs=slursi,
-        context=context, mask=mask, cache=None, return_center_of_attention=False,
+        rhythms=rhythmsi,
+        pitchs=pitchsi,
+        lifts=liftsi,
+        articulations=articulationsi,
+        slurs=slursi,
+        context=context,
+        mask=mask,
+        cache=None,
+        return_center_of_attention=False,
     )
     return masked_mean_pool(x, mask)
 
@@ -227,9 +239,7 @@ def train_epoch(
             rate = count / elapsed if elapsed > 0 else 0.0
             of_total = f"/{total_batches}" if total_batches else ""
             eta = (
-                f", eta {(total_batches - count) / rate:.0f}s"
-                if total_batches and rate > 0
-                else ""
+                f", eta {(total_batches - count) / rate:.0f}s" if total_batches and rate > 0 else ""
             )
             print(
                 f"  epoch {epoch}: batch {count}{of_total} "
@@ -271,21 +281,37 @@ def build_batches(
     shuffle: bool = True,
     validation: bool = False,
     min_staves: int = 2,
+    pad_width: int | None = None,
 ) -> tuple[TorchDataLoader, int]:
     """Systems (every staff of one system, padded/stacked), not individual staves -
     `system_batch_loader.py`'s own reasoning for why this is the first mechanism in
     this codebase that needs it.
     """
     from training.transformer.data_loader import load_dataset
-    from training.transformer.system_batch_loader import build_system_batches
+    from training.transformer.system_batch_loader import (
+        build_system_batches,
+        widest_system,
+    )
 
     samples = index.read_text(encoding="utf-8").splitlines()
-    datasets = load_dataset([line for line in samples if line.strip()], config,
-                             val_split=1.0 if validation else 0.0)
-    key = "validation" if validation else "train"
-    system_dataset = build_system_batches(
-        datasets[f"{key}_list"], datasets[key], min_staves=min_staves
+    datasets = load_dataset(
+        [line for line in samples if line.strip()], config, val_split=1.0 if validation else 0.0
     )
+    key = "validation" if validation else "train"
+    corpus_list = datasets[f"{key}_list"]
+    # Padding to the declared bound when the corpus is narrower spends most of each
+    # batch encoding zero images; measure it instead. See `SystemBatchDataset`.
+    width = pad_width or widest_system(corpus_list, min_staves=min_staves) or min_staves
+    # `samples` is the index before `load_dataset`'s per-staff filter; passing it lets
+    # the grouping tell a system that lost a staff from one that never had it.
+    system_dataset = build_system_batches(
+        corpus_list,
+        datasets[key],
+        min_staves=min_staves,
+        pad_width=width,
+        unfiltered=[line for line in samples if line.strip()],
+    )
+    print(f"padding systems to {width} staves")
     loader = TorchDataLoader(
         system_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=workers
     )
@@ -307,17 +333,31 @@ def main() -> None:
         "--batch-size", type=int, default=8, help="Systems per batch, not individual staves."
     )
     parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--min-staves", type=int, default=2,
-                         help="Systems with fewer real parts than this are excluded.")
+    parser.add_argument(
+        "--min-staves",
+        type=int,
+        default=2,
+        help="Systems with fewer real parts than this are excluded.",
+    )
+    parser.add_argument(
+        "--pad-width",
+        type=int,
+        help="Staves to pad each system to. Defaults to the corpus's own widest system, "
+        "which is what keeps the batch from being mostly zeros.",
+    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument(
-        "--sampling-prob", type=float, default=0.5,
+        "--sampling-prob",
+        type=float,
+        default=0.5,
         help="Probability the first pass keeps ground truth per-position rather than "
         "its own greedy prediction (1.0 = fully teacher-forced, the old behavior; "
         "lower closes the exposure-bias gap - see mixed_first_pass_hidden's docstring).",
     )
     parser.add_argument(
-        "--progress-every", type=int, default=50,
+        "--progress-every",
+        type=int,
+        default=50,
         help="Print a mid-epoch progress line every N batches (0 disables it).",
     )
     args = parser.parse_args()
@@ -335,15 +375,26 @@ def main() -> None:
     model.to(args.device)
 
     batches, examples = build_batches(
-        args.index, config, args.batch_size, args.workers, min_staves=args.min_staves
+        args.index,
+        config,
+        args.batch_size,
+        args.workers,
+        min_staves=args.min_staves,
+        pad_width=args.pad_width,
     )
     print(f"{examples} system(s) from {args.index}")
 
     valid_batches = None
     if args.valid_index:
         valid_batches, valid_examples = build_batches(
-            args.valid_index, config, args.batch_size, args.workers,
-            shuffle=False, validation=True, min_staves=args.min_staves,
+            args.valid_index,
+            config,
+            args.batch_size,
+            args.workers,
+            pad_width=args.pad_width,
+            shuffle=False,
+            validation=True,
+            min_staves=args.min_staves,
         )
         print(f"{valid_examples} validation system(s) from {args.valid_index}")
 
@@ -351,8 +402,13 @@ def main() -> None:
     history = []
     for epoch in range(1, args.epochs + 1):
         report = train_epoch(
-            model, batches, optimizer, epoch, device=args.device,
-            sampling_prob=args.sampling_prob, progress_every=args.progress_every,
+            model,
+            batches,
+            optimizer,
+            epoch,
+            device=args.device,
+            sampling_prob=args.sampling_prob,
+            progress_every=args.progress_every,
         )
         if valid_batches is not None:
             with_context, without_context = evaluate(
