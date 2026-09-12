@@ -400,6 +400,8 @@ def main() -> None:
 
     optimizer = torch.optim.Adam(staff_context_parameters(model), lr=args.lr)
     history = []
+    best_score: float | None = None
+    best_epoch = 0
     for epoch in range(1, args.epochs + 1):
         report = train_epoch(
             model,
@@ -428,16 +430,39 @@ def main() -> None:
         args.out.write_text(
             json.dumps({"history": history, "trainable": trainable}, indent=2), encoding="utf-8"
         )
+        # Keep the best epoch, not the latest one. Writing every epoch over the same file
+        # assumes training only improves, and this run does not: the first ten-epoch run
+        # diverged at epoch 6 (validation loss *with* the module reached 8.84 against
+        # 1.11 without) and destabilised again at epoch 10, which left the gate at 1.1e-5
+        # - a module multiplied by that contributes nothing. The +0.0065 of epochs 7 and
+        # 9 was overwritten by a checkpoint worth zero. The ablation delta is the thing
+        # this run exists to maximise, so it is what "best" means here; with no
+        # validation set to measure it, fall back to the training loss.
         if args.weights:
-            args.weights.parent.mkdir(parents=True, exist_ok=True)
-            torch.save(
-                {
-                    name: param.detach().cpu()
-                    for name, param in model.named_parameters()
-                    if name.startswith(NEW_PARAMETER_PREFIXES)
-                },
-                args.weights,
+            score = (
+                report.get("valid_loss_without_staff_context", 0.0)
+                - report.get("valid_loss_with_staff_context", 0.0)
+                if valid_batches is not None
+                else -report["loss"]
             )
+            if best_score is None or score > best_score:
+                best_score = score
+                best_epoch = epoch
+                args.weights.parent.mkdir(parents=True, exist_ok=True)
+                torch.save(
+                    {
+                        name: param.detach().cpu()
+                        for name, param in model.named_parameters()
+                        if name.startswith(NEW_PARAMETER_PREFIXES)
+                    },
+                    args.weights,
+                )
+                print(f"  saved: best so far (epoch {epoch}, score {score:+.4f})")
+            else:
+                print(
+                    f"  not saved: epoch {epoch} scores {score:+.4f}, "
+                    f"below epoch {best_epoch}'s {best_score:+.4f}"
+                )
 
 
 if __name__ == "__main__":
