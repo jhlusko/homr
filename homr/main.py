@@ -18,6 +18,7 @@ from homr.bar_line_detection import (
     detect_bar_lines,
     prepare_bar_line_image,
 )
+from homr.beam_repair import repair_beams
 from homr.bounding_boxes import (
     BoundingEllipse,
     RotatedBoundingBox,
@@ -45,6 +46,7 @@ from homr.simple_logging import eprint
 from homr.staff_detection import break_wide_fragments, detect_staff, make_lines_stronger
 from homr.staff_parsing import parse_staffs
 from homr.staff_position_save_load import load_staff_positions, save_staff_positions
+from homr.stem_arbitration import arbitrate_stems
 from homr.title_detection import detect_title, download_ocr_weights
 from homr.transformer.configs import Config, default_config
 from homr.tuplet_repair import repair_symbols
@@ -264,6 +266,23 @@ def process_image(
 
         if transformer_config.tuplet_repair:
             result_staffs = [repair_symbols(voice)[0] for voice in result_staffs]
+
+        # Both run after tuplet repair, which can rewrite rhythms and so change which
+        # notes carry flags at all, and before MusicXML generation, which is where the
+        # notation is finally read. Each reports what it did rather than working silently:
+        # a pass that rewrites notation and says nothing is indistinguishable from one
+        # that is not wired in, which is exactly how these two spent their first day.
+        if transformer_config.beam_repair:
+            for voice in result_staffs:
+                report = repair_beams(voice)
+                if report.notes_rewritten:
+                    eprint(report.describe())
+
+        if transformer_config.stem_arbitration:
+            for voice in result_staffs:
+                report = arbitrate_stems(voice)
+                if report.rule_applied:
+                    eprint(report.describe())
 
         if not config.read_staff_positions:
             title = title_future.result(60)

@@ -189,6 +189,18 @@ class Config:
         #: maintainer's explicit instruction. Set HOMR_CROSS_STAFF_REPAIR=0 to return to
         #: log-only.
         self.cross_staff_repair = os.environ.get("HOMR_CROSS_STAFF_REPAIR", "1") != "0"
+        #: Replace beam groups the head emitted that could not be engraved - a group that
+        #: begins and never ends, an end with no beginning, a beam inside a beam. Audited
+        #: at 27.3% of staves against 6.2% for the engraved reference under identical
+        #: processing. Only provably undrawable groups are touched, so a group the rule
+        #: would disagree with - a beam spanning a rest, say - is left exactly as decoded.
+        #: See `homr.beam_repair`.
+        self.beam_repair = os.environ.get("HOMR_BEAM_REPAIR", "1") != "0"
+        #: Take stem direction from the beam-group rule where the head is unsure. 27.27
+        #: measured the rule at 94.4% with no parameters against the head's 94.3%, and
+        #: 27.28 found they fail on nearly disjoint notes: choosing per note from the
+        #: head's own confidence scored 95.92%. See `homr.stem_arbitration`.
+        self.stem_arbitration = os.environ.get("HOMR_STEM_ARBITRATION", "1") != "0"
         #: Re-decode the one measure a cumulative-barline divergence localizes, and keep
         #: an alternative only if its barlines then land exactly where the majority's do.
         #:
