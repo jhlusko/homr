@@ -325,6 +325,13 @@ def main() -> None:
         "--valid-index", type=Path, help="Held-out index.txt for the with/without ablation."
     )
     parser.add_argument("--checkpoint", type=Path, required=True, help="Pinned .pth to start from.")
+    parser.add_argument(
+        "--resume-weights",
+        type=Path,
+        help="A previous run's Stage C weights, to carry on from rather than start over. "
+        "The optimiser state is not restored - Adam's moments begin again - so this is a "
+        "warm start, not an exact continuation, and the first epoch after it may dip.",
+    )
     parser.add_argument("--out", type=Path, required=True, help="Where to write the history JSON.")
     parser.add_argument("--weights", type=Path, help="Where to write the trained module's weights.")
     parser.add_argument("--epochs", type=int, default=5)
@@ -370,6 +377,16 @@ def main() -> None:
 
     model = TrOMR(config)
     load_pinned(model, args.checkpoint)
+    if args.resume_weights:
+        resumed = torch.load(args.resume_weights, map_location="cpu", weights_only=True)
+        missing, unexpected = model.load_state_dict(resumed, strict=False)
+        if unexpected:
+            raise SystemExit(f"--resume-weights does not fit this model: {sorted(unexpected)[:3]}")
+        gate = resumed.get("decoder.staff_context.gate")
+        print(
+            f"resuming from {args.resume_weights.name}: {len(resumed)} tensors"
+            + (f", gate {float(gate.item()):+.6f}" if gate is not None else "")
+        )
     trainable = model.freeze_core_for_staff_context()
     print(f"training {len(trainable)} tensor(s), everything else frozen")
     model.to(args.device)
