@@ -18,6 +18,8 @@ which neither original covered end to end.
 | [Part I](#part-i--design) | Architecture, structured heads, cross-staff repair, evaluation, acceptance gates |
 | [Part II](#part-ii--work-log) | Dated experiment and investigation log |
 | [Part III](#part-iii--corpus-construction-lieder) | How the Lieder scan corpus is built, and why the obvious ways are wrong |
+| [Part IV](#part-iv--onset-representation-tuplet-repair-and-structured-head-promotion) | Onset representation, tuplet repair, structured-head promotion |
+| [Part V](#part-v--stage-c-answered-2026-09-12) | Stage C retrained and measured: the delta is real, the accuracy gain is +0.05pp |
 
 ---
 
@@ -12589,3 +12591,104 @@ candidates already carried the core slur and therefore correctly had no incremen
 This closes the *review* export seam, but is not a production promotion. The images are
 pre-cropped transformer inputs; full detector/pipeline validation and a deployment
 decision remain separate work.
+
+---
+
+# Part V — Stage C, answered (2026-09-12)
+
+*Four training runs and two independent re-measurements. The conclusion is negative and
+the mechanism works; those are not in conflict, and the difference between them is the
+finding.*
+
+## IV.1 The weights were lost, so it was retrained
+
+§4.3 of `docs/PIPELINE.md` records Stage C as built but blocked: `staff_context_weights`
+is required when it is on, and the `phase24-staff-context-weights` release is not in this
+repository, not in `pins.py` and not in the service image. Four locations were checked and
+none held it, so the phase meant retraining rather than fetching.
+
+| run | learning rate | epochs | best delta | note |
+| --- | --- | --- | --- | --- |
+| v1 | 1e-3 | 10 | +0.0065 | **diverged twice**; ended holding a dead checkpoint |
+| v2 | 3e-4 | 8 | +0.0128 | recheck **+0.0140**, sd 0.0002 |
+| v3 | 3e-4 | 8, resumed | +0.0164 | recheck **+0.0184**, sd 0.0002 |
+| v4 | 3e-4 | resumed | — | stopped deliberately; see IV.4 |
+
+**v1 is the cautionary run.** At lr 1e-3 the validation loss *with* the module reached
+8.84 against 1.11 without at epoch 6, recovered, then destabilised again at epoch 10 - and
+because the trainer wrote its weights file every epoch, the checkpoint left on disk was
+epoch 10's, whose gate had collapsed to **1.1e-5**. The module's whole output is multiplied
+by that gate, so the saved artifact was an expensive identity function, and the +0.0065 of
+epochs 7 and 9 had been overwritten by a checkpoint worth nothing. The trainer now keeps
+the best epoch by ablation delta and prints which one it kept.
+
+The ONNX converter refuses a gate below 1e-4 for a related reason: with a dead gate torch
+emits zeros, the exported graph emits zeros, and a parity check comparing them **passes**.
+It would have certified the useless checkpoint at 2.6e-08.
+
+## IV.2 The delta is real, and it is not what it looks like
+
+Each checkpoint was re-measured independently of the run that selected it, five ablation
+passes each, because selection and estimation from one number is the same circularity this
+project already documented for evaluation sets filtered by agreement with the model.
+
+Both times the independent mean came in **above** the selecting score with sd 0.0002. The
+effect is real, stable, and grew monotonically with training: **+0.0065 → +0.0140 →
++0.0184**, the last being 1.66% of the without-context loss. It had not converged.
+
+## IV.3 What 1.66% of loss is worth, in transcription
+
+Teacher-forced token accuracy over the same held-out systems and the same first-pass
+hidden state - the identical ablation, counting argmax hits instead of summing
+cross-entropy:
+
+```
+branch           without      with     delta      positions
+rhythm           98.53%    98.78%    +0.25%        141,475
+pitch            98.77%    98.77%    +0.00%
+lift             99.17%    99.17%    -0.00%
+position         99.80%    99.82%    +0.02%
+articulation     99.00%    99.04%    +0.04%
+slur             99.11%    99.13%    +0.02%
+
+pooled           99.06%    99.12%    +0.05%        848,850
+```
+
+**A 1.66% loss improvement is +0.05 percentage points of accuracy.** The gain is almost
+entirely calibration: the model became more confident about tokens it already had right.
+
+**Rhythm is the only branch that moved**, +0.25pp, and that is not noise - cross-staff
+barline agreement is a rhythm phenomenon, which is exactly what §12 says this mechanism is
+for. The mechanism works. It has very little left to fix at 98.5%.
+
+## IV.4 Decision
+
+**Stage C does not ship on this evidence.** It is a *two-pass decode* - every staff
+decoded twice - against `HARD_TIMEOUT_SECONDS = 280`, for +0.05pp. More training would
+raise the loss delta further, which IV.3 shows does not convert, so v4 was stopped rather
+than finished.
+
+One caveat keeps the question open rather than closed. Teacher forcing hands the model the
+correct prefix at every step, so it removes precisely the drift case where cross-staff
+context should help most - and free-running is what production does. This figure is an
+upper bound on a statistic that is not the production one. A free-running comparison would
+settle it, needs no GPU, and is the only remaining experiment worth running.
+
+Artifacts are retained at `homr-artifacts/models/staff_context_v{1,2,3}/` - weights,
+history, logs, and for v2 and v3 the ONNX pair. Note the ONNX is belt and braces:
+`load_staff_context` loads the `.pt` directly, calling the module too small to be worth
+exporting.
+
+## IV.5 What this cost and what it bought
+
+The GPU was never the expensive part. The recogniser retrained in ~30 minutes and would
+have run on a laptop CPU in 80. What consumed the rental was environment - an empty venv,
+a torchvision mismatched against torch, corpus indexes whose paths were relative to a
+directory the trainer never entered - and two defects found only by running things:
+
+- **`pkill -f` over ssh matched its own wrapper shell**, so a restart silently never
+  happened and the old log was read as the new run's. The tell was `tmux ls` reporting no
+  server.
+- **A watcher must watch for the run disappearing**, not only for success lines. The first
+  one greped `^epoch` and would have stayed silent through exactly that failure, and it
+  also missed the `valid:` lines carrying the run's entire output.
