@@ -13200,3 +13200,67 @@ simply missing labels is a different thing, and it silently caps every number me
 against it.
 
 Committed `e7c3596` (slurs), `8b33bba` (ties).
+
+## VI.11 The reference's own labels, audited
+
+*Prompted by `IMSLP183800-sys5-v1` carrying 7 slurs and 3 ties against a ground truth
+recording 2-3 slurs and 1 tie. `training/omr_datasets/reference_label_audit.py`.*
+
+This needs no external truth, which is what makes it worth running: the labels are checked
+against the constraints they must satisfy to mean anything. A tie `start` whose pitch does
+not recur in the next chord on its own staff is not a tie the corpus recorded - it is a
+label that cannot be drawn. Endpoints at a crop edge are excluded throughout.
+
+```
+1,500 files each                        Lieder (scanned)      OSSQ (corrected)
+tie endpoints                                  2,023               1,491
+  starts whose pitch does NOT recur      185    9.1%           7    0.5%
+  stops with NO such start before        173    8.6%           8    0.5%
+                                        ----------------      --------------
+  impossible, total                            17.7%                1.0%
+
+slur endpoints                                 6,144               8,990
+  stops nothing opened                   602    9.8%          19    0.2%
+  starts nothing closes                   33    0.5%          22    0.2%
+
+tokens vs sidecar disagree on a file       274 / 1,500     197 / 1,500
+                                               18.3%               13.1%
+```
+
+**The Lieder corpus's tie labels are impossible ~18x as often as OSSQ's, and its orphaned
+slur stops ~49x as often.** OSSQ is effectively clean on both. Lieder is the corpus the
+scan models train on.
+
+The two are built differently - OSSQ from a corrected alignment of engraving to scan,
+Lieder from an IMSLP rebuild - and this is the first check that has ever compared their
+label integrity rather than their size.
+
+### Consequences
+
+**For scoring.** VI.9's "80.08% of predicted spans match the engraved reference" is not a
+measure of our error. It is bounded above by a reference that is itself malformed on a
+tenth of its slur endpoints. Not quotable until this is fixed.
+
+**For training.** Worse, and not fixable by rescoring. A tie head trained on labels where
+one start in ten has no possible partner is being taught noise, and the tie head is one of
+the two whose baseline said it "earns its keep". That conclusion rested on OSSQ, which is
+clean; it says nothing about what the Lieder-trained scan model learned.
+
+**For the token/sidecar split.** 18.3% of Lieder files disagree with their own sidecar
+about how many endpoints exist. The two were written from one source in one pass, so that
+is our converter contradicting itself, independent of what either says about the page.
+
+### The audit's own first answer was wrong
+
+The first run reported Lieder tie starts impossible at **17.8%**. That was 9.1% of corpus
+and 8.7% of my own bug: `_tie_partner` searched the next chord *in the flattened stream*,
+so on a grand staff a tie on the upper staff was judged against the lower hand's next note.
+
+**Third time in one day for the same mistake** - after the slur numbering that collided two
+staves' slot 1, and the crossing audit that flattened both staves into one index. A grand
+staff is two sequences that happen to be interleaved in our representation, and every
+routine that walks notes has to be asked which one it means. `training/omr_datasets/
+tie_baseline.py` has the same flaw; its figures are OSSQ-only, where it does not bite, but
+they must not be re-run on Lieder without fixing it.
+
+Committed with the audit tool.
