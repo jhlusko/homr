@@ -13114,3 +13114,89 @@ in the generator, and the corpus's own ground truth rendered wrong through it.
 repository, and shows the old behaviour.
 
 Committed `01f60c8` (the fix), corrected here.
+
+## VI.10 Slurs pair on their own staff; ties join one pitch
+
+*Both raised from outside the measurements, on two named examples. Both turned out to be
+defects in the generator's pairing, and the second one exposed that the corpus's own labels
+are worse than the model.*
+
+### Slurs: `IMSLP183800-sys5-v1`
+
+Reported as: our slurs are cross-staff, the page has none, and it carries several
+concurrent same-staff slurs on both staves. Measured:
+
+```
+predicted   7 paired spans, 4 cross-staff
+engraved    2 paired spans, 0 cross-staff
+```
+
+Two defects in the fallback that runs when the head files a span's two ends under
+different slots.
+
+**The fallback ignored the staff**, taking the most recent span open anywhere, which
+reached across the grand staff. It now prefers the most recent span open on the stop's own
+staff. Cross-staff slurs are real in piano writing, so that remains the last resort - but a
+last resort, not the first answer. 4 cross-staff to 2.
+
+**A stop resolved by that fallback left its key entry stale.** The key kept holding the
+number, so the next stop filed under it popped a span that had closed long ago, on whichever
+staff owned it. `_release` now clears the number from the key table as well as the open list.
+2 to 0.
+
+The second is the more instructive: `slur_numbers` and `open_slurs` are two views of one
+state and only one was being maintained. **A cache of a fact is a second place the fact can
+be wrong.**
+
+### Ties: the same file, and a sharper failure
+
+The same page carries three ties. The decode wrote **eight `<tie>` elements of which none
+paired** - three starts whose pitch never recurs, five stops with no start of that pitch
+before them - so all three ties rendered as nothing.
+
+A tie joins two notations of *one pitch*. That is what distinguishes it from a slur, and it
+is a necessary condition rather than a preference. The head predicts each note's state
+independently and nothing enforces it. **Third instance of one failure: a per-note head
+asserting one end of a relation, with nothing checking the other end exists** - after beam
+groups that never close and slur slots that collide.
+
+`homr/tie_repair.py` enforces it, bounded by the two figures the tie baseline already had
+(797,487 notes):
+
+```
+reference ties joining a repeat of the same pitch   26,844 / 27,287   98.4%
+adjacent same-pitch pairs the engraving ties        26,844 / 169,098  15.9%
+```
+
+The constraint is near-exact, so it can be enforced. Its converse is not - one repeated
+pitch in six - so **whether** a tie exists stays the head's, and the pass never invents one.
+
+```
+300 Lieder systems
+off   337 <tie> elements,  55 drawable ties
+on    140 <tie> elements,  67 drawable ties
+```
+
+Twelve more ties drawn while 197 undrawable elements stop being written, and afterwards the
+count reconciles exactly: 67 pairs plus 6 endpoints continuing into the next system.
+
+### What the same example says about the corpus
+
+The page carries 7 slurs and 3 ties. Its ground truth records **2-3 slurs and 1 tie** - and
+that single tie is a `stop` with no `start`.
+
+This matters beyond one file. VI.9's "80.08% of predicted spans match the engraved
+reference" was read as *one span in five pairs the wrong notes*. On this evidence the
+reference is also under-recording, so the figure is not a clean measure of our error and
+**should not be quoted until the reference is audited**.
+
+More seriously, it is a training-label problem, not only a scoring one. A corpus that omits
+slurs and ties teaches a head to omit them.
+
+**A control is only a control while it is right.** Two of this session's best findings came
+from a reference being *worse* than the system under test (the beam validator, the slur
+numbering) - which was diagnostic there because the defect was shared. A reference that is
+simply missing labels is a different thing, and it silently caps every number measured
+against it.
+
+Committed `e7c3596` (slurs), `8b33bba` (ties).
