@@ -13081,4 +13081,36 @@ pairing-accuracy baseline this project has.
 always wrong if one ever appears. But **it currently fires on nothing**, which is recorded
 here rather than left for someone to rediscover.
 
+### Confirmed on a real example
+
+`IMSLP89797-sys5-v1`, raised from the `/ots-homr` page - a review artifact rendered before
+the fix. Reading its saved MusicXML for spans open at the same time under one number:
+
+```
+our output before the fix     8 collisions
+the engraved reference        8 collisions
+```
+
+A slur opens at note 17 (staff 1, number 1) and its stop is never decoded, so **every**
+later number-1 start on that staff collides with it - notes 33, 38, 51, 69 - and the same
+happens on staff 2 from note 20. A reader handed five number-1 starts and two number-1
+stops draws what it can, which is where the crossings come from.
+
+Decoding the same crop through the current pipeline:
+
+```
+20 slur endpoints, 0 collisions
+slur crossing: 2 spans, 0 crossing pair(s), 0 re-paired
+```
+
+The dangling span at note 17 is still dangling - its stop was never decoded, which is a
+decode error and not this defect - but it no longer poisons every subsequent slur on the
+staff. **One missing stop used to corrupt the rest of the system.**
+
+That the reference collides exactly as often is the same signal as before: the defect was
+in the generator, and the corpus's own ground truth rendered wrong through it.
+
+**The gallery on `/ots-homr` predates the fix**, like every other rendered artifact in the
+repository, and shows the old behaviour.
+
 Committed `01f60c8` (the fix), corrected here.
