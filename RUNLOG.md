@@ -12959,3 +12959,91 @@ deleted. `tests/test_post_decode_wiring.py` now asserts the harness calls every 
 
 **A hand-copy of another file's sequence is the same category of rot as a function with no
 caller, and needs the same kind of guard.**
+
+## VI.9 Crossing slurs: a numbering defect in the generator, and a real one behind it
+
+*Prompted by an observation from outside the measurements: crossing slurs are visually
+obvious, always wrong, and should be automatically correctable.*
+
+### Four hypotheses, three wrong
+
+| hypothesis | measured | result |
+| --- | --- | --- |
+| spans interleave by note index | 300 staves, both sides | **0 crossings** either side |
+| two chord members collide in one slot | 300 staves | 39 chords total, **none** with two slur starts |
+| the sidecar slot overrides the pairing stack, breaking pairs | 300 staves, XML rendered | 2.78% unpaired vs **1.94% control** - mostly crop edges |
+| **concurrent spans share one slur number** | 400 Lieder systems | **26% of engraved staves, 22% of ours** |
+
+The first test was index-only and structurally blind to the case that prompted the
+investigation: two slurs spanning the same pair of chords occupy the *identical* index
+range, so `s1 < s2 < e1 < e2` never fires, yet they cross whenever their vertical order
+inverts between the ends. **A slur is a segment between two points, each with a horizontal
+and a vertical position.** Placement gates it too - a slur above and a slur below never
+intersect however their endpoints order, which makes the crossing test depend on the slur
+side field (VI.8).
+
+The second and third tests were clean. The fourth was not, and the corpus mattered: OSSQ is
+a string quartet, one line per staff, and carries concurrent slurs on 28 of 4,503 slur
+starts. Lieder is voice over piano - 114 of 2,999, four times the rate, and a grand staff.
+
+### The defect
+
+MusicXML pairs a slur by its `number`, so two spans open at the same moment must not share
+one. `_slur_number` returned the sidecar's slot directly, and a slot is unique only within
+one note. Slot 1 on the upper staff and slot 1 on the lower staff both became `number="1"`.
+
+`build_slurs`' own docstring describes this as already fixed: *"a slur that begins on one
+staff and ends on another still pairs - the case that prompted this, where a start on staff
+1 and a stop on staff 2 were emitted as `number="1"` and `number="2"` and never joined up."*
+The stack that fixed it was then demoted to a fallback by a later change that preferred the
+sidecar. **220 of the 315 collisions were cross-staff**, which is the same case coming back
+through the other door.
+
+**The engraved reference collides more often than our predictions do (26% against 22%).**
+That is what places the defect in the generator rather than in the model, and it is the
+single most useful number in this section: a control that is *worse* than the system under
+test cannot be explained by the system under test.
+
+### Why every crossing audit came back clean
+
+Each audit paired endpoints itself - LIFO within a number - and so quietly *resolved* the
+ambiguity before testing for it. What matters is what a reader does with two same-numbered
+spans, and the obvious reading is FIFO:
+
+```
+400 Lieder systems          crossings a FIFO reader draws
+engraved reference              1 on   1 stave    0.25%
+predicted                     131 on  63 staves  15.75%
+```
+
+**An audit that makes the ambiguous decision on the renderer's behalf cannot see an
+ambiguity defect.** Report the ambiguity; do not resolve it and then measure.
+
+### After the fix
+
+The number comes from the stack again - unique among open spans by construction - with the
+slot kept as the span's *identity*, so a stop asks for the number its own start was given.
+Pairing stays exact where the sidecar knows it, and falls back to last-opened only where
+two spans are filed identically (95 of 315).
+
+```
+concurrent spans sharing one number   315 -> 0   (gt)    250 -> 0   (pred)
+crossings a FIFO reader would draw      1 -> 1   (gt)    131 -> 69  (pred)
+```
+
+### The residual, which is the real finding
+
+**69 crossings on 9.50% of predicted staves, against the reference's 0.25% - 38x the
+control.** These are not ambiguous pairings any more; they are spans the head's own slot
+assignment genuinely interleaves. The numbering defect was *hiding* them: while numbers
+collided, no audit could distinguish a mispairing from an unresolvable one.
+
+This is the defect the observation was about, and it is now cleanly measurable for the
+first time. The correction is available and invents nothing: both endpoints are already
+predicted and only their pairing is wrong, so re-pairing an interleaved pair to nest moves
+no endpoint. That is the next piece of work, and it now has a control and a number to beat.
+
+**Fixing a defect can reveal one. Do not close the investigation on the first fix that
+makes the symptom fall.**
+
+Committed `01f60c8`.
