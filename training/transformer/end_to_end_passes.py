@@ -33,6 +33,7 @@ from pathlib import Path
 import cv2
 
 from homr.beam_repair import LEVELS, repair_beams
+from homr.slur_crossing import repair_crossings
 from homr.slur_side import choose_slur_sides
 from homr.staff_parsing import add_image_into_tr_omr_canvas
 from homr.stem_arbitration import arbitrate_stems
@@ -450,6 +451,7 @@ def _post_decode(symbols: list[EncodedSymbol], *, passes: bool) -> list[EncodedS
         arbitrate_stems(voice)
         # After the stems, as in main.py: the convention reads the arbitrated stem.
         choose_slur_sides(voice)
+        repair_crossings(voice)
     return voice
 
 

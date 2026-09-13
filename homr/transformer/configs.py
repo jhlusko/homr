@@ -207,6 +207,11 @@ class Config:
         #: staves: the head alone 78.80%, the rule alone 89.27%, arbitrated 90.62%.
         #: See `homr.slur_side`.
         self.slur_side = os.environ.get("HOMR_SLUR_SIDE", "1") != "0"
+
+        #: Re-pair slurs whose spans cross, which no engraver draws. Measured over 400
+        #: Lieder systems: the decode draws 69 crossings on 9.50% of staves against the
+        #: engraved reference's 0.25%. See `homr.slur_crossing`.
+        self.slur_crossing = os.environ.get("HOMR_SLUR_CROSSING", "1") != "0"
         #: Re-decode the one measure a cumulative-barline divergence localizes, and keep
         #: an alternative only if its barlines then land exactly where the majority's do.
         #:

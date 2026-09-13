@@ -46,6 +46,7 @@ from homr.simple_logging import eprint
 from homr.staff_detection import break_wide_fragments, detect_staff, make_lines_stronger
 from homr.staff_parsing import parse_staffs
 from homr.staff_position_save_load import load_staff_positions, save_staff_positions
+from homr.slur_crossing import repair_crossings
 from homr.slur_side import choose_slur_sides
 from homr.stem_arbitration import arbitrate_stems
 from homr.title_detection import detect_title, download_ocr_weights
@@ -292,6 +293,14 @@ def process_image(
                 slur_report = choose_slur_sides(voice)
                 if slur_report.rule_applied:
                     eprint(slur_report.describe())
+
+        # Last of the slur passes: a crossing is judged partly by which side each span
+        # sits on, so the sides have to be final before it can be read.
+        if transformer_config.slur_crossing:
+            for voice in result_staffs:
+                crossing_report = repair_crossings(voice)
+                if crossing_report.crossings:
+                    eprint(crossing_report.describe())
 
         if not config.read_staff_positions:
             title = title_future.result(60)

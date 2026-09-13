@@ -13031,19 +13031,54 @@ concurrent spans sharing one number   315 -> 0   (gt)    250 -> 0   (pred)
 crossings a FIFO reader would draw      1 -> 1   (gt)    131 -> 69  (pred)
 ```
 
-### The residual, which is the real finding
+### The residual that was not there - **retracted 2026-09-13**
 
-**69 crossings on 9.50% of predicted staves, against the reference's 0.25% - 38x the
-control.** These are not ambiguous pairings any more; they are spans the head's own slot
-assignment genuinely interleaves. The numbering defect was *hiding* them: while numbers
-collided, no audit could distinguish a mispairing from an unresolvable one.
+This section first reported **69 crossings on 9.50% of predicted staves against the
+reference's 0.25%**, called it "the real finding", and commit `01f60c8`'s message published
+it. It was an artifact of the audit, and there is no residual crossing defect.
 
-This is the defect the observation was about, and it is now cleanly measurable for the
-first time. The correction is available and invents nothing: both endpoints are already
-predicted and only their pairing is wrong, so re-pairing an interleaved pair to nest moves
-no endpoint. That is the next piece of work, and it now has a control and a number to beat.
+The audit walked `xml.iter("note")` and used that running index as the horizontal
+coordinate. On a grand staff that index runs across **both** staves, so an upper-staff slur
+and a lower-staff slur that overlap in the flattened order scored as interleaved - when
+they are drawn on different systems and never touch. Adding the staff check the corrector
+itself already had:
 
-**Fixing a defect can reveal one. Do not close the investigation on the first fix that
-makes the symptom fall.**
+```
+400 Lieder systems, staff-aware          crossings
+engraved reference                        0 on 0 staves
+predicted                                 0 on 0 staves
+concurrent spans sharing one number       0 on 0 staves
+```
 
-Committed `01f60c8`.
+**Zero, both sides, by either pairing rule.** The numbering fix was the whole story.
+
+The tell was available and not read: the corrector, which checks the staff, found nothing
+to repair on the same corpus in the same run that the audit said had 69. Two measurements
+of one quantity disagreed by infinity and the disagreement was explained away
+("wrong layer") instead of resolved. **When two of your own measurements disagree, the
+discrepancy is the finding - resolve it before building on either.**
+
+Note what the artifact was: two staves' slot 1 treated as one thing. That is the *same*
+confusion as the numbering defect this section is about, committed in the tool built to
+measure it.
+
+### What is actually wrong with slurs
+
+The pairing-accuracy number from the corrector's verification, which involves no flattening
+and stands:
+
+```
+400 Lieder systems
+predicted spans exactly matching the engraved reference   394 / 492   80.08%
+```
+
+**One span in five pairs the wrong notes** - and none of them cross. The defect is a start
+or a stop on the wrong note, which is a decode problem rather than a pairing problem, and
+no geometric repair reaches it. That is the real slur finding, and it is the first
+pairing-accuracy baseline this project has.
+
+`homr/slur_crossing.py` is kept: it is correct, tested, costs one pass, and a crossing is
+always wrong if one ever appears. But **it currently fires on nothing**, which is recorded
+here rather than left for someone to rediscover.
+
+Committed `01f60c8` (the fix), corrected here.
