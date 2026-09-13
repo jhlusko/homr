@@ -20,6 +20,7 @@ which neither original covered end to end.
 | [Part III](#part-iii--corpus-construction-lieder) | How the Lieder scan corpus is built, and why the obvious ways are wrong |
 | [Part IV](#part-iv--onset-representation-tuplet-repair-and-structured-head-promotion) | Onset representation, tuplet repair, structured-head promotion |
 | [Part V](#part-v--stage-c-answered-2026-09-12) | Stage C retrained and measured: the delta is real, the accuracy gain is +0.05pp |
+| [Part VI](#part-vi--the-post-decode-passes-verified-where-they-run-2026-09-12) | Stem arbitration and beam repair verified in place; the beam export defect that found |
 
 ---
 
@@ -12692,3 +12693,177 @@ directory the trainer never entered - and two defects found only by running thin
 - **A watcher must watch for the run disappearing**, not only for success lines. The first
   one greped `^epoch` and would have stayed silent through exactly that failure, and it
   also missed the `valid:` lines carrying the run's entire output.
+
+---
+
+# Part VI — The post-decode passes, verified where they run (2026-09-12)
+
+*Two passes that had only ever been measured where they were built. Running them where
+they ship failed on the first attempt and produced two defects, neither of them in either
+pass. That is the entry.*
+
+## VI.1 What the gate was, and why it was not optional
+
+`homr/stem_arbitration.py` and `homr/beam_repair.py` were both committed with no caller
+(fixed in `37f8cbd`, guarded by `tests/test_post_decode_wiring.py`). Once reachable, each
+still carried a number taken somewhere else:
+
+| claim | measured on | actually runs on |
+| --- | --- | --- |
+| stem rule 94.4%, threshold 0.9 | the transformer's predicted beams, symbolic corpus | decoded scan tokens |
+| beam repair, 27.3% of staves undrawable | a dumped prediction file | live decode output |
+
+`training/transformer/end_to_end_passes.py` runs the production decode once per crop and
+replays `main.py`'s post-decode sequence twice over copies of it — tuplet repair in both
+arms, the two passes switched. The decode is shared deliberately: the arms must differ only
+by the passes, and a second decode would put sampling noise into the one number being read.
+Scoring is against the corrected sidecar, aligned by `difflib` over `(rhythm, pitch)`, so
+notes the decode got wrong are excluded from both arms identically.
+
+## VI.2 The first run: the beam export was writing near-noise
+
+The first staff inspected had beam states on a clef, a key signature, a barline and both
+half notes. Not the head being wrong — the head being **read where it was never trained**.
+
+`training/architecture/transformer/structured_targets.py` masks every beam level above a
+note's flag count, because a level that cannot apply is not a question. At those positions
+the head has no learned answer and emits whatever the shared hidden state projects to.
+Nothing downstream knew: `build_beams` writes a `<beam>` for any level whose state maps to
+a MusicXML value.
+
+```
+60 scanned staves, 1,423 note and rest symbols
+
+flagless notes that would write a <beam>        823 / 830    99.2%
+notes writing a <beam> above their flag count 1,416 / 1,423   99.5%
+by level                          1: 564   2: 1,125   3: 1,313   4: 1,380
+```
+
+A half note carrying `<beam number="1">begin</beam>`. Fixed by
+`structured_decode.mask_untrained_beams`, applied where notation is attached — the one
+place that knows both the logits and the rhythm token, so the XML writer, `beam_repair`'s
+validator and `stem_arbitration`'s grouping all see the same truth without each needing the
+rule.
+
+**There were two decode paths attaching notation** — the shipping ONNX one in
+`homr/transformer/decoder_inference.py` and the torch one in
+`training/architecture/transformer/decoder.py` that the galleries and evaluations run
+through — and neither masked. Both do now. `test_post_decode_wiring.py` asserts it of both,
+because a second path that quietly disagrees is the same failure mode as a pass with no
+caller, and this file already exists to catch that.
+
+## VI.3 The first result, and why the headline was not the finding
+
+```
+metric                     off        on      delta
+stem accuracy           88.85%    92.10%     +3.26%
+beam level-1 accuracy   90.05%    88.80%     -1.25%
+undrawable staves       43.25%    33.00%    -10.25%
+```
+
+Beam repair did what it claimed structurally — `unclosed` 365→134, `nested` 147→24 — while
+making the beams **less** like the engraved score. Its docstring claimed the rewrite
+"cannot lose information". It can.
+
+The crosstab is what turned that into something actionable:
+
+```
+beam repair:      520 changed — 170 wrong→right, 227 right→wrong   (net  -57)
+stem arbitration: 394 changed — 335 wrong→right,  59 right→wrong   (net +276)
+```
+
+## VI.4 Two hypotheses, both wrong, and the bucket read that was right
+
+**The edge hypothesis.** `beam_validity_audit.py` excludes findings at a staff's edges as
+legitimately open; `repair_beams` does not, and expands every finding to its whole run.
+Making the pass honour the same exclusion silences its own core case — a group that opens
+and never closes — and `test_a_group_that_never_closes_is_rewritten` caught it immediately.
+Reverted.
+
+**The seam hypothesis.** Replacing part of a staff could leave the rule's BEGIN inside the
+rewritten run and the head's END outside it. Measured: **3** staves came out invalid that
+went in valid, against 44 the other way. Not the cause.
+
+**The rest hypothesis, which inverted.** The rule cannot express a beam across a rest, so
+the obvious fear was that repair was eating the head's differentiating capability. It is
+not: 9 of 227 losses, 4.0% — and 38 of 170 **wins**, 22%, a 5.5× enrichment. The head's
+malformed rest-beams are frequently what *triggers* repair, and cleaning them up is much of
+what it does well. Recorded because it was asserted the wrong way round first.
+
+**What the bucket read actually showed.** Splitting both directions rather than only the
+losses:
+
+```
+rhythm of the rewritten note     losses    wins
+note_8..                             44       0
+```
+
+`note_8..` — a double-dotted eighth — 44 of 227 losses and zero of 170 wins. That is not a
+distribution, it is a pointer.
+
+## VI.5 The duration bug
+
+```
+note_8..    got 9/8    want 7/8    WRONG
+note_4..    got 9/4    want 7/4    WRONG
+```
+
+`duration += duration / 2` per dot **compounds**: the second dot adds half the dotted value
+instead of half the first dot's. The same private parser also gave grace notes metric time
+they do not take.
+
+This does not produce one wrong beam. **It shifts every onset after it**, so
+`automatic_beams` groups the remainder of the staff against a beat structure the music does
+not have, and `repair_beams` writes that over notes the head had right. The phase-shift
+signature in the loss table — `begin→continue` 51, `begin→end` 39, `continue→end` 33 — is
+what a displaced beat grid looks like.
+
+`homr/transformer/vocabulary.py`'s `kern_to_symbol_duration` has always handled dots,
+tuplets and grace notes correctly, and is used everywhere else in the package.
+`_duration_and_flags` now delegates to it. **A private reimplementation of something the
+package already parses is a bug waiting for a corpus that exercises it.**
+
+## VI.6 The result after the fix
+
+```
+metric                     off        on      delta
+stem accuracy           88.85%    92.13%     +3.28%
+beam level-1 accuracy   90.05%    91.41%     +1.36%
+beam full-vector        89.22%    90.58%     +1.36%
+undrawable staves       43.25%    33.00%    -10.25%
+
+stem arbitration: 392 changed — 335 wrong→right,  57 right→wrong   (net +278)
+beam repair:      393 changed — 213 wrong→right,  98 right→wrong   (net +115)
+nested findings:  147 → 5
+```
+
+Both passes confirmed in place. Stem arbitration gains **more** than the component
+measurement predicted (+3.28pp against +1.6pp), consistent with a harder free-running
+decode leaving the rule more to fix.
+
+**Scope.** 400 staff crops, not whole pages. The passes see exactly the input they see in
+production — a live decode, after tuplet repair, in `main.py`'s order — but page detection,
+deskew and system grouping sit upstream. *Verified where it runs*, not *verified end to end
+from a page scan*.
+
+**Consequence.** The `/ots-homr` galleries were rendered through the unmasked torch path,
+so they show beams from the defective export and must be regenerated before release.
+
+Committed `4866d43`.
+
+## VI.7 What this cost and what it bought
+
+Four full measurement runs, about forty minutes of CPU. It found a defect that had been
+corrupting **every `<beam>` the system has ever written**, in neither of the passes under
+test and in neither component measurement's field of view. Both would have shipped: one
+silently degrading output, the other net-negative while reporting a 10-point improvement in
+engravability.
+
+- **A headline that moves the wrong way is not yet a finding.** Three hypotheses fitted the
+  −1.25pp, two were wrong, and the counts could not distinguish them. The bucket read
+  could.
+- **Measure the wins as well as the losses.** The rest hypothesis inverted only once both
+  directions were dumped; the `note_8..` pointer was visible only as a *contrast* between
+  them.
+- **A claim that something cannot lose is a claim to check.** It was in a docstring, it was
+  reasonable, and it was false.
