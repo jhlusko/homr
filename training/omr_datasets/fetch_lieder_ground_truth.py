@@ -76,12 +76,7 @@ def load_lieder_file_tree(cache_path: Path | None) -> dict[str, str]:
         if cache_path:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache_path.write_text(json.dumps(data), encoding="utf-8")
-    by_key = {}
-    for entry in data.get("tree", []):
-        match = MSCX_FILENAME_RE.search(entry["path"])
-        if match:
-            by_key[match.group(1)] = entry["path"]
-    return by_key
+    return _tree_mapping(data, MSCX_FILENAME_RE)
 
 
 def load_lieder_mxl_tree(cache_path: Path | None) -> dict[str, str]:
@@ -98,12 +93,46 @@ def load_lieder_mxl_tree(cache_path: Path | None) -> dict[str, str]:
         if cache_path:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache_path.write_text(json.dumps(data), encoding="utf-8")
-    by_key = {}
-    for entry in data.get("tree", []):
-        match = MXL_FILENAME_RE.search(entry["path"])
+    return _tree_mapping(data, MXL_FILENAME_RE)
+
+
+def _tree_mapping(data: object, pattern: "re.Pattern[str]") -> dict[str, str]:
+    """`lieder_key -> path`, from either shape a cache can hold.
+
+    GitHub's tree API returns `{"tree": [{"path": ...}, ...]}`, and that is what this
+    loader was written against. A *local* cache - `build_lieder_v4.py`'s `local_caches`,
+    which points every key at a file inside the archived source snapshot - is already a
+    flat `{key: path}` mapping, and reading it as a tree recovered **zero** keys. The
+    failure was silent: an empty tree is indistinguishable from "no tree supplied", so
+    every fetch fell through to `scores.yaml`'s own path field and went to the network,
+    which is precisely the staleness the tree exists to correct. 7 of 215 scores 404'd,
+    and the other 208 were downloaded from GitHub by a build documented as needing no
+    live checkout.
+    """
+    if isinstance(data, dict) and "tree" not in data:
+        return {str(key): str(value) for key, value in data.items()}
+    entries = data.get("tree", []) if isinstance(data, dict) else []
+    found = {}
+    for entry in entries:
+        match = pattern.search(entry["path"])
         if match:
-            by_key[match.group(1)] = entry["path"]
-    return by_key
+            found[match.group(1)] = entry["path"]
+    return found
+
+
+def _read_source(file_tree: dict[str, str] | None, key: str) -> bytes | None:
+    """The vendored file for `key`, when the cache points at one that exists.
+
+    A local cache entry is a path on this machine, not a repo path to append to a raw
+    URL. Appending it produced a URL that could only 404, so a build with the whole
+    source archive on disk still needed the network to succeed.
+    """
+    if not file_tree or key not in file_tree:
+        return None
+    candidate = Path(file_tree[key])
+    if candidate.is_absolute() and candidate.is_file():
+        return candidate.read_bytes()
+    return None
 
 
 def fetch_mxl(entry: dict, key: str, file_tree: dict[str, str] | None = None) -> bytes:
@@ -111,6 +140,9 @@ def fetch_mxl(entry: dict, key: str, file_tree: dict[str, str] | None = None) ->
     `scores.yaml`'s own possibly-stale `path`. Returns the raw `.mxl` (a zip
     archive), not the unzipped MusicXML inside it - see
     `musicxml_text_ground_truth.py`'s own `unzip_mxl` for that."""
+    local = _read_source(file_tree, key)
+    if local is not None:
+        return local
     if file_tree and key in file_tree:
         url = LIEDER_RAW_BASE + urllib.parse.quote(file_tree[key])
     else:
@@ -147,6 +179,9 @@ def fetch_mscx(entry: dict, key: str, file_tree: dict[str, str] | None = None) -
     followed by a path-based 404 both being possible is a real failure to report,
     not something to paper over with a second guess.
     """
+    local = _read_source(file_tree, key)
+    if local is not None:
+        return local
     if file_tree and key in file_tree:
         url = LIEDER_RAW_BASE + urllib.parse.quote(file_tree[key])
     else:
