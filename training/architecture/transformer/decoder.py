@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from homr.transformer.configs import Config
-from homr.transformer.structured_decode import decode_note
+from homr.transformer.structured_decode import decode_note, mask_untrained_beams
 from homr.transformer.vocabulary import (
     EncodedSymbol,
     has_rhythm_symbol_a_position,
@@ -593,7 +593,12 @@ class ScoreDecoder(nn.Module):
                 prediction = decode_note(
                     {name: tensor[0, -1, :].tolist() for name, tensor in head_logits.items()}
                 )
-                symbol.notation = prediction.notation
+                # Masked exactly as the ONNX path masks it: a beam level above this
+                # note's flag count was never supervised, so the head's output there is
+                # an unlearned projection rather than a prediction. Two decode paths that
+                # disagree about this would make every gallery and evaluation built on
+                # this one describe a pipeline nobody ships.
+                symbol.notation = mask_untrained_beams(prediction.notation, symbol.rhythm)
                 symbol.structured_choices = prediction.choices
             symbols.append(symbol)
 

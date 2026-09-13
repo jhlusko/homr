@@ -1,6 +1,7 @@
 import unittest
+from fractions import Fraction
 
-from homr.beam_repair import repair_beams
+from homr.beam_repair import _duration_and_flags, repair_beams
 from homr.transformer.structured_notation import (
     AdvanceClass,
     BeamLevelState,
@@ -157,3 +158,39 @@ class TestBeamRepair(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDurationParsing(unittest.TestCase):
+    """The onset grid the rule beams against.
+
+    A wrong duration does not produce a wrong beam on that note - it shifts every onset
+    after it, so the rule groups the remainder of the staff against a beat structure the
+    music does not have. Measured end to end, `note_8..` was the single most common
+    rhythm among the notes this pass rewrote from right to wrong (44 of 227) and appeared
+    zero times among the ones it rewrote from wrong to right.
+    """
+
+    def test_a_single_dot_adds_half(self) -> None:
+        self.assertEqual((Fraction(3, 4), 1), _duration_and_flags("note_8."))
+
+    def test_a_second_dot_adds_a_quarter_not_another_half(self) -> None:
+        """`note_8..` is 1/2 + 1/4 + 1/8 quarters. Compounding gives 9/8, which is wrong."""
+        self.assertEqual((Fraction(7, 8), 1), _duration_and_flags("note_8.."))
+        self.assertEqual((Fraction(7, 4), 0), _duration_and_flags("note_4.."))
+
+    def test_a_triplet_keeps_its_written_flag_count(self) -> None:
+        self.assertEqual((Fraction(1, 3), 1), _duration_and_flags("note_12"))
+        self.assertEqual((Fraction(1, 6), 2), _duration_and_flags("note_24"))
+
+    def test_a_grace_note_takes_no_metric_time(self) -> None:
+        """It is played inside its neighbour's time, so it must not advance the grid."""
+        parsed = _duration_and_flags("note_32G")
+        assert parsed is not None  # noqa: S101
+        self.assertEqual(Fraction(0), parsed[0])
+
+    def test_a_rest_parses_like_a_note(self) -> None:
+        self.assertEqual((Fraction(1, 2), 1), _duration_and_flags("rest_8"))
+
+    def test_anything_that_is_not_a_note_or_rest_is_none(self) -> None:
+        for rhythm in ("barline", "clef_G2", "timeSignature/4"):
+            self.assertIsNone(_duration_and_flags(rhythm), rhythm)

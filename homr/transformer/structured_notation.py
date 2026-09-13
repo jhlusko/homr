@@ -355,6 +355,39 @@ TRAINED_BEAM_LEVELS = 4
 TRAINED_SLUR_SLOTS = 2
 
 
+def written_flags(rhythm: str) -> int | None:
+    """How many flags the written value of `rhythm` carries, or None if it is not a note.
+
+    A beam level applies only to a note with at least that many flags: an eighth has one,
+    a sixteenth two, a quarter none. Training masks every level above that count rather
+    than teaching NOT_APPLICABLE there (`training/architecture/transformer/
+    structured_targets.py`), so those levels are positions the head was never given an
+    answer for and its output at them means nothing.
+
+    The denominator counts how many fit in a whole note, so it is not restricted to
+    powers of two - `note_12` is a triplet eighth, which lasts a third of a quarter and
+    still carries one flag. Beaming follows the written value, not the sounded duration.
+    """
+    if not rhythm.startswith(("note_", "rest_")):
+        return None
+    body = rhythm.split("_", 1)[1]
+    digits = ""
+    for character in body:
+        if not character.isdigit():
+            break
+        digits += character
+    if not digits or int(digits) <= 0:
+        return None
+    written = 1
+    while written * 2 <= int(digits):
+        written *= 2
+    flags = 0
+    while written >= 8:
+        flags += 1
+        written //= 2
+    return flags
+
+
 @dataclass(frozen=True)
 class NoteNotation:
     """Structured notation for one note.

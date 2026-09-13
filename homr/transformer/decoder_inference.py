@@ -7,7 +7,7 @@ import onnxruntime as ort
 from homr.onnx_providers import gpu_providers
 from homr.simple_logging import eprint
 from homr.transformer.configs import Config
-from homr.transformer.structured_decode import decode_note
+from homr.transformer.structured_decode import decode_note, mask_untrained_beams
 from homr.transformer.vocabulary import EncodedSymbol
 from homr.type_definitions import NDArray
 
@@ -196,7 +196,11 @@ class ScoreDecoder:
             for name, array in zip(self.structured_heads_names, outputs, strict=True)
         }
         prediction = decode_note(logits)
-        symbol.notation = prediction.notation
+        # Masked here rather than at each consumer: every downstream reader - the
+        # MusicXML beam writer, `beam_repair`'s validator, `stem_arbitration`'s grouping
+        # - treated the head's output at untrained levels as a prediction, and each would
+        # have needed the same rhythm-derived rule to know better.
+        symbol.notation = mask_untrained_beams(prediction.notation, symbol.rhythm)
         symbol.structured_choices = prediction.choices
 
     def generate_with_rhythm_margins(

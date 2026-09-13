@@ -28,8 +28,8 @@ from homr.transformer.automatic_beaming import (
     wide_unit,
 )
 from homr.transformer.beam_validation import validate_voice
-from homr.transformer.structured_notation import BeamLevelState
-from homr.transformer.vocabulary import EncodedSymbol
+from homr.transformer.structured_notation import BeamLevelState, written_flags
+from homr.transformer.vocabulary import EncodedSymbol, kern_to_symbol_duration
 
 #: Fine enough that every duration this vocabulary can express lands on an integer,
 #: including a dotted 64th and the tuplet denominators.
@@ -57,36 +57,27 @@ class BeamRepair:
 def _duration_and_flags(rhythm: str) -> tuple[Fraction, int] | None:
     """(quarters, flags) for a note or rest token.
 
-    The denominator counts how many fit in a whole note, so it is not restricted to
-    powers of two - `note_12` is a triplet eighth. Sounded duration and written value
-    diverge there: a triplet eighth lasts a third of a quarter and still carries one flag.
-    Onsets need the first, beaming the second.
+    Both halves are delegated rather than parsed here. This function used to do its own
+    arithmetic and got two things wrong that a beat grid cannot survive: a second dot
+    added half the *dotted* value instead of half the first dot's (making `note_8..` 9/8
+    of a quarter instead of 7/8), and a grace note was given metric time it does not take.
+    Either one shifts every onset after it, so the rule beams the rest of the staff
+    against a beat structure the music does not have - and this pass then writes that
+    over notes the head had right.
+
+    `kern_to_symbol_duration` is the vocabulary's own parser, used everywhere else in the
+    package, and it already handles dots, tuplets and grace notes. Sounded duration and
+    written value still diverge - a triplet eighth lasts a third of a quarter and carries
+    one flag - so the flag count comes from the written value via `written_flags`.
     """
     if not rhythm.startswith(("note_", "rest_")):
         return None
     body = rhythm.split("_", 1)[1]
-    digits = ""
-    for character in body:
-        if character.isdigit():
-            digits += character
-        else:
-            break
-    if not digits or int(digits) <= 0:
+    flags = written_flags(rhythm)
+    if flags is None:
         return None
-    denominator = int(digits)
-    duration = Fraction(4, denominator)
-    written = 1
-    while written * 2 <= denominator:
-        written *= 2
-    flags = 0
-    value = written
-    while value >= 8:
-        flags += 1
-        value //= 2
-    for character in body[len(digits) :]:
-        if character != ".":
-            break
-        duration += duration / 2
+    #: `kern_to_symbol_duration` measures against a whole note; onsets here are quarters.
+    duration = kern_to_symbol_duration(body).fraction * 4
     return duration, flags
 
 

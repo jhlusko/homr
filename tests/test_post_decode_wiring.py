@@ -48,5 +48,32 @@ class TestPostDecodeWiring(unittest.TestCase):
                 self.assertIn(f"self.{flag} = ", configs)
 
 
+class TestBothDecodePathsMaskTheSameWay(unittest.TestCase):
+    """Every path that attaches notation must silence the untrained beam levels.
+
+    There are two - the shipping ONNX decode and the torch decode the galleries and
+    evaluations run on - and they attach notation in separate files. When only one of
+    them masked, every figure measured through the other described a pipeline nobody
+    ships.
+    """
+
+    ATTACHING_DECODERS = (
+        Path("homr") / "transformer" / "decoder_inference.py",
+        Path("training") / "architecture" / "transformer" / "decoder.py",
+    )
+
+    def test_every_decoder_that_decodes_a_note_also_masks_it(self) -> None:
+        for relative in self.ATTACHING_DECODERS:
+            with self.subTest(path=str(relative)):
+                called = _called_names(ROOT / relative)
+                self.assertIn("decode_note", called, f"{relative} no longer attaches notation")
+                self.assertIn(
+                    "mask_untrained_beams",
+                    called,
+                    f"{relative} decodes notation without masking the beam levels the "
+                    f"head was never supervised on",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

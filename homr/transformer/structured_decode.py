@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from homr.transformer.structured_notation import (
     ADVANCE_CLASSES,
@@ -40,6 +40,7 @@ from homr.transformer.structured_notation import (
     SlurSide,
     StemDirection,
     TieState,
+    written_flags,
 )
 
 BEAM_HEAD = "beam.level.{level}"
@@ -253,3 +254,26 @@ def decode_note(
     # Only offered heads can carry alternatives, so the full list is safe to hand on;
     # callers filter with uncertain_choices() rather than re-deriving the policy.
     return StructuredPrediction(notation=notation, choices=tuple(choices))
+
+
+def mask_untrained_beams(notation: NoteNotation, rhythm: str) -> NoteNotation:
+    """Silence beam levels the head was never supervised on for this rhythm.
+
+    Training masks every level above a note's flag count, so at those levels the head has
+    no learned answer and emits whatever the shared hidden state happens to project to.
+    Nothing downstream knew that: `music_xml_generator.build_beams` writes a `<beam>` for
+    any level whose state maps to a MusicXML value, which over a sample of 60 scanned
+    staves meant 99.2% of flagless notes - half and quarter notes - carrying a beam they
+    cannot have, and `beam_repair` validating a sequence that was mostly noise.
+
+    A non-note symbol has no beams at all, which is stricter than "no applicable levels"
+    and is the same rule the training targets apply.
+    """
+    flags = written_flags(rhythm)
+    levels = tuple(
+        state if flags is not None and level <= flags else BeamLevelState.NOT_APPLICABLE
+        for level, state in enumerate(notation.beam_levels, start=1)
+    )
+    if levels == tuple(notation.beam_levels):
+        return notation
+    return replace(notation, beam_levels=levels)
