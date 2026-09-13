@@ -14,11 +14,12 @@ running. Three checks, each of which the reference must pass on its own terms:
   **Slur pairing.** Same, per slot: a `stop` in a slot nothing opened, or a `start` no
   slot closes, away from the crop edges.
 
-  **Tokens against sidecar.** The token file and the sidecar were written from one source
-  in one pass, so a disagreement about how many endpoints exist is our own converter
-  contradicting itself. The token vocabulary conflates ties and slurs - `<tied>` and
-  `<slur>` both emit `slurStart`/`slurStop` - so the comparison is of *totals*: the
-  sidecar's slur endpoints plus its tie endpoints against the token file's slur tokens.
+  **Tokens against sidecar.** Both were written from one source in one pass, so a
+  disagreement is our own converter contradicting itself. The comparison has to account
+  for the collapse: the vocabulary maps `<tied>` and `<slur>` alike to
+  `slurStart`/`slurStop` and then dedupes, so a note carrying a tie start *and* a slur
+  start is one token and two sidecar endpoints **by design**. What is compared is
+  therefore the set of endpoint kinds per note, not the count of endpoints.
 
 A reference that fails these caps every number measured against it, and - worse - teaches
 a head to omit what it omits.
@@ -152,9 +153,26 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
                 "slur_start_at_edge" if open_at == len(records) - 1 else "slur_start_unclosed"
             ] += 1
 
-    sidecar_total = counts["_file_slur"] = sum(
-        1 for r in records for e, _ in r.get("slurs", []) if e != "none"
-    ) + sum(1 for r in records if r.get("tie", "none") != "none")
+    # What the flat field WOULD hold, not how many endpoints exist. The converter maps
+    # both `<tied>` and `<slur>` to "slur" + type and then dedupes
+    # (`music_xml_parser`: `slurs = list(set(slurs))`), because the six-branch vocabulary
+    # collapses ties and slurs into one field and "slurStart_slurStart" is unrenderable.
+    # So a note carrying a tie start and a slur start is one token and two sidecar
+    # endpoints, by design. Comparing raw totals counted that as a disagreement.
+    sidecar_total = 0
+    for record in records:
+        kinds = set()
+        for event, _side in record.get("slurs", []):
+            if event in OPENS:
+                kinds.add("start")
+            if event in CLOSES:
+                kinds.add("stop")
+        tie = record.get("tie", "none")
+        if tie in OPENS:
+            kinds.add("start")
+        if tie in CLOSES:
+            kinds.add("stop")
+        sidecar_total += len(kinds)
     tokens_total = _token_slur_endpoints(tokens_path)
     counts["sidecar_endpoints"] += sidecar_total
     counts["token_endpoints"] += tokens_total

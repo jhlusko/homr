@@ -13246,9 +13246,22 @@ one start in ten has no possible partner is being taught noise, and the tie head
 the two whose baseline said it "earns its keep". That conclusion rested on OSSQ, which is
 clean; it says nothing about what the Lieder-trained scan model learned.
 
-**For the token/sidecar split.** 18.3% of Lieder files disagree with their own sidecar
-about how many endpoints exist. The two were written from one source in one pass, so that
-is our converter contradicting itself, independent of what either says about the page.
+**For the token/sidecar split.** *Corrected.* The first figures - 18.3% of Lieder files and
+13.1% of OSSQ - were mostly my own double-count. The vocabulary maps `<tied>` and `<slur>`
+alike to `slurStart`/`slurStop` and then dedupes (`music_xml_parser`:
+`slurs = list(set(slurs))`), because "slurStart_slurStart" is unrenderable. So a note
+carrying a tie start *and* a slur start is one token and two sidecar endpoints **by
+design**, and comparing raw totals scored that as a disagreement. Comparing the set of
+endpoint *kinds* per note instead:
+
+```
+files whose tokens disagree with their own sidecar
+Lieder   160 / 1,500   10.7%
+OSSQ      40 / 1,500    2.7%
+```
+
+A real self-contradiction remains, four times worse in Lieder, but it is half what was
+first reported.
 
 ### The audit's own first answer was wrong
 
@@ -13262,5 +13275,41 @@ staff is two sequences that happen to be interleaved in our representation, and 
 routine that walks notes has to be asked which one it means. `training/omr_datasets/
 tie_baseline.py` has the same flaw; its figures are OSSQ-only, where it does not bite, but
 they must not be re-run on Lieder without fixing it.
+
+### The cause: the representation has no voice
+
+The token format carries `position` - `upper` or `lower` - and nothing else about which
+line of music a note belongs to. A piano staff routinely carries two voices, and then
+"the next chord on this staff" is as likely to be the other voice's as this one's, so a
+tie's partner cannot be located at all.
+
+Matching corpus systems to the source MusicXML they were built from, and splitting on
+whether any staff carries more than one voice:
+
+```
+55 systems matched               tie endpoints  impossible    slur endpoints  unpaired
+one voice per staff                    39          0   0.0%          64        1   1.6%
+a staff with two or more voices        34          3   8.8%          75       10  13.3%
+```
+
+Of the Lieder sources sampled, **22% have a staff carrying more than one voice**; OSSQ is a
+string quartet, one line per staff, and is clean. That is the whole of the gap's shape.
+
+The labels are not wrong in the source. They become unpairable when flattened into a
+representation that cannot say which voice a note is in - the same class as the grand-staff
+confusion above, one level finer: `position` distinguishes the two hands but nothing
+distinguishes two voices within one hand.
+
+**Not everything is explained.** Of four impossible ties read individually, three sit in
+multi-voice sources and one does not (`IMSLP122262-sys0-v1`, single voice throughout, tie
+start on G4 whose next chord holds B5). A second cause remains open, and the sample behind
+the split is small - 73 tie endpoints. Neither figure should be quoted as final.
+
+### What follows
+
+Adding a voice dimension to the token format is not a small change: it touches the
+vocabulary, every converter, and every trained checkpoint. What is cheap and worth doing
+first is measuring how much of the corpus it actually costs us - the 22% of systems with a
+polyphonic staff is an upper bound on the affected material, not on the affected labels.
 
 Committed with the audit tool.
