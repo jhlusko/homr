@@ -12698,9 +12698,18 @@ directory the trainer never entered - and two defects found only by running thin
 
 # Part VI — The post-decode passes, verified where they run (2026-09-12)
 
-*Two passes that had only ever been measured where they were built. Running them where
-they ship failed on the first attempt and produced two defects, neither of them in either
-pass. That is the entry.*
+*Two passes that had only ever been measured where they were built, joined later by a
+third. Running them where they ship failed on the first attempt and produced two defects,
+neither of them in either pass - and a published figure that a larger sample then
+retracted. That is the entry.*
+
+**What may be quoted, after the corrections below:**
+
+| pass | claim | confidence |
+| --- | --- | --- |
+| `stem_arbitration` | **+3.33pp** stem accuracy | holds at 400, 800 and 2,000 staves |
+| `beam_repair` | **−13.1pp** undrawable staves, ~zero accuracy cost | accuracy gain retracted, see VI.6 |
+| `slur_side` | rule **89.27%** vs head **78.80%**; **90.62%** arbitrated | VI.8 |
 
 ## VI.1 What the gate was, and why it was not optional
 
@@ -12823,23 +12832,58 @@ tuplets and grace notes correctly, and is used everywhere else in the package.
 `_duration_and_flags` now delegates to it. **A private reimplementation of something the
 package already parses is a bug waiting for a corpus that exercises it.**
 
-## VI.6 The result after the fix
+## VI.6 The result after the fix, and what a larger sample did to it
+
+On the 400-staff sample the fix produced:
 
 ```
 metric                     off        on      delta
 stem accuracy           88.85%    92.13%     +3.28%
 beam level-1 accuracy   90.05%    91.41%     +1.36%
-beam full-vector        89.22%    90.58%     +1.36%
 undrawable staves       43.25%    33.00%    -10.25%
-
-stem arbitration: 392 changed — 335 wrong→right,  57 right→wrong   (net +278)
-beam repair:      393 changed — 213 wrong→right,  98 right→wrong   (net +115)
-nested findings:  147 → 5
 ```
 
-Both passes confirmed in place. Stem arbitration gains **more** than the component
-measurement predicted (+3.28pp against +1.6pp), consistent with a harder free-running
-decode leaving the rule more to fix.
+**That beam figure did not survive a larger sample.** Re-run at 800 and then 2,000 staves
+from the same held-out corpus:
+
+| metric | 400 | 800 | **2,000** |
+| --- | --- | --- | --- |
+| stem accuracy | +3.28pp | +3.68pp | **+3.33pp** |
+| beam level-1 accuracy | +1.36pp | +0.65pp | **−0.12pp** |
+| beam full-vector accuracy | +1.36pp | +0.98pp | **+0.29pp** |
+| undrawable staves | −10.25pp | −12.25pp | **−13.10pp** |
+
+```
+at 2,000 staves, 42,490 scored notes
+stem arbitration: 1,921 changed — 1,667 wrong→right,   254 right→wrong   (net +1,413)
+beam repair:      2,676 changed — 1,270 wrong→right, 1,145 right→wrong   (net   +125)
+nested findings:  670 → 113
+```
+
+**Corrected conclusion, and it is not the one committed.** `4866d43`'s message, the first
+draft of this section and the roadmap all quoted **+1.36pp** for beam repair from the
+400-staff run. The monotone slide +1.36 → +0.65 → −0.12 is the signature of a number that
+was sampling noise, and the 2,000-staff crosstab — 1,270 against 1,145 — is close to a coin
+flip. The defensible statement is:
+
+> **Beam repair buys a 13-point reduction in undrawable staves at approximately zero
+> accuracy cost.** It does not improve beam accuracy.
+
+That is still worth shipping — an engravable score has value a per-note accuracy cannot
+express, and that was the original argument for the pass — but it is a different claim, and
+the one that was published was wrong.
+
+Stem arbitration holds across all three samples (+3.28 / +3.68 / +3.33) and gains **more**
+than the component measurement predicted (+1.6pp), consistent with a harder free-running
+decode leaving the rule more to fix. Nothing was tuned on any of these samples, so the
+agreement across them is the check worth having.
+
+**The methodological point, which is the one to keep.** The 400-staff run was the first
+sample that produced a positive number, and it was accepted, written up and pushed. Every
+guard in this session was aimed at whether a pass *ran*; none was aimed at whether the
+sample was large enough to believe. A verification gate that stops at the first favourable
+result is a gate against unwired code, not against wrong numbers. **Report the largest
+sample, and report the trend across sizes when one exists.**
 
 **Scope.** 400 staff crops, not whole pages. The passes see exactly the input they see in
 production — a live decode, after tuplet repair, in `main.py`'s order — but page detection,
@@ -12867,3 +12911,51 @@ engravability.
   them.
 - **A claim that something cannot lose is a claim to check.** It was in a docstring, it was
   reasonable, and it was false.
+- **One sample is not a measurement.** The beam figure that was committed came from the
+  first sample that gave a positive answer. See VI.6.
+
+## VI.8 Slur side, and a defect in the measurement itself
+
+The slur-side head is the weakest shipped head (macro-F1 .723). The convention is that a
+slur sits opposite the stems, which makes the side derivable from something the pipeline
+already produces. `training/omr_datasets/slur_side_baseline.py` reported the rule at 94.0%
+— but from the **engraved** stem, which does not exist at inference.
+
+Measured in place over 2,000 held-out scanned staves, deriving from the stem the pipeline
+actually produced (after `arbitrate_stems`, so it inherits every stem mistake):
+
+```
+4,265 sides stated by the engraving
+  head alone                    78.80%
+  opposite the arbitrated stem  89.27%
+
+rule right, head wrong   730      head right, rule wrong   285
+both wrong               172      both right             3,072
+```
+
+Five of the baseline's points are the cost of the chain; the remaining eleven-point lead
+over the head survives it. The two fail on different notes, so a threshold was swept on
+half the staves and reported on the other half, as 27.28 did for stems:
+
+```
+reported half
+  head alone                           78.60%
+  rule alone                           90.11%
+  head when ≥0.9 confident, else rule  90.62%
+```
+
+`homr/slur_side.py`, run after `arbitrate_stems` because it reads the arbitrated stem.
+
+**The first verification run of it reported +0.00%, and that was the harness.**
+`end_to_end_passes.py` hand-copies `main.py`'s post-decode sequence so it can replay it
+twice over a single decode. `choose_slur_sides` was wired into `main.py` and omitted from
+the copy, so the harness measured a pass it never called.
+
+This is the session's original defect one level up. An unwired pass merely does nothing; a
+pass the *measurement* does not call produces **evidence against itself** — a +0.00% on a
+rule that beats its head by eleven points is exactly the result that gets a good pass
+deleted. `tests/test_post_decode_wiring.py` now asserts the harness calls every function
+`main.py` calls, off the same list.
+
+**A hand-copy of another file's sequence is the same category of rot as a function with no
+caller, and needs the same kind of guard.**

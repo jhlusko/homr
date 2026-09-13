@@ -46,6 +46,7 @@ from homr.simple_logging import eprint
 from homr.staff_detection import break_wide_fragments, detect_staff, make_lines_stronger
 from homr.staff_parsing import parse_staffs
 from homr.staff_position_save_load import load_staff_positions, save_staff_positions
+from homr.slur_side import choose_slur_sides
 from homr.stem_arbitration import arbitrate_stems
 from homr.title_detection import detect_title, download_ocr_weights
 from homr.transformer.configs import Config, default_config
@@ -283,6 +284,14 @@ def process_image(
                 report = arbitrate_stems(voice)
                 if report.rule_applied:
                     eprint(report.describe())
+
+        # After stem arbitration, not before: the convention places a slur opposite the
+        # stems, so it has to read the stem that will actually be rendered.
+        if transformer_config.slur_side:
+            for voice in result_staffs:
+                slur_report = choose_slur_sides(voice)
+                if slur_report.rule_applied:
+                    eprint(slur_report.describe())
 
         if not config.read_staff_positions:
             title = title_future.result(60)

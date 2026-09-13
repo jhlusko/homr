@@ -201,6 +201,12 @@ class Config:
         #: 27.28 found they fail on nearly disjoint notes: choosing per note from the
         #: head's own confidence scored 95.92%. See `homr.stem_arbitration`.
         self.stem_arbitration = os.environ.get("HOMR_STEM_ARBITRATION", "1") != "0"
+
+        #: Slur side from the engraving convention - opposite the stems - where the
+        #: slur-side head is unsure. Measured in place over 2,000 held-out scanned
+        #: staves: the head alone 78.80%, the rule alone 89.27%, arbitrated 90.62%.
+        #: See `homr.slur_side`.
+        self.slur_side = os.environ.get("HOMR_SLUR_SIDE", "1") != "0"
         #: Re-decode the one measure a cumulative-barline divergence localizes, and keep
         #: an alternative only if its barlines then land exactly where the majority's do.
         #:

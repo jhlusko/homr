@@ -16,6 +16,7 @@ POST_DECODE_PASSES = {
     "homr.beam_repair": "repair_beams",
     "homr.stem_arbitration": "arbitrate_stems",
     "homr.tuplet_repair": "repair_symbols",
+    "homr.slur_side": "choose_slur_sides",
 }
 
 
@@ -43,9 +44,34 @@ class TestPostDecodeWiring(unittest.TestCase):
     def test_each_pass_has_a_config_flag(self) -> None:
         """So a regression can be switched off without a deploy."""
         configs = (ROOT / "homr" / "transformer" / "configs.py").read_text(encoding="utf-8")
-        for flag in ("beam_repair", "stem_arbitration", "tuplet_repair"):
+        for flag in ("beam_repair", "stem_arbitration", "tuplet_repair", "slur_side"):
             with self.subTest(flag=flag):
                 self.assertIn(f"self.{flag} = ", configs)
+
+
+class TestTheVerificationHarnessReplaysTheSameSequence(unittest.TestCase):
+    """The harness that verifies these passes must run all of them.
+
+    `training/transformer/end_to_end_passes.py` hand-copies `main.py`'s post-decode
+    sequence so it can run it twice over one decode. A hand-copy of another file's
+    sequence rots: `choose_slur_sides` was wired into `main.py` and left out of the
+    harness, and the verification run duly reported the pass changing nothing at all.
+    A pass that looks worthless because the measurement never called it is worse than
+    one that is merely unwired - it comes with evidence against itself.
+    """
+
+    HARNESS = Path("training") / "transformer" / "end_to_end_passes.py"
+
+    def test_the_harness_calls_every_pass_main_calls(self) -> None:
+        called = _called_names(ROOT / self.HARNESS)
+        for module, function in sorted(POST_DECODE_PASSES.items()):
+            with self.subTest(module=module):
+                self.assertIn(
+                    function,
+                    called,
+                    f"{module}.{function} runs in main.py but not in the harness that "
+                    f"verifies these passes, so its effect would measure as zero",
+                )
 
 
 class TestBothDecodePathsMaskTheSameWay(unittest.TestCase):

@@ -33,10 +33,12 @@ from pathlib import Path
 import cv2
 
 from homr.beam_repair import LEVELS, repair_beams
+from homr.slur_side import choose_slur_sides
 from homr.staff_parsing import add_image_into_tr_omr_canvas
 from homr.stem_arbitration import arbitrate_stems
 from homr.transformer.beam_validation import validate_voice
 from homr.transformer.configs import Config
+from homr.transformer.structured_decode import SLUR_SIDE_HEAD
 from homr.transformer.structured_notation import BeamLevelState
 from homr.transformer.vocabulary import EncodedSymbol
 from homr.tuplet_repair import repair_symbols
@@ -102,6 +104,123 @@ def read_tokens(path: Path) -> list[EncodedSymbol]:
                 symbols.append(EncodedSymbol("chord"))
             symbols.append(EncodedSymbol(rhythm, pitch, lift, articulation, slur, position))
     return symbols
+
+
+#: The engraving convention: a slur sits opposite the stems. Stems up, slur below the
+#: noteheads; stems down, slur above.
+OPPOSITE = {"up": "below", "down": "above"}
+
+
+@dataclass
+class SlurSide:
+    """Head against rule on slur side, scored on the notes production would score.
+
+    The baseline (`training/omr_datasets/slur_side_baseline.py`) derived the side from the
+    **engraved** stem, which is not available at inference. Here the rule reads the stem
+    the pipeline actually produced, after arbitration - so it inherits every stem mistake,
+    which is the cost of the chain and the thing a teacher-forced number cannot show.
+
+    Only sides the engraving states are scored. `unspecified` is the source declining to
+    say, not a third class, and counting it would measure how often the corpus is silent.
+    """
+
+    stated: int = 0
+    #: What the pipeline actually emits in this arm, after whatever passes ran.
+    emitted_scorable: int = 0
+    emitted_correct: int = 0
+    head_scorable: int = 0
+    head_correct: int = 0
+    rule_scorable: int = 0
+    rule_correct: int = 0
+    #: Where they disagree, judged against the engraving.
+    rule_right_head_wrong: int = 0
+    head_right_rule_wrong: int = 0
+    both_wrong: int = 0
+    both_right: int = 0
+
+    def as_dict(self) -> dict:
+        return {
+            "sides_stated": self.stated,
+            "emitted_accuracy": _ratio(self.emitted_correct, self.emitted_scorable),
+            "emitted_scorable": self.emitted_scorable,
+            "head_accuracy": _ratio(self.head_correct, self.head_scorable),
+            "head_scorable": self.head_scorable,
+            "rule_accuracy": _ratio(self.rule_correct, self.rule_scorable),
+            "rule_scorable": self.rule_scorable,
+            "rule_right_head_wrong": self.rule_right_head_wrong,
+            "head_right_rule_wrong": self.head_right_rule_wrong,
+            "both_wrong": self.both_wrong,
+            "both_right": self.both_right,
+        }
+
+
+def _slur_confidence(symbol: EncodedSymbol, slot: int) -> float | None:
+    """The head's own probability for this slot's side, if the heads ran."""
+    wanted = SLUR_SIDE_HEAD.format(slot=slot + 1)
+    for choice in getattr(symbol, "structured_choices", ()) or ():
+        if choice.head == wanted:
+            return choice.probability
+    return None
+
+
+def _score_slur_sides(
+    predicted: list[EncodedSymbol],
+    engraved: list[EncodedSymbol],
+    totals: SlurSide,
+    records: list[dict] | None = None,
+    name: str = "",
+) -> None:
+    """One staff's slur sides, head against the stem-derived rule."""
+    left, right = _notes(predicted), _notes(engraved)
+    matcher = difflib.SequenceMatcher(
+        None, [_key(s) for s in left], [_key(s) for s in right], autojunk=False
+    )
+    for block in matcher.get_matching_blocks():
+        for offset in range(block.size):
+            got, want = left[block.a + offset], right[block.b + offset]
+            if got.notation is None or want.notation is None:
+                continue
+            rule = OPPOSITE.get(str(got.notation.stem))
+            for slot, (event, side) in enumerate(want.notation.slurs):
+                if str(event) == "none" or str(side) == "unspecified":
+                    continue
+                totals.stated += 1
+                head = (
+                    str(got.notation.slurs[slot][1])
+                    if slot < len(got.notation.slurs)
+                    else "unspecified"
+                )
+                head_says = head if head != "unspecified" else None
+                if head_says is not None:
+                    totals.emitted_scorable += 1
+                    totals.emitted_correct += head_says == str(side)
+                if head_says is not None:
+                    totals.head_scorable += 1
+                    totals.head_correct += head_says == str(side)
+                if rule is not None:
+                    totals.rule_scorable += 1
+                    totals.rule_correct += rule == str(side)
+                if head_says is None or rule is None:
+                    continue
+                if records is not None:
+                    records.append(
+                        {
+                            "staff": name,
+                            "engraved": str(side),
+                            "head": head_says,
+                            "rule": rule,
+                            "confidence": _slur_confidence(got, slot),
+                        }
+                    )
+                head_right, rule_right = head_says == str(side), rule == str(side)
+                if head_right and rule_right:
+                    totals.both_right += 1
+                elif rule_right:
+                    totals.rule_right_head_wrong += 1
+                elif head_right:
+                    totals.head_right_rule_wrong += 1
+                else:
+                    totals.both_wrong += 1
 
 
 @dataclass
@@ -313,16 +432,24 @@ def _interior_findings(
 
 
 def _post_decode(symbols: list[EncodedSymbol], *, passes: bool) -> list[EncodedSymbol]:
-    """`homr/main.py`'s sequence, on a copy, with the two flags on or off.
+    """`homr/main.py`'s sequence, on a copy, with the passes on or off.
 
     Tuplet repair runs in both arms because it runs in both configurations of the thing
-    under test; only the two passes are switched.
+    under test; only the passes under test are switched.
+
+    **This list must match `main.py`'s, and in the same order.** It is a hand-copy of
+    another file's sequence, which is a thing that rots: `choose_slur_sides` was wired
+    into `main.py` and omitted here, and the run reported the pass changing exactly
+    nothing - a measurement harness that silently drops a pass makes a working pass look
+    worthless. `tests/test_post_decode_wiring.py` now asserts the two agree.
     """
     voice = copy.deepcopy(symbols)
     voice = repair_symbols(voice)[0]
     if passes:
         repair_beams(voice)
         arbitrate_stems(voice)
+        # After the stems, as in main.py: the convention reads the arbitrated stem.
+        choose_slur_sides(voice)
     return voice
 
 
@@ -331,6 +458,11 @@ def main() -> None:
     parser.add_argument("--corpus", type=Path, required=True, help="directory of crops")
     parser.add_argument("--limit", type=int, default=200)
     parser.add_argument("--out", type=Path)
+    parser.add_argument(
+        "--slur-records",
+        type=Path,
+        help="write one row per scorable slur side, for sweeping a confidence threshold",
+    )
     parser.add_argument(
         "--regressions",
         type=Path,
@@ -355,6 +487,9 @@ def main() -> None:
     off, on = ArmTotals(), ArmTotals()
     beam_moves, stem_moves = Crosstab(), Crosstab()
     regressions: list[dict] = []
+    slur_sides = SlurSide()
+    slur_sides_off = SlurSide()
+    slur_records: list[dict] = []
     sidecars = sorted(args.corpus.glob("*.txt.notation.json"))[: args.limit]
     for index, sidecar in enumerate(sidecars, start=1):
         tokens_path = Path(str(sidecar)[: -len(".notation.json")])
@@ -383,6 +518,14 @@ def main() -> None:
             on.newly_invalid += 1
         if is_valid and not was_valid:
             off.newly_invalid += 1
+        _score_slur_sides(without, engraved, slur_sides_off)
+        _score_slur_sides(
+            with_passes,
+            engraved,
+            slur_sides,
+            slur_records if args.slur_records else None,
+            tokens_path.name,
+        )
         _crosstab(
             without,
             with_passes,
@@ -403,6 +546,8 @@ def main() -> None:
         "on": on_report,
         "beam_repair_moves": beam_moves.as_dict(),
         "stem_arbitration_moves": stem_moves.as_dict(),
+        "slur_side": slur_sides.as_dict(),
+        "slur_side_off": slur_sides_off.as_dict(),
     }
     print()
     print(f"{'metric':<26}{'off':>12}{'on':>12}{'delta':>12}")
@@ -426,6 +571,28 @@ def main() -> None:
             f"{counts['wrong_to_wrong']:,} wrong either way, "
             f"{counts['right_to_right']:,} right either way (net {counts['net']:+,})"
         )
+
+    sides, sides_off = slur_sides.as_dict(), slur_sides_off.as_dict()
+    print(
+        f"\nslur side emitted: off {sides_off['emitted_accuracy']:.2%} on "
+        f"{sides_off['emitted_scorable']:,}, "
+        f"on {sides['emitted_accuracy']:.2%} on {sides['emitted_scorable']:,} "
+        f"({sides['emitted_accuracy'] - sides_off['emitted_accuracy']:+.2%})"
+    )
+    print(
+        f"\nslur side: {sides['sides_stated']:,} stated - "
+        f"head {sides['head_accuracy']:.2%} on {sides['head_scorable']:,}, "
+        f"rule {sides['rule_accuracy']:.2%} on {sides['rule_scorable']:,}"
+    )
+    print(
+        f"  rule right where head wrong {sides['rule_right_head_wrong']:,}, "
+        f"head right where rule wrong {sides['head_right_rule_wrong']:,}, "
+        f"both wrong {sides['both_wrong']:,}, both right {sides['both_right']:,}"
+    )
+
+    if args.slur_records:
+        args.slur_records.write_text(json.dumps(slur_records, indent=2), encoding="utf-8")
+        print(f"wrote {len(slur_records):,} slur-side rows to {args.slur_records}")
 
     if args.regressions:
         args.regressions.write_text(json.dumps(regressions, indent=2), encoding="utf-8")
