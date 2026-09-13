@@ -37,6 +37,7 @@ from homr.slur_crossing import repair_crossings
 from homr.slur_side import choose_slur_sides
 from homr.staff_parsing import add_image_into_tr_omr_canvas
 from homr.stem_arbitration import arbitrate_stems
+from homr.tie_repair import repair_ties
 from homr.transformer.beam_validation import validate_voice
 from homr.transformer.configs import Config
 from homr.transformer.structured_decode import SLUR_SIDE_HEAD
@@ -450,6 +451,7 @@ def _post_decode(symbols: list[EncodedSymbol], *, passes: bool) -> list[EncodedS
         repair_beams(voice)
         arbitrate_stems(voice)
         # After the stems, as in main.py: the convention reads the arbitrated stem.
+        repair_ties(voice)
         choose_slur_sides(voice)
         repair_crossings(voice)
     return voice

@@ -43,12 +43,13 @@ from homr.score_profile import ScoreProfile, ScoreProfileSchemaError
 from homr.segmentation.config import segnet_path_onnx, segnet_path_onnx_fp16
 from homr.segmentation.inference_segnet import extract
 from homr.simple_logging import eprint
+from homr.slur_crossing import repair_crossings
+from homr.slur_side import choose_slur_sides
 from homr.staff_detection import break_wide_fragments, detect_staff, make_lines_stronger
 from homr.staff_parsing import parse_staffs
 from homr.staff_position_save_load import load_staff_positions, save_staff_positions
-from homr.slur_crossing import repair_crossings
-from homr.slur_side import choose_slur_sides
 from homr.stem_arbitration import arbitrate_stems
+from homr.tie_repair import repair_ties
 from homr.title_detection import detect_title, download_ocr_weights
 from homr.transformer.configs import Config, default_config
 from homr.tuplet_repair import repair_symbols
@@ -293,6 +294,14 @@ def process_image(
                 slur_report = choose_slur_sides(voice)
                 if slur_report.rule_applied:
                     eprint(slur_report.describe())
+
+        # Before the slur passes only for readability of the log; ties and slurs are
+        # independent - a tie joins one pitch, a slur groups distinct ones.
+        if transformer_config.tie_repair:
+            for voice in result_staffs:
+                tie_report = repair_ties(voice)
+                if tie_report.changed:
+                    eprint(tie_report.describe())
 
         # Last of the slur passes: a crossing is judged partly by which side each span
         # sits on, so the sides have to be final before it can be read.

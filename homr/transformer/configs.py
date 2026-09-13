@@ -212,6 +212,11 @@ class Config:
         #: Lieder systems: the decode draws 69 crossings on 9.50% of staves against the
         #: engraved reference's 0.25%. See `homr.slur_crossing`.
         self.slur_crossing = os.environ.get("HOMR_SLUR_CROSSING", "1") != "0"
+
+        #: Enforce the rule that defines a tie - it joins two notations of one pitch - so
+        #: every tie written can actually be drawn. Measured on IMSLP183800-sys5-v1: the
+        #: decode wrote 8 tie elements and none of them paired. See `homr.tie_repair`.
+        self.tie_repair = os.environ.get("HOMR_TIE_REPAIR", "1") != "0"
         #: Re-decode the one measure a cumulative-barline divergence localizes, and keep
         #: an alternative only if its barlines then land exactly where the majority's do.
         #:

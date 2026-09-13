@@ -18,6 +18,7 @@ POST_DECODE_PASSES = {
     "homr.tuplet_repair": "repair_symbols",
     "homr.slur_side": "choose_slur_sides",
     "homr.slur_crossing": "repair_crossings",
+    "homr.tie_repair": "repair_ties",
 }
 
 
@@ -45,7 +46,14 @@ class TestPostDecodeWiring(unittest.TestCase):
     def test_each_pass_has_a_config_flag(self) -> None:
         """So a regression can be switched off without a deploy."""
         configs = (ROOT / "homr" / "transformer" / "configs.py").read_text(encoding="utf-8")
-        for flag in ("beam_repair", "stem_arbitration", "tuplet_repair", "slur_side", "slur_crossing"):
+        for flag in (
+            "beam_repair",
+            "stem_arbitration",
+            "tuplet_repair",
+            "slur_side",
+            "slur_crossing",
+            "tie_repair",
+        ):
             with self.subTest(flag=flag):
                 self.assertIn(f"self.{flag} = ", configs)
 
