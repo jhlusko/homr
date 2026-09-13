@@ -184,3 +184,53 @@ class TestWithoutASidecar(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPairingPrefersTheSameStaff(unittest.TestCase):
+    """A stop belongs to a span on its own staff unless nothing there is open.
+
+    Cross-staff slurs are real in piano writing, so the last resort stays - but it is a
+    last resort. On IMSLP183800-sys5-v1 the decode produced 7 spans and 4 of them paired
+    across the grand staff, on a page with no cross-staff slur at all.
+    """
+
+    def test_a_stop_takes_the_span_open_on_its_own_staff(self) -> None:
+        """Neither endpoint carries a slot, so this is the fallback path alone."""
+        written = _emit(
+            [
+                _note("slurStart", position="upper"),
+                _note("slurStart", position="lower"),
+                _note("slurStop", position="upper"),
+                _note("slurStop", position="lower"),
+            ]
+        )
+        self.assertTrue(_open_at_all_times(written), written)
+        # The upper stop must take the upper start's number, not the newer lower one.
+        self.assertEqual(written[0][1], written[2][1])
+        self.assertEqual(written[1][1], written[3][1])
+
+    def test_it_still_crosses_staves_when_nothing_else_is_open(self) -> None:
+        """A genuine cross-staff slur must still pair rather than be dropped."""
+        written = _emit([_note("slurStart", position="upper"), _note("slurStop", position="lower")])
+        self.assertEqual([("start", "1"), ("stop", "1")], written)
+
+    def test_a_key_resolved_by_the_fallback_does_not_go_stale(self) -> None:
+        """The bug behind the last two cross-staff pairs.
+
+        A stop that resolves by staff rather than by its key left the key still holding
+        that number, and the next stop filed under the key popped a span that had closed
+        long ago - on whichever staff owned it.
+        """
+        written = _emit(
+            [
+                # Opens under key (1, 1).
+                _note("slurStart", ((SlurEvent.START, SlurSide.ABOVE), NONE), "upper"),
+                # Closes it by the staff fallback - this note carries no slot.
+                _note("slurStop", position="upper"),
+                # A fresh span on the lower staff.
+                _note("slurStart", position="lower"),
+                # Filed under key (1, 1) again: must not reach back for the closed span.
+                _note("slurStop", ((SlurEvent.STOP, SlurSide.ABOVE), NONE), "upper"),
+            ]
+        )
+        self.assertTrue(_open_at_all_times(written), written)

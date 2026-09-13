@@ -75,6 +75,8 @@ class ConversionState:
         self.open_slurs: list[int] = []
         #: (staff, sidecar slot) -> the numbers open for that span identity, newest last.
         self.slur_numbers: dict[tuple[int, int], list[int]] = {}
+        #: Which staff each open number was opened on, so a stop can prefer its own.
+        self.slur_staves: dict[int, int | None] = {}
         #: The staff's modal measure duration, and whether a numerator the label
         #: STATES contradicts it.  A `timeSignatureBeats_n` token is metadata and can
         #: go stale - IMSLP405017 changes metre mid-score and the cutter carried the
@@ -89,7 +91,24 @@ class ConversionState:
         self.volta_number = 1
         self.last_volta_measure = -10
 
-    def open_slur(self, key: tuple[int, int] | None = None) -> int:
+    def _release(self, number: int) -> int:
+        """Free `number` everywhere and hand it back to the caller writing the stop.
+
+        Clearing it from `slur_numbers` too is not tidiness. A stop that resolves by the
+        staff fallback rather than by its key leaves that key still holding the number,
+        and the next stop filed under the key then pops a number belonging to a span that
+        closed long ago - on whichever staff happened to own it. That stale entry was
+        two of the four cross-staff pairings on IMSLP183800-sys5-v1.
+        """
+        if number in self.open_slurs:
+            self.open_slurs.remove(number)
+        self.slur_staves.pop(number, None)
+        for numbers in self.slur_numbers.values():
+            if number in numbers:
+                numbers.remove(number)
+        return number
+
+    def open_slur(self, key: tuple[int, int] | None = None, staff: int | None = None) -> int:
         """Claim the lowest number not currently in use by an open span.
 
         `key` is the span's identity from the sidecar - (staff, slot) - remembered so the
@@ -103,11 +122,12 @@ class ConversionState:
         while number in self.open_slurs:
             number += 1
         self.open_slurs.append(number)
+        self.slur_staves[number] = staff if staff is not None else (key[0] if key else None)
         if key is not None:
             self.slur_numbers.setdefault(key, []).append(number)
         return number
 
-    def close_slur(self, key: tuple[int, int] | None = None) -> int:
+    def close_slur(self, key: tuple[int, int] | None = None, staff: int | None = None) -> int:
         """Release this span's number.
 
         With a `key` the pairing is exact - the sidecar says which span this stop closes,
@@ -119,12 +139,21 @@ class ConversionState:
         cross, and the flat slur field carries no id to pair on.
         """
         if key is not None and self.slur_numbers.get(key):
-            number = self.slur_numbers[key].pop()
-            if number in self.open_slurs:
-                self.open_slurs.remove(number)
-            return number
+            return self._release(self.slur_numbers[key].pop())
+
+        # Then the most recent span open on this staff. Cross-staff slurs are real, but
+        # they are rare and an ordinary same-staff slur is the far likelier reading - and
+        # without this the fallback paired across staves whenever the head filed a span's
+        # two ends under different slots. Measured on IMSLP183800-sys5-v1: 4 of 7 spans
+        # came out cross-staff where the page has none.
+        wanted = staff if staff is not None else (key[0] if key else None)
+        if wanted is not None:
+            for number in reversed(self.open_slurs):
+                if self.slur_staves.get(number) == wanted:
+                    return self._release(number)
+
         if self.open_slurs:
-            return self.open_slurs.pop()
+            return self._release(self.open_slurs[-1])
         # A stop with nothing open: emit a number anyway rather than dropping the
         # element, so the defect stays visible in the output instead of vanishing.
         return 1
@@ -848,8 +877,11 @@ def _slur_number(model_note: EncodedSymbol, xml_type: str, state: ConversionStat
     start was given.
     """
     slot = slur_slot_number(model_note, xml_type)
-    key = (get_staff(model_note), slot) if slot is not None else None
-    return state.close_slur(key) if xml_type == "stop" else state.open_slur(key)
+    staff = get_staff(model_note)
+    key = (staff, slot) if slot is not None else None
+    if xml_type == "stop":
+        return state.close_slur(key, staff)
+    return state.open_slur(key, staff)
 
 
 def _add_slur(notation: ET.Element, xml_type: str, number: int, model_note: EncodedSymbol) -> None:
@@ -891,23 +923,23 @@ def build_slurs(note: ET.Element, model_note: EncodedSymbol, state: ConversionSt
             key = (staff_number, index)
             placement = {} if str(side) == "unspecified" else {"placement": str(side)}
             if event == SlurEvent.START:
-                number = state.open_slur(key)
+                number = state.open_slur(key, staff_number)
                 ET.SubElement(
                     notation, "slur", {"number": str(number), **placement, "type": "start"}
                 )
             elif event == SlurEvent.STOP:
-                number = state.close_slur(key)
+                number = state.close_slur(key, staff_number)
                 ET.SubElement(
                     notation, "slur", {"number": str(number), **placement, "type": "stop"}
                 )
             elif event == SlurEvent.START_AND_STOP:
                 # Close before reopening, matching the core path, so the new span may
                 # reuse the number the old one just freed.
-                closing = state.close_slur(key)
+                closing = state.close_slur(key, staff_number)
                 ET.SubElement(
                     notation, "slur", {"number": str(closing), **placement, "type": "stop"}
                 )
-                opening = state.open_slur(key)
+                opening = state.open_slur(key, staff_number)
                 ET.SubElement(
                     notation, "slur", {"number": str(opening), **placement, "type": "start"}
                 )
