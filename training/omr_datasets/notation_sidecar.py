@@ -31,17 +31,20 @@ from homr.transformer.structured_notation import (
     SlurSide,
     StemDirection,
     TieState,
+    VoiceClass,
 )
 from homr.transformer.vocabulary import EncodedSymbol
 
-SCHEMA_VERSION = "homr.notation-sidecar.v4"
+SCHEMA_VERSION = "homr.notation-sidecar.v5"
 
 #: Schemas this reader still understands. v1 predates tie extraction, v2 predates
-#: dynamics extraction, and v3 predates advance extraction, so their records decode with
-#: no tie / no dynamic / no advance respectively - which is correct for them: the field
-#: was not merely absent from the file, it was absent from the pipeline that wrote it.
+#: dynamics extraction, v3 predates advance extraction and v4 predates voice extraction,
+#: so their records decode with no tie / no dynamic / no advance / an unknown voice
+#: respectively - which is correct for them: the field was not merely absent from the
+#: file, it was absent from the pipeline that wrote it.
 READABLE_SCHEMAS = (
     SCHEMA_VERSION,
+    "homr.notation-sidecar.v4",
     "homr.notation-sidecar.v3",
     "homr.notation-sidecar.v2",
     "homr.notation-sidecar.v1",
@@ -66,6 +69,7 @@ def _encode(notation: NoteNotation) -> dict:
         "tie": str(notation.tie),
         "dynamic": str(notation.dynamic),
         "advance": str(notation.advance),
+        "voice": str(notation.voice),
     }
 
 
@@ -77,6 +81,7 @@ def _decode(record: dict) -> NoteNotation:
         tie=TieState(record.get("tie", TieState.NONE)),
         dynamic=DynamicMark(record.get("dynamic", DynamicMark.NONE)),
         advance=AdvanceClass(record.get("advance", AdvanceClass.NOT_APPLICABLE)),
+        voice=VoiceClass(record.get("voice", VoiceClass.UNKNOWN)),
     )
 
 

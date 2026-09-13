@@ -100,6 +100,40 @@ class TieState(StrEnum):
     UNKNOWN = "unknown"
 
 
+class VoiceClass(StrEnum):
+    """Which line of music within this staff the note belongs to.
+
+    The representation carried `position` - `upper` or `lower` - and nothing else, so two
+    voices sharing a staff were indistinguishable. That is not a cosmetic gap. A tie joins
+    one pitch *within one voice*, and a slur spans notes *within one voice*; with the
+    voices flattened together, "the next chord on this staff" is as likely to be the other
+    voice's, and the partner cannot be located at all.
+
+    Measured on the Lieder corpus, where 22% of sources carry a staff with more than one
+    voice: tie labels are impossible on 8.8% of endpoints in polyphonic staves against
+    0.0% in monophonic ones, and unpaired slur endpoints run 13.3% against 1.6%. The
+    labels are not wrong in the source - they become unpairable when flattened.
+
+    Numbered within the staff, not globally. MusicXML voice numbers are part-global and
+    conventionally 1-4 on the upper staff and 5-8 on the lower; what matters for pairing
+    is which line *within this staff*, so the extractor normalises to 1..N per staff.
+    """
+
+    #: Not a note, or a source that states no voice at all - the ordinary case for a
+    #: corpus written before this existed, and never a real answer.
+    UNKNOWN = "unknown"
+    FIRST = "1"
+    SECOND = "2"
+    THIRD = "3"
+    FOURTH = "4"
+
+
+#: Voices the representation numbers within one staff. A staff with more than this many
+#: independent lines is vanishingly rare in this repertoire, and the extractor reports
+#: anything beyond it as UNKNOWN rather than silently folding it into the fourth.
+MAX_VOICES_PER_STAFF = 4
+
+
 class AdvanceClass(StrEnum):
     """How much time passes before the NEXT simultaneity in this staff/voice.
 
@@ -340,6 +374,13 @@ DYNAMIC_CLASSES: tuple[DynamicMark, ...] = tuple(
     mark for mark in DynamicMark if mark in TRAINED_DYNAMIC_MARKS
 )
 
+#: Voices a head could be asked to predict. UNKNOWN is excluded for the same reason
+#: StemDirection.UNKNOWN and TieState.UNKNOWN are: it marks a silent source, and scoring
+#: it would teach silence as an answer.
+VOICE_CLASSES: tuple[VoiceClass, ...] = tuple(
+    voice for voice in VoiceClass if voice != VoiceClass.UNKNOWN
+)
+
 SLUR_EVENT_CLASSES: tuple[SlurEvent, ...] = tuple(SlurEvent)
 SLUR_SIDE_CLASSES: tuple[SlurSide, ...] = tuple(SlurSide)
 
@@ -412,6 +453,10 @@ class NoteNotation:
     #: `staff_merging.create_chord_over_two_staffs`), so an old sidecar and a new one
     #: agree on every position they don't both speak to.
     advance: AdvanceClass = AdvanceClass.NOT_APPLICABLE
+    #: Defaulted for the same reason as the three above: a sidecar written before voices
+    #: were extracted decodes as UNKNOWN, which is exactly what it knows - not a claim
+    #: that every note sits in the first voice.
+    voice: VoiceClass = VoiceClass.UNKNOWN
 
     def active_beam_levels(self) -> int:
         return sum(1 for state in self.beam_levels if state != BeamLevelState.NOT_APPLICABLE)

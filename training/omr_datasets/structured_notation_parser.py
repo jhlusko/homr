@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from homr.transformer.structured_notation import (
     MAX_BEAM_LEVELS,
     MAX_SLUR_SLOTS,
+    MAX_VOICES_PER_STAFF,
     BeamLevelState,
     DynamicMark,
     NoteNotation,
@@ -24,6 +25,7 @@ from homr.transformer.structured_notation import (
     SlurSide,
     StemDirection,
     TieState,
+    VoiceClass,
     applicable_beam_levels,
     dynamic_mark_from_tag,
     empty_beam_levels,
@@ -65,6 +67,10 @@ class Findings:
     slot_overflow: int = 0
     #: A source identity reopened while already open.
     duplicate_starts: int = 0
+    #: A staff carrying more independent lines than the representation numbers. Recorded
+    #: rather than folded into the last class: a wrong voice pairs a tie to the wrong
+    #: note just as surely as no voice at all.
+    voices_beyond_cap: int = 0
     #: A note whose duration carries flags but which has no <beam> at all. Before beam
     #: materialisation this is ambiguous - automatically beamed, or deliberately
     #: unbeamed - so it is counted, and callers that need exact beam labels should treat
@@ -291,12 +297,38 @@ class NotationExtractor:
         #: document order is not necessarily in the same staff as the direction that
         #: preceded it.
         self._pending_dynamics: dict[str, DynamicMark] = {}
+        #: staff id -> the part-global voice numbers seen on it, in first-appearance
+        #: order. MusicXML voice numbers are part-global and conventionally 1-4 on the
+        #: upper staff and 5-8 on the lower; what matters for pairing a tie or a slur is
+        #: which line *within this staff*, so they are renumbered from 1 per staff.
+        #: First-appearance order rather than sorted order because a staff whose second
+        #: voice enters first would otherwise have its two lines swapped halfway.
+        self._staff_voices: dict[str, list[str]] = {}
         self.findings = Findings()
 
     def handle_direction(self, direction: ET.Element) -> None:
         mark = _direction_dynamic(direction)
         if mark is not None:
             self._pending_dynamics[_staff_of(direction)] = mark
+
+    def _voice_in_staff(self, note: ET.Element, voice: str) -> VoiceClass:
+        """Which line within this note's own staff, numbered from 1.
+
+        A source that states no voice says nothing, and UNKNOWN is what it says - not a
+        claim that the note sits in the first voice. Beyond MAX_VOICES_PER_STAFF the
+        answer is also UNKNOWN rather than folded into the last class, because a wrong
+        voice pairs a tie to the wrong note just as surely as no voice at all.
+        """
+        if note.findtext("voice") is None:
+            return VoiceClass.UNKNOWN
+        seen = self._staff_voices.setdefault(_staff_of(note), [])
+        if voice not in seen:
+            seen.append(voice)
+        index = seen.index(voice) + 1
+        if index > MAX_VOICES_PER_STAFF:
+            self.findings.voices_beyond_cap += 1
+            return VoiceClass.UNKNOWN
+        return VoiceClass(str(index))
 
     def extract(self, note: ET.Element) -> NoteNotation:
         self.findings.notes += 1
@@ -314,6 +346,7 @@ class NotationExtractor:
             slurs=slots.apply(slurs, self.findings),
             tie=_tie(note),
             dynamic=dynamic,
+            voice=self._voice_in_staff(note, voice),
         )
 
     def close(self) -> Findings:

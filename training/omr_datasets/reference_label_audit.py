@@ -36,6 +36,20 @@ OPENS = {"start", "start_and_stop"}
 CLOSES = {"stop", "start_and_stop"}
 
 
+def _voices(sidecar_records: list[dict]) -> list[str]:
+    """Each record's voice, or "unknown" for a sidecar written before voices existed."""
+    return [str(record.get("voice", "unknown")) for record in sidecar_records]
+
+
+def _line(voices: list[str], notes: list, a: int, b: int) -> bool:
+    """Whether two notes are on the same staff and, when both say, the same voice."""
+    if notes[a][3] != notes[b][3]:
+        return False
+    if "unknown" in (voices[a], voices[b]):
+        return True
+    return voices[a] == voices[b]
+
+
 def _notes(tokens_path: Path) -> list[tuple[str, bool, int, str]]:
     """(pitch, is_rest, chord id, staff) per note-bearing entry, chord members expanded.
 
@@ -70,19 +84,30 @@ def _token_slur_endpoints(tokens_path: Path) -> int:
     return total
 
 
-def _tie_partner(notes: list[tuple[str, bool, int, str]], index: int) -> str | None:
+def _tie_partner(
+    notes: list[tuple[str, bool, int, str]], index: int, voices: list[str] | None = None
+) -> str | None:
     """The pitch a tie at `index` would join, or None if the staff or a rest ends it.
 
     Searched within this note's own staff: a tie joins one pitch on one staff, and the
     next chord in a flattened grand staff is as likely to be the other hand's.
     """
     pitch, _rest, chord, staff = notes[index]
+    marks = voices or ["unknown"] * len(notes)
+
+    def same(other: int) -> bool:
+        return _line(marks, notes, index, other)
+
     for later in range(index + 1, len(notes)):
-        if notes[later][3] != staff or notes[later][2] == chord:
+        if not same(later) or notes[later][2] == chord:
             continue
         if notes[later][1]:
             return None
-        members = [o[0] for o in notes[later:] if o[2] == notes[later][2] and o[3] == staff]
+        members = [
+            notes[k][0]
+            for k in range(later, len(notes))
+            if notes[k][2] == notes[later][2] and same(k)
+        ]
         return pitch if pitch in members else (members[0] if members else None)
     return None
 
@@ -99,6 +124,8 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
         return
     counts["files"] += 1
     counts["notes"] += len(notes)
+    voices = _voices(records)
+    counts["voice_stated"] += sum(1 for v in voices if v != "unknown")
 
     # Ties, against the constraint that defines them.
     for index, record in enumerate(records):
@@ -106,7 +133,7 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
         if state == "none":
             continue
         counts["tie_endpoints"] += 1
-        partner = _tie_partner(notes, index)
+        partner = _tie_partner(notes, index, voices)
         if state in OPENS:
             if partner is None:
                 counts["tie_start_at_edge"] += 1
@@ -120,7 +147,7 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
                 for i in range(index)
                 if records[i].get("tie", "none") in OPENS
                 and notes[i][0] == notes[index][0]
-                and notes[i][3] == notes[index][3]
+                and _line(voices, notes, i, index)
                 and notes[i][2] < notes[index][2]
             ]
             if not before:

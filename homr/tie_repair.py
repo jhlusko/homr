@@ -31,7 +31,7 @@ an unclosed beam.
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
-from homr.transformer.structured_notation import TieState
+from homr.transformer.structured_notation import TieState, VoiceClass
 from homr.transformer.vocabulary import EncodedSymbol
 
 _OPENS = {TieState.START, TieState.START_AND_STOP}
@@ -68,6 +68,12 @@ class _Note:
     staff: str
     chord: int
     is_rest: bool
+    #: Which line within the staff, when the source stated one. A tie joins one pitch
+    #: within one voice; with two voices flattened together the next chord on the staff
+    #: is as likely to be the other voice's, and the partner cannot be found at all.
+    #: UNKNOWN means the source said nothing, and then the staff is the finest division
+    #: available - which is what every corpus written before voices existed carries.
+    voice: VoiceClass = VoiceClass.UNKNOWN
 
 
 def _read(staff: Sequence[EncodedSymbol]) -> list[_Note]:
@@ -87,8 +93,16 @@ def _read(staff: Sequence[EncodedSymbol]) -> list[_Note]:
         previous = staff[index - 1].rhythm if index else ""
         if previous != "chord":
             chord += 1
+        notation = symbol.notation
         notes.append(
-            _Note(index, symbol.pitch, symbol.position, chord, symbol.rhythm.startswith("rest"))
+            _Note(
+                index,
+                symbol.pitch,
+                symbol.position,
+                chord,
+                symbol.rhythm.startswith("rest"),
+                notation.voice if notation is not None else VoiceClass.UNKNOWN,
+            )
         )
     return notes
 
@@ -100,9 +114,18 @@ def _partner(notes: list[_Note], position: int) -> int | None:
     sounding note, so nothing can be tied across it.
     """
     here = notes[position]
+
+    def same_line(other: _Note) -> bool:
+        """Same staff, and the same voice when both notes name one."""
+        if other.staff != here.staff:
+            return False
+        if VoiceClass.UNKNOWN in (here.voice, other.voice):
+            return True
+        return other.voice == here.voice
+
     for later in range(position + 1, len(notes)):
         candidate = notes[later]
-        if candidate.staff != here.staff:
+        if not same_line(candidate):
             continue
         if candidate.chord == here.chord:
             continue
@@ -111,9 +134,7 @@ def _partner(notes: list[_Note], position: int) -> int | None:
         # A chord can hold the same pitch in more than one voice; any member with this
         # pitch is a legitimate partner.
         members = [
-            other
-            for other in notes[later:]
-            if other.chord == candidate.chord and other.staff == here.staff
+            other for other in notes[later:] if other.chord == candidate.chord and same_line(other)
         ]
         for member in members:
             if member.pitch == here.pitch:
