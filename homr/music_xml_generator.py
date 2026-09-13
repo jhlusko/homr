@@ -73,6 +73,8 @@ class ConversionState:
         #: silently dropped by any consumer.  The same collision broke two overlapping
         #: slurs on one staff, since both took that staff's number.
         self.open_slurs: list[int] = []
+        #: (staff, sidecar slot) -> the numbers open for that span identity, newest last.
+        self.slur_numbers: dict[tuple[int, int], list[int]] = {}
         #: The staff's modal measure duration, and whether a numerator the label
         #: STATES contradicts it.  A `timeSignatureBeats_n` token is metadata and can
         #: go stale - IMSLP405017 changes metre mid-score and the cutter carried the
@@ -87,18 +89,40 @@ class ConversionState:
         self.volta_number = 1
         self.last_volta_measure = -10
 
-    def open_slur(self) -> int:
-        """Claim the lowest free slur number."""
+    def open_slur(self, key: tuple[int, int] | None = None) -> int:
+        """Claim the lowest number not currently in use by an open span.
+
+        `key` is the span's identity from the sidecar - (staff, slot) - remembered so the
+        matching stop can ask for this exact number rather than guess. The number itself
+        is still allocated here, which is the part that matters: MusicXML pairs a slur by
+        its `number`, so two spans open at the same time must not share one. A sidecar
+        slot is unique only within one note's slots, so using it directly as the number
+        collided whenever two staves each opened their slot 1.
+        """
         number = 1
         while number in self.open_slurs:
             number += 1
         self.open_slurs.append(number)
+        if key is not None:
+            self.slur_numbers.setdefault(key, []).append(number)
         return number
 
-    def close_slur(self) -> int:
-        """Release the most recently opened slur - slurs nest far more often than they
-        cross, and the flat slur field carries no id to pair on, so last-opened is the
-        best available reading."""
+    def close_slur(self, key: tuple[int, int] | None = None) -> int:
+        """Release this span's number.
+
+        With a `key` the pairing is exact - the sidecar says which span this stop closes,
+        which is strictly better than inferring it from order and is the whole reason the
+        slots exist. Two spans that share a key are indistinguishable to the sidecar, so
+        they fall back to last-opened within that key.
+
+        Without one, last-opened across everything: slurs nest far more often than they
+        cross, and the flat slur field carries no id to pair on.
+        """
+        if key is not None and self.slur_numbers.get(key):
+            number = self.slur_numbers[key].pop()
+            if number in self.open_slurs:
+                self.open_slurs.remove(number)
+            return number
         if self.open_slurs:
             return self.open_slurs.pop()
         # A stop with nothing open: emit a number anyway rather than dropping the
@@ -807,11 +831,25 @@ def slur_placement(model_note: EncodedSymbol, xml_type: str) -> str | None:
 
 
 def _slur_number(model_note: EncodedSymbol, xml_type: str, state: ConversionState) -> int:
-    """Prefer the sidecar's slot, fall back to the open-span stack."""
+    """Allocate from the open-span stack, keyed by the sidecar's slot when there is one.
+
+    This used to return the sidecar slot directly, which reintroduced the very defect the
+    stack was added to fix. A slot is unique within one note; a slur number must be unique
+    across every span open at that moment. On a grand staff, slot 1 on the upper staff and
+    slot 1 on the lower staff both became `number="1"`, and MusicXML pairs by number - so
+    the reader was handed two starts and two stops with no way to tell which belonged to
+    which. Measured over 400 Lieder systems, that was 315 colliding spans on 26% of staves
+    in the engraved reference and 250 on 22% of ours, and a reader pairing them in the
+    obvious order drew 131 crossing slurs on 15.75% of our staves against the reference's
+    one.
+
+    The slot is not discarded - it is exactly the pairing information the flat slur field
+    lacks, so it is carried as the span's identity and the stop asks for the number its own
+    start was given.
+    """
     slot = slur_slot_number(model_note, xml_type)
-    if slot is not None:
-        return slot
-    return state.close_slur() if xml_type == "stop" else state.open_slur()
+    key = (get_staff(model_note), slot) if slot is not None else None
+    return state.close_slur(key) if xml_type == "stop" else state.open_slur(key)
 
 
 def _add_slur(notation: ET.Element, xml_type: str, number: int, model_note: EncodedSymbol) -> None:
@@ -845,18 +883,34 @@ def build_slurs(note: ET.Element, model_note: EncodedSymbol, state: ConversionSt
             if structured_export_enabled("slur")
             else ()
         )
+        # Numbered through the same allocator as the core path, not from the slot index:
+        # a slot is unique within one note, a slur number must be unique across every
+        # span open at that moment. See `_slur_number`.
+        staff_number = get_staff(model_note)
         for index, (event, side) in enumerate(structured, start=1):
-            attrs = {"number": str(index)}
-            if str(side) != "unspecified":
-                attrs["placement"] = str(side)
+            key = (staff_number, index)
+            placement = {} if str(side) == "unspecified" else {"placement": str(side)}
             if event == SlurEvent.START:
-                ET.SubElement(notation, "slur", {**attrs, "type": "start"})
+                number = state.open_slur(key)
+                ET.SubElement(
+                    notation, "slur", {"number": str(number), **placement, "type": "start"}
+                )
             elif event == SlurEvent.STOP:
-                ET.SubElement(notation, "slur", {**attrs, "type": "stop"})
+                number = state.close_slur(key)
+                ET.SubElement(
+                    notation, "slur", {"number": str(number), **placement, "type": "stop"}
+                )
             elif event == SlurEvent.START_AND_STOP:
-                # Close before reopening the same slot, matching the core path.
-                ET.SubElement(notation, "slur", {**attrs, "type": "stop"})
-                ET.SubElement(notation, "slur", {**attrs, "type": "start"})
+                # Close before reopening, matching the core path, so the new span may
+                # reuse the number the old one just freed.
+                closing = state.close_slur(key)
+                ET.SubElement(
+                    notation, "slur", {"number": str(closing), **placement, "type": "stop"}
+                )
+                opening = state.open_slur(key)
+                ET.SubElement(
+                    notation, "slur", {"number": str(opening), **placement, "type": "start"}
+                )
     elif slurs == nonote:
         eprint("WARNING note without valid articulation", slurs)
     elif slurs == "slurStart":
