@@ -145,7 +145,15 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
 
-    paths = sorted(p for p in args.corpus.glob("*.txt") if p.name != "index.txt")
+    # Both token suffixes: OSSQ writes `.txt`, the Lieder builder writes `.tokens`.
+    # Globbing only `*.txt` is why this baseline's figures have always been OSSQ-only -
+    # it read zero crops from Lieder and said so as "0 crops read", which is easy to miss.
+    paths = sorted(
+        p
+        for suffix in ("*.txt", "*.tokens")
+        for p in args.corpus.glob(suffix)
+        if p.name != "index.txt"
+    )
     if args.limit:
         paths = paths[: args.limit]
     baseline = TieBaseline()
