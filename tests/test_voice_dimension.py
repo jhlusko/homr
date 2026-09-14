@@ -244,3 +244,30 @@ class TestTheOnsetIndex(unittest.TestCase):
             )
             attach_sidecar(tokens, [symbol])
             self.assertIsNone(symbol.notation.onset_index)
+
+
+class TestARestIsNeverTied(unittest.TestCase):
+    """A rest is silence - there is nothing to sustain into the next note.
+
+    25 of the rebuilt corpus's impossible tie labels were a `<tied>` element the source
+    had attached to a rest, copied through because the extractor read `<tied>` from any
+    note element at all. Such a label can never find a partner under any rule.
+    """
+
+    def _ties(self, xml: str) -> list:
+        extractor = NotationExtractor()
+        return [str(extractor.extract(note).tie) for note in ET.fromstring(xml).iter("note")]
+
+    def test_a_tied_rest_records_no_tie(self) -> None:
+        xml = """<part><measure>
+          <note><rest/><voice>1</voice><staff>1</staff>
+            <notations><tied type="start"/></notations></note>
+        </measure></part>"""
+        self.assertEqual(["none"], self._ties(xml))
+
+    def test_a_pitched_note_still_records_its_tie(self) -> None:
+        xml = """<part><measure>
+          <note><pitch><step>G</step><octave>4</octave></pitch><voice>1</voice><staff>1</staff>
+            <notations><tied type="start"/></notations></note>
+        </measure></part>"""
+        self.assertEqual(["start"], self._ties(xml))

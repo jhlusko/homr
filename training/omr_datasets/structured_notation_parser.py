@@ -169,6 +169,13 @@ def _tie(note: ET.Element) -> TieState:
     sounding instruction and `<tied>` is the notated one, and it is the notation that is
     on the page for the model to see.
     """
+    if note.find("rest") is not None:
+        # A rest is silence; there is nothing to sustain into the next note, so a tie on
+        # one cannot be drawn and can never find a partner. 25 of the rebuilt Lieder
+        # corpus's impossible tie labels were exactly this - a `<tied>` element the
+        # source attached to a rest, copied through because this read `<tied>` from any
+        # note element at all.
+        return TieState.NONE
     types = {
         (tied.get("type") or "").strip().lower()
         for notations in note.findall("notations")
