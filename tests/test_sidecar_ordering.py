@@ -26,7 +26,10 @@ from homr.transformer.structured_notation import (
 )
 from homr.transformer.vocabulary import EncodedSymbol, sort_token_chords
 from training.omr_datasets.notation_sidecar import attach_sidecar, write_sidecar
-from training.transformer.training_vocabulary import read_token_lines, token_lines_to_str
+from training.transformer.training_vocabulary import (
+    read_token_lines,
+    token_lines_to_str,
+)
 
 
 def _note(pitch: str, tie: TieState = TieState.NONE, position: str = "upper") -> EncodedSymbol:
