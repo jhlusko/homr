@@ -203,10 +203,12 @@ class Config:
         self.stem_arbitration = os.environ.get("HOMR_STEM_ARBITRATION", "1") != "0"
 
         #: Slur side from the engraving convention - opposite the stems - where the
-        #: slur-side head is unsure. Measured in place over 2,000 held-out scanned
-        #: staves: the head alone 78.80%, the rule alone 89.27%, arbitrated 90.62%.
-        #: See `homr.slur_side`.
-        self.slur_side = os.environ.get("HOMR_SLUR_SIDE", "1") != "0"
+        #: slur-side head is unsure. **Off by default since 2026-09-13**: the convention
+        #: holds on the corpus it was measured on (94.8% on OSSQ) and is chance on
+        #: another (51.3% on Lieder), and no property visible at inference separates
+        #: them. Set `HOMR_SLUR_SIDE=1` only for material the rule has been validated
+        #: on. See `homr.slur_side`.
+        self.slur_side = os.environ.get("HOMR_SLUR_SIDE", "0") != "0"
 
         #: Re-pair slurs whose spans cross, which no engraver draws. Measured over 400
         #: Lieder systems: the decode draws 69 crossings on 9.50% of staves against the

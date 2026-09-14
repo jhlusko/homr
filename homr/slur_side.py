@@ -1,26 +1,31 @@
 """Choose which side of the noteheads a slur sits on, between the head and a convention.
 
+**This pass is off by default.** `HOMR_SLUR_SIDE=1` enables it. Read the scope below
+before turning it on.
+
 Engravers place a slur opposite the stems: stems up, slur below the noteheads; stems down,
-slur above. That is a convention rather than a preference, which makes the side derivable
-from something the pipeline already produces - and the slur-side head is the weakest of the
-shipped heads, reported at macro-F1 .723 against no baseline at all.
+slur above. Measured against engraved placements, that convention holds on one corpus and
+does not hold at all on another:
 
-Measured in place over 2,000 held-out scanned staves (`training/transformer/
-end_to_end_passes.py`), on the 4,265 sides the engraving actually states:
+    OSSQ (string quartet)       6,026 scorable   94.8%   macro-F1 .947
+    Lieder v8 (voice + piano)   1,600 scorable   51.3%   macro-F1 .500
 
-    the trained slur-side head          78.80%
-    opposite the arbitrated stem        89.27%     no parameters
-    head when confident, else the rule  90.62%     a threshold
+Chance on the second. The obvious explanation - that a polyphonic keyboard staff uses the
+stem to encode which *voice* a note belongs to, not which side its slur sits on - is not
+sufficient, because Lieder's own single-staff, one-voice slice reads 59.5%. The split is
+by repertoire, not by any structural property a page carries, so **there is no gate that
+can be applied at inference to tell the two cases apart.**
 
-The rule is derived from the stem this pipeline *predicted*, after `stem_arbitration`, not
-from the engraved stem - so it already carries every stem mistake. `slur_side_baseline.py`
-reported 94.0% from engraved stems; five of those points are the cost of the chain, and
-what is left still beats the head by eleven.
+The pass was shipped on the strength of the first corpus alone: measured in place over
+2,000 held-out *scanned OSSQ* staves, the head alone reached 78.80%, the rule alone 89.27%
+and the arbitration 90.62%, tuned on half the staves and reported on the other. That +10.2
+points is real and is OSSQ-scoped. Applied to piano material the same pass overwrites the
+head with a coin flip wherever the head's confidence falls below the threshold.
 
-They fail on different notes, which is why this arbitrates rather than replaces: the rule
-rescues 730 sides the head gets wrong and the head rescues 285 the rule gets wrong, with
-only 172 defeating both. Most of the value is the rule; the threshold adds half a point on
-top of it.
+One further caution before anyone re-validates it. OSSQ's engraved sides may record
+MuseScore's own default placement rather than an engraver's decision, in which case the
+94.8% is partly circular - the rule would be reproducing the layout algorithm that wrote
+the labels. That was not settled here.
 
 Runs after `arbitrate_stems`, and must: the stem it reads is the arbitrated one, and
 deriving a side from a stem the pipeline is about to change would describe a score nobody

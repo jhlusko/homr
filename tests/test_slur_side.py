@@ -125,3 +125,26 @@ class TestTheSecondSlot(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestItIsOffByDefault(unittest.TestCase):
+    """The convention holds on one corpus and is chance on another.
+
+    OSSQ 94.8%, Lieder v8 51.3%, and Lieder's own single-staff one-voice slice 59.5% -
+    so the split is by repertoire, not by anything a page carries that could gate it at
+    inference. The pass was shipped on the first corpus alone.
+    """
+
+    def test_the_config_flag_defaults_to_off(self) -> None:
+        from homr.transformer.configs import Config
+
+        self.assertFalse(Config().slur_side)
+
+    def test_it_can_still_be_turned_on(self) -> None:
+        import os
+        from unittest import mock
+
+        from homr.transformer.configs import Config
+
+        with mock.patch.dict(os.environ, {"HOMR_SLUR_SIDE": "1"}):
+            self.assertTrue(Config().slur_side)
