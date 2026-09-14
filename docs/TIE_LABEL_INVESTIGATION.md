@@ -7,7 +7,128 @@ Last worked: 2026-09-13. Commits `0937b63` … `b72284f` on `homr` main.
 
 ---
 
-## 1. The problem
+## 1. Background: what "the corpus" is
+
+### 1.1 The idea
+
+OMR needs pairs of *a picture of music* and *the correct symbols for that picture*.
+Engraved symbolic scores exist (clean, machine-readable) and scanned images exist
+(realistic, what users upload), but rarely as matched pairs. The Lieder corpus manufactures
+them: it takes **OpenScore Lieder** symbolic transcriptions (CC0) and **IMSLP** scans of the
+same works, aligns them system by system, and cuts one training example per system.
+
+So every example is a real historical scan paired with symbols derived from an independent
+modern transcription of the same music. That independence is the corpus's value and also
+the origin of most of its defects: nothing guarantees the transcription and the scan agree
+about anything, so the alignment has to establish it.
+
+### 1.2 The two corpora referred to throughout
+
+| | **Lieder** | **OSSQ** |
+| --- | --- | --- |
+| music | 19th-century art song: solo voice over piano | string quartet |
+| staves per system | 3+ (vocal staff, piano grand staff) | 4, one instrument each |
+| polyphony | 22-34% of systems have 2+ voices on one staff | effectively none |
+| chords | frequent (piano) | rare |
+| symbolic source | OpenScore Lieder `.mscx` / `.mxl` | OpenScore String Quartets |
+| role here | the corpus the scan models train on, and the broken one | **the control**, and it is clean |
+
+**OSSQ being clean is the single most useful fact in this investigation.** Both corpora go
+through the same extraction and sidecar code. If that code were simply wrong, OSSQ would be
+broken too. It is not, so whatever breaks Lieder is specific to what Lieder contains -
+grand staves, chords, and two voices sharing a staff.
+
+### 1.3 What one training example is
+
+Four files sharing a stem, e.g. `IMSLP10416-sys6-v1`:
+
+```
+IMSLP10416-sys6-v1.png                   the scan crop - one system, one part
+IMSLP10416-sys6-v1.tokens                the symbols, one line per simultaneity
+IMSLP10416-sys6-v1.tokens.notation.json  the sidecar - per-note notation
+```
+
+The name decomposes as `IMSLP<scan id>-sys<system index on the page>-v<part index>`. In a
+voice-and-piano score `v0` is usually the vocal line and `v1` the piano, so `v1` crops
+contain a **grand staff** and carry `upper` / `lower` positions.
+
+### 1.4 The token file
+
+Six whitespace-separated fields per entry: `rhythm pitch lift articulation slur position`.
+Entries joined by `&` are one simultaneity; each line is one simultaneity.
+
+```
+clef_G2 _ _ _ _ upper&clef_F4 _ _ _ _ lower
+note_8 F5 _ _ slurStart upper&note_2 F4 _ accent slurStart lower&note_2 E4 b _ _ lower
+barline . . . . .
+```
+
+Three properties matter for this investigation:
+
+- **A line is a simultaneity across every voice and both staves**, not one voice's chord.
+  The line above holds an upper-staff eighth and two lower-staff half notes.
+- **There is no voice field.** `position` distinguishes the two hands of a grand staff and
+  nothing distinguishes two voices within one hand. (`VoiceClass` was added to the *sidecar*
+  for this reason - see 4.1 - not to the token stream.)
+- **Ties and slurs are conflated.** `<tied>` and `<slur>` both become `slurStart`/
+  `slurStop`, and duplicates are deduplicated, so a note carrying both is one token. This
+  is why the sidecar exists at all.
+
+### 1.5 The sidecar
+
+The token vocabulary is the model's prediction target and cannot be extended without
+invalidating every checkpoint. Per-note notation that the model does not predict - beam
+levels, stem direction, slur slots and sides, ties, dynamics, advance, and now voice and
+onset index - is written beside the token file instead.
+
+**It is paired to the token file by position**: the Nth record belongs to the Nth
+note-bearing symbol. `attach_sidecar` guards this by comparing *counts*, which is exactly
+why an ordering difference went undetected for as long as it did (see 4.3).
+
+Schema history, all still readable: `v1` predates ties, `v2` dynamics, `v3` advance, `v4`
+voice, `v5` the onset index. Current is `v6`.
+
+### 1.6 How a build runs
+
+In `lieder-omr-data` (a separate repository), `tools/build_lieder_v4.py`:
+
+1. **Rasterise and detect** - render each of 215 IMSLP PDFs to page PNGs, run homr's
+   segmentation to find systems. ~5 hours on CPU. Output: `_build/pages`, `_build/systems`.
+2. **Fetch ground truth** - read the matching OpenScore `.mscx` from the archived snapshot
+   and record its per-system measure counts. Output: `_build/ground_truth`.
+3. **Build pairs** - using the *frozen* alignment in
+   `provenance/alignment_v4_boundary_safe.json`, cut each system out of its page, parse the
+   corresponding source measures to tokens, and write the crop, tokens and sidecar.
+4. **Audit and split** - rebase onto the frozen train/validation index.
+
+The alignment is frozen deliberately: recomputing it and silently accepting a different
+answer would defeat the point of a reviewed corpus. It maps, per score, each scanned system
+index to a source measure range - which is what makes step 5's source comparison possible.
+
+### 1.7 Where the source data lives
+
+Two archives on R2, listed with SHA-256 in `lieder-omr-data/sources.lock.json`:
+
+- `lieder-v4-all-sources.tar.gz` - **774 MB, private**, the frozen 215-source v4 input.
+  This is what a real build needs.
+- `lieder-v4-pd25-sources.tar.gz` - 17 MB, the 25-ID public-candidate subset. **Not usable
+  as a rehearsal**: its directory layout and manifest names differ from what the builder
+  expects.
+
+`make extract-private-source` fetches and verifies. Archives are gitignored; they are not
+in the repository.
+
+### 1.8 What ships from all this
+
+`homr/tie_repair.py` is the production consequence: a post-decode pass that enforces the
+pitch constraint on the model's own output, so every `<tie>` written to MusicXML can
+actually be drawn. It is independent of the corpus defect - it repairs *predictions* - but
+it was built from the same constraint, and its baseline figures (98.4% of reference ties
+join a repeat of the pitch; 15.9% of repeated pitches are tied) come from OSSQ.
+
+---
+
+## 2. The problem
 
 The corpus's own tie labels frequently cannot be drawn. A tie joins two notations of **one
 pitch** - that is what distinguishes it from a slur, and it is a necessary condition, not a
@@ -22,9 +143,9 @@ tie endpoints impossible           17.7%              1.0%
 slur stops nothing opened           9.8%              0.2%
 ```
 
-**OSSQ is effectively clean; Lieder is not.** Lieder is the corpus the scan models train
-on. OSSQ is a string quartet (one line per staff); Lieder is voice-over-piano with a grand
-staff, and 22-34% of its systems carry a staff with more than one voice.
+**OSSQ is effectively clean; Lieder is not** - and both go through the same extraction and
+sidecar code, so the defect is specific to what Lieder contains rather than to the code in
+general. See 1.2 for what the two corpora are and why that comparison carries weight.
 
 This matters twice over:
 
@@ -38,7 +159,7 @@ This matters twice over:
 
 ---
 
-## 2. Where everything is
+## 3. Where everything is
 
 | thing | path |
 | --- | --- |
@@ -86,9 +207,9 @@ PYTHONPATH=. .venv/bin/python -m training.omr_datasets.reference_label_audit \
 
 ---
 
-## 3. What was tried, in order
+## 4. What was tried, in order
 
-### 3.1 Hypothesis: the representation has no voice — **refuted**
+### 4.1 Hypothesis: the representation has no voice — **refuted**
 
 A tie joins one pitch *within one voice*. The token format carried `position` (upper or
 lower) and nothing else, so two voices on a staff were indistinguishable. Splitting 55
@@ -102,7 +223,7 @@ MusicXML voices to 1..N per staff. The corpus was rebuilt.
 showed 27.6% impossible ties against 5.7% monophonic. The 55-system estimate was also
 wrong in both arms - it rested on 73 tie endpoints.
 
-### 3.2 Hypothesis: adjacency is unrecoverable without onsets — **refuted**
+### 4.2 Hypothesis: adjacency is unrecoverable without onsets — **refuted**
 
 A token line is a simultaneity across *all* voices: the converter merges whatever sounds
 together onto one line, so a line can hold voices 1, 2 and 3 at once and a voice's
@@ -115,7 +236,7 @@ without `<chord/>` so chord members share an index. The corpus was rebuilt.
 
 **Result: no change.** 27.6% → 27.4%.
 
-### 3.3 Hypothesis: chord members are reordered, scrambling per-note labels — **partly right**
+### 4.3 Hypothesis: chord members are reordered, scrambling per-note labels — **partly right**
 
 Reading the actual cases (rather than the counts) showed a tie start on E♭4 whose pitch
 never recurs, while F4 *in the same chord* ties correctly a quarter later. Comparing the
@@ -148,7 +269,7 @@ v6   ties     5.7% impossible  27.4%
 v7   ties    12.0% impossible  51.7%
 ```
 
-### 3.4 Confirmed and fixed: ties on rests
+### 4.4 Confirmed and fixed: ties on rests
 
 `_tie` read `<tied>` from any note element including rests. A rest is silence; nothing
 sustains into the next note. 25 of the impossible labels were exactly this. Fixed in
@@ -156,7 +277,7 @@ sustains into the next note. 25 of the impossible labels were exactly this. Fixe
 
 ---
 
-## 4. The composition of the failures
+## 5. The composition of the failures
 
 From `lieder-v6` (before the ordering fix), reading every impossible tie start:
 
@@ -172,7 +293,7 @@ the 152.
 
 ---
 
-## 5. The open question, and the test that settles it
+## 6. The open question, and the test that settles it
 
 **Why did correcting the sidecar order make the audit worse?**
 
@@ -192,11 +313,14 @@ audit asks whether a label can pair within the crop, not whether it matches the 
 
 For a sample of crops, compare against the **source MusicXML** the alignment names:
 
-1. Read `provenance/alignment_v4_boundary_safe.json` (in `lieder-omr-data`) for
+1. Read `provenance/alignment_v4_boundary_safe.json` (in the `lieder-omr-data` repo, see
+   1.6 and 1.7) for
    `scores[SCORE_ID]["systems"]`, find the entry whose `scan_index` matches the crop's
    `sysN`, and take `start_measure` / `end_measure`.
-2. Load the source `.mxl` via `_build/mxl-tree.json` keyed by `lieder_key` from
-   `_build/ground_truth/SCORE_ID.json`; the crop's `-vN` suffix is the part index.
+2. Load the source `.mxl` via `_build/mxl-tree.json` (written by the build; maps an
+   OpenScore score key to a path inside the extracted archive) keyed by `lieder_key` from
+   `_build/ground_truth/SCORE_ID.json`; the crop's `-vN` suffix is the part index within
+   that score.
 3. For every `<tied type="start">` the source records in that measure range, find the
    corresponding notehead in the crop's tokens (same staff, same pitch, same position in
    the voice) and check whether the sidecar records the tie **on that note**.
@@ -212,7 +336,7 @@ dropping notes, or the OpenScore labels themselves.
 
 ---
 
-## 6. Traps
+## 7. Traps
 
 - **Re-pin the vendored runtime** before every rebuild, or the build runs old code
   (`tools/vendor_runtime.py --refresh`, then `--verify`).
@@ -229,7 +353,7 @@ dropping notes, or the OpenScore labels themselves.
   identical fields sort stably, so source order survives there; the reordering only bites
   when the fields differ.
 
-## 7. Lessons from how this went
+## 8. Lessons from how this went
 
 Three hypotheses were formed from correlations and two of them were shipped as
 representation changes before being tested against ground truth. Each was plausible, each
