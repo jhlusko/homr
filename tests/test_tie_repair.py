@@ -195,3 +195,51 @@ class TestVoices(unittest.TestCase):
         behave exactly as it did - the staff is then the finest division available."""
         staff = [_note("G4", TieState.START), _note("G4")]
         self.assertEqual(1, repair_ties(staff).partner_marked)
+
+
+class TestOnsetIndexDecidesAdjacency(unittest.TestCase):
+    """The chord grouping in the token stream is a simultaneity across every voice.
+
+    Filtering candidates by voice does not fix that, because the grouping itself is
+    cross-voice: a voice's successive notes can share a line, and notes on one line can
+    belong to three different voices.
+    """
+
+    @staticmethod
+    def _at(pitch: str, tie: TieState, voice: VoiceClass, onset: int) -> EncodedSymbol:
+        symbol = _note(pitch, tie)
+        symbol.notation = replace(symbol.notation, voice=voice, onset_index=onset)
+        return symbol
+
+    def test_a_partner_in_the_same_line_is_found_when_its_onset_is_later(self) -> None:
+        """Two voices share the line, so `chord` cannot separate them - the index can."""
+        staff = [
+            self._at("G4", TieState.START, VoiceClass.FIRST, 1),
+            self._at("C3", TieState.NONE, VoiceClass.SECOND, 1),
+            self._at("G4", TieState.NONE, VoiceClass.FIRST, 2),
+        ]
+        report = repair_ties(staff)
+        self.assertEqual(1, report.partner_marked)
+        self.assertEqual(["start", "none", "stop"], _ties(staff))
+
+    def test_a_chord_sibling_sharing_an_onset_is_never_the_partner(self) -> None:
+        staff = [
+            self._at("G4", TieState.START, VoiceClass.FIRST, 1),
+            self._at("G4", TieState.NONE, VoiceClass.FIRST, 1),
+        ]
+        self.assertEqual(1, repair_ties(staff).dropped_starts)
+
+    def test_notes_several_lines_apart_still_pair(self) -> None:
+        """Other voices in between must not end the search."""
+        staff = [
+            self._at("G4", TieState.START, VoiceClass.FIRST, 1),
+            self._at("C3", TieState.NONE, VoiceClass.SECOND, 1),
+            self._at("D3", TieState.NONE, VoiceClass.SECOND, 2),
+            self._at("G4", TieState.NONE, VoiceClass.FIRST, 2),
+        ]
+        self.assertEqual(1, repair_ties(staff).partner_marked)
+
+    def test_without_indices_the_chord_grouping_is_still_used(self) -> None:
+        """Every corpus before schema v6 has none, and must behave as it did."""
+        staff = [_note("G4", TieState.START), _note("G4")]
+        self.assertEqual(1, repair_ties(staff).partner_marked)

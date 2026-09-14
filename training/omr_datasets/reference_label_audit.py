@@ -41,6 +41,16 @@ def _voices(sidecar_records: list[dict]) -> list[str]:
     return [str(record.get("voice", "unknown")) for record in sidecar_records]
 
 
+def _onsets(sidecar_records: list[dict]) -> list[int | None]:
+    """Each record's per-voice simultaneity index, or None before schema v6.
+
+    Recording the voice alone did not recover adjacency: a token line is a simultaneity
+    across every voice, so a voice's successive notes may share a line or sit several
+    lines apart. This index is the relation a tie actually needs.
+    """
+    return [record.get("onsetIndex") for record in sidecar_records]
+
+
 def _line(voices: list[str], notes: list, a: int, b: int) -> bool:
     """Whether two notes are on the same staff and, when both say, the same voice."""
     if notes[a][3] != notes[b][3]:
@@ -84,8 +94,24 @@ def _token_slur_endpoints(tokens_path: Path) -> int:
     return total
 
 
+def _strictly_before(
+    onsets: list[int | None],
+    notes: list[tuple[str, bool, int, str]],
+    earlier: int,
+    later: int,
+) -> bool:
+    """Whether `earlier` sounds before `later`, by onset index when both carry one."""
+    first, second = onsets[earlier], onsets[later]
+    if first is not None and second is not None:
+        return first < second
+    return notes[earlier][2] < notes[later][2]
+
+
 def _tie_partner(
-    notes: list[tuple[str, bool, int, str]], index: int, voices: list[str] | None = None
+    notes: list[tuple[str, bool, int, str]],
+    index: int,
+    voices: list[str] | None = None,
+    onsets: list[int | None] | None = None,
 ) -> str | None:
     """The pitch a tie at `index` would join, or None if the staff or a rest ends it.
 
@@ -94,20 +120,29 @@ def _tie_partner(
     """
     pitch, _rest, chord, staff = notes[index]
     marks = voices or ["unknown"] * len(notes)
+    indices = onsets or [None] * len(notes)
 
     def same(other: int) -> bool:
         return _line(marks, notes, index, other)
 
+    def after(other: int) -> bool:
+        here_index, there = indices[index], indices[other]
+        if here_index is not None and there is not None:
+            return there > here_index
+        return notes[other][2] != chord
+
+    def together(a: int, b: int) -> bool:
+        first, second = indices[a], indices[b]
+        if first is not None and second is not None:
+            return first == second
+        return notes[a][2] == notes[b][2]
+
     for later in range(index + 1, len(notes)):
-        if not same(later) or notes[later][2] == chord:
+        if not same(later) or not after(later):
             continue
         if notes[later][1]:
             return None
-        members = [
-            notes[k][0]
-            for k in range(later, len(notes))
-            if notes[k][2] == notes[later][2] and same(k)
-        ]
+        members = [notes[k][0] for k in range(later, len(notes)) if together(k, later) and same(k)]
         return pitch if pitch in members else (members[0] if members else None)
     return None
 
@@ -125,6 +160,7 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
     counts["files"] += 1
     counts["notes"] += len(notes)
     voices = _voices(records)
+    onsets = _onsets(records)
     counts["voice_stated"] += sum(1 for v in voices if v != "unknown")
 
     # Ties, against the constraint that defines them.
@@ -133,7 +169,7 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
         if state == "none":
             continue
         counts["tie_endpoints"] += 1
-        partner = _tie_partner(notes, index, voices)
+        partner = _tie_partner(notes, index, voices, onsets)
         if state in OPENS:
             if partner is None:
                 counts["tie_start_at_edge"] += 1
@@ -148,7 +184,7 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
                 if records[i].get("tie", "none") in OPENS
                 and notes[i][0] == notes[index][0]
                 and _line(voices, notes, i, index)
-                and notes[i][2] < notes[index][2]
+                and _strictly_before(onsets, notes, i, index)
             ]
             if not before:
                 counts["tie_stop_orphan" if index else "tie_stop_at_edge"] += 1

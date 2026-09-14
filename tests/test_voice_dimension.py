@@ -149,3 +149,98 @@ class TestTheClassSet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheOnsetIndex(unittest.TestCase):
+    """Which simultaneity of its own voice a note belongs to.
+
+    Recording the voice was not enough to recover adjacency, which was the point of
+    recording it. A token line is a simultaneity across *all* voices - the converter
+    merges whatever sounds together onto one line - so a voice's successive notes may
+    share a line or sit several lines apart with other voices between. Measured on the
+    rebuilt corpus with voices recorded and used: tie labels were still impossible on
+    27.6% of endpoints in polyphonic files against 5.7% in monophonic ones.
+    """
+
+    CHORD_THEN_TWO_VOICES = """<part><measure>
+      <note><pitch><step>G</step><octave>4</octave></pitch><voice>1</voice><staff>1</staff></note>
+      <note><chord/><pitch><step>B</step><octave>4</octave></pitch><voice>1</voice><staff>1</staff></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><voice>1</voice><staff>1</staff></note>
+      <backup><duration>4</duration></backup>
+      <note><pitch><step>E</step><octave>3</octave></pitch><voice>2</voice><staff>1</staff></note>
+      <note><pitch><step>F</step><octave>3</octave></pitch><voice>2</voice><staff>1</staff></note>
+    </measure></part>"""
+
+    def _indices(self, xml: str) -> list:
+        extractor = NotationExtractor()
+        return [extractor.extract(note).onset_index for note in ET.fromstring(xml).iter("note")]
+
+    def test_a_chord_member_shares_its_chord_s_index(self) -> None:
+        """So a member is never its own successor, which is what a tie search needs."""
+        self.assertEqual([1, 1, 2, 1, 2], self._indices(self.CHORD_THEN_TWO_VOICES))
+
+    def test_each_voice_counts_independently(self) -> None:
+        """A backup returns to the same moment in another voice; both start at 1."""
+        indices = self._indices(self.CHORD_THEN_TWO_VOICES)
+        self.assertEqual(1, indices[0])
+        self.assertEqual(1, indices[3])
+
+    def test_each_staff_counts_independently(self) -> None:
+        xml = """<part><measure>
+          <note><pitch><step>G</step><octave>4</octave></pitch><voice>1</voice><staff>1</staff></note>
+          <note><pitch><step>C</step><octave>3</octave></pitch><voice>5</voice><staff>2</staff></note>
+          <note><pitch><step>A</step><octave>4</octave></pitch><voice>1</voice><staff>1</staff></note>
+        </measure></part>"""
+        self.assertEqual([1, 1, 2], self._indices(xml))
+
+    def test_it_survives_the_sidecar_round_trip(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            tokens = Path(directory) / "x.tokens"
+            tokens.write_text("note_4 G4 _ _ _ upper\nnote_4 C4 _ _ _ upper\n", encoding="utf-8")
+            written = []
+            for index in (3, 4):
+                symbol = EncodedSymbol(rhythm="note_4", pitch="G4")
+                symbol.notation = NoteNotation(
+                    beam_levels=(), stem=StemDirection.UP, slurs=(), onset_index=index
+                )
+                written.append(symbol)
+            write_sidecar(tokens, written)
+
+            read_back = []
+            for _ in range(2):
+                symbol = EncodedSymbol(rhythm="note_4", pitch="G4")
+                symbol.notation = NoteNotation(beam_levels=(), stem=StemDirection.UP, slurs=())
+                read_back.append(symbol)
+            attach_sidecar(tokens, read_back)
+            self.assertEqual([3, 4], [s.notation.onset_index for s in read_back])
+
+    def test_a_sidecar_written_before_v6_reads_as_none(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            tokens = Path(directory) / "x.tokens"
+            tokens.write_text("note_4 G4 _ _ _ upper\n", encoding="utf-8")
+            Path(str(tokens) + ".notation.json").write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": "homr.notation-sidecar.v5",
+                        "annotatedSymbols": 1,
+                        "notation": [
+                            {
+                                "beams": [],
+                                "stem": "up",
+                                "slurs": [],
+                                "tie": "none",
+                                "dynamic": "none",
+                                "advance": "not_applicable",
+                                "voice": "1",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            symbol = EncodedSymbol(rhythm="note_4", pitch="G4")
+            symbol.notation = NoteNotation(
+                beam_levels=(), stem=StemDirection.UP, slurs=(), onset_index=9
+            )
+            attach_sidecar(tokens, [symbol])
+            self.assertIsNone(symbol.notation.onset_index)

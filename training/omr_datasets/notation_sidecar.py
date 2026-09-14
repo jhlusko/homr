@@ -35,7 +35,7 @@ from homr.transformer.structured_notation import (
 )
 from homr.transformer.vocabulary import EncodedSymbol
 
-SCHEMA_VERSION = "homr.notation-sidecar.v5"
+SCHEMA_VERSION = "homr.notation-sidecar.v6"
 
 #: Schemas this reader still understands. v1 predates tie extraction, v2 predates
 #: dynamics extraction, v3 predates advance extraction and v4 predates voice extraction,
@@ -44,6 +44,7 @@ SCHEMA_VERSION = "homr.notation-sidecar.v5"
 #: file, it was absent from the pipeline that wrote it.
 READABLE_SCHEMAS = (
     SCHEMA_VERSION,
+    "homr.notation-sidecar.v5",
     "homr.notation-sidecar.v4",
     "homr.notation-sidecar.v3",
     "homr.notation-sidecar.v2",
@@ -70,6 +71,7 @@ def _encode(notation: NoteNotation) -> dict:
         "dynamic": str(notation.dynamic),
         "advance": str(notation.advance),
         "voice": str(notation.voice),
+        "onsetIndex": notation.onset_index,
     }
 
 
@@ -82,6 +84,7 @@ def _decode(record: dict) -> NoteNotation:
         dynamic=DynamicMark(record.get("dynamic", DynamicMark.NONE)),
         advance=AdvanceClass(record.get("advance", AdvanceClass.NOT_APPLICABLE)),
         voice=VoiceClass(record.get("voice", VoiceClass.UNKNOWN)),
+        onset_index=record.get("onsetIndex"),
     )
 
 

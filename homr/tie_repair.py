@@ -74,6 +74,10 @@ class _Note:
     #: UNKNOWN means the source said nothing, and then the staff is the finest division
     #: available - which is what every corpus written before voices existed carries.
     voice: VoiceClass = VoiceClass.UNKNOWN
+    #: Which simultaneity of this note's own voice it belongs to. When both notes carry
+    #: one this is what decides adjacency, because the chord grouping in the token stream
+    #: is a simultaneity across every voice and cannot answer "next in this voice".
+    onset_index: int | None = None
 
 
 def _read(staff: Sequence[EncodedSymbol]) -> list[_Note]:
@@ -102,6 +106,7 @@ def _read(staff: Sequence[EncodedSymbol]) -> list[_Note]:
                 chord,
                 symbol.rhythm.startswith("rest"),
                 notation.voice if notation is not None else VoiceClass.UNKNOWN,
+                notation.onset_index if notation is not None else None,
             )
         )
     return notes
@@ -123,11 +128,22 @@ def _partner(notes: list[_Note], position: int) -> int | None:
             return True
         return other.voice == here.voice
 
+    def later_simultaneity(other: _Note) -> bool:
+        """Whether `other` sounds after `here` rather than alongside it.
+
+        With onset indices this is exact. Without them the only available answer is the
+        token stream's own chord grouping, which is shared across voices - so it is used
+        as the fallback and nothing more.
+        """
+        if here.onset_index is not None and other.onset_index is not None:
+            return other.onset_index > here.onset_index
+        return other.chord != here.chord
+
     for later in range(position + 1, len(notes)):
         candidate = notes[later]
         if not same_line(candidate):
             continue
-        if candidate.chord == here.chord:
+        if not later_simultaneity(candidate):
             continue
         if candidate.is_rest:
             return None

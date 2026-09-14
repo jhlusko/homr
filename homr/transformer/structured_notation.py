@@ -457,6 +457,19 @@ class NoteNotation:
     #: were extracted decodes as UNKNOWN, which is exactly what it knows - not a claim
     #: that every note sits in the first voice.
     voice: VoiceClass = VoiceClass.UNKNOWN
+    #: Which simultaneity of its own voice this note belongs to, counting from 1.
+    #:
+    #: Recording the voice was not enough to recover adjacency, which was the point of
+    #: recording it. A token line is a simultaneity across *all* voices - the converter
+    #: merges whatever sounds together onto one line - so "the next chord" is a
+    #: cross-voice notion, and a voice's successive notes can share a line or sit several
+    #: lines apart with other voices in between. Filtering candidates by voice does not
+    #: fix that, because the grouping itself is cross-voice.
+    #:
+    #: This is the relation a tie or a slur actually needs: the partner is the next index
+    #: in the same voice on the same staff. Members of one chord share an index, so a
+    #: chord member is never its own successor. `None` means the source predates this.
+    onset_index: int | None = None
 
     def active_beam_levels(self) -> int:
         return sum(1 for state in self.beam_levels if state != BeamLevelState.NOT_APPLICABLE)

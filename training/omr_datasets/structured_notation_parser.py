@@ -304,6 +304,10 @@ class NotationExtractor:
         #: First-appearance order rather than sorted order because a staff whose second
         #: voice enters first would otherwise have its two lines swapped halfway.
         self._staff_voices: dict[str, list[str]] = {}
+        #: (staff, source voice) -> how many simultaneities of that voice have started.
+        #: Chord members do not advance it, so one chord is one index and a member is
+        #: never its own successor - which is the whole relation a tie needs.
+        self._onsets: dict[tuple[str, str], int] = {}
         self.findings = Findings()
 
     def handle_direction(self, direction: ET.Element) -> None:
@@ -330,6 +334,19 @@ class NotationExtractor:
             return VoiceClass.UNKNOWN
         return VoiceClass(str(index))
 
+    def _onset_index(self, note: ET.Element, voice: str) -> int:
+        """Which simultaneity of this voice the note belongs to, counting from 1.
+
+        A `<chord/>` marks a note sounding with the one before it, so it shares that
+        note's index rather than starting a new one. Within a single voice, document
+        order is temporal order - `<backup>` moves between voices, never backwards inside
+        one - so a running count per voice is exactly the ordering a partner search needs.
+        """
+        key = (_staff_of(note), voice)
+        if note.find("chord") is None:
+            self._onsets[key] = self._onsets.get(key, 0) + 1
+        return self._onsets.setdefault(key, 1)
+
     def extract(self, note: ET.Element) -> NoteNotation:
         self.findings.notes += 1
         voice = note.findtext("voice") or "1"
@@ -347,6 +364,7 @@ class NotationExtractor:
             tie=_tie(note),
             dynamic=dynamic,
             voice=self._voice_in_staff(note, voice),
+            onset_index=self._onset_index(note, voice),
         )
 
     def close(self) -> Findings:
