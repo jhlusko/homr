@@ -34,6 +34,14 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from training.omr_datasets.reference_label_audit import (
+    _notes,
+    _onsets,
+    _same_pitch,
+    _tie_partner_index,
+    _voices,
+)
+
 
 @dataclass
 class TieBaseline:
@@ -50,88 +58,58 @@ class TieBaseline:
     states: Counter[str] = field(default_factory=Counter)
 
 
-def _notes_of(tokens_path: Path) -> list[tuple[str, bool, int]] | None:
-    """(pitch, is_rest, chord id) per note, chord members expanded for the sidecar.
-
-    The chord id matters for ties. A chord's members are consecutive in this list, so
-    "the next note" for a chord member is its own sibling - the wrong candidate entirely,
-    since a tie joins one notehead to a notehead in the *next* chord. Without the id, a
-    chord's lower voice looks tied to its own upper voice and the constraint reports a
-    violation the engraving never committed.
-    """
-    out: list[tuple[str, bool, int]] = []
-    chord = 0
-    for raw_line in tokens_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line:
-            continue
-        members = line.split("&")
-        if not members[0].split() or not members[0].split()[0].startswith(("note_", "rest_")):
-            continue
-        for member in members:
-            fields = member.split()
-            if not fields:
-                continue
-            head = fields[0]
-            pitch = fields[1] if len(fields) > 1 else ""
-            out.append((pitch, head.startswith("rest_"), chord))
-        chord += 1
-    return out
-
-
 def scan(tokens_path: Path, baseline: TieBaseline) -> bool:
+    """Score one crop's tie labels against the constraint that defines a tie.
+
+    The partner search is `reference_label_audit`'s, imported rather than reimplemented.
+    The version that lived here carried `(pitch, is_rest, chord)` and nothing about staff
+    or voice, so on a grand staff it hunted for a tie's partner in the other hand and on a
+    polyphonic staff in the other voice. It also compared bare letter and octave, which
+    lets E-flat4 pair with E-natural4. Those are the faults that made this baseline's
+    Lieder reading (63.6%) a property of the tool rather than of the corpus.
+    """
     sidecar_path = tokens_path.with_suffix(tokens_path.suffix + ".notation.json")
     if not sidecar_path.exists():
         return False
-    notes = _notes_of(tokens_path)
+    notes = _notes(tokens_path)
     sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))["notation"]
-    if notes is None or len(notes) != len(sidecar):
+    if len(notes) != len(sidecar):
         return False
+    voices, onsets = _voices(sidecar), _onsets(sidecar)
 
-    for index, ((pitch, is_rest, chord), entry) in enumerate(zip(notes, sidecar, strict=True)):
-        if is_rest:
+    for index, entry in enumerate(sidecar):
+        if notes[index][1]:
             continue
         baseline.notes += 1
         state = entry.get("tie", "none")
         baseline.states[state] += 1
 
-        # The partner is a notehead in the *next* chord, not the rest of this one, and a
-        # rest between them ends the sounding note so nothing can be tied across it.
-        next_pitch = None
-        for later in range(index + 1, len(notes)):
-            if notes[later][2] == chord:
-                continue
-            if notes[later][1]:
-                break
-            # A chord can hold the same pitch in more than one voice; any member with
-            # this pitch is a legitimate partner.
-            candidates = [other[0] for other in notes[later:] if other[2] == notes[later][2]]
-            next_pitch = pitch if pitch in candidates else candidates[0]
-            break
+        partner = _tie_partner_index(notes, index, voices, onsets)
+        joins_same_pitch = partner is not None and _same_pitch(notes, index, partner)
 
         if state in {"start", "start_and_stop"}:
-            # A tie on the last note of a crop continues into the next system, which is
-            # ordinary engraving: the partner is simply not in this image. Counting it as
-            # a broken constraint would charge the corpus for its own framing, the same
-            # way an unclosed beam at a crop edge is not an unclosed beam.
-            if next_pitch is None:
+            # A tie on the last note of its own line continues into the next system,
+            # which is ordinary engraving: the partner is simply not in this image.
+            # Counting it as a broken constraint would charge the corpus for its own
+            # framing, the same way an unclosed beam at a crop edge is not unclosed.
+            if partner is None:
                 baseline.tie_across_crop_edge += 1
             else:
                 baseline.tie_starts += 1
-                if next_pitch == pitch:
+                if joins_same_pitch:
                     baseline.tie_same_pitch += 1
                 elif len(baseline.violations) < 40:
                     baseline.violations.append(
                         {
                             "crop": tokens_path.stem,
                             "index": index,
-                            "pitch": pitch,
-                            "next_pitch": next_pitch,
+                            "pitch": notes[index][0],
+                            "next_pitch": notes[partner][0],
                             "state": state,
                         }
                     )
 
-        if next_pitch is not None and next_pitch == pitch:
+        if joins_same_pitch:
             baseline.repeated_pitch_pairs += 1
             if state in {"start", "start_and_stop"}:
                 baseline.repeated_and_tied += 1
