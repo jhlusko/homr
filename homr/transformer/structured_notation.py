@@ -139,7 +139,16 @@ class AdvanceClass(StrEnum):
 
     Exists because the renderer's fallback rule - a simultaneity's duration is the
     MINIMUM among its members (`SymbolChord.get_duration`) - is exact only when the two
-    hands of a grand staff share every onset. Measured on the rebuilt Lieder corpus:
+    hands of a grand staff share every onset.
+
+    **Scope caution, 2026-09-13.** The figures below were measured on the Lieder corpus
+    before `lieder-v8`, i.e. while the sidecar's per-note records were permuted across
+    each chord's members (docs/TIE_LABEL_INVESTIGATION.md). `advance` is recorded on the
+    last member of a simultaneity, so a permutation moves it to a different note; these
+    numbers need re-taking on v8 before they are quoted again. They are the motivation for
+    the head, not a measurement of it.
+
+    Measured on the rebuilt Lieder corpus:
     25.5% of grand-staff simultaneities hold notes of different lengths (46.4% where both
     hands sound at once), and on 10.3% of grand-staff bars the min-rule's own total
     disagrees with the bar's own modal length. That is not recoverable from the label

@@ -243,9 +243,16 @@ class SymbolChord:
             else:
                 lower.append(symbol)
                 lower_is_only_rest = lower_is_only_rest and symbol.rhythm.startswith("rest")
+        # The advance carrier is passed down. Splitting a grand-staff simultaneity into
+        # hands would otherwise leave each half to fall back on its own last member,
+        # which is a different note from the one the head was trained on - the exact
+        # silent-substitution this class's constructor keeps `advance_symbol` to prevent.
+        # Today only the undivided group's duration is read (see `build_measures`), so
+        # this changes no output; it stops a later caller of `staff_pos.get_render_
+        # duration()` from reading the wrong note without any error.
         chords = (
-            SymbolChord(upper, self.tuplet_mark),
-            SymbolChord(lower, self.tuplet_mark),
+            SymbolChord(upper, self.tuplet_mark, self.advance_symbol),
+            SymbolChord(lower, self.tuplet_mark, self.advance_symbol),
         )
         if lower_is_only_rest:
             chords = (chords[1], chords[0])
