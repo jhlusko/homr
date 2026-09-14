@@ -12,7 +12,9 @@ from homr.transformer.vocabulary import (
     empty,
     has_rhythm_symbol_a_position,
     nonote,
+    serialized_chords,
     sort_token_chords,
+    symbol_sort_key,
 )
 
 vocab = Vocabulary()
@@ -61,19 +63,14 @@ def check_token_lines(lines: list[EncodedSymbol]) -> None:
         check_token_line(line)
 
 
-def _symbol_to_sortable(symbol: EncodedSymbol) -> int:
-    position = 10000000 if symbol.position == "lower" else 0
-    if "note" in symbol.rhythm:
-        return (
-            vocab.pitch[symbol.pitch] * len(vocab.rhythm) + vocab.rhythm[symbol.rhythm] + position
-        )
-    if "rest" in symbol.rhythm:
-        return 100000 + vocab.rhythm[symbol.rhythm] + position
-    return 1000000 + position
+#: Kept as a name because callers import it; the definition lives beside
+#: `sort_token_chords` so the token writer and the sidecar writer cannot drift apart.
+_symbol_to_sortable = symbol_sort_key
 
 
 def _chord_to_str(chord: list[EncodedSymbol]) -> str:
-    sorted_chord = sorted(chord, key=_symbol_to_sortable)
+    """Serialize one chord. `chord` must already be in `serialized_chords` order."""
+    sorted_chord = chord
     upper_slurs = set()
     lower_slurs = set()
     upper_artics = set()
@@ -183,8 +180,7 @@ def max_tuplet_ratio() -> float:
 
 
 def token_lines_to_str(symbols: list[EncodedSymbol]) -> str:
-    chords = sort_token_chords(symbols)
-    chord_strings = [_chord_to_str(c) for c in chords]
+    chord_strings = [_chord_to_str(c) for c in serialized_chords(symbols)]
     return str.join("\n", chord_strings)
 
 

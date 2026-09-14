@@ -95,3 +95,75 @@ class TestTheWriterMatchesTheTokenFile(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheCompleteSerializationOrder(unittest.TestCase):
+    """One simultaneity holding both staves and mixed rhythms, end to end.
+
+    The four tests above all pass on a writer that applies only the FIRST of the token
+    writer's two sorts, which is why they did not catch that partial fix. One of them
+    derives its expectation from that same first sort, and the grand-staff one puts the
+    hands in *separate* simultaneities, so neither can see a cross-staff permutation.
+
+    Measured against raw source tie states over all 4,187 crops
+    (docs/TIE_LABEL_FINDINGS.md): 91.8% writing in source order, 80.0% with one sort,
+    100% with both.
+    """
+
+    def _attached(self, symbols: list[EncodedSymbol]) -> list[tuple[str, str, str]]:
+        """(pitch, position, tie) as a reader recovers it from the written files."""
+        with tempfile.TemporaryDirectory() as directory:
+            tokens = Path(directory) / "x.tokens"
+            tokens.write_text(token_lines_to_str(symbols), encoding="utf-8")
+            self.assertIsNotNone(write_sidecar(tokens, symbols))
+            read_back = read_token_lines(tokens.read_text().splitlines())
+            attach_sidecar(tokens, read_back)
+            return [
+                (s.pitch, s.position, str(s.notation.tie))
+                for s in read_back
+                if s.rhythm.startswith("note") and s.notation is not None
+            ]
+
+    def test_one_simultaneity_across_both_staves_keeps_every_label(self) -> None:
+        """The shape that broke: an eighth and a half note in the upper staff and a half
+        note in the lower, all sounding together, with the tie on the last of them."""
+        symbols = _chord(
+            _note("A4", TieState.NONE, "upper"),
+            _note("D3", TieState.NONE, "lower"),
+            _note("C5", TieState.START, "upper"),
+        )
+        symbols[0].rhythm = "note_8"
+        attached = dict(
+            ((pitch, position), tie) for pitch, position, tie in self._attached(symbols)
+        )
+        self.assertEqual("start", attached[("C5", "upper")])
+        self.assertEqual("none", attached[("A4", "upper")])
+        self.assertEqual("none", attached[("D3", "lower")])
+
+    def test_every_member_keeps_its_own_identity(self) -> None:
+        """Each notehead gets a distinguishable label, so any permutation shows up."""
+        states = (TieState.START, TieState.STOP, TieState.NONE, TieState.START_AND_STOP)
+        pitches = ("C4", "G4", "E5", "A3")
+        positions = ("lower", "upper", "upper", "lower")
+        symbols = _chord(
+            *(
+                _note(pitch, state, position)
+                for pitch, state, position in zip(pitches, states, positions, strict=True)
+            )
+        )
+        expected = {pitch: str(state) for pitch, state in zip(pitches, states, strict=True)}
+        self.assertEqual(expected, {pitch: tie for pitch, _pos, tie in self._attached(symbols)})
+
+    def test_the_writers_agree_about_the_order(self) -> None:
+        """Not an assertion about which order - an assertion that there is only one."""
+        symbols = _chord(
+            _note("C4", TieState.NONE, "lower"),
+            _note("G4", TieState.START, "upper"),
+            _note("E5", TieState.STOP, "upper"),
+        )
+        from_tokens = [
+            line.split()[1]
+            for line in token_lines_to_str(symbols).replace("&", "\n").splitlines()
+            if line.split()[0].startswith("note")
+        ]
+        self.assertEqual(from_tokens, [pitch for pitch, _pos, _tie in self._attached(symbols)])

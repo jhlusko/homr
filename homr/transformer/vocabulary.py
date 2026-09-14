@@ -673,6 +673,50 @@ def remove_duplicated_symbols(
     return _flatten_chords(chords)
 
 
+#: Built once: `symbol_sort_key` is called for every symbol of every chord written.
+_VOCAB: "Vocabulary | None" = None
+
+
+def _vocabulary() -> "Vocabulary":
+    global _VOCAB  # noqa: PLW0603
+    if _VOCAB is None:
+        _VOCAB = Vocabulary()
+    return _VOCAB
+
+
+def symbol_sort_key(symbol: EncodedSymbol) -> int:
+    """The order the token writer emits a chord's members in.
+
+    Lives here, beside `sort_token_chords`, because the token file and the notation
+    sidecar must agree about it exactly. They are paired by position and the sidecar's
+    only guard is a count, so a difference in order silently attaches one notehead's
+    notation to another - measured at 3,716 wrong tie states over 4,187 crops when the
+    two writers disagreed (docs/TIE_LABEL_FINDINGS.md).
+    """
+    vocab = _vocabulary()
+    position = 10000000 if symbol.position == "lower" else 0
+    if "note" in symbol.rhythm:
+        return (
+            vocab.pitch[symbol.pitch] * len(vocab.rhythm) + vocab.rhythm[symbol.rhythm] + position
+        )
+    if "rest" in symbol.rhythm:
+        return 100000 + vocab.rhythm[symbol.rhythm] + position
+    return 1000000 + position
+
+
+def serialized_chords(symbols: list[EncodedSymbol]) -> list[list[EncodedSymbol]]:
+    """Every chord in the order it will be serialized, members included.
+
+    **This is the single definition of that order.** `token_lines_to_str` writes the token
+    file from it and `write_sidecar` writes notation from it; anything that reconstructs
+    the order separately will drift, which is exactly how notation came to be attached to
+    the wrong noteheads. Both sorts are applied: `sort_token_chords` groups and orders by
+    the symbol's own comparison, then each chord is ordered by `symbol_sort_key`, whose
+    stability keeps the first sort as the tie-break.
+    """
+    return [sorted(chord, key=symbol_sort_key) for chord in sort_token_chords(symbols)]
+
+
 def sort_token_chords(
     symbols: list[EncodedSymbol], keep_chord_symbol: bool = False
 ) -> list[list[EncodedSymbol]]:

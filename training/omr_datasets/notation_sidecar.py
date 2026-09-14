@@ -33,7 +33,7 @@ from homr.transformer.structured_notation import (
     TieState,
     VoiceClass,
 )
-from homr.transformer.vocabulary import EncodedSymbol, sort_token_chords
+from homr.transformer.vocabulary import EncodedSymbol, serialized_chords
 
 SCHEMA_VERSION = "homr.notation-sidecar.v6"
 
@@ -94,21 +94,18 @@ def write_sidecar(token_path: str | Path, symbols: Sequence[EncodedSymbol]) -> P
     Absence of a sidecar is meaningful - it says this dataset predates the labels - so an
     empty one is not written just to have the file exist.
 
-    **Written in the order the token file will hold, not the order the caller passes.**
-    `token_lines_to_str` puts each chord through `sort_token_chords`, which ends
-    `return [sorted(chord) for chord in chords]` - so a chord's members are written to the
-    token file in sorted order while this used to write their notation in source order.
-    `attach_sidecar` pairs the two by position, so every chord whose sorted order differs
-    from its source order had its notation scrambled across its own members: a tie landing
-    on the neighbouring notehead, a slur endpoint on the wrong voice.
+    **Written in the order the token file will hold, not the order the caller passes**,
+    through the one definition of that order: `serialized_chords`.
 
-    That is precisely the "writer and reader disagree" this module's own docstring warns
-    about; the guard below counts symbols and cannot see an ordering difference. It was
-    worth 27.6% impossible tie labels in polyphonic staves against 5.7% in monophonic
-    ones - the whole of that gap, and neither of the two representation changes made
-    looking for it (voice, then onset index) touched it.
+    The two writers are paired by position and the guard below compares only *counts*, so
+    any difference in order silently attaches one notehead's notation to another. There
+    are two sorts - `sort_token_chords`, then `symbol_sort_key` inside each chord - and an
+    earlier version of this function applied only the first. Measured against raw source
+    tie states over all 4,187 crops (docs/TIE_LABEL_FINDINGS.md): 91.8% agreement writing
+    in source order, 80.0% applying one sort, **100% applying both**. Reconstructing the
+    order here instead of sharing it is what made a partial fix worse than no fix.
     """
-    ordered = [symbol for chord in sort_token_chords(list(symbols)) for symbol in chord]
+    ordered = [symbol for chord in serialized_chords(list(symbols)) for symbol in chord]
     records = [_encode(s.notation) for s in ordered if s.notation is not None]
     if not records:
         return None

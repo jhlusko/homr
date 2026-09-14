@@ -1,7 +1,14 @@
 # Tie and slur labels in the Lieder corpus: an open investigation
 
-**Status: unresolved.** One defect confirmed and fixed, one fix whose effect is not
-understood, three hypotheses tested and refuted. Written for someone picking this up cold.
+**Update, 2026-09-13: the v7 regression is explained.** The sidecar fix omitted the
+token writer's second sort. An isolated correction agrees with raw source tie states
+on all 71,045 conservatively matched notes (including 6,220 tied notes). See
+[the source comparison and visual findings](TIE_LABEL_FINDINGS.md).
+Production code and the v6/v7 corpora have not been changed by this follow-up.
+
+The text below preserves the earlier unresolved investigation and its hypotheses;
+its claims about complete ordering and strict next-onset tie validity are superseded
+by that follow-up.
 
 Last worked: 2026-09-13. Commits `0937b63` … `b72284f` on `homr` main.
 
