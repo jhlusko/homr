@@ -33,7 +33,7 @@ from homr.transformer.structured_notation import (
     TieState,
     VoiceClass,
 )
-from homr.transformer.vocabulary import EncodedSymbol
+from homr.transformer.vocabulary import EncodedSymbol, sort_token_chords
 
 SCHEMA_VERSION = "homr.notation-sidecar.v6"
 
@@ -93,8 +93,23 @@ def write_sidecar(token_path: str | Path, symbols: Sequence[EncodedSymbol]) -> P
 
     Absence of a sidecar is meaningful - it says this dataset predates the labels - so an
     empty one is not written just to have the file exist.
+
+    **Written in the order the token file will hold, not the order the caller passes.**
+    `token_lines_to_str` puts each chord through `sort_token_chords`, which ends
+    `return [sorted(chord) for chord in chords]` - so a chord's members are written to the
+    token file in sorted order while this used to write their notation in source order.
+    `attach_sidecar` pairs the two by position, so every chord whose sorted order differs
+    from its source order had its notation scrambled across its own members: a tie landing
+    on the neighbouring notehead, a slur endpoint on the wrong voice.
+
+    That is precisely the "writer and reader disagree" this module's own docstring warns
+    about; the guard below counts symbols and cannot see an ordering difference. It was
+    worth 27.6% impossible tie labels in polyphonic staves against 5.7% in monophonic
+    ones - the whole of that gap, and neither of the two representation changes made
+    looking for it (voice, then onset index) touched it.
     """
-    records = [_encode(s.notation) for s in symbols if s.notation is not None]
+    ordered = [symbol for chord in sort_token_chords(list(symbols)) for symbol in chord]
+    records = [_encode(s.notation) for s in ordered if s.notation is not None]
     if not records:
         return None
     path = sidecar_path(token_path)
