@@ -1,16 +1,20 @@
-# Tie and slur labels in the Lieder corpus: an open investigation
+# Tie and slur labels in the Lieder corpus
 
-**Update, 2026-09-13: the v7 regression is explained.** The sidecar fix omitted the
-token writer's second sort. An isolated correction agrees with raw source tie states
-on all 71,045 conservatively matched notes (including 6,220 tied notes). See
-[the source comparison and visual findings](TIE_LABEL_FINDINGS.md).
-Production code and the v6/v7 corpora have not been changed by this follow-up.
+**Status: the ordering defect is resolved.** `lieder-v8` agrees with the engraved source
+on **every one of 71,045 conservatively matched notes**, including all 6,220 that carry a
+tie state. Use `lieder-v8`; do not use v6 or v7.
 
-The text below preserves the earlier unresolved investigation and its hypotheses;
-its claims about complete ordering and strict next-onset tie validity are superseded
-by that follow-up.
+What remains open is a much smaller question about the *source's own* annotation (grace-note
+ties, and `<tied>` between same-pitch notes with ordinary attacks between them), and whether
+the slur and tie heads are worth retraining now the corpus is correct.
 
-Last worked: 2026-09-13. Commits `0937b63` … `b72284f` on `homr` main.
+Last worked: 2026-09-13. Commits `0937b63` … `1b3d625` on `homr` main.
+
+| corpus | schema | agreement with the source, on 6,220 matched tied notes |
+| --- | --- | ---: |
+| `lieder-v6` | v6 | 91.8% |
+| `lieder-v7` | v6 | 80.0% — **a regression; a partial fix** |
+| **`lieder-v8`** | v6 | **100%** |
 
 ---
 
@@ -170,7 +174,10 @@ This matters twice over:
 
 | thing | path |
 | --- | --- |
-| the audit | `training/omr_datasets/reference_label_audit.py` |
+| the source comparison (authoritative) | `training/omr_datasets/source_tie_label_audit.py` |
+| the internal audit | `training/omr_datasets/reference_label_audit.py` |
+| the ordering experiment CLI | `training/omr_datasets/tie_order_probe.py` |
+| the serialization order | `homr/transformer/vocabulary.py` (`serialized_chords`) |
 | tie extraction | `training/omr_datasets/structured_notation_parser.py` (`_tie`, `NotationExtractor`) |
 | sidecar read/write | `training/omr_datasets/notation_sidecar.py` |
 | token file writer | `training/transformer/training_vocabulary.py` (`token_lines_to_str`) |
@@ -183,7 +190,8 @@ Corpora built during this investigation, all from the same detection run:
 ```
 homr-artifacts/lieder-v5/pairs   schema v5   voice only
 homr-artifacts/lieder-v6/pairs   schema v6   voice + onset index
-homr-artifacts/lieder-v7/pairs   schema v6   + the sidecar ordering fix
+homr-artifacts/lieder-v7/pairs   schema v6   + a PARTIAL ordering fix - worst of the four
+homr-artifacts/lieder-v8/pairs   schema v6   + the shared serialization order - USE THIS
 ```
 
 Each holds 4,187 pairs. `_build` (pages, systems, ground truth) lives in `lieder-v6` and
@@ -206,10 +214,26 @@ changes to `homr` do not reach the build until you re-pin.** That cost one waste
 
 ### Auditing
 
+Two audits, and they answer different questions.
+
+**Against the source** - the one that matters, and the one that settled this:
+
 ```bash
 cd ~/workspace/homr
+.venv/bin/python -m training.omr_datasets.source_tie_label_audit \
+  --alignment ../lieder-omr-data/provenance/alignment_v4_boundary_safe.json \
+  --build ../homr-artifacts/lieder-v8/_build \
+  --corpus ../homr-artifacts/lieder-v8/pairs \
+  --out /tmp/source-comparison.json
+```
+
+**Internal consistency** - whether a label can pair within its own crop. Useful for a
+quick read, but it cannot tell a wrong label from a label on a note the crop does not
+contain:
+
+```bash
 PYTHONPATH=. .venv/bin/python -m training.omr_datasets.reference_label_audit \
-  --corpus ~/workspace/homr-artifacts/lieder-v7/pairs --limit 1500
+  --corpus ~/workspace/homr-artifacts/lieder-v8/pairs --limit 1500
 ```
 
 ---
@@ -300,48 +324,88 @@ the 152.
 
 ---
 
-## 6. The open question, and the test that settles it
+## 6. How it was resolved
 
-**Why did correcting the sidecar order make the audit worse?**
+### 6.1 The writer sorts twice
 
-Two readings, and they are distinguishable:
+`token_lines_to_str` runs `sort_token_chords` (ordering by the symbol's own comparison)
+and then `_chord_to_str` sorts each chord **again** by `_symbol_to_sortable`. The fix in
+4.3 applied only the first, which is why it repaired the traced F4 chord and still made
+the corpus worse overall.
 
-1. **The metric was flattered by the scrambling.** A tie start landing on the wrong chord
-   member can *accidentally* satisfy the constraint when that member's pitch happens to
-   recur. Correcting the alignment would then expose genuinely unpairable labels that were
-   previously hidden - so the number rising is consistent with the fix being right.
-2. **The fix broke something else.** Possible if `write_sidecar`'s ordering does not in
-   fact match what the token file holds for some input shape.
+`serialized_chords` in `homr/transformer/vocabulary.py` is now the single definition of
+that order - both sorts, the second stable so the first remains the tie-break. Both the
+token writer and `write_sidecar` use it, so neither can reconstruct the order separately
+and drift. Commit `1b3d625`.
 
-### The decisive test
+### 6.2 Measured against the source, not against the corpus
 
-**Stop comparing the corpus to itself.** Every number above is internal consistency; the
-audit asks whether a label can pair within the crop, not whether it matches the page.
+`training/omr_datasets/source_tie_label_audit.py` reads the frozen alignment, the archived
+`.mxl`, and the crop's tokens with the standard library alone. It does **not** use HOMR's
+MusicXML parser, the sidecar's voice or onset labels, the tie pairing rules, or the
+serialization order, so it cannot confirm a fix with the fix's own machinery. Notes are
+matched conservatively - positional measure, staff, written pitch and rhythm must identify
+exactly one source note and one token note - and anything ambiguous stays unscored.
 
-For a sample of crops, compare against the **source MusicXML** the alignment names:
+```
+                tied notes exact   false ties   start missed   stop missed
+lieder-v6         5,709 ( 91.8%)          615            268           223
+lieder-v7         4,974 ( 80.0%)        1,070            623           621
+lieder-v8         6,220 (100.0%)            0              0             0
+```
 
-1. Read `provenance/alignment_v4_boundary_safe.json` (in the `lieder-omr-data` repo, see
-   1.6 and 1.7) for
-   `scores[SCORE_ID]["systems"]`, find the entry whose `scan_index` matches the crop's
-   `sysN`, and take `start_measure` / `end_measure`.
-2. Load the source `.mxl` via `_build/mxl-tree.json` (written by the build; maps an
-   OpenScore score key to a path inside the extracted archive) keyed by `lieder_key` from
-   `_build/ground_truth/SCORE_ID.json`; the crop's `-vN` suffix is the part index within
-   that score.
-3. For every `<tied type="start">` the source records in that measure range, find the
-   corresponding notehead in the crop's tokens (same staff, same pitch, same position in
-   the voice) and check whether the sidecar records the tie **on that note**.
-4. Report agreement for `lieder-v6` and `lieder-v7` separately.
+**This is the standard to use from here.** Every percentage the internal audit produced
+before 2026-09-13 predates the corrections in 6.3 and should not be quoted.
 
-Whichever corpus agrees with the source more often is the better one, and the answer does
-not depend on the audit's own notion of pairability. A worked example of steps 1-2 is in
-this session's transcript; the alignment entry for `IMSLP10416` `sys6` is
-`start_measure 27, end_measure 31`, part index 1, source `lc5946872.mxl`.
+### 6.3 The internal audit had four faults of its own
 
-Only after that is settled is it worth asking whether the residue is the alignment stage
-dropping notes, or the OpenScore labels themselves.
+All four were found by the follow-up agent reading the code, and all four are now fixed:
 
----
+- **Accidentals were ignored**, so E-flat4 could pair with E-natural4. `_same_pitch` now
+  requires the written accidental not to *contradict* - equal, or unstated on either side,
+  since a tied note does not restate its neighbour's accidental.
+- **Tie stops were not matched.** Any earlier same-pitch start satisfied any later stop,
+  with no adjacency and no consumption, so a label counted joinable on the strength of a
+  different tie. Starts and stops are now matched through the same next-simultaneity rule,
+  each start used once.
+- **A stop's edge case was wrong.** It was called orphaned unless it was the first note of
+  the entire crop, so a lower-staff tie continuing across a system break was charged as a
+  defect whenever any upper-staff note preceded it. It now asks whether anything on the
+  note's own staff *and voice* sounds before it.
+- **Slur slots used one global open state**, although extraction allocates them per source
+  voice - so an upper-staff start could be closed by a lower-staff stop. Now keyed by
+  (staff, voice, slot).
+
+A fifth check was **removed** rather than fixed: the token-versus-sidecar endpoint
+comparison. The flat slur field is hoisted and deduplicated per staff and simultaneity
+while the sidecar records an endpoint per notehead; the two are not equivalent by design,
+so a difference is expected rather than diagnostic. Its figures (18.3%, then 10.7%) were
+quoted in this project as converter self-contradiction and were mostly that design.
+
+With the audit corrected, it ranks the corpora the way the source comparison does:
+
+```
+                ties impossible   ties orphaned   slurs orphaned   slurs unclosed
+lieder-v6                  7.6%            9.3%             2.2%             1.8%
+lieder-v7                 16.2%           20.1%            12.9%             4.8%
+lieder-v8                  2.0%            1.8%             2.2%             1.6%
+```
+
+### 6.4 What is left, and it is not ordering
+
+The residue on v8 - 46 impossible starts and 43 orphaned stops in 1,500 crops - is a
+different kind of thing, and two kinds are already identified:
+
+- **Grace-note ties.** `IMSLP154110-sys3-v0` has small E5-F#5 grace pairs leading to
+  principal E5 notes; the source ties the grace E5 to the principal E5 *across* the grace
+  F#5. The audit checks the next simultaneity and calls the start impossible. This needs
+  grace-aware interpretation, not reordering.
+- **Source `<tied>` across ordinary attacks.** `IMSLP154070-sys4-v1` encodes same-pitch
+  endpoints as `<tied>` with intervening notes of ordinary duration in the same voice. The
+  scan shows arcs but does not establish sustained sound. The corrected sidecar faithfully
+  reproduces the source here; the question is what the source means.
+
+Neither is a corpus defect in the sense the rest of this document is about.
 
 ## 7. Traps
 
@@ -362,11 +426,23 @@ dropping notes, or the OpenScore labels themselves.
 
 ## 8. Lessons from how this went
 
-Three hypotheses were formed from correlations and two of them were shipped as
-representation changes before being tested against ground truth. Each was plausible, each
-explained the polyphonic/monophonic split, and neither moved the number. The one real
-defect was found by **opening the image, reading the bar, and diffing the crop's tokens
-against the source measures** - which cost one afternoon and could have come first.
+Three hypotheses were formed from correlations and two were shipped as representation
+changes before being tested against ground truth. Each was plausible, each explained the
+polyphonic/monophonic split, and neither moved the number. The real defect was found by
+**opening the image, reading the bar, and diffing the crop's tokens against the source
+measures** - which could have come first.
 
-The pattern to avoid: measuring a corpus against itself, finding a gap, and inventing a
-mechanism for the gap. The reference has to enter the comparison.
+Then the fix for it was shipped half-applied, because the writer sorts twice and only one
+sort was found. The internal audit correctly reported that as worse; it was read as the
+metric being flattered rather than as the fix being wrong, because a mechanism had already
+been decided on. **An unwelcome number from a measurement you built is evidence, not
+noise.**
+
+The tests written alongside that fix all passed on the defective writer: one derived its
+expectation from the same sort it was testing, and the "grand staff" one put the two hands
+in *separate* simultaneities, so it could not see a cross-staff permutation. A test built
+from the same assumption as the code confirms the assumption.
+
+The pattern to avoid throughout: measuring a corpus against itself, finding a gap, and
+inventing a mechanism for the gap. The reference has to enter the comparison - which is
+what `source_tie_label_audit.py` finally did.

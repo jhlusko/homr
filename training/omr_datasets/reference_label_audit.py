@@ -60,12 +60,17 @@ def _line(voices: list[str], notes: list, a: int, b: int) -> bool:
     return voices[a] == voices[b]
 
 
-def _notes(tokens_path: Path) -> list[tuple[str, bool, int, str]]:
-    """(pitch, is_rest, chord id, staff) per note-bearing entry, chord members expanded.
+def _notes(tokens_path: Path) -> list[tuple[str, bool, int, str, str]]:
+    """(pitch, is_rest, chord id, staff, lift) per note-bearing entry, chords expanded.
 
     The staff is not optional on a grand staff. A tie start on the upper staff whose next
     chord belongs to the lower one has no partner *there*, and an audit that ignores the
     staff reports the corpus as broken when it is only two-handed.
+
+    The lift - the written accidental - is carried because letter and octave alone do not
+    identify a sounding pitch: E4 and E-flat4 are different notes and a tie cannot join
+    them. It is compared leniently (see `_same_pitch`), because a tied note does not
+    restate its neighbour's accidental.
     """
     out: list[tuple[str, bool, int, str]] = []
     chord = 0
@@ -80,8 +85,29 @@ def _notes(tokens_path: Path) -> list[tuple[str, bool, int, str]]:
             if len(parts) < 2 or not parts[0].startswith(("note", "rest")):
                 continue
             staff = parts[5] if len(parts) >= 6 else "upper"
-            out.append((parts[1], parts[0].startswith("rest"), chord, staff))
+            lift = parts[2] if len(parts) >= 3 else "_"
+            out.append((parts[1], parts[0].startswith("rest"), chord, staff, lift))
     return out
+
+
+#: Lifts that state nothing, so they cannot contradict a neighbour's accidental.
+_UNSTATED_LIFTS = {"_", ".", "", "null"}
+
+
+def _same_pitch(notes: list, a: int, b: int) -> bool:
+    """Whether two entries are the same sounding pitch, as far as the tokens can say.
+
+    Letter and octave must match. The written accidental is then required not to
+    *contradict*: equal, or unstated on either side. A tie's second note does not restate
+    the accidental, so demanding equality would call correct labels impossible; ignoring
+    the lift entirely - which this audit used to do - lets E-flat4 pair with E-natural4.
+    """
+    if notes[a][0] != notes[b][0]:
+        return False
+    first, second = notes[a][4], notes[b][4]
+    if first in _UNSTATED_LIFTS or second in _UNSTATED_LIFTS:
+        return True
+    return first == second
 
 
 def _token_slur_endpoints(tokens_path: Path) -> int:
@@ -107,20 +133,22 @@ def _strictly_before(
     return notes[earlier][2] < notes[later][2]
 
 
-def _tie_partner(
-    notes: list[tuple[str, bool, int, str]],
+def _tie_partner_index(
+    notes: list,
     index: int,
     voices: list[str] | None = None,
     onsets: list[int | None] | None = None,
-) -> str | None:
-    """The pitch a tie at `index` would join, or None if the staff or a rest ends it.
+) -> int | None:
+    """The entry a tie at `index` would join, or None if a rest or the staff ends it.
 
-    Searched within this note's own staff: a tie joins one pitch on one staff, and the
-    next chord in a flattened grand staff is as likely to be the other hand's.
+    Searched within this note's own staff and voice: a tie joins one pitch on one line,
+    and the next simultaneity in a flattened grand staff is as likely to be the other
+    hand's. Among the members of that simultaneity, the one of the same pitch is returned
+    when there is one - the tie's partner is a notehead, not a chord.
     """
-    pitch, _rest, chord, staff = notes[index]
     marks = voices or ["unknown"] * len(notes)
     indices = onsets or [None] * len(notes)
+    chord = notes[index][2]
 
     def same(other: int) -> bool:
         return _line(marks, notes, index, other)
@@ -142,9 +170,57 @@ def _tie_partner(
             continue
         if notes[later][1]:
             return None
-        members = [notes[k][0] for k in range(later, len(notes)) if together(k, later) and same(k)]
-        return pitch if pitch in members else (members[0] if members else None)
+        members = [k for k in range(later, len(notes)) if together(k, later) and same(k)]
+        for member in members:
+            if _same_pitch(notes, index, member):
+                return member
+        return members[0] if members else None
     return None
+
+
+def _tie_partner(
+    notes: list,
+    index: int,
+    voices: list[str] | None = None,
+    onsets: list[int | None] | None = None,
+) -> str | None:
+    """The pitch `_tie_partner_index` lands on, for callers that only compare pitches."""
+    partner = _tie_partner_index(notes, index, voices, onsets)
+    return None if partner is None else notes[partner][0]
+
+
+def _first_of_its_line(notes: list, voices: list[str], index: int) -> bool:
+    """Whether nothing on this note's own staff and voice sounds before it.
+
+    A stop there has its start in the previous system. The old test asked only whether the
+    note was the first of the entire crop, so a lower-staff tie continuing across a system
+    break was reported as orphaned whenever any upper-staff note preceded it.
+    """
+    return not any(
+        _line(voices, notes, other, index) and notes[other][2] < notes[index][2]
+        for other in range(index)
+    )
+
+
+def _match_tie_endpoints(
+    records: list[dict], notes: list, voices: list[str], onsets: list[int | None]
+) -> set[int]:
+    """Stops that a start of the same pitch actually reaches, each start used once.
+
+    Adjacency is enforced through `_tie_partner`, which is the same next-simultaneity rule
+    the starts are judged by - so a start and its stop agree about what "next" means
+    instead of being scored by two different rules.
+    """
+    reached: set[int] = set()
+    for index, record in enumerate(records):
+        if record.get("tie", "none") not in OPENS:
+            continue
+        partner = _tie_partner_index(notes, index, voices, onsets)
+        if partner is None or partner in reached:
+            continue
+        if records[partner].get("tie", "none") in CLOSES and _same_pitch(notes, index, partner):
+            reached.add(partner)
+    return reached
 
 
 def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
@@ -163,38 +239,42 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
     onsets = _onsets(records)
     counts["voice_stated"] += sum(1 for v in voices if v != "unknown")
 
+    # Which stops a start actually reaches. Walked per line and *consumed*, so one start
+    # answers one stop: the old test let any earlier same-pitch start satisfy any later
+    # stop, which counts a label joinable on the strength of a different tie entirely.
+    matched_stops = _match_tie_endpoints(records, notes, voices, onsets)
+
     # Ties, against the constraint that defines them.
     for index, record in enumerate(records):
         state = record.get("tie", "none")
         if state == "none":
             continue
         counts["tie_endpoints"] += 1
-        partner = _tie_partner(notes, index, voices, onsets)
+        partner = _tie_partner_index(notes, index, voices, onsets)
         if state in OPENS:
             if partner is None:
                 counts["tie_start_at_edge"] += 1
-            elif partner == notes[index][0]:
+            elif _same_pitch(notes, index, partner):
                 counts["tie_start_joinable"] += 1
             else:
                 counts["tie_start_impossible"] += 1
         if state in CLOSES:
-            before = [
-                i
-                for i in range(index)
-                if records[i].get("tie", "none") in OPENS
-                and notes[i][0] == notes[index][0]
-                and _line(voices, notes, i, index)
-                and _strictly_before(onsets, notes, i, index)
-            ]
-            if not before:
-                counts["tie_stop_orphan" if index else "tie_stop_at_edge"] += 1
-            else:
+            if index in matched_stops:
                 counts["tie_stop_joinable"] += 1
+            elif _first_of_its_line(notes, voices, index):
+                # Its partner is in the previous system, which this crop does not hold -
+                # ordinary engraving, the same reasoning as a beam open at a crop edge.
+                counts["tie_stop_at_edge"] += 1
+            else:
+                counts["tie_stop_orphan"] += 1
 
-    # Slurs, per slot.
+    # Slurs, per slot AND per line. `structured_notation_parser` allocates slots
+    # independently for each source voice, so one global open-state per slot merged two
+    # voices' spans into one: an upper-staff start could be closed by a lower-staff stop
+    # and both were then counted as paired.
     width = max((len(r.get("slurs", [])) for r in records), default=0)
+    open_in: dict[tuple[str, str, int], int] = {}
     for slot in range(width):
-        open_at = None
         for index, record in enumerate(records):
             slurs = record.get("slurs", [])
             if slot >= len(slurs):
@@ -203,44 +283,33 @@ def audit(tokens_path: Path, sidecar_path: Path, counts: Counter) -> None:
             if event == "none":
                 continue
             counts["slur_endpoints"] += 1
+            key = (notes[index][3], voices[index], slot)
             if event in CLOSES:
-                if open_at is None:
-                    counts["slur_stop_orphan" if index else "slur_stop_at_edge"] += 1
-                else:
+                if key in open_in:
                     counts["slur_paired"] += 1
-                    open_at = None
+                    del open_in[key]
+                elif _first_of_its_line(notes, voices, index):
+                    counts["slur_stop_at_edge"] += 1
+                else:
+                    counts["slur_stop_orphan"] += 1
             if event in OPENS:
-                open_at = index
-        if open_at is not None:
-            counts[
-                "slur_start_at_edge" if open_at == len(records) - 1 else "slur_start_unclosed"
-            ] += 1
+                open_in[key] = index
+    for key, index in open_in.items():
+        last = max(
+            (other for other in range(len(notes)) if _line(voices, notes, other, index)),
+            default=index,
+        )
+        counts["slur_start_at_edge" if index == last else "slur_start_unclosed"] += 1
 
-    # What the flat field WOULD hold, not how many endpoints exist. The converter maps
-    # both `<tied>` and `<slur>` to "slur" + type and then dedupes
-    # (`music_xml_parser`: `slurs = list(set(slurs))`), because the six-branch vocabulary
-    # collapses ties and slurs into one field and "slurStart_slurStart" is unrenderable.
-    # So a note carrying a tie start and a slur start is one token and two sidecar
-    # endpoints, by design. Comparing raw totals counted that as a disagreement.
-    sidecar_total = 0
-    for record in records:
-        kinds = set()
-        for event, _side in record.get("slurs", []):
-            if event in OPENS:
-                kinds.add("start")
-            if event in CLOSES:
-                kinds.add("stop")
-        tie = record.get("tie", "none")
-        if tie in OPENS:
-            kinds.add("start")
-        if tie in CLOSES:
-            kinds.add("stop")
-        sidecar_total += len(kinds)
-    tokens_total = _token_slur_endpoints(tokens_path)
-    counts["sidecar_endpoints"] += sidecar_total
-    counts["token_endpoints"] += tokens_total
-    if sidecar_total != tokens_total:
-        counts["token_sidecar_disagree"] += 1
+    # The token/sidecar endpoint comparison that used to sit here has been removed.
+    # It could not mean what it was read to mean: the flat slur field is hoisted and
+    # deduplicated per staff and simultaneity, while the sidecar records an endpoint per
+    # notehead. The two are not equivalent representations by design, so a difference is
+    # expected rather than diagnostic - and the figures it produced (18.3%, then 10.7%
+    # after one correction) were quoted in this project as converter self-contradiction
+    # when they were mostly that design. A permutation of the sidecar leaves them
+    # untouched, which is what finally showed the check was measuring neither ordering
+    # nor agreement.
 
 
 def main() -> None:
@@ -289,10 +358,9 @@ def main() -> None:
             print(f"    {label:<42}{counts[key]:>8,}  ({counts[key]/max(slurs,1):.1%})")
 
     print(
-        f"\n  tokens vs sidecar: {counts['token_endpoints']:,} token endpoints, "
-        f"{counts['sidecar_endpoints']:,} sidecar endpoints; "
-        f"{counts['token_sidecar_disagree']:,} of {files:,} files disagree "
-        f"({counts['token_sidecar_disagree']/max(files,1):.1%})"
+        "\n  NOTE: this audit checks only whether a label can pair WITHIN its crop. It"
+        "\n  cannot tell a wrong label from a label on a note the crop does not contain."
+        "\n  For agreement with the engraved source, use source_tie_label_audit.py."
     )
 
 
