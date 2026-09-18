@@ -124,3 +124,43 @@ class TestTheFloor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheBoxAreaFloor(unittest.TestCase):
+    """A 2x2 blob is not a detection.
+
+    `boxes_from_probs` defaulted to `min_area=4`, so argmax speckle on a 2500x3500 page
+    became thousands of boxes - 3,749 a page on the released checkpoint against ground
+    truth holding one or two.
+    """
+
+    def test_speckle_does_not_become_boxes(self) -> None:
+        import numpy as np
+
+        from training.ocr.detector_inference import boxes_from_probs
+        from training.ocr.detector_masks import CLASS_INDEX
+
+        classes = len(CLASS_INDEX) + 1
+        probs = np.zeros((classes, 200, 200), dtype=np.float32)
+        probs[0] = 1.0
+        rng = np.random.default_rng(0)
+        for _ in range(60):  # single-pixel speckle
+            y, x = rng.integers(0, 200, size=2)
+            probs[CLASS_INDEX["Tempo"], y, x] = 2.0
+        probs[CLASS_INDEX["Tempo"], 40:70, 30:120] = 2.0  # one real region
+
+        found = boxes_from_probs(probs)
+        self.assertEqual(1, len(found), f"speckle leaked through: {len(found)} boxes")
+        self.assertEqual("Tempo", found[0].label)
+
+    def test_the_floor_is_still_overridable(self) -> None:
+        import numpy as np
+
+        from training.ocr.detector_inference import boxes_from_probs
+        from training.ocr.detector_masks import CLASS_INDEX
+
+        probs = np.zeros((len(CLASS_INDEX) + 1, 50, 50), dtype=np.float32)
+        probs[0] = 1.0
+        probs[CLASS_INDEX["Tempo"], 10:14, 10:14] = 2.0
+        self.assertEqual(0, len(boxes_from_probs(probs)))
+        self.assertEqual(1, len(boxes_from_probs(probs, min_area=4)))

@@ -19,6 +19,26 @@ was never learned at all, which is the case that shipped.
 
 **Run it before pinning anything.** `--json` makes it usable from a release script; the
 exit status is 1 when the gate fails, so it can gate a pipeline without parsing output.
+
+**Passing this gate does not mean a checkpoint is usable.** Measured at full-page box
+level over the same 8 pages, with `min_area=200`:
+
+    e4 (released, REFUSED here)   630 predicted   2.7% precision   85% recall
+    e0 (PASSES, best history)     894 predicted   0.0% precision    0% recall
+    e5 (PASSES)                   158 predicted   6.3% precision   50% recall
+
+`e0` scores 0.875-0.99 validation IoU on every class and recovers **not one correct box**.
+Per-class patch IoU does not predict page-level detection - which is what the roadmap
+means by "patch IoU is not admissible; it hid this three times", now with a number on it.
+So this gate is a floor on one failure mode, not a release criterion: it catches a class
+that never learned, and says nothing about whether the ones that did are any use.
+
+*Known limitation.* `Fingering` reads exactly 0.875 in five of six runs, `StaffText` 0.827
+in three, `Expression` 0.806 in two - identical figures across independent runs mean very
+small validation support, so a 0.000 may be one missed instance rather than a class never
+learned. The history does not record per-class support; until it does, a refusal is a
+reason to look, not proof on its own. For the released `non-lyric-text` the refusal is
+independently confirmed: 0% precision and recall for `Tempo` over 264 boxes on 299 pages.
 """
 
 # flake8: noqa: T201

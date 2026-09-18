@@ -97,7 +97,26 @@ def predict_mask(
     return prob_sum / coverage[None, :, :]
 
 
-def boxes_from_probs(probs: np.ndarray, min_area: int = 4) -> list[PredictedBox]:
+#: Smallest region worth calling a box. A text box in this corpus is hundreds of pixels;
+#: the default used to be 4, which admits a 2x2 blob, so argmax speckle on a 2500x3500 page
+#: became thousands of "detections" - 3,749 per page on the released non-lyric-text
+#: checkpoint, against ground truth holding one or two.
+#:
+#: Measured over four pages, sweeping this value with each page's mask computed once:
+#:
+#:      min_area   predicted   precision
+#:             4       6,252        0.1%
+#:           200         331        1.2%
+#:           800         170        1.8%
+#:          2000          94        0.0%   (drops every true box)
+#:
+#: 200 is where the fragment count falls by 20x while every matched box survives. It does
+#: not rescue a bad checkpoint - that sweep was run on one - but it stops a good one from
+#: being scored against its own speckle.
+MIN_BOX_AREA = 200
+
+
+def boxes_from_probs(probs: np.ndarray, min_area: int = MIN_BOX_AREA) -> list[PredictedBox]:
     """One box per connected foreground region, per class - mirrors
     `detector_masks.rasterize`'s ground-truth shape so the two are directly comparable.
     """
