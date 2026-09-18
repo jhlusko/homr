@@ -41,7 +41,31 @@ from training.ocr.detector_masks import CLASS_INDEX, CLASS_ORDER
 PATCH_SIZE = 320
 
 #: Share of drawn patches centred on a box rather than a random location.
+#:
+#: **0.7 is a 5x prior shift against what inference meets, and it is why the released
+#: detectors are unusable on whole pages.** A sliding window is what `detector_inference`
+#: actually runs; measured over 2,400 uniformly drawn 320x320 patches across the 299
+#: ground-truth pages, **14.0%** of them contain any text at all, and when one does the
+#: text covers 3.62% of it (median 2.48%). Training at 0.7 teaches a prior in which text
+#: is everywhere, and `argmax` at inference applies that prior to a page which is 0.18%
+#: text by area. Measured consequence, at full-page box level:
+#:
+#:                     called text   truly text   over-prediction   box precision
+#:     e0                    5.2%        0.18%               29x            0.0%
+#:     e4 (released)        31.4%        0.18%              172x            2.7%
+#:
+#: A decision threshold does not undo it - sweeping a probability floor to 0.999 reaches
+#: 2.1% precision at best, because the model is confidently wrong rather than uncertain.
+#: The prior has to be fixed where it is created, which is here.
+#:
+#: `MEASURED_SLIDING_WINDOW_RATIO` is what a matched sampler would use. This default is
+#: left at its historical value deliberately: changing it silently would make every
+#: existing checkpoint's history incomparable, and `--positive-ratio` already exists.
 POSITIVE_RATIO = 0.7
+
+#: What a sliding window over a real page actually meets - see above. The number to pass
+#: as `--positive-ratio` when retraining, or to start a sweep from.
+MEASURED_SLIDING_WINDOW_RATIO = 0.14
 
 #: Fraction of the patch size a positive sample's centre may drift from the box centre, so
 #: the box is not always dead-centre - a detector trained on perfectly centred boxes only
