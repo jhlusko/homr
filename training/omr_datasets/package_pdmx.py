@@ -1,9 +1,14 @@
 """Package the converted PDMX corpus into verifiable shards for distribution.
 
-The corpus is ~50K windows in three files each (image, tokens, sidecar). Distributing it
-as one archive is hostile to a slow or intermittent connection - a failure at 90% costs
-the whole download - so it goes out as fixed-size shards with a per-shard checksum, and a
-consumer can re-fetch only the shards that failed.
+The corpus is ~50K windows in three files each (image, tokens, sidecar). Sharding is not
+about surviving a dropped connection - fetch_source.py already resumes a single archive
+with a .part file and a Range header, which is how the 774MB Lieder snapshot is fetched
+today. Two things a monolith cannot do:
+
+* **Fetch one split.** The validation shard is 142MB against 1.94GB, and evaluating a
+  released checkpoint needs nothing else.
+* **Localise a bad download.** A digest mismatch invalidates one 280MB shard rather than
+  the whole corpus.
 
 Shards never straddle a score. convert_pdmx cuts each score into overlapping windows, so
 two windows of one score share an engraving and often the same bars; keeping a score whole
@@ -64,7 +69,7 @@ def _shard_scores(rows: list[str], target_bytes: int, root: Path) -> list[list[s
     return shards
 
 
-def _write_shard(rows: list[str], root: Path, out: Path, compress: str) -> int:
+def _write_shard(rows: list[str], root: Path, out: Path, compress: str, level: int = 10) -> int:
     with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
         tar_path = Path(tmp.name)
     try:
@@ -74,7 +79,7 @@ def _write_shard(rows: list[str], root: Path, out: Path, compress: str) -> int:
                     tar.add(root / name, arcname=name)
         if compress == "zstd":
             subprocess.run(  # noqa: S603
-                ["pzstd", "-q", "-19", "-f", "-o", str(out), str(tar_path)],
+                ["pzstd", "-q", f"-{level}", "-f", "-o", str(out), str(tar_path)],
                 check=True,
             )
         else:
@@ -84,7 +89,15 @@ def _write_shard(rows: list[str], root: Path, out: Path, compress: str) -> int:
     return out.stat().st_size
 
 
-def package(root: Path, index_dir: Path, dest: Path, target_mb: int, compress: str) -> dict:
+def package(
+    root: Path,
+    index_dir: Path,
+    dest: Path,
+    *,
+    target_mb: int,
+    compress: str,
+    level: int = 10,
+) -> dict:
     dest.mkdir(parents=True, exist_ok=True)
     shard_dir = dest / "shards"
     shard_dir.mkdir(exist_ok=True)
@@ -103,7 +116,7 @@ def package(root: Path, index_dir: Path, dest: Path, target_mb: int, compress: s
         for n, group in enumerate(groups):
             name = f"{split}-{n:04d}{suffix}"
             out = shard_dir / name
-            size = _write_shard(group, root, out, compress)
+            size = _write_shard(group, root, out, compress, level)
             manifest["shards"].append(
                 {
                     "name": name,
@@ -136,9 +149,17 @@ def main() -> None:
     parser.add_argument("--dest", type=Path, required=True)
     parser.add_argument("--target-mb", type=int, default=500, help="approximate shard size")
     parser.add_argument("--compress", choices=("zstd", "none"), default="zstd")
+    parser.add_argument("--level", type=int, default=10, help="zstd level")
     args = parser.parse_args()
 
-    manifest = package(args.root, args.index_dir, args.dest, args.target_mb, args.compress)
+    manifest = package(
+        args.root,
+        args.index_dir,
+        args.dest,
+        target_mb=args.target_mb,
+        compress=args.compress,
+        level=args.level,
+    )
     print(json.dumps(manifest["splits"], indent=2))
     total = sum(s["bytes"] for s in manifest["shards"])
     print(f"{len(manifest['shards'])} shards, {total / 1e9:.2f} GB")
