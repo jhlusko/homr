@@ -291,18 +291,26 @@ def _target_names(config: Any) -> list[str]:
 def _cap_worker_threads(worker_id: int) -> None:
     """Hold each forked loader worker to one intra-op thread.
 
-    torch sizes its intra-op pool to the core count, and a forked worker inherits that
-    sizing. On a 24-core box, 16 workers came up holding 24 threads each, every worker read
-    about 34MB and the loader stopped: no progress, no error, GPU at 0% with the model
-    resident, which reads exactly like a slow run. Four workers deadlocked the same way, so
-    it is the fork-plus-threadpool interaction rather than worker count.
+    **This is thread hygiene, not a proven fix for the stall below.** Measured on the 24-core
+    box: with it, a forked loader at 4 workers produced its first batch in 18.2s and under 15
+    batches in the next 50s - no better than the same loader without it, and no better than
+    in-process loading. Whatever stops the forked path is not (or not only) thread
+    oversubscription. Do not cite this as the cure.
+
+    What was observed: on a 24-core box, 16 workers came up holding 24 threads each (torch
+    sizes its intra-op pool to the core count and a fork inherits it, so 384 threads), every
+    worker read about 34MB and then the process read 0 bytes in 24 seconds with the GPU at 0%
+    and the model resident. Four workers behaved the same way. That is a stall, but the cause
+    was never isolated - capping the threads does not clear it, so the 384 threads were a
+    symptom or a coincidence rather than the mechanism.
 
     cv2 is already held at zero threads in training/transformer/image_utils.py, which is why
     the usual OpenCV fix was not the answer here. OMP_NUM_THREADS does not cover it either -
     torch decides this one itself.
 
-    A loader worker decodes one image at a time; intra-op parallelism buys it nothing and
-    costs the deadlock.
+    Keeping it anyway: a loader worker decodes one image at a time, so intra-op parallelism
+    buys it nothing and 384 threads on a 24-core box is worth not doing regardless. Until the
+    forked path is understood, the runs use --workers 0, which does make progress.
     """
     torch.set_num_threads(1)
 
