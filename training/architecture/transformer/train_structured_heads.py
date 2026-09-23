@@ -288,6 +288,25 @@ def _target_names(config: Any) -> list[str]:
     return target_names(config.structured_beam_levels, config.structured_slur_slots)
 
 
+def _cap_worker_threads(worker_id: int) -> None:
+    """Hold each forked loader worker to one intra-op thread.
+
+    torch sizes its intra-op pool to the core count, and a forked worker inherits that
+    sizing. On a 24-core box, 16 workers came up holding 24 threads each, every worker read
+    about 34MB and the loader stopped: no progress, no error, GPU at 0% with the model
+    resident, which reads exactly like a slow run. Four workers deadlocked the same way, so
+    it is the fork-plus-threadpool interaction rather than worker count.
+
+    cv2 is already held at zero threads in training/transformer/image_utils.py, which is why
+    the usual OpenCV fix was not the answer here. OMP_NUM_THREADS does not cover it either -
+    torch decides this one itself.
+
+    A loader worker decodes one image at a time; intra-op parallelism buys it nothing and
+    costs the deadlock.
+    """
+    torch.set_num_threads(1)
+
+
 def build_batches(
     index: Path,
     config: Any,
@@ -328,6 +347,7 @@ def build_batches(
         shuffle=shuffle,
         num_workers=workers,
         collate_fn=lambda items: collate(items, names),
+        worker_init_fn=_cap_worker_threads if workers else None,
     )
     return loader, len(wrapped)
 
