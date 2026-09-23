@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from training.omr_datasets.package_pdmx import _shard_scores, package
+from training.omr_datasets.package_pdmx import SCORE_PATTERNS, _score_key, _shard_scores, package
 
 
 def _window(root: Path, score: str, window: int, size: int = 1000) -> str:
@@ -84,3 +84,27 @@ class TestPackage(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestScoreKey(unittest.TestCase):
+    """The default key is PDMX-shaped and mislabels every other corpus."""
+
+    def test_pdmx_names_the_score_by_its_hash(self) -> None:
+        key = _score_key(SCORE_PATTERNS["pdmx"])
+        self.assertEqual(key("out/QmAbc-v0-w3.jpg,out/QmAbc-v0-w3.tokens"), "QmAbc")
+
+    def test_the_pdmx_key_returns_the_system_for_a_lieder_row(self) -> None:
+        # IMSLP10416-sys0-v0 -> "IMSLP10416-sys0": the system, not the source scan. Two
+        # systems of one scan would then look like two scores and could be split apart.
+        key = _score_key(SCORE_PATTERNS["pdmx"])
+        self.assertEqual(key("pairs/IMSLP10416-sys0-v0.png,x"), "IMSLP10416-sys0")
+
+    def test_the_lieder_key_returns_the_source_scan(self) -> None:
+        key = _score_key(SCORE_PATTERNS["lieder"])
+        for window in ("IMSLP10416-sys0-v0", "IMSLP10416-sys7-v0", "IMSLP10416-sys12-v1"):
+            self.assertEqual(key(f"pairs/{window}.png,pairs/{window}.tokens"), "IMSLP10416")
+
+    def test_an_unmatched_name_raises_rather_than_inventing_a_score(self) -> None:
+        key = _score_key(SCORE_PATTERNS["lieder"])
+        with self.assertRaises(ValueError):
+            key("pairs/not-an-imslp-name.png,x")

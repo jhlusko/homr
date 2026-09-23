@@ -22,6 +22,7 @@ the validation shards, which is a fraction of the bytes.
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import tarfile
 import tempfile
@@ -29,6 +30,14 @@ from collections import defaultdict
 from pathlib import Path
 
 from training.omr_datasets.pdmx_split_protected import score_of
+
+#: How a row's filename names the score it came from, per corpus. The default splits on the
+#: last `-v`, which is right for PDMX (`<hash>-v<n>-w<n>`) and wrong for anything else:
+#: Lieder names windows `IMSLP<id>-sys<n>-v<n>`, so the default returns `IMSLP10416-sys0` -
+#: the *system*, not the source. That turns "a shard never straddles a score" into "never
+#: straddles a system", which is a different and much weaker promise, and it would let two
+#: systems of one scan land on opposite sides of a split that believed itself disjoint.
+SCORE_PATTERNS = {"pdmx": None, "lieder": r"^(IMSLP\d+)"}
 
 MEMBER_SUFFIXES = (".jpg", ".tokens", ".tokens.notation.json")
 
@@ -46,10 +55,29 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def _shard_scores(rows: list[str], target_bytes: int, root: Path) -> list[list[str]]:
+def _score_key(pattern: str | None):
+    """The function that maps a row to the score it belongs to."""
+    if pattern is None:
+        return score_of
+    compiled = re.compile(pattern)
+
+    def key(row: str) -> str:
+        name = Path(row.split(",", 1)[0]).name
+        match = compiled.search(name)
+        if not match:
+            raise ValueError(f"score pattern {pattern!r} does not match {name!r}")
+        return match.group(1)
+
+    return key
+
+
+def _shard_scores(
+    rows: list[str], target_bytes: int, root: Path, pattern: str | None = None
+) -> list[list[str]]:
+    key = _score_key(pattern)
     by_score: dict[str, list[str]] = defaultdict(list)
     for row in rows:
-        by_score[score_of(row)].append(row)
+        by_score[key(row)].append(row)
 
     shards: list[list[str]] = []
     current: list[str] = []
@@ -97,6 +125,7 @@ def package(
     target_mb: int,
     compress: str,
     level: int = 10,
+    pattern: str | None = None,
 ) -> dict:
     dest.mkdir(parents=True, exist_ok=True)
     shard_dir = dest / "shards"
@@ -107,10 +136,11 @@ def package(
     for split in ("train", "valid"):
         index = index_dir / f"index_{split}.txt"
         rows = [line for line in index.read_text().splitlines() if line.strip()]
-        groups = _shard_scores(rows, target_mb * 1024 * 1024, root)
+        groups = _shard_scores(rows, target_mb * 1024 * 1024, root, pattern)
+        key = _score_key(pattern)
         manifest["splits"][split] = {
             "windows": len(rows),
-            "scores": len({score_of(r) for r in rows}),
+            "scores": len({key(r) for r in rows}),
             "shards": len(groups),
         }
         for n, group in enumerate(groups):
@@ -122,7 +152,7 @@ def package(
                     "name": name,
                     "split": split,
                     "windows": len(group),
-                    "scores": len({score_of(r) for r in group}),
+                    "scores": len({key(r) for r in group}),
                     "bytes": size,
                     "sha256": _sha256(out),
                 }
@@ -150,6 +180,14 @@ def main() -> None:
     parser.add_argument("--target-mb", type=int, default=500, help="approximate shard size")
     parser.add_argument("--compress", choices=("zstd", "none"), default="zstd")
     parser.add_argument("--level", type=int, default=10, help="zstd level")
+    parser.add_argument(
+        "--corpus",
+        choices=sorted(SCORE_PATTERNS),
+        default="pdmx",
+        help="how filenames name their score; 'pdmx' splits on the last -v, 'lieder' takes "
+        "the IMSLP id. Getting this wrong groups by system and silently weakens the "
+        "no-straddling guarantee.",
+    )
     args = parser.parse_args()
 
     manifest = package(
@@ -159,6 +197,7 @@ def main() -> None:
         target_mb=args.target_mb,
         compress=args.compress,
         level=args.level,
+        pattern=SCORE_PATTERNS[args.corpus],
     )
     print(json.dumps(manifest["splits"], indent=2))
     total = sum(s["bytes"] for s in manifest["shards"])
