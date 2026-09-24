@@ -1,8 +1,9 @@
 # Lieder IMSLP scan release audit
 
-**Status: a small, conservative public-release candidate exists; the full scanned
-Lieder corpus is not cleared for redistribution.** This audit checked every one of
-the 215 IMSLP file IDs used by the v4 boundary-safe corpus on 2026-08-31.
+**Status: resolved 2026-09-24 — 212 of 215 sources (3,867 of 3,922 crop rows) are cleared
+for distribution.** The original audit, below, cleared only 25; its two defects and the
+owner's decisions are recorded in the two sections that follow. This audit checked every
+one of the 215 IMSLP file IDs used by the v4 boundary-safe corpus on 2026-08-31.
 
 IMSLP identifiers name individual uploaded files, not just musical works. A work
 often has several editions, so composer death dates and a work-level public-domain
@@ -19,6 +20,43 @@ downloads are CC0. IMSLP itself notes that public-domain treatment can be
 jurisdiction- and edition-specific, and that a file's terms need to be checked at
 the individual record. See [IMSLP’s public-domain guidance](https://imslp.org/wiki/Public_domain)
 and [permissible-license policy](https://imslp.org/wiki/IMSLP:Permissible_licenses).
+
+## Resolved, 2026-09-24: 212 of 215 sources cleared
+
+The owner reviewed every source and the position is now settled. The machine-readable
+ledger is [`lieder-rebuild/rights_decisions_v4.json`](../lieder-rebuild/rights_decisions_v4.json),
+which records, per source, the copyright line its IMSLP record gave, where that line was
+read from, and the basis for including it.
+
+| | sources | crop rows |
+| --- | ---: | ---: |
+| Cleared for distribution | 212 | 3,867 |
+| Excluded | 3 | 55 |
+| **Corpus** | **215** | **3,922** |
+
+Every cleared source's record states `Copyright: Public Domain`. The 126 that the original
+audit could not resolve were resolved by `Special:ReverseLookup/<file id>`: 124 returned a
+work page, 59 carrying the copyright line in the file's own block and 65 in the block of
+the file set containing it. That extraction was checked against ten sources whose values
+the audit had already recorded, including two read through the set-level route, and agreed
+on all ten with no disagreements.
+
+`Image Type` remains unread for those 124: IMSLP does not render it on work pages, and it
+is available only in the wikitext, which the site serves behind a bot check. The owner
+ruled that an absent or unreadable image type does not disqualify a source — consistent
+with the correction above, where 61 of 63 sources name the scanner.
+
+The three exclusions, each on its own evidence rather than a missing field:
+
+| IMSLP | Rows | Why |
+| --- | ---: | --- |
+| 257340 | 28 | Record states `Creative Commons Attribution-ShareAlike 4.0` and `Image Type=Typeset`. |
+| 16883 | 22 | IMSLP holds no record for this file id (Satie, *Je te veux*); likely deleted or renumbered. |
+| 16400 | 5 | IMSLP holds no record for this file id (Schubert, *Ellens Gesang III*). |
+
+This is a provenance decision by the corpus owner, not legal advice, and it does not
+change IMSLP's own caution that public-domain treatment can be jurisdiction- and
+edition-specific.
 
 ## Correction, 2026-09-24: 63 of the 64 exclusions were wrong
 

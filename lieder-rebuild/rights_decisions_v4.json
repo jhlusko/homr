@@ -1,0 +1,1739 @@
+{
+ "decided": "2026-09-24",
+ "decided_by": "repository owner, recorded in the Lieder Rights Clearance artifact",
+ "basis": {
+  "copyright": "Every included source's IMSLP record states Copyright: Public Domain.",
+  "image_type": "The owner ruled that an absent or unreadable Image Type does not disqualify a source. IMSLP does not render that field on work pages, and 61 of the 63 previously excluded sources name the scanner, which is positive evidence of a scan.",
+  "not_legal_advice": "A provenance decision by the corpus owner, not legal advice. IMSLP notes public-domain status can be jurisdiction- and edition-specific."
+ },
+ "counts": {
+  "included_sources": 212,
+  "included_rows": 3867,
+  "excluded_sources": 3,
+  "excluded_rows": 55
+ },
+ "included": [
+  {
+   "imslp_id": "IMSLP10416",
+   "rows": 16,
+   "work": "Das Rosenband, D.280 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP10602",
+   "rows": 15,
+   "work": "Die Forelle, D.550 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP112763",
+   "rows": 3,
+   "work": "1 Sérénade printanière (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP11784",
+   "rows": 34,
+   "work": "Fischerweise, D.881 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP122258",
+   "rows": 16,
+   "work": "Dans une musette (Poldowski)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP12291",
+   "rows": 8,
+   "work": "Ständchen, D.889 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP12778",
+   "rows": 26,
+   "work": "Jägers Liebeslied, D.909 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP13971",
+   "rows": 58,
+   "work": "Gretchen am Spinnrade, D.118 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP140920",
+   "rows": 38,
+   "work": "L'été (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP148200",
+   "rows": 20,
+   "work": "2 So White, so Soft, so Sweet is She (Delius, Frederick)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154059",
+   "rows": 2,
+   "work": "Les rêves (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154060",
+   "rows": 32,
+   "work": "Auprès de ma mie (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154063",
+   "rows": 18,
+   "work": "Rosemonde (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154067",
+   "rows": 34,
+   "work": "Plaintes d’amour (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154070",
+   "rows": 20,
+   "work": "L'amour captif (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154084",
+   "rows": 8,
+   "work": "Chanson groënlandaise (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154086",
+   "rows": 25,
+   "work": "Ballade à la lune (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154110",
+   "rows": 18,
+   "work": "Aubade (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154140",
+   "rows": 16,
+   "work": "Amoroso (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154142",
+   "rows": 2,
+   "work": "Amour d'automne (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154144",
+   "rows": 8,
+   "work": "Berceuse (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154201",
+   "rows": 30,
+   "work": "Colette (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154211",
+   "rows": 12,
+   "work": "La fiancée du soldat (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154220",
+   "rows": 22,
+   "work": "Rêve d’un soir (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154223",
+   "rows": 14,
+   "work": "Ritournelle, Op.83 (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154229",
+   "rows": 8,
+   "work": "Sur la plage (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP154240",
+   "rows": 16,
+   "work": "L'allée d'émeraude et d'or (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154241",
+   "rows": 30,
+   "work": "Alleluia (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154242",
+   "rows": 10,
+   "work": "Avril s'éveille (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154245",
+   "rows": 27,
+   "work": "Chanson de neige (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154289",
+   "rows": 24,
+   "work": "Chanson espagnole (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP154299",
+   "rows": 30,
+   "work": "Amertume (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP16259",
+   "rows": 6,
+   "work": "Himmelsfunken, D.651 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP16349",
+   "rows": 12,
+   "work": "1 Du liebst mich nicht (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP16364",
+   "rows": 8,
+   "work": "3 Wandrers Nachtlied, D.768 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP16369",
+   "rows": 24,
+   "work": "1 Der Zwerg, D.771 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP16625",
+   "rows": 5,
+   "work": "3 Bootgesang, D.835 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP16890",
+   "rows": 10,
+   "work": "Tendrement (Satie, Erik)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP173062",
+   "rows": 15,
+   "work": "Les langueurs (Gail, Sophie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP173063",
+   "rows": 33,
+   "work": "Le serment (Gail, Sophie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP183800",
+   "rows": 28,
+   "work": "The Beggar Maid (Barnby, Joseph)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP184203",
+   "rows": 42,
+   "work": "Ask Me No More (Marshall, Florence Ashton)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP184205",
+   "rows": 26,
+   "work": "1 The Poet‘s Song (Parry, Hubert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP185782",
+   "rows": 21,
+   "work": "The Violets Blue, H.69 (Bridge, Frank)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP19490",
+   "rows": 32,
+   "work": "5 Madrid, VWV 1136 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP204253",
+   "rows": 10,
+   "work": "My Lady of Sleep (Hopekirk, Helen)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP212406",
+   "rows": 10,
+   "work": "’Tis but a Week, H.146 (Bridge, Frank)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP22647",
+   "rows": 2,
+   "work": "Villanelle des petits canards (Chabrier, Emmanuel)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP227283",
+   "rows": 4,
+   "work": "5 Scheideblick (Lang, Josephine)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP231920",
+   "rows": 8,
+   "work": "So Perverse, H.61 (Bridge, Frank)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP234590",
+   "rows": 19,
+   "work": "3 Spring, the Sweet Spring (Delius, Frederick)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP237206",
+   "rows": 10,
+   "work": "The Bird and the Rose (Horrocks, Amy Elsie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP24047",
+   "rows": 18,
+   "work": "1 Après un rêve (Fauré, Gabriel)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP24051",
+   "rows": 15,
+   "work": "3 Barcarolle (Fauré, Gabriel)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP243472",
+   "rows": 8,
+   "work": "Sacrifice (Grandval, Clémence de)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP253076",
+   "rows": 8,
+   "work": "The Reply of the Messenger Bird (Browne, Augusta)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP262465",
+   "rows": 6,
+   "work": "La chanson de Jean Prouvaire (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP280033",
+   "rows": 22,
+   "work": "1 Ich sagte nicht (Beach, Amy)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP282760",
+   "rows": 24,
+   "work": "Go down, Moses (Burleigh, Harry Thacker)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP285344",
+   "rows": 24,
+   "work": "Bouton de Rose (Lehmann, Amelia)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP285345",
+   "rows": 18,
+   "work": "How Delicious is the Winning (Lehmann, Amelia)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP285346",
+   "rows": 22,
+   "work": "The Highland Plaid (Lehmann, Amelia)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP285347",
+   "rows": 22,
+   "work": "When Love is Kind (Lehmann, Amelia)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP285360",
+   "rows": 24,
+   "work": "Wisdom and Love (Lehmann, Amelia)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP286578",
+   "rows": 28,
+   "work": "Then and now (Gray, Louisa)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP286659",
+   "rows": 32,
+   "work": "He doesn’t love me (Gray, Louisa)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP329302",
+   "rows": 29,
+   "work": "Le bohémien (Grandval, Clémence de)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP329303",
+   "rows": 2,
+   "work": "La délaissée (Grandval, Clémence de)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP329304",
+   "rows": 20,
+   "work": "Les lucioles (Grandval, Clémence de)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP33023",
+   "rows": 6,
+   "work": "Is She Not Passing Fair? (Elgar, Edward)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP396671",
+   "rows": 36,
+   "work": "Crazy Jane (Abrams, Harriett)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP397171",
+   "rows": 2,
+   "work": "Five o’clock in the morning (Barnard, Charlotte Alington - aka Claribel)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP397173",
+   "rows": 29,
+   "work": "Milly’s Faith (Barnard, Charlotte Alington - aka Claribel)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP41375",
+   "rows": 18,
+   "work": "2 Abschiedslied der Zugvögel, MWV J 9 (Mendelssohn, Felix)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP414132",
+   "rows": 14,
+   "work": "I know a lovely garden (Hardelot, Guy d’)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP420543",
+   "rows": 6,
+   "work": "6 Vœu (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP422393",
+   "rows": 6,
+   "work": "The Little White Town (Hardelot, Guy d')",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP434340",
+   "rows": 61,
+   "work": "Österns natt (Munktell, Helena)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP435041",
+   "rows": 32,
+   "work": "1 It was a Lover and His Lass (Delius, Frederick)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP435483",
+   "rows": 13,
+   "work": "Attente (Boulanger, Lili)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP435485",
+   "rows": 13,
+   "work": "Reflets (Boulanger, Lili)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP43630",
+   "rows": 21,
+   "work": "3 Gruss, MWV J 8 (Mendelssohn, Felix)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP43758",
+   "rows": 39,
+   "work": "4 Herbstlied, MWV J 11 (Mendelssohn, Felix)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP43916",
+   "rows": 2,
+   "work": "5 Volkslied, MWV J 10 (Mendelssohn, Felix)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP44341",
+   "rows": 69,
+   "work": "6 Maiglöckchen und die Blümelein, MWV J 7 (Mendelssohn, Felix)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP453689",
+   "rows": 23,
+   "work": "Dreams (Hodges, Faustina Hasse)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP456168",
+   "rows": 2,
+   "work": "Dans l'immense tristesse (Boulanger, Lili)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP476181",
+   "rows": 16,
+   "work": "1 Roister Doister (Warlock, Peter)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP476183",
+   "rows": 15,
+   "work": "3 Lusty Juventus (Warlock, Peter)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP507203",
+   "rows": 22,
+   "work": "Lontan dagli occhi, lontan dal cuore, Op.17 (Ferrari, Gabrielle)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP508574",
+   "rows": 20,
+   "work": "The Dawn (Hardelot, Guy d')",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP542017",
+   "rows": 8,
+   "work": "To England (Barnby, Joseph)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP55434",
+   "rows": 3,
+   "work": "4 L’Heure d’Azur (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP555778",
+   "rows": 24,
+   "work": "2 The River (Elgar, Edward)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP556523",
+   "rows": 22,
+   "work": "In 1822 (Hardelot, Guy d')",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP557086",
+   "rows": 16,
+   "work": "1 La main (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP557087",
+   "rows": 14,
+   "work": "2 Dernier aveu (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP557088",
+   "rows": 20,
+   "work": "3b J’en mourrai (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP557090",
+   "rows": 29,
+   "work": "5 Gentilles hirondelles (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP558603",
+   "rows": 6,
+   "work": "Afterwards, love (Hardelot, Guy d')",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP558609",
+   "rows": 12,
+   "work": "I knew (Hardelot, Guy d’)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP558713",
+   "rows": 38,
+   "work": "A Hymn for Aviators (Parry, Hubert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP578231",
+   "rows": 24,
+   "work": "6 Chrysa (Grandval, Clémence de)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP580179",
+   "rows": 6,
+   "work": "Lamento, VWV 1139 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP580246",
+   "rows": 10,
+   "work": "1 À la Fontaine, VWV 1133 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP580250",
+   "rows": 14,
+   "work": "4 Sérénade à Rosine, VWV 1137 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP580410",
+   "rows": 22,
+   "work": "3 Ici-bas tous les lilas meurent, VWV 1176 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP580411",
+   "rows": 28,
+   "work": "6 Les filles de Cadix, VWV 1135 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP580584",
+   "rows": 24,
+   "work": "6b Chanson mélancolique (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP581585",
+   "rows": 16,
+   "work": "Scène d’Hermione, VWV 1007 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP581586",
+   "rows": 11,
+   "work": "Désespoir, VWV 1138 (Viardot, Pauline)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP582024",
+   "rows": 2,
+   "work": "2 Wenn du wärst mein eigen (Lang, Josephine)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP584272",
+   "rows": 2,
+   "work": "Ogier le Danois (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP584726",
+   "rows": 14,
+   "work": "3 Sérénade d’automne (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP584727",
+   "rows": 2,
+   "work": "2 Sérénade d’été (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP588109",
+   "rows": 10,
+   "work": "4 La Belle Madeleine (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP588848",
+   "rows": 8,
+   "work": "Le ruban rose (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP588852",
+   "rows": 16,
+   "work": "À Trianon (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP588989",
+   "rows": 37,
+   "work": "3 Le chemin du ciel (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP588990",
+   "rows": 5,
+   "work": "5 La légende de Saint Amour (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP589001",
+   "rows": 2,
+   "work": "1 Dans les boutons d’or (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP589004",
+   "rows": 16,
+   "work": "2 Sous les orangers (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP589008",
+   "rows": 26,
+   "work": "3 Au bois dormant (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP589118",
+   "rows": 20,
+   "work": "Viens! (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP592442",
+   "rows": 33,
+   "work": "Cottage Cradle Song (Horrocks, Amy Elsie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP593990",
+   "rows": 20,
+   "work": "There rolls the deep (Parry, Hubert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP597597",
+   "rows": 9,
+   "work": "Ton nom (Holmès, Augusta Mary Anne)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP598858",
+   "rows": 8,
+   "work": "Bonne humeur (Chaminade, Cécile)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP600893",
+   "rows": 2,
+   "work": "Dona Adelaide (Gonzaga, Chiquinha)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP600895",
+   "rows": 6,
+   "work": "Feijoada do Brasil (Gonzaga, Chiquinha)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP603446",
+   "rows": 24,
+   "work": "The Cuckoo (Horrocks, Amy Elsie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP605026",
+   "rows": 69,
+   "work": "The Blackbird (Horrocks, Amy Elsie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP606009",
+   "rows": 8,
+   "work": "Cá por coisas!... (Gonzaga, Chiquinha)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP606057",
+   "rows": 8,
+   "work": "Manhã de amor (Gonzaga, Chiquinha)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP60848",
+   "rows": 48,
+   "work": "Die Sterne, D.939 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP61111",
+   "rows": 12,
+   "work": "2 Dass sie hier gewesen (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP61112",
+   "rows": 28,
+   "work": "3 Du bist die Ruh (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP61117",
+   "rows": 24,
+   "work": "1 Greisengesang, D.778 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP617260",
+   "rows": 34,
+   "work": "1 In Welschland (Lang, Josephine)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP617446",
+   "rows": 2,
+   "work": "La chanson de ma mie (Hardelot, Guy d’)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP618722",
+   "rows": 6,
+   "work": "One who never turned his back (Mackenzie, Alexander)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621593",
+   "rows": 14,
+   "work": "2 Niederländisches Wiegenlied (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621598",
+   "rows": 16,
+   "work": "3 Letzter Wunsch (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621599",
+   "rows": 10,
+   "work": "5 In der Mondnacht (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621830",
+   "rows": 28,
+   "work": "1 Ich glaub’, lieber Schatz (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621831",
+   "rows": 26,
+   "work": "2 Hast nicht ein einzig Mal zurückgeschaut (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621832",
+   "rows": 21,
+   "work": "4 Jugend (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621841",
+   "rows": 5,
+   "work": "1 Die Insel der Vergessenheit (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP621842",
+   "rows": 4,
+   "work": "2 Das mitleidige Mädel (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622102",
+   "rows": 12,
+   "work": "1 Wanderlied (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622103",
+   "rows": 6,
+   "work": "2 Riport a me (Piemontesisches Lied) (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622104",
+   "rows": 10,
+   "work": "3 Die innere Stadt (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622105",
+   "rows": 5,
+   "work": "4 Dulde, gedulde dich fein (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622484",
+   "rows": 16,
+   "work": "1 Du liebe Erde (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622485",
+   "rows": 12,
+   "work": "2 Lied der Nacht (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622486",
+   "rows": 24,
+   "work": "3 Sehnsucht (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622487",
+   "rows": 28,
+   "work": "4 Neue Liebe (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP622488",
+   "rows": 16,
+   "work": "1 Stimme eines seligen Geistes (Faisst, Clara Mathilda)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP62381",
+   "rows": 34,
+   "work": "1 Ellens Gesang I, D.837 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP62382",
+   "rows": 38,
+   "work": "2 Ellens Gesang II, D.838 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP62383",
+   "rows": 34,
+   "work": "5 Normans Gesang, D.846 (Schubert, Franz)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP624192",
+   "rows": 14,
+   "work": "1 Quatre heures du matin (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP624193",
+   "rows": 34,
+   "work": "2 Causeries de vagues (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP624194",
+   "rows": 62,
+   "work": "3 Les papillons (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP624196",
+   "rows": 3,
+   "work": "5 En ramant (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP625359",
+   "rows": 6,
+   "work": "Liebeslied (Greger, Luise)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP625663",
+   "rows": 12,
+   "work": "Hail! (Cowen, Frederic Hymen)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP626307",
+   "rows": 14,
+   "work": "The Brook (Barnard, Charlotte Alington - aka Claribel)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP630163",
+   "rows": 6,
+   "work": "To Mary (White, Maude Valérie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP632171",
+   "rows": 46,
+   "work": "1 Rêverie (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP632172",
+   "rows": 21,
+   "work": "2 Nourmahal-la-Rousse (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP632175",
+   "rows": 50,
+   "work": "5 Malédiction (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP632177",
+   "rows": 18,
+   "work": "7 Le voile (Jaëll, Marie)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP634834",
+   "rows": 32,
+   "work": "2 Wir drei (Beach, Amy)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP634835",
+   "rows": 30,
+   "work": "3 Juni (Beach, Amy)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP637242",
+   "rows": 8,
+   "work": "Noivado (Gonzaga, Chiquinha)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP637440",
+   "rows": 38,
+   "work": "1 O Mistress Mine (Beach, Amy)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP637442",
+   "rows": 20,
+   "work": "3 Fairy Lullaby (Beach, Amy)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP642301",
+   "rows": 8,
+   "work": "Sleep, Weary Heart (Barns, Ethel)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP654022",
+   "rows": 4,
+   "work": "Allons prier! (Bonis, Mel)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP656649",
+   "rows": 4,
+   "work": "2 More Fond than Cushat Dove (Parry, Hubert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP657998",
+   "rows": 18,
+   "work": "The Ballad of Kingslea Mere (Rootham, Cyril)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP660145",
+   "rows": 10,
+   "work": "Because I Am Your Friend (Jacobs-Bond, Carrie)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP662011",
+   "rows": 10,
+   "work": "Helen (Bianchi Lacy, Jane)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP669434",
+   "rows": 38,
+   "work": "Ethiopia Saluting the Colours (Wood, Charles)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP676298",
+   "rows": 16,
+   "work": "Unforgotten (Gray, Louisa)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP676303",
+   "rows": 2,
+   "work": "After so long (Gray, Louisa)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP676305",
+   "rows": 2,
+   "work": "Yes and No (Gray, Louisa)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP676315",
+   "rows": 14,
+   "work": "Under the Cliffs (Gray, Louisa)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP74369",
+   "rows": 20,
+   "work": "L'heure exquise (Poldowski)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP75214",
+   "rows": 12,
+   "work": "The Lost Chord (Sullivan, Arthur)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP75959",
+   "rows": 16,
+   "work": "2 Ah, Love, but a Day! (Beach, Amy)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP77665",
+   "rows": 9,
+   "work": "1 Gestillte Sehnsucht (Brahms, Johannes)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP80521",
+   "rows": 6,
+   "work": "The Better Land (Cowen, Frederic Hymen)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP83314",
+   "rows": 34,
+   "work": "1 À une Fleur (Bizet, Georges)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP83316",
+   "rows": 8,
+   "work": "Guitare (Bizet, Georges)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP83318",
+   "rows": 6,
+   "work": "5 Rose d’Amour (Bizet, Georges)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP83319",
+   "rows": 14,
+   "work": "Sonnet (Bizet, Georges)",
+   "copyright": "Public Domain",
+   "route": "cleared",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP88709",
+   "rows": 24,
+   "work": "01 Ihr Auge (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89016",
+   "rows": 32,
+   "work": "02 Nachtlied (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89017",
+   "rows": 16,
+   "work": "03 Die Lotosblume (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89026",
+   "rows": 20,
+   "work": "I will go with my father a-ploughing (Gurney, Ivor)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89287",
+   "rows": 12,
+   "work": "09 Jagdlied (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89290",
+   "rows": 40,
+   "work": "10 Schlummerlied (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89292",
+   "rows": 12,
+   "work": "11 Vöglein, wohin so schnell (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89794",
+   "rows": 17,
+   "work": "04 Nun holt mir eine Kanne Wein (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89795",
+   "rows": 12,
+   "work": "05 O säh ich auf der Haide dort (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89796",
+   "rows": 16,
+   "work": "06 Tanzlied im Mai (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89797",
+   "rows": 17,
+   "work": "07 Sonntag (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP89798",
+   "rows": 8,
+   "work": "08 Für Einen (Franz, Robert)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s file set. Image Type is not printed on IMSLP work pages; accepted as unread."
+  },
+  {
+   "imslp_id": "IMSLP92046",
+   "rows": 2,
+   "work": "Chez le docteur (Satie, Erik)",
+   "copyright": "Public Domain",
+   "route": "reinstated",
+   "basis": ""
+  },
+  {
+   "imslp_id": "IMSLP97202",
+   "rows": 15,
+   "work": "4 To Daffodils (Delius, Frederick)",
+   "copyright": "Public Domain",
+   "route": "review",
+   "basis": "IMSLP record states Public Domain, read from the file’s own block. Image Type is not printed on IMSLP work pages; accepted as unread."
+  }
+ ],
+ "excluded": [
+  {
+   "imslp_id": "IMSLP16400",
+   "rows": 5,
+   "work": "6 Ellens Gesang III, D.839 (Ave Maria) (Schubert, Franz)",
+   "copyright": "",
+   "image_type": "",
+   "why": "IMSLP holds no record for this file id; likely deleted or renumbered"
+  },
+  {
+   "imslp_id": "IMSLP16883",
+   "rows": 22,
+   "work": "Je te veux (Satie, Erik)",
+   "copyright": "",
+   "image_type": "",
+   "why": "IMSLP holds no record for this file id; likely deleted or renumbered"
+  },
+  {
+   "imslp_id": "IMSLP257340",
+   "rows": 28,
+   "work": "Nobody Knows de Trouble I've Seen (Burleigh, Harry Thacker)",
+   "copyright": "Creative Commons Attribution-ShareAlike 4.0",
+   "image_type": "Typeset",
+   "why": "record states a non-public-domain licence and Image Type=Typeset"
+  }
+ ]
+}
