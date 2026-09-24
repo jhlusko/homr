@@ -20,6 +20,40 @@ jurisdiction- and edition-specific, and that a file's terms need to be checked a
 the individual record. See [IMSLP’s public-domain guidance](https://imslp.org/wiki/Public_domain)
 and [permissible-license policy](https://imslp.org/wiki/IMSLP:Permissible_licenses).
 
+## Correction, 2026-09-24: 63 of the 64 exclusions were wrong
+
+The audit retained a source only when its IMSLP record stated both `Copyright=Public
+Domain` and `Image Type=Normal Scan`. Applied to the `Image Type` field, that rule
+conflated **a field that says something disqualifying** with **a field that says nothing
+at all**.
+
+Of the 64 excluded sources, 63 record `Copyright: Public Domain` and no image type
+whatsoever. They were not judged and found to be re-engravings; they were dropped for a
+blank. 61 of the 63 name the person or institution that scanned them
+(`{{SibleyScan|1802/17411}}`, `Caprotti`, `Morel`), which is direct evidence that the file
+*is* a scan. The reason string `not an original Normal Scan` overstated what had been
+established, and reading it at face value is what kept 964 crop rows out of the corpus.
+
+Reinstated for review: **63 sources, 964 rows.** Their evidence is complete — copyright,
+publisher, scanner, source and work URLs all present — so the open question is the single
+policy one, whether an absent `Image Type` disqualifies a file whose scanner is named. The
+owner's decision was that it does not.
+
+Still excluded on its own evidence: **IMSLP257340** (28 rows), whose record states
+`Creative Commons Attribution-ShareAlike 4.0` and `Image Type=Typeset`. Neither public
+domain nor a scan.
+
+The 126 `needs_manual_review` sources were a separate defect: the resolver searched IMSLP
+for the *song* title, while IMSLP files a scan under the *collection* containing it
+(`IMSLP44341` is filed under "6 Duets, Op.63", not under "Maiglöckchen und die Blümelein").
+`Special:ReverseLookup/<file id>` resolves the file id directly and returned a work page
+for every source tried. Note that `Image Type` is not rendered on the work page at all — it
+exists only in the wikitext, which IMSLP serves behind a bot check — so that field cannot be
+recovered automatically for those 126 and remains a human reading.
+
+Revised position: 25 cleared pending sign-off (565 rows), 63 reinstated (964 rows), 126
+under review (2,365 rows), 1 excluded (28 rows).
+
 ## Result
 
 | Classification | Source files | Crop rows | Release treatment |
