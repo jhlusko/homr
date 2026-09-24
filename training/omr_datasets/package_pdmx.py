@@ -37,7 +37,7 @@ from training.omr_datasets.pdmx_split_protected import score_of
 #: the *system*, not the source. That turns "a shard never straddles a score" into "never
 #: straddles a system", which is a different and much weaker promise, and it would let two
 #: systems of one scan land on opposite sides of a split that believed itself disjoint.
-SCORE_PATTERNS = {"pdmx": None, "lieder": r"^(IMSLP\d+)"}
+SCORE_PATTERNS = {"pdmx": None, "lieder": r"^(IMSLP\d+)", "ossq": r"^(sq\d+)_"}
 
 MEMBER_SUFFIXES = (".jpg", ".tokens", ".tokens.notation.json")
 

@@ -108,3 +108,16 @@ class TestScoreKey(unittest.TestCase):
         key = _score_key(SCORE_PATTERNS["lieder"])
         with self.assertRaises(ValueError):
             key("pairs/not-an-imslp-name.png,x")
+
+    def test_the_ossq_key_returns_the_quartet_score(self) -> None:
+        # OSSQ names a window <score>_<page>_<system>_<staff>; splitting on the last -v
+        # would return the whole filename, making every staff look like its own score.
+        key = _score_key(SCORE_PATTERNS["ossq"])
+        for window in ("sq7383977_0003_0001_1", "sq7383977_0012_0002_2", "sq7383977_0001_0001_1"):
+            self.assertEqual(key(f"train/{window}.png,train/{window}.txt"), "sq7383977")
+
+    def test_the_pdmx_key_mangles_an_ossq_row(self) -> None:
+        key = _score_key(SCORE_PATTERNS["pdmx"])
+        # It splits on the last "-v", finds none, and returns the filename whole - extension
+        # and all - so every staff of every page would count as its own score.
+        self.assertEqual(key("train/sq7383977_0003_0001_1.png,x"), "sq7383977_0003_0001_1.png")
