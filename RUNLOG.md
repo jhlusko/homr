@@ -14271,3 +14271,37 @@ Not a recipe problem. Every full-model training on this instance's `/workspace/v
 (torch 2.6.0, transformers 4.53.2) is suspect, including core v9. Also on the instance:
 742 of the container's 1,280 threads were held by the image's KDE desktop services; they are
 now stopped (`supervisorctl stop ...`).
+
+## Root cause: scheduled sampling + CUDA autocast froze every Linear layer (2026-09-25)
+
+E1 run 1's output heads never trained; see the entry above. Traced with small warm-start
+probes on the instance (8 steps, E1's exact trainer setup, `/workspace/venv`: torch 2.6.0,
+transformers 4.53.2, x-transformers 2.16.1):
+
+| variant | heads / attention get gradients after step 0? |
+| --- | --- |
+| as E1 (FreezeCallback on) | no: `grad=None`, optimizer step count 1 of 8 |
+| FreezeCallback off | no |
+| scheduled sampling off | **yes** (8 of 8) |
+| no `net.eval()`/`train()` toggle | no |
+| first pass *with* grad tracking | **yes** |
+| `torch.clear_autocast_cache()` after the no-grad pass | **yes** |
+
+`Decoder.forward` runs a scheduled-sampling first pass under `torch.no_grad()` inside the
+trainer's bf16 autocast region. CUDA autocast caches each weight's low-precision cast on
+first use in the region. Those casts had no autograd link, and the training pass reused
+them, so every `nn.Linear` (the six `to_logits_*` heads, all attention projections) got no
+gradient. Embedding lookups aren't cast and kept training. The sampling probability starts at
+1.0 (single pass) and decays after step 0, so only step 0 trained the heads, and it ran at
+warm-up learning rate 0. CPU autocast doesn't reproduce it.
+
+Fix: `torch.clear_autocast_cache()` after the no-grad block (`aab7a13`). Regression test
+`tests/test_scheduled_sampling_gradients.py` (`e07b1b8`, CUDA-only) fails before the fix and
+passes after, on the instance.
+
+Scope: core v9 (`pytorch_model_20-cc3dcd9…`) has the same untrained heads (within 1e-6 of
+`426`), which explains its head refit "regressing everywhere". Any full-model run in this
+environment with scheduled sampling on is suspect. The released core's heads did train; its
+2026-08 environment (`/workspace/b0/homr/.venv`, versions not recorded) evidently didn't hit
+this. Still unexplained: E1's early ConvNeXt stages also stayed at `426` despite the logged
+"Unfreezing backbone at epoch 2.0". Check them in run 2.
