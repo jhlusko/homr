@@ -39,16 +39,17 @@ def cap_onnx_threads(threads: int) -> None:
     """
     import onnxruntime as ort
 
-    original = ort.InferenceSession
+    # A subclass, not a wrapper function: homr annotates with `ort.InferenceSession | None`
+    # at class-definition time, and a function cannot take part in that union.
+    class CappedSession(ort.InferenceSession):  # type: ignore[misc, valid-type]
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            options = kwargs.get("sess_options") or ort.SessionOptions()
+            options.intra_op_num_threads = threads
+            options.inter_op_num_threads = 1
+            kwargs["sess_options"] = options
+            super().__init__(*args, **kwargs)
 
-    def capped(*args: Any, **kwargs: Any) -> Any:
-        options = kwargs.get("sess_options") or ort.SessionOptions()
-        options.intra_op_num_threads = threads
-        options.inter_op_num_threads = 1
-        kwargs["sess_options"] = options
-        return original(*args, **kwargs)
-
-    ort.InferenceSession = capped  # type: ignore[misc]
+    ort.InferenceSession = CappedSession  # type: ignore[misc]
 
 
 def main() -> None:

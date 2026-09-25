@@ -219,7 +219,11 @@ class TestOnnxThreadCap(unittest.TestCase):
 
         fake = types.ModuleType("onnxruntime")
         fake.SessionOptions = Options  # type: ignore[attr-defined]
-        fake.InferenceSession = lambda path, **kw: created.append((path, kw))  # type: ignore[attr-defined]
+        class Session:
+            def __init__(self, path: str, **kw: object) -> None:
+                created.append((path, kw))
+
+        fake.InferenceSession = Session  # type: ignore[attr-defined]
         saved = sys.modules.get("onnxruntime")
         sys.modules["onnxruntime"] = fake
         try:
@@ -230,6 +234,8 @@ class TestOnnxThreadCap(unittest.TestCase):
                 sys.modules["onnxruntime"] = saved
             else:
                 del sys.modules["onnxruntime"]
+        # homr annotates `ort.InferenceSession | None` at import time; that must still work.
+        _ = fake.InferenceSession | None
         path, kwargs = created[0]
         self.assertEqual(path, "enc.onnx")
         self.assertEqual(kwargs["providers"], ["CUDAExecutionProvider"])
