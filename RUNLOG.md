@@ -14114,3 +14114,34 @@ Reports and page rows are copied locally under
 `train-20260924/detector-retrain/folded-directions-real.*`. Next: B2 per-model detector
 class order so the new scheme cannot relabel released models; B3 a locked real-page
 selection/test split and recall-first criterion; only then another train.
+
+### 2026-09-25: B2 per-model detector class order complete
+
+`223f012` (pushed) commits the existing 09-19 `DirectionText` masks and `Fingering`
+gate with a per-model class-order contract. New checkpoints write `.classes.json`
+beside weights; ONNX export copies it. The two pinned old ONNX paths use the explicit
+seven-class legacy order; unknown models without metadata or an explicit order fail
+instead of guessing. Both production ONNX inference and training-side evaluation use
+the checkpoint's labels and check channel count. The evaluator also maps ground-truth
+direction labels according to that checkpoint, so the five-class and seven-class models
+can be scored in the same checkout. The focused suite passed 80 tests, 19 subtests.
+
+The clean instance worktree `/workspace/detector-b2-checkout` at `223f012` loaded the
+selected 09-19 parent (`a03cd631…`) with five classes and released `e4`
+(`fcb8ca52…`) with seven. Their sidecars were written only after confirming both
+weight digests; small copies are in the local artifact archive. No retraining or model
+release happened. B3's locked real-page split and recall-first criterion is next.
+
+### 2026-09-25: B3 real-page split and release criterion frozen
+
+`docs/DETECTOR_REAL_PAGE_RELEASE_GATE_2026-09-25.md` fixes a score-disjoint selection/test
+split, checkpoint-selection rule and release bar before the next run. The machine-readable
+manifest is `training/ocr/real_page_release_split_20260925.json`, with source digests and
+exact scores. OSSQ has 145/154 selection/test pages (467/421 direction boxes), Lieder
+direction 12/14 (11/11 boxes), and Lieder lyric 20/20. These scores are all held out of
+the 09-19 training audit, but they were previously evaluated in aggregate, so this is a
+prospective split for the next model rather than a pristine independent test. The
+primary number is **real-page box recall**, with IoU 0.5 used only to decide box matches.
+`eval_folded_directions.py` now maps references using each checkpoint's own class order
+and can score/report the frozen split, preserving per-page rows. Next: run the 09-19
+parent and released `e4` on both roles to fill in the frozen baseline bars, then B4.

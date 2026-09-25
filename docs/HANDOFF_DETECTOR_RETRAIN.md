@@ -21,8 +21,11 @@ on disk only; §0c, §0d and §3 are the relevant sections).
 > `SystemText` into `DirectionText` and re-matching boxes, recall is 236/888 (26.6%)
 > on OSSQ and 13/22 (59.1%) on Lieder. The selected 09-19 adaptation parent scored
 > 19.9% OSSQ and 86.4% Lieder. Real OSSQ `Dynamic` recall fell from released `e4`'s
-> 64.8% to 24.4%. The next step is a committed per-model class order and a locked
-> real-page criterion before retraining; see the accepted release sequence.
+> 64.8% to 24.4%. Per-model class order was committed as `223f012` and checked on
+> the actual five- and seven-class weights. The real-page recall criterion and
+> score-disjoint selection/test manifest are frozen in
+> `docs/DETECTOR_REAL_PAGE_RELEASE_GATE_2026-09-25.md`. The next step is baseline
+> scoring on both roles before retraining; see the accepted release sequence.
 >
 > The corrected sampler alone would not have got there. Three data defects had to be fixed
 > first: boxes split from `_cleaned.musicxml` contained no `<direction>` text at all (re-split

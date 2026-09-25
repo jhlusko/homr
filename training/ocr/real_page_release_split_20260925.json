@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "date": "2026-09-25",
+  "score_disjoint": true,
+  "prior_finetune_data_audit_sha256": "1eab2d5c14fb5ac32d64b2b6dbdca7a955a15a6288acb54ccc3579d188b89707",
+  "corpora": {
+    "ossq_boxes": {
+      "source_pages_sha256": "bb10901cfd0f855cbeea3d26550ff59e70c7e91cb624a2471749e972772e57d7",
+      "roles": {
+        "selection": {
+          "scores": [
+            "sq7103818",
+            "sq7295726",
+            "sq7358708",
+            "sq7648382",
+            "sq8807667",
+            "sq9010547"
+          ],
+          "pages": 145,
+          "ground_truth": {
+            "DirectionText": 467,
+            "Dynamic": 1841,
+            "Expression": 178,
+            "MeasureNumber": 0,
+            "StaffText": 148,
+            "Tempo": 141
+          }
+        },
+        "test": {
+          "scores": [
+            "sq10414906",
+            "sq14387632",
+            "sq16138966",
+            "sq7224846",
+            "sq8630159",
+            "sq9137469"
+          ],
+          "pages": 154,
+          "ground_truth": {
+            "DirectionText": 421,
+            "Dynamic": 1660,
+            "Expression": 81,
+            "MeasureNumber": 0,
+            "StaffText": 217,
+            "Tempo": 123
+          }
+        }
+      }
+    },
+    "lieder_boxes": {
+      "source_pages_sha256": "d42361799fd780e5184b76a4bd0755f776acb1581bc16a6b5554a99d254bda66",
+      "roles": {
+        "selection": {
+          "scores": [
+            "IMSLP140920",
+            "IMSLP154060",
+            "IMSLP154086",
+            "IMSLP154110",
+            "IMSLP154201",
+            "IMSLP24051",
+            "IMSLP285346",
+            "IMSLP44341",
+            "IMSLP507203",
+            "IMSLP578231"
+          ],
+          "pages": 12,
+          "ground_truth": {
+            "DirectionText": 11,
+            "Dynamic": 0,
+            "StaffText": 0,
+            "Tempo": 11
+          }
+        },
+        "test": {
+          "scores": [
+            "IMSLP154067",
+            "IMSLP154070",
+            "IMSLP154084",
+            "IMSLP154140",
+            "IMSLP154211",
+            "IMSLP154289",
+            "IMSLP16369",
+            "IMSLP16400",
+            "IMSLP16890",
+            "IMSLP183800",
+            "IMSLP22647",
+            "IMSLP280033",
+            "IMSLP285347",
+            "IMSLP397171"
+          ],
+          "pages": 14,
+          "ground_truth": {
+            "DirectionText": 11,
+            "Dynamic": 0,
+            "MeasureNumber": 0,
+            "StaffText": 0,
+            "Tempo": 11
+          }
+        }
+      }
+    },
+    "lieder_lyrics": {
+      "source_pages_sha256": "2877c6724785035651a0e493dc9c6be21dc9d576753b6e0119c1a87c8321fda1",
+      "roles": {
+        "selection": {
+          "scores": [
+            "IMSLP140920",
+            "IMSLP154060",
+            "IMSLP154086",
+            "IMSLP154201",
+            "IMSLP24051",
+            "IMSLP285346",
+            "IMSLP44341",
+            "IMSLP588989",
+            "IMSLP60848",
+            "IMSLP624192"
+          ],
+          "pages": 20,
+          "ground_truth": {
+            "Dynamic": 78,
+            "Lyrics": 374,
+            "MeasureNumber": 0,
+            "StaffText": 0,
+            "Tempo": 0
+          }
+        },
+        "test": {
+          "scores": [
+            "IMSLP154067",
+            "IMSLP154084",
+            "IMSLP16369",
+            "IMSLP16890",
+            "IMSLP280033",
+            "IMSLP285347",
+            "IMSLP397171",
+            "IMSLP593990",
+            "IMSLP603446",
+            "IMSLP605026",
+            "IMSLP61117",
+            "IMSLP62381",
+            "IMSLP657998",
+            "IMSLP89290",
+            "IMSLP89797"
+          ],
+          "pages": 20,
+          "ground_truth": {
+            "Dynamic": 79,
+            "Lyrics": 407,
+            "StaffText": 0,
+            "Tempo": 0
+          }
+        }
+      }
+    }
+  }
+}
