@@ -346,8 +346,8 @@ def main() -> None:
     parser.add_argument(
         "--rest-predictions",
         type=Path,
-        help="Write per-staff rest beam predictions as JSONL (A3) - dump_predictions "
-        "drops every rest; this sink keeps them, for beam_placement.py to join.",
+        help="Write per-staff symbol kinds and beam states, rests kept, as JSONL (A3) - "
+        "dump_predictions drops every rest; score with score_rest_spanning_beams.py.",
     )
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--workers", type=int, default=4)
