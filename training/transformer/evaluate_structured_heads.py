@@ -248,6 +248,18 @@ def trained_heads(manifest_path: Path | None, available: list[str]) -> list[str]
     return declared
 
 
+def _compose_sinks(sinks: list[Callable[..., None]]) -> Callable[..., None]:
+    """Calls every sink for the same staff. Each sink tracks its own position counter
+    (a `nonlocal position` closure), so calling both in the same pass keeps both in
+    step with `evaluate()`'s row-by-row loop - neither sink knows the other exists."""
+
+    def call_all(*posargs: Any) -> None:
+        for sink in sinks:
+            sink(*posargs)
+
+    return call_all
+
+
 def run_evaluation(args: Any, config: Any) -> Evaluation:
     """Everything main() does once the arguments are parsed and a config exists.
 
@@ -279,14 +291,25 @@ def run_evaluation(args: Any, config: Any) -> Evaluation:
 
     with (
         args.predictions.open("w", encoding="utf-8") if args.predictions else nullcontext()
-    ) as handle:
-        sink = (
-            dump_predictions(
-                batches, config.structured_beam_levels, config.structured_slur_slots, handle
+    ) as handle, (
+        args.rest_predictions.open("w", encoding="utf-8")
+        if args.rest_predictions
+        else nullcontext()
+    ) as rest_handle:
+        sinks = []
+        if args.predictions:
+            sinks.append(
+                dump_predictions(
+                    batches, config.structured_beam_levels, config.structured_slur_slots, handle
+                )
             )
-            if args.predictions
-            else None
-        )
+        if args.rest_predictions:
+            from training.transformer.dump_rest_predictions import dump_rest_predictions
+
+            sinks.append(
+                dump_rest_predictions(batches, config.structured_beam_levels, rest_handle)
+            )
+        sink = _compose_sinks(sinks) if sinks else None
         evaluation = evaluate(
             model,
             batches,
@@ -300,6 +323,8 @@ def run_evaluation(args: Any, config: Any) -> Evaluation:
     print(evaluation.describe())
     if args.predictions:
         print(f"predictions: {args.predictions}")
+    if args.rest_predictions:
+        print(f"rest predictions: {args.rest_predictions}")
     if args.out:
         args.out.write_text(json.dumps(evaluation.to_dict(), indent=2), encoding="utf-8")
         print(f"report: {args.out}")
@@ -317,6 +342,12 @@ def main() -> None:
         "--predictions",
         type=Path,
         help="Write per-staff beam vectors as JSONL, for rule_vs_head.py to join.",
+    )
+    parser.add_argument(
+        "--rest-predictions",
+        type=Path,
+        help="Write per-staff rest beam predictions as JSONL (A3) - dump_predictions "
+        "drops every rest; this sink keeps them, for beam_placement.py to join.",
     )
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--workers", type=int, default=4)
