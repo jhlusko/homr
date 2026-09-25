@@ -9,10 +9,12 @@ protects the rest of the vocabulary from a narrowly targeted update.
 # flake8: noqa: T201
 
 import argparse
+import os
 from pathlib import Path
 
 from training.omr_datasets.convert_pdmx import pdmx_train_index
 from training.transformer.train import train_transformer
+from training.transformer.recipe_manifest import write_recipe_manifest
 from training.transformer.train_scans import (
     IMSLP_COUNT,
     IMSLP_TRAIN_INDEX,
@@ -32,6 +34,10 @@ def main() -> None:
     parser.add_argument(
         "--checkpoint", required=True, help="Completed .pth checkpoint to continue."
     )
+    parser.add_argument("--ossq-index", default=OSSQ_SCANNED_INDEX)
+    parser.add_argument("--lieder-train-index", default=IMSLP_TRAIN_INDEX)
+    parser.add_argument("--lieder-val-index", default=IMSLP_VAL_INDEX)
+    parser.add_argument("--pdmx-index", default=pdmx_train_index)
     parser.add_argument("--rare-index", default=RARE_NUMERATOR_INDEX)
     parser.add_argument("--rare-count", type=int, default=RARE_NUMERATOR_COUNT)
     parser.add_argument("--epochs", type=int, default=EPOCHS)
@@ -41,10 +47,10 @@ def main() -> None:
 
     required = [
         ("checkpoint", args.checkpoint),
-        ("OSSQ index", OSSQ_SCANNED_INDEX),
-        ("Lieder index", IMSLP_TRAIN_INDEX),
-        ("validation index", IMSLP_VAL_INDEX),
-        ("PDMX index", pdmx_train_index),
+        ("OSSQ index", args.ossq_index),
+        ("Lieder index", args.lieder_train_index),
+        ("validation index", args.lieder_val_index),
+        ("PDMX index", args.pdmx_index),
         ("rare-numerator index", args.rare_index),
     ]
     missing = [f"{name}: {path}" for name, path in required if not Path(path).is_file()]
@@ -64,13 +70,37 @@ def main() -> None:
     train_transformer(
         warm_start=True,
         checkpoint=args.checkpoint,
-        dataset_index=[OSSQ_SCANNED_INDEX, IMSLP_TRAIN_INDEX, pdmx_train_index, args.rare_index],
+        dataset_index=[
+            args.ossq_index,
+            args.lieder_train_index,
+            args.pdmx_index,
+            args.rare_index,
+        ],
         dataset_weights=[float(count) for count in counts],
         number_of_files=total,
         number_of_epochs=args.epochs,
-        validation_index=IMSLP_VAL_INDEX,
+        validation_index=args.lieder_val_index,
         seed=args.seed,
         checkpoint_folder=args.checkpoint_folder,
+    )
+    script_location = os.path.dirname(os.path.realpath(__file__))
+    git_root = os.path.join(script_location, "..", "..")
+    write_recipe_manifest(
+        checkpoint_dir=os.path.join(git_root, args.checkpoint_folder),
+        git_root=git_root,
+        indexes={
+            "ossq": args.ossq_index,
+            "lieder_train": args.lieder_train_index,
+            "lieder_val": args.lieder_val_index,
+            "pdmx": args.pdmx_index,
+            "rare_numerator": args.rare_index,
+        },
+        extra={
+            "checkpoint": args.checkpoint,
+            "rare_count": args.rare_count,
+            "epochs": args.epochs,
+            "seed": args.seed,
+        },
     )
 
 

@@ -26,10 +26,12 @@ alone specialises the model at the expense of everything else.
 # flake8: noqa: T201
 
 import argparse
+import os
 from pathlib import Path
 
 from training.transformer.train import train_transformer
 from training.transformer.train_lieder_only import REPLAY_CORPORA, _replay_pair
+from training.transformer.recipe_manifest import write_recipe_manifest
 
 #: The *current* scanned conversion, three builds on from the original. `phase7` took
 #: every scanned crop's symbols from `musicxml/unaligned` - the synthetic pagination -
@@ -64,6 +66,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--ossq-count", type=int, default=OSSQ_COUNT)
     parser.add_argument("--imslp-count", type=int, default=IMSLP_COUNT)
+    parser.add_argument("--ossq-index", default=OSSQ_SCANNED_INDEX)
     parser.add_argument("--train-index", default=IMSLP_TRAIN_INDEX)
     parser.add_argument("--val-index", default=IMSLP_VAL_INDEX)
     parser.add_argument(
@@ -99,7 +102,7 @@ def main() -> None:
         f"mix: OSSQ scanned {args.ossq_count}, IMSLP scans {args.imslp_count}, "
         f"replay [{described}] ({100 * replayed / total:.1f}%) = {total} files"
     )
-    print(f"  ossq index:  {OSSQ_SCANNED_INDEX}")
+    print(f"  ossq index:  {args.ossq_index}")
     print(f"  lieder index:{args.train_index}")
     print(f"  val index:   {args.val_index}")
     extra = {}
@@ -112,7 +115,7 @@ def main() -> None:
     train_transformer(
         warm_start=True,
         dataset_index=[
-            OSSQ_SCANNED_INDEX,
+            args.ossq_index,
             args.train_index,
             *(REPLAY_CORPORA[n] for n in replay_names),
         ],
@@ -120,6 +123,19 @@ def main() -> None:
         number_of_files=total,
         validation_index=args.val_index,
         **extra,
+    )
+    script_location = os.path.dirname(os.path.realpath(__file__))
+    git_root = os.path.join(script_location, "..", "..")
+    write_recipe_manifest(
+        checkpoint_dir=os.path.join(git_root, args.checkpoint_folder or "current_training"),
+        git_root=git_root,
+        indexes={
+            "ossq": args.ossq_index,
+            "lieder_train": args.train_index,
+            "val": args.val_index,
+            **{f"replay_{n}": REPLAY_CORPORA[n] for n in replay_names},
+        },
+        extra={"ossq_count": args.ossq_count, "imslp_count": args.imslp_count, "replay": replay},
     )
 
 
