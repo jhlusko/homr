@@ -13313,3 +13313,757 @@ first is measuring how much of the corpus it actually costs us - the 22% of syst
 polyphonic staff is an upper bound on the affected material, not on the affected labels.
 
 Committed with the audit tool.
+
+### 2026-09-19 — DirectionText adaptation launched
+
+Collapsed direction classes were trained/evaluated at 0.14 and 0.7 positive sampling.
+Selected 0.14 epoch 4 as adaptation parent: real OSSQ DirectionText recall 19.9% vs
+19.1%, Dynamic 23.8% vs 8.3%; Lieder DirectionText 86.4% vs 63.6%. Synthetic performance
+is substantially stronger. Fingering exclusion now reports EXCLUDED rather than failing
+or pretending it passed; 14 gate tests pass, and both parent gates pass when rerun.
+
+Started `detector-finetune-pipeline` plus bounded-retry `detector-finetune-watchdog` on
+Vast under `/workspace/finetune-direction-20260919`. Four low-rate epochs oversample
+60 annotated real training pages (77 DirectionText boxes), retaining synthetic data.
+All earlier validation scores remain out of training. Real Dynamics/Lyrics training
+labels are unavailable in this split; this experiment is limited to DirectionText
+adaptation. Empty sparse annotation pages are excluded. See handoff for exact recipe,
+selection guardrails, paths, and remaining scale/lyric-granularity caveats.
+
+### 2026-09-24 — OSSQ stems restored, v2 published, mixed heads evaluated
+
+The OSSQ scanned rebuild finished at 03:26 UTC. All 11,572 LMXE segments were byte-identical
+to v1, all 11,572 per-system MusicXML segments now contain `<stem>`, and train/valid still have
+35,226/3,911 rows. `/root/compare_builds.py` initially compared the new absolute index paths
+to themselves; after normalizing filenames, the corrected comparison found identical ordered
+rows, image bytes, and token bytes, zero non-stem sidecar changes, and 806,762 train plus 82,667
+valid stem changes. The package was materialized and passed `--verify-only`; a validation-shard
+extraction found every referenced image, token, and sidecar. Six shards (887,780,539 bytes) were
+uploaded from the instance under `ossq-scanned-v2/`. All public objects returned the expected
+size, and a clean validation fetch verified the digest pinned in `ossq-omr-data` commit
+`3b2c045`. `ossq-scanned-v1/` remains public for old pins and has no usable stem directions.
+
+The mixed run used v1 OSSQ, so its OSSQ stem score is meaningless. Against the same PDMX-only
+validations from `HANDOFF_2026-09-24.md`, its per-source results were:
+
+| metric | PDMX-only → mixed on PDMX | PDMX-only → mixed on Lieder | PDMX-only → mixed on OSSQ |
+|---|---:|---:|---:|
+| exact beam vector | .862 → .844 | .710 → .820 | .900 → .932 |
+| slur-side macro-F1 | .818 → .800 (3,585) | .570 → .511 (45) | .840 → .899 (6,081) |
+| tie macro-F1 | .860 → .831 | .705 → .753 | .746 → .811 |
+| slur-span F1 | .761 → .733 | .482 → .499 | .851 → .881 |
+| nontrivial advance macro-F1 | .790 → .771 | .853 → .855 | .808 → .879 |
+
+The Lieder slur-side support is too small to interpret. Dynamics remains near .10 macro-F1
+on all three; keep it disabled. Mixed-source training improves Lieder beams and several OSSQ
+heads but loses roughly 2–3 points on several PDMX metrics, so no aggregate score or ship
+decision is warranted.
+
+With v2 stems, the OSSQ slur-side rule scored .946 macro-F1 and 94.8% accuracy on 5,999
+scorable sides from the same 3,904 evaluation crops. An event-stream alignment then paired
+the rule and mixed head on exactly **5,998 sides**, with zero crops skipped: rule **.9463**
+versus head **.8996** macro-F1, and 94.78% versus 90.21% accuracy. One additional rule
+side lies beyond the head's two slur slots. The same pairing on mixed predictions gives
+**PDMX rule .8192 vs head .7996** on 3,575 sides and **Lieder rule .3211 vs head .5109**
+on 45 sides, with zero crops skipped. The Lieder direction is suggestive only at that
+support. The stem rule
+grouped by predicted beams scored 94.4% on 38,229 joined notes, with 2,070 staves skipped.
+The stem arbiter could not score the v1 predictions because their stem references were unknown.
+Reevaluating the same mixed checkpoint on v2 labels finished at 05:10 UTC: OSSQ stem
+direction-only accuracy is **83.45%**. On the arbiter's held-out reporting half (19,539
+joined notes), the head is **83.75%**, the beam-derived rule **93.86%**, and a confidence
+switch tuned on a separate 17,185 notes is **93.83%**. The rule remains the best measured
+choice on these notes. Beam/slur/tie metrics shifted by under 0.2 point from the v1
+evaluation, consistent with the stem-only data change but not a proof of deterministic
+inference.
+
+The named rest-spanning beam gate is currently **not measurable with these labels**. Across
+3,904 held-out crops, the token stream has 7,527 flagged rests but the evaluator omits their
+beam vectors; the omission count matches the flagged-rest count in 3,886 crops (18 have other
+small alignment differences). In 3,564 crops joined to source MusicXML, 13,329 rests had zero
+`<beam>` tags. The 122 full cleaned OSSQ MusicXML scores likewise have zero `<beam>` tags
+among 185,942 rests. This is a representation/ground-truth gap, not evidence that the head has good
+or bad precision on beams over rests. See `rest_spanning_gate.json` under
+`/workspace/train-20260924/rules/ossq-v2/`.
+
+A second mixed run replaces only the 35,226 OSSQ training paths with v2 sidecars, keeping
+28,705 PDMX/Lieder rows unchanged. `mixed_v2` tmux started training at **05:11 UTC** and is
+watched by `watch_mixed_v2`; estimated training finish is 06:20–06:40 UTC, with three source
+evaluations around 07:00–07:20 UTC. It uses `/workspace/venv` unchanged.
+
+<!-- Entries below were written on the GPU instance (88.207.87.60) by an unattended
+     session, 2026-09-24 05:40 to 23:56 UTC, and merged here on the owner's laptop. -->
+
+## mixed-v2stems-v7: OSSQ v2 stem retrain, evaluated (2026-09-24)
+
+`heads-mixed-v2stems-v7` retrained the same 62,677-row mixed index as mixed v6, replacing
+only the 35,226 OSSQ training paths with the verified `ossq-scanned-v2` package (restored
+stem fields; `ossq-omr-data` commit `c10725b`/`3b2c045`). Training and all three source
+evaluations (PDMX, Lieder, OSSQ scanned v2) completed at 06:41 UTC
+(`MIXED_V2_ALL_DONE`).
+
+OSSQ stem direction-only accuracy: **92.67%**, up from mixed v6's 83.45% on the same v2
+labels (+9.2pp). Every other OSSQ metric moved slightly favorably too (exact beam vector
+.931→.933, slur-side macro-F1 .897→.904, slur-span F1 .882→.901, advance-nontrivial
+.884→.888; ties flat at .809→.808). PDMX and Lieder showed small mixed deltas, none
+outside the noise band mixed v6 already showed against the PDMX-only baseline; Lieder's
+slur-side metric has only 45 head-scored sides and should not be read as a signal either
+way. Full comparison with support counts:
+`/workspace/context/results/v7_comparison.md` (and raw `report.json` contents in
+`v7_comparison_raw_reports.json` next to it).
+
+Re-ran `training.transformer.stem_arbiter` on v7's OSSQ predictions (same 19,539-note
+held-out reporting half as v6's run): head alone 83.75%→92.34%, rule alone ~93.9%
+(unchanged), best tuned confidence-gated combination 93.83%→**94.89%** — for the first
+time the tuned head+rule combination clearly beats the rule alone. Re-ran the paired
+slur-side scorer (`paired_slur_all.py` pattern) on the same 5,998 paired endpoints: head
+macro-F1 .8996→.9063 (small gain), but the opposite-stem rule still leads at .9463. **Net
+policy for this cycle: adopt v7 as the mixed checkpoint (clear stem win, no other-domain
+regression); use the tuned confidence-gated head+rule combination for OSSQ stems; keep
+the opposite-stem rule for OSSQ slur-side; do not use Lieder's 45-item slur-side sample to
+decide anything.** Dynamics stays disabled (macro-F1 ~.10 on all three sources,
+unchanged).
+
+The rest-spanning beam gate — the roadmap's named ship criterion for the beam head — is
+still unmeasured. This cycle did not attempt ground-truth recovery from MSCX `BeamMode`
+markers; that remains the next blocking step before any beam-rule shipping decision.
+
+## Scan core retrain launched on lieder-v8 (2026-09-24, roadmap item 4)
+
+Launched the "data changed, not the recipe" retrain from `HANDOFF_DETECTOR_RETRAIN.md`
+§3.4 / roadmap STATUS.md: the `scans_v4` recipe (`train_scans.py`, warm-start from
+pinned `pytorch_model_426-b6fd20809a8dcaf10dfd39a4ca4f64c6f056e644.pth`, every parameter
+trainable, 6 epochs, seed 42, OSSQ scanned + Lieder + 14.9% PDMX replay) rerun with
+Lieder swapped from the old boundary-safe v4 corpus to `lieder-v8` (agrees with source on
+100% of matched notes; the v4 corpus had the grand-staff/voice tie-pairing bug in
+`docs/TIE_LABEL_INVESTIGATION.md`).
+
+Environment repairs needed before this would run on this instance (all in
+`/workspace/venv`, additive installs only, no rebuild):
+- `accelerate>=0.26.0` and `tensorboard` were missing — `/workspace/venv` had only ever
+  been used for frozen-core head fine-tuning, never the full HF-`Trainer` path this
+  script drives.
+- `training/transformer/train_scans.py`'s `OSSQ_SCANNED_INDEX` constant pointed at
+  `/workspace/b0/phase7num/train/index.txt`, a path from a prior instance. Repointed to
+  `/workspace/ossq-build/build-20260924-stems/dataset/scanned/train/index.txt` (the same
+  v2 corpus generation mixed-v7 trained on; irrelevant which OSSQ stem version since this
+  base core has no stem head at all — that's a separate frozen-core add-on).
+- The pinned base checkpoint (`pytorch_model_426-...pth`) was not on this instance;
+  `DATASET_DISTRIBUTION.md` names its source, a public GitHub release
+  (`liebharc/homr` releases, `checkpoints` tag) — downloaded and unzipped into
+  `training/architecture/transformer/`.
+- Built corrected lieder-v8 index files (the synced ones pointed at
+  `/home/jhlusko/...`, the operator's laptop path) at
+  `/workspace/train-20260924/scans-core-v9/indexes/{lieder_v8_train,lieder_v8_val}.txt`,
+  verified a 20-file sample resolves. Built a combined
+  `mixed_valid_index.txt` (OSSQ v2 valid 3,911 rows + lieder-v8 val 300 rows) so
+  validation covers both domains, per IV.25's critique of Lieder-only validation hiding
+  OSSQ regressions.
+
+Command (tmux `scans_core_v9`, watcher `watch_scans_core_v9` every 5 min to
+`/root/watch_scans_core_v9.log`):
+
+```
+train_scans --train-index lieder_v8_train.txt --val-index mixed_valid_index.txt \
+  --replay pdmx=6700 --epochs 6 --seed 42 \
+  --checkpoint-folder current_training_scansv9_lieder8
+```
+
+Mix confirmed at launch: 34,510 OSSQ scanned + 3,622 Lieder-v8 + 6,700 PDMX replay
+(14.9%) = 44,832 files, matching the `scans_v4` recipe exactly except for the Lieder
+source. Training started 07:07 UTC; GPU climbed to 87% within the first minute. Full run
+is 6 epochs / 8,304 steps on batch size 8 (every parameter trainable, unlike the ~75
+minute frozen-core head jobs) — expect several hours, not tens of minutes. Completion
+marker: `SCANS_V9_DONE` in `/root/train_scans_core_v9.log`, weights land at
+`training/architecture/transformer/pytorch_model_426-...{run_id}.pth` inside
+`current_training_scansv9_lieder8/`.
+
+Once trained, this new core needs the same head refit and matched-heldout comparison
+STATUS.md already calls for ("corrected-v8 scan-model retraining, then head refit and
+matched heldout comparisons") before it can replace the currently-frozen core mixed-v6/v7
+were built on. That is a separate, later step — not started.
+
+## Scan core retrain on lieder-v8 complete (2026-09-24)
+
+`scans_core_v9` finished at 08:12 UTC, `SCANS_V9_DONE`. 6 epochs, 8,304 steps, 64.6
+minutes wall clock (much faster than the ~75min *head-only* jobs suggested — full-model
+training was not the bottleneck the frozen-core comparison implied). Converged
+monotonically; no sign of instability or overfitting across the run.
+
+New checkpoint: `training/architecture/transformer/
+pytorch_model_20-cc3dcd9fda492e13d2dfbeb5d6ee287a0649a5b7.pth` (300 MB).
+
+Combined validation (OSSQ v2 valid 3,911 + Lieder-v8 val 300 = 4,211 rows), epoch 6:
+
+| field | accuracy |
+|---|---:|
+| aggregate | 0.9700 |
+| rhythm | 0.9635 |
+| pitch | 0.9582 |
+| lift | 0.9486 |
+| position | 0.9957 |
+| articulations | 0.9772 |
+| slurs | 0.9770 |
+
+**This is a combined-domain number, not the three-way OSSQ/PDMX/Lieder split IV.20 used**
+(no PDMX held out here, and OSSQ+Lieder are pooled). Getting the comparable per-domain
+table needs either a separate `base_predictions` + scorer pass per domain, or waiting for
+the head-refit phase's own evaluation to report per-source numbers — neither was run this
+cycle to avoid scope creep beyond "train, verify, document."
+
+**Decision point, not made here:** whether this core replaces the one mixed-v6/v7 are
+built on. STATUS.md already names the required next step — "corrected-v8 scan-model
+retraining, then head refit and matched heldout comparisons" — and that head refit
+(retraining the 24 structured-head tensors frozen against *this* core, the same way
+mixed-v6/v7 were built against the old one) has **not** been started. Do not promote this
+checkpoint to production or point new head training at it without that comparison and an
+explicit decision.
+
+## Detector retrain, step 1: box rendering launched (2026-09-24), with a near-outage
+
+Started `docs/HANDOFF_DETECTOR_RETRAIN.md` §2-3's queued detector retrain (fixes the
+released `non-lyric-text` detector's 0% `Tempo` recall). Step 1 is rendering every OSSQ
+system through MuseScore to get SVG text-box positions
+(`training.omr_datasets.musescore_boxes`). Confirmed inputs first: whole-score
+`.musicxml` files under `scores/*/sq*.musicxml` are NOT what this tool wants (it expects
+one system per file and refuses multi-page whole scores — verified on a 5-file smoke
+test, all 5 correctly refused with "expected one page, rendered N"). The real per-system
+files are under `scores/*/musicxml/{scanned,unaligned}/*.musicxml`
+(`/workspace/ossq-build/ossq-omr-stems`), 23,971 total (10,727 scanned + 13,244
+unaligned). Symlinked them into
+`/workspace/train-20260924/detector-retrain/scores_filtered/{scanned,unaligned}/`
+(subdirs needed — the two sets share filenames and collide if flattened) and reran the
+5-file smoke test against real per-system files: all 5 succeeded in ~10s, correct
+`.boxes.json` output including a `MeasureNumber` box.
+
+**Near-outage: launched the full render with `--workers 18` and it took the instance
+down to where every shell command failed** (`echo ok` returned exit 1, sandboxed and
+unsandboxed both), for roughly ten tool-call round trips before it self-recovered.
+`pids.max` on this container is 1,280 and idle baseline is already ~784 — nowhere near
+the naive per-worker math suggested trouble, but each `xvfb-run` invocation spawns a full
+Xvfb server plus the `mscore-portable` process plus wrapper shells, and 18 of those
+launching close together evidently blew through the remaining headroom. **Killed the
+`render_boxes` tmux session and relaunched at `--workers 4`** (the same concurrency the
+smoke test used successfully) — stable, ~5 concurrent `mscore-portable` processes,
+progressing normally. At the smoke test's measured throughput (~0.49 files/sec at this
+concurrency) the full 23,971-file render is **~13-14 hours**, not the ~2.7 hours the
+18-worker math implied — correctness and instance stability over speed here.
+**Lesson for next time: don't raise `--workers` past what was actually smoke-tested at
+that concurrency, regardless of nominal core count** — this container's process ceiling
+is not simply "cores available."
+
+Running in tmux `render_boxes`, log `/workspace/train-20260924/detector-retrain/logs/
+render.log`, completion marker `RENDER_BOXES_DONE` in `/root/render_boxes.log`. Next
+steps once done: masks, patch bank at `--positive-ratio 0.14`, train, page-level
+validation, gate — per the handoff, not started yet.
+
+## Rest-spanning beam ground truth: semantics validated (2026-09-24)
+
+Continuing action 4 from `next_actions_3_4.md`. Validated the corrected 8,198-rest
+BeamMode population's semantics without rendering (mscore was mid-recovery from the
+render_boxes incident at the time, and this turned out more rigorous anyway): for every
+non-trivial-BeamMode rest, checked whether its immediate voice-neighbors on both sides
+are also part of the same beam group. **98.6% (8,084/8,198) have both neighbors beamed**
+— strong structural confirmation that the MSCX `BeamMode` marker on a rest really does
+mean "this rest sits inside a beamed passage," which is the concept the roadmap's
+rest-spanning gate needs. 117 rests (1.4%) are anomalous and worth a manual look
+(`sq10527526.mscx`, `sq8853405.mscx` first) but don't undermine the majority reading.
+Report: `results/beam_mode_rest_adjacency_check.json`.
+
+Remaining, unsolved: joining these MSCX-level rest labels to the corpus's per-system
+crop files. The crops are named `<score>:<segment>:<system>` and it is not yet
+established how those map back to measure ranges in the source `.mscx` — that mapping
+may already exist somewhere in `ossq-omr-data`'s build pipeline and is worth checking
+before writing a new one. Not attempted this cycle; see `results/next_actions_3_4.md`.
+
+## Head refit against scans_core_v9 launched (2026-09-24, user-requested)
+
+User asked to add a GPU task since scans_core_v9 finished and GPU was idle; confirmed
+via AskUserQuestion that the head refit against the new core was the right one (the
+pending decision flagged earlier), with crash logging added.
+
+Built `mixed_train_v3.txt`: same 63,931-row mix as v7's `mixed_train_v2.txt` (35,226
+OSSQ v2 + 18,004 PDMX + 10,701 Lieder), but with the 10,701 Lieder rows repointed from
+the old corpus to `lieder-v8` by basename (`/root/build_mixed_v3_index.py`) — verified
+all 10,701 basenames exist in `lieder-v8/pairs` before swapping, 0 missing. This follows
+`HANDOFF_DETECTOR_RETRAIN.md`'s explicit instruction to re-take structured-head accuracy
+against lieder-v8, "never v6/v7" — so evaluation also uses lieder-v8's own validation
+index (`scans-core-v9/indexes/lieder_v8_val.txt`), not the old `lieder_valid.txt` v6/v7
+used, for a real apples-to-apples read of what the corrected Lieder labels are worth to
+the heads, not just the core.
+
+Launched `heads-mixed-v3-scansv9` (tmux `heads_v3_scansv9`, watcher
+`watch_heads_v3_scansv9`) with the same recipe as v7's head training (3 epochs, batch 8,
+8 workers) but `--checkpoint` pointed at the new
+`pytorch_model_20-cc3dcd9fda492e13d2dfbeb5d6ee287a0649a5b7.pth` core instead of the old
+`OTS-homr.pth`. `/root/train_heads_v3_scansv9.sh` now has explicit crash logging per the
+user's request: preflight existence checks on the checkpoint/index/lieder-valid paths,
+and every training/eval step's exit code checked individually with a `fail()` helper that
+writes `STEP_FAILED step=<name> exit_code=<n>` plus `HEADS_V3_FAILED` to
+`/root/train_heads_v3_scansv9.log` (instead of relying on `set -e` alone, which would
+just silently stop the script without saying which step or why). The watcher greps for
+`STEP_FAILED` every 2 minutes and reports `HEADS_V3_CRASHED` with the last 60 lines of
+whichever step's log if it fires.
+
+Loaded cleanly: 326 base params from the new core, 24 structured-head tensors
+initialized, training set 62,677 after the ledger-line filter — same post-filter count
+as v7's run, despite the Lieder rows now pointing at different (corrected) files, which
+is a coincidence of the filter criteria rather than evidence the files are identical.
+Running alongside `render_boxes` (CPU-only) with no process-count issues this time
+(total ~165, well under the container's ceiling).
+
+**This does not promote anything to production.** Once done (`HEADS_V3_ALL_DONE`), it
+needs the same three-way comparison against mixed v6/v7 and PDMX-only that the v7 cycle
+did, before any decision about which checkpoint set ships.
+
+## Rest-spanning gate: crop-measure mapping found, and the real remaining gap identified
+
+Continuing action 4. Found the missing crop↔measure join: `ossq-omr-data`'s own
+converter (`omrdp/ossq/convert_musicxml_to_lmxe.py`, in
+`/workspace/gpu-roadmap-20260919/ossq-omr-data/vendor/ossq-preprocessor/`) already
+writes a YAML sidecar per system-crop with `measure_start`/`measure_end`/
+`measure_numbers` — `scores/*/metadata/{scanned,unaligned}/<score_id>:<page>:<system>.
+yaml`. Confirmed live. **Use `metadata/scanned/` only** — checked `sq7313978` measure
+28 against `unaligned/` and got four different, overlapping candidate windows (synthetic
+pagination), which would make the join ambiguous; `scanned/` sidecars come from the real
+layout and should be 1:1, and they're also what `eval-ossq-valid`'s crops are built
+from.
+
+But this doesn't fully unblock scoring: spot-checked a `notation.json` sidecar
+(`sq8907120_0001_0002_2.txt.notation.json`) and confirmed **rests have no entries at all**
+in the current token representation — only notes/chords, with `advance` silently
+absorbing any preceding rest's duration. So even with MSCX ground truth and the crop
+mapping, there's no rest *position* to attach a label to in the predictions or reference.
+This matches and sharpens the roadmap's own earlier warning that "current labels and
+evaluator cannot measure the rest-spanning gate" — now with the concrete mechanism
+identified. The realistic path forward is a proxy metric (does the model's predicted
+beam on the note after an `advance`-detected gap say "continue" vs "begin," compared to
+what MSCX ground truth says) rather than a real rest token, which would be a vocabulary
+change. Not built yet — needs its own validity check first. Detail in
+`results/next_actions_3_4.md`.
+
+## Head refit against scans_core_v9: regressed across the board, not promoted (2026-09-24)
+
+`heads-mixed-v3-scansv9` finished at 12:07 UTC (`HEADS_V3_ALL_DONE`), all three
+evaluations complete. **Every structured-head metric regressed versus mixed v7 on every
+domain** — PDMX, Lieder, and OSSQ all worse on exact beam vector, slur-side, ties,
+slur-span, and advance; OSSQ's regression is the clearest since OSSQ training/eval data
+was unchanged between v7 and v3 (advance-nontrivial −12.6pp, slur-span −8.0pp,
+slur-side −7.8pp, exact beam −3.6pp). Stem direction-only held up best (OSSQ .927→.916,
+only −1.1pp). Full tables with support counts:
+`results/heads_v3_scansv9_comparison.md`.
+
+The training loss curve suggests why: v3's loss is higher than v7's at every matched
+epoch and hadn't converged by epoch 3 (2.2634 vs v7's 1.9915) — the unchanged 3-epoch
+head-refit recipe, tuned against the old core, may simply not be enough for a frozen
+representation this different. **This is not evidence the new core is bad** (its own
+base-transformer accuracy, 0.9700, is a different measurement of a different thing) —
+it's evidence the existing head-refit recipe doesn't transfer cleanly to it as-is.
+Plausible next steps if this is picked back up: more epochs, a different learning rate
+for this fitting stage, or isolating the Lieder-corpus-swap effect from the core-swap
+effect (OSSQ already isolates this and regressed regardless, so the core is implicated).
+
+**Not promoted, not discarded.** Neither `scans_core_v9` nor this head set replaces
+anything in production. This is evidence for the user's decision, and the user has not
+made it yet.
+
+## Detector box render finished, but the data can't fix the actual bug (2026-09-24)
+
+`render_boxes` finished at 12:41 UTC, 23,914/23,971 systems annotated. Inspected real
+output before trusting it (per the handoff's own "count is not correctness" warning) and
+found a disqualifying problem: **every rendered system's only text class is
+`MeasureNumber` — zero `Tempo`, zero `Dynamic`, zero anything else**, across all 14,058
+distinct output files and confirmed by grepping every SVG directly. Training a detector
+on this would reproduce the exact 0%-Tempo-recall bug this retrain exists to fix.
+
+Traced to root cause: the per-system `.musicxml` files this render used are split from
+`<score>_cleaned.musicxml` (confirmed in `ossq-omr-data`'s own
+`convert_musicxml_to_lmxe.py`), and that cleaned file has **zero `<direction>`
+elements** — whatever produces it strips all tempo/dynamic/expression/staff-text markup,
+plausibly because homr's OMR vocabulary never used any of it. The **raw**
+(non-`_cleaned`) whole-score `.musicxml` sibling has 3,375 `<direction>` elements for one
+spot-checked score alone, including a real `Allegro` tempo marking — confirmed live.
+`split_part_to_systems.py` itself deep-copies whole `<measure>` elements and doesn't
+appear to strip anything, so the loss is upstream of splitting, in the cleaning step.
+`MeasureNumber` survived because MuseScore auto-generates it as layout, independent of
+`<direction>` content.
+
+Separately, and harmlessly: "scanned" and "unaligned" per-system sets share 9,886
+identical sample IDs, so writing both to one flat `--out` directory let the second-
+processed copy overwrite the first (14,058 output dirs from 23,914 successful renders).
+Doesn't affect box positions, but worth separating outputs on any rerun.
+
+**Recommendation, not started:** re-split the raw (non-cleaned) whole-score MusicXML
+into per-system files (same numbering scheme, so it stays joinable) and re-render from
+that, verifying class diversity before touching masks/patch-bank/training. This is real,
+moderate new engineering — adapting the splitter to a different input, testing it — not
+a quick fix. Full writeup: `results/detector_retrain_boxes_finding.md`. Nothing was
+deleted; the current (unsuitable for its purpose) render output stays on disk.
+
+## Detector data fix found, verified, and full re-render launched (2026-09-24)
+
+Traced last cycle's zero-Tempo/Dynamic finding to the exact line: `omrdp/ossq/
+clean_musicxml.py`'s `general_pruner = Pruner(prune_prints=False)` leaves
+`prune_directions` at the `Pruner` class's own default of `True`, stripping every
+`<direction>` element (tempo, dynamics, staff text, everything) when it produces
+`_cleaned.musicxml`. Separately confirmed the existing per-system splitter
+(`convert_musicxml_to_lmxe.py`) couldn't have preserved them anyway even given a
+direction-bearing input: its `Linearizer` has `"direction"` in `IGNORED_MEASURE_ELEMENTS`
+by design (the LMXE token vocabulary has no representation for it), so the LMXE
+round-trip discards directions independent of the cleaning step.
+
+**Fix: bypass both.** `split_part_to_systems.py` (also in `ossq-omr-data`'s vendored
+`lmxe` package) operates on raw XML elements, deep-copying whole `<measure>` blocks
+verbatim — it doesn't touch the LMXE vocabulary and doesn't strip anything. Wrote
+`/root/split_raw_scores.py`: for each of the 122 raw (non-`_cleaned`) whole-score
+`.musicxml` files, splits all 4 instrument parts via `split_part_to_systems`, recombines
+per page/system with `string_quartet_parts_to_score`, writes one per-system file per
+`<score>:<page>:<system>` id. Needed `/workspace/venv-ossqbuild-26` (the separate OSSQ
+build venv, not `/workspace/venv`) for `strictyaml`, a `lmxe` package dependency unrelated
+to homr training.
+
+**Verified before trusting it, twice.** First a 5-file smoke test rendered through
+`musescore_boxes.py`: `Dynamic`, `StaffText`, and `MeasureNumber` boxes all appeared
+where zero had before, with sane box coordinates; opened one rendered page image
+directly and it's a clean, correctly-engraved 4-staff system with real dynamics markings
+(`pp`, hairpins, an accent) — not garbled output from the manual XML recombination. Then
+ran the splitter at full scale: 122/122 scores succeeded, 0 failures, 13,244 per-system
+files written, **11,743 (88.7%) contain at least one `<direction>` element** (versus 0
+before).
+
+Launched the full re-render at the same conservative `--workers 4` (tmux
+`render_boxes_v2`, watcher `watch_render_boxes_v2`, log
+`/workspace/train-20260924/detector-retrain/logs/render_v2.log`, output
+`.../detector-retrain/boxes_v2/`). This produces one split per score (not a
+scanned+unaligned pair), so the earlier ID-collision overwrite doesn't apply here.
+Process counts confirmed healthy immediately after launch (~160 total, ~6
+`mscore-portable`) — no repeat of the earlier near-outage.
+
+Once done: inspect real output again before trusting it (same discipline that caught
+last cycle's problem), then proceed to masks + patch bank at `--positive-ratio 0.14` per
+`HANDOFF_DETECTOR_RETRAIN.md` §2. Not started yet.
+
+## Rest-spanning gate: feasibility checked, direct (non-proxy) scoring now looks possible
+
+Did the concrete crop↔rest join by hand for real cases, using proper `xml.etree.
+ElementTree` parsing this time (`Score.findall("Staff")` for the four real staves,
+not the earlier ad hoc `<Staff id="1">(.*?)</Staff>` regex, which can silently grab a
+metadata-only header stub with zero measures on large scores — caught this mid-check,
+fixed it, re-verified the same measure number came out correct either way for the case
+tested). Found real matches in both the train split (`sq7383977` m.267 →
+`sq7383977_0048_0003_1`) and valid split (`sq8907120` m.292 →
+`sq8907120_0021_0002_1`, which has `eval-ossq-valid` predictions).
+
+**Correction to last cycle's claim** that rests have no representation at all in
+`notation.json` — too strong. They get a slot (verified 1:1, 32 tokens ↔ 32 notation
+entries for one crop), always with `beams: not_applicable`. The real gap is narrower:
+`evaluate_structured_heads.py` filters the exported `reference`/`predicted` arrays down
+to only beam-eligible notes (`supervised = [... if any(state != NOT_APPLICABLE ...)]`,
+~line 128), so rest slots exist internally but never reach `predictions.jsonl` (confirmed:
+one crop has 29 note/rest tokens, 17 exported rows). This makes a **direct** score more
+promising than the proxy metric floated last cycle — rerun the decode path without that
+filter, read whatever the model actually predicts at a rest's slot (nothing stops the
+classification head from emitting a real class there, it's just never trained with
+gradient at those positions), and compare directly against the recovered MSCX label. No
+proxy ambiguity, no "does an advance gap really mean a rest" guessing. Not built yet —
+well-scoped next step. Detail: `results/next_actions_3_4.md`.
+
+## Rest-spanning gate: unfiltered-decode attempt caught its own bug, negative result reconfirmed
+
+Tried building the "direct score" approach flagged earlier: patched a copy of
+`evaluate_structured_heads.py` to emit unfiltered `reference_all`/`predicted_all`
+(every position, not just beam-eligible notes) and ran it on the two known crops. First
+result looked like a reversal — some rest positions showed real `continue`/`end` beam
+values instead of `not_applicable`. **Did not hold up under a direct check**: that exact
+crop's own `notation.json` on disk shows `not_applicable` for all 9 of its rest entries,
+matching a separate 500-file corpus sample (1,912 rests, 0 exceptions). The patched
+script's arrays were a fixed length (607) regardless of each crop's real token count (32
+vs 38), and printing past crop 1's real 32 tokens showed clearly fabricated patterns — a
+batching/padding bug in the quick patch, not a real signal. Caught before documenting it
+as fact.
+
+**Net: the "rests are always not_applicable in the reference" claim is now confirmed
+twice, directly against files on disk, independent of any decode logic.** The
+unfiltered-decode idea for reading the model's actual *prediction* at a rest slot is
+still sound in principle but needs the slicing bug fixed (or a different approach) —
+not solved this cycle. Detail: `results/next_actions_3_4.md`.
+
+## Detector re-render verified: real Tempo/Dynamic/StaffText data at last (2026-09-24)
+
+`render_boxes_v2` finished at 16:56 UTC, 13,148/13,244 systems annotated (96 refused,
+harmless multi-page edge cases). Inspected real output before trusting it, same
+discipline as the first render:
+
+```
+Dynamic       79,373
+MeasureNumber  9,879
+StaffText      8,459
+Tempo          5,711
+RehearsalMark  1,503
+Fingering        261
+Harmony            2
+```
+
+94.4% of files (12,409/13,148) have at least one text box. **Tempo now has 5,711
+examples, versus zero in the first render.** Opened `sq10307350:0001:0001-1.png`
+directly: a real tempo marking ("Allegro spirituoso ♩ = 116"), a rehearsal mark ("I."),
+and dynamics ("f" under each staff) are all visible exactly where their boxes report
+them. The fix from earlier today is confirmed working at full scale, not just the small
+sample.
+
+Next: masks, then patch bank at `--positive-ratio 0.14`, per
+`HANDOFF_DETECTOR_RETRAIN.md` §2. Not started yet this entry — see the next one.
+
+## Detector masks build started (2026-09-24)
+
+Started `training.ocr.detector_masks --boxes boxes_v2 --out masks` (converts the
+verified box data into per-pixel class masks, the same target shape homr's existing
+segmentation U-Net already trains on). Single Python process, CPU-only, no subprocess
+spawning (safe re: the earlier process-limit incident). Running at roughly 2.6 files/sec
+on 13,148 inputs — estimated ~85 minutes. Next: `training/ocr/detector_patches.py`'s
+`DetectorPatches` dataset (default `POSITIVE_RATIO = 0.7`; the plan calls for
+`--positive-ratio 0.14` on whatever training script wraps it — not yet located which
+training entry point exposes that flag, needs checking once masks are ready).
+
+## Detector masks done; caught a train/valid leakage bug before it reached training (2026-09-24)
+
+`detector_masks` finished: 12,409 page masks, confirming the exact sparsity problem
+`--positive-ratio` exists for (text pixels are 0.15% of a page).
+
+Ran `detector_split.py --index masks/index.txt` to get a score-disjoint train/valid
+split before extracting patches — and it reported "12,409 scores -> ... valid", i.e.
+**one "score" per system**, when the real corpus has 122 scores. Both of
+`detector_split.py`'s built-in `--score-from` extractors (`folder`, parses up to
+`"_p<N>-s<N>"`; `mask`, parses up to the first `"_"`) assume naming conventions from the
+existing corpora (`mbox/<score>_p<page>-s<system>/` or Lieder's `imslp_pngs/<score>/`)
+that don't match today's `<score>:<page>:<system>` layout (colon-delimited, one
+directory per *system* not per score, from `musescore_boxes.py`'s own output shape).
+Neither extractor finds an underscore boundary in a name like `sq10307350:0001:0001`, so
+each falls back to treating the whole id as its own score — exactly the leakage failure
+mode the tool's docstring warns about, just triggered by a naming mismatch instead of a
+missing case.
+
+**Caught before any patch bank or training used it.** Had already started
+`extract_patch_bank.py` on the (wrongly) unsplit `masks/index.txt` in parallel — killed
+it (1,050/12,409 done, no harm, nothing downstream had used it) rather than let it keep
+running on the wrong basis. Wrote `/root/detector_split_ossq.py`: the same `is_valid`/
+`write_index` from `detector_split.py`, with a score extractor that splits on the first
+`:` instead of `_p`/`_`. Correct result: **122 scores -> 104 train, 18 valid** (10,840
+train pages, 1,569 valid pages).
+
+Relaunched `extract_patch_bank.py` twice, once per split, at `--positive-ratio 0.14`
+(tmux `extract_patch_bank`, watcher `watch_patch_bank`, logs
+`.../detector-retrain/logs/patch_bank_{train,valid}.log`) — `patch-bank-train/` and
+`patch-bank-valid/` separately, so no page from the same score can appear on both sides
+downstream. Healthy process counts confirmed after relaunch (129-132, well under any
+concern threshold).
+
+## Major finding: every rendered detector page is solid black RGB — caught before training (2026-09-24)
+
+Spot-checking a "Tempo" patch from the freshly-built patch bank before trusting it
+(per HANDOFF_DETECTOR_RETRAIN.md's "count is not correctness" discipline) showed a
+completely black patch image, despite a real Tempo label in its mask. Traced it: **every
+PNG `musescore_boxes.py` renders is RGBA with `RGB=(0,0,0)` everywhere and the actual ink
+carried entirely in the alpha channel** (mscore's PNG export defaults to a transparent
+background; confirmed directly — R/G/B min=max=0, alpha ranges 0-255). **Every consumer
+in this pipeline reads pages with plain `cv2.imread(path)`**, which uses `IMREAD_COLOR`
+by default and drops alpha entirely — `training/ocr/detector_patches.py` (both the live
+`DetectorPatches` dataset and `extract_patch_bank.py`'s patch-drawing) does this with no
+flags. Every page from **both** today's renders (the original `boxes/` and the fixed
+`boxes_v2/`) has this property — confirmed on samples from both — so this is not
+something introduced by today's fix; it is a pre-existing characteristic of
+`musescore_boxes.py`'s `render()` (`training/omr_datasets/musescore_boxes.py`, plain
+`mscore -r <dpi> --export-to file.png score.musicxml`, no background-color flag) that
+nothing downstream ever accounted for. Given the earlier handoff's own words — "the
+instance - set up, not yet used" — this pipeline was plausibly never actually run
+end-to-end with a visual check before today, so the bug was never caught.
+
+**Not a bug in `detector_masks.py`** — it only reads `image.shape` (width/height) from
+the array for mask dimensions, never pixel content, so the already-built masks
+(`masks/`) are correct and did not need touching.
+
+**Fix**: `/root/fix_transparent_pngs.py` composites each RGBA page onto opaque white in
+place (`rgb*alpha + white*(1-alpha)`, since source RGB is always 0 this reduces to
+`255 - alpha`, but written generally). Smoke-tested on one file first: post-fix,
+`cv2.imread` shows real content (min 0, max 255, mean ~248 — mostly white page with
+sparse black ink, as expected), and the composited PNG is visually identical to the
+transparent original when viewed normally. Running across all 13,148 `boxes_v2/` PNGs
+now (pure Python/numpy, single process, no subprocess spawning — safe).
+
+**The patch bank built earlier this cycle (`patch-bank-train/`, `patch-bank-valid/`) is
+built from the broken (black) images and must be discarded and rebuilt** once the PNG
+fix finishes — training on it would teach nothing (every input identical, solid black).
+Not yet rebuilt. Do not launch detector training against the current patch bank.
+
+## PNG fix parallelized after single-process estimate came in at ~4 hours
+
+The single-process `fix_transparent_pngs.py` was projected at ~4 hours (140 files in
+2.5 min). Killed it (clean, no partial-file risk — each file write is atomic via PIL's
+`save()`) and wrote `/root/fix_transparent_pngs_parallel.py`, a `multiprocessing.Pool`
+version at 8 workers — safe here unlike the mscore render incident, since each worker is
+pure Python/numpy/PIL with no subprocess or Xvfb involved. Running now (tmux `fix_pngs`,
+log `.../detector-retrain/logs/fix_pngs.log`), all 8 workers confirmed active, process
+count stable (129). Estimated ~30-40 minutes at this concurrency. Once done: verify a
+sample, then rebuild `patch-bank-train/` and `patch-bank-valid/` from the corrected
+images before any training.
+
+## One corrupted PNG found and repaired; patch bank rebuild retried (2026-09-24)
+
+`extract_patch_bank.py` crashed immediately on rebuild with a `libpng error: Read Error`
+on `sq10313029:0008:0001-1.png`. Root cause: this file was mid-write when the *original*
+single-process `fix_transparent_pngs.py` was killed earlier this cycle (before switching
+to the parallel version) — a partial/truncated write. The parallel run's own pass over
+this file didn't catch it (PIL's lazy decode let a truncated read through without
+raising, so it silently re-saved a still-corrupted file rather than reporting a
+failure — worth knowing about `fix_transparent_pngs_parallel.py`'s limits if this
+pattern is reused elsewhere). Fixed by re-rendering just this one system from
+`scores_raw_split/sq10313029:0008:0001.musicxml` via a direct `mscore --export-to`
+call, then running it through the same alpha-composite fix and verifying with
+`cv2.imread` before retrying. Did not do an exhaustive full-corpus corruption scan
+(single-threaded, would have taken hours) — relying instead on `extract_patch_bank.py`
+itself surfacing any other corrupted file immediately (it reads every image), fixing
+iteratively if more turn up. Patch bank rebuild restarted, progressing normally past the
+point of the earlier crash.
+
+## Patch bank rebuilt and verified good (2026-09-24)
+
+Rebuild succeeded cleanly after the one-file repair: 86,720 train patches, 12,552 valid
+patches, same counts as the broken build (confirms nothing else was lost). Verified
+properly this time — 500-sample check shows 0 black images (was black-100% before the
+fix), 8 Tempo-labeled patches in the sample all have real pixel content, and opened one
+directly: a real 320x320 crop showing a tempo-mark fragment ("♩ ="). The patch bank is
+now trustworthy. Next: training smoke test via `training/ocr/train_detector.py`.
+
+## Detector training smoke test launched, working (2026-09-24)
+
+`train_detector.py` (1 epoch, batch 8, `--pre-extracted` against the verified patch
+bank, `--positive-ratio 0.14`) launched via tmux `smoke_detector`
+(watcher `watch_smoke_detector`, log
+`.../detector-retrain/logs/smoke_detector.log`). Confirmed genuinely training: GPU 78%
+utilized, ~450/10,840 batches in the first 30s. Internet access for the ImageNet-
+pretrained encoder worked without needing `--skip-pretrained` (already confirmed
+available earlier today via the `pytorch_model_426` download). This single epoch is a
+legitimate short first run, not just a plumbing check — letting it run to completion
+rather than killing it, since it's already working well. Once done: check the reported
+per-class metrics (the whole point of this file per its own docstring — measure before
+reaching for correction), decide whether more epochs are warranted, and eventually
+page-level validation + the release gate per `HANDOFF_DETECTOR_RETRAIN.md`. No
+production decisions made.
+
+## Detector epoch 1: strong result, weights lost to a launch-command mistake, relaunched properly
+
+The 1-epoch smoke test actually **completed successfully** — it only crashed at the
+final step (writing the history JSON to `--out`), because I'd pre-created `--out` as a
+directory (`mkdir -p`) rather than leaving it as a file path for the script to write.
+Real training happened; only the final write failed. **`--weights` wasn't passed either,
+so this epoch's trained weights were not saved and cannot be recovered** — a real loss,
+but the metrics survived in the log.
+
+**Epoch 1 result, worth reporting despite the lost checkpoint:**
+
+| class | train IoU | valid IoU |
+|---|---:|---:|
+| background | .983 | .998 |
+| Dynamic | .943 | .962 |
+| Fingering | .875 | (no valid data this epoch) |
+| **Tempo** | **.804** | **.910** |
+| MeasureNumber | .946 | .981 |
+| StaffText | .874 | .904 |
+
+**Validation Tempo IoU of 0.910 after one epoch, on the class that was 0% recall in the
+released detector, is strong direct evidence the whole fix chain from today actually
+works.** This is patch-level IoU, not page-level recall — per the handoff's own repeated
+warning, patch metrics have previously *not* predicted page-level behavior (`e0`: high
+patch IoU, 0% page recall) — so this is encouraging, not a release signal. Full
+writeup: `results/detector_epoch1_smoke_result.md`.
+
+Relaunched properly: `train_detector` (5 epochs this time, same recipe, `--weights
+run1/detector.pth --out run1/history.json` as real file paths this time), tmux
+`train_detector`, watcher `watch_train_detector`, log
+`.../detector-retrain/logs/train_detector.log`. Confirmed training (GPU 79%,
+progressing normally) within seconds of relaunch.
+
+## Detector training (5 epochs) complete; page-level evaluation launched (2026-09-24)
+
+`train_detector` finished cleanly this time — weights (57 MB) and history.json both
+written. Loss decreased monotonically (.0312 -> .0143 -> .0123 -> .0111 -> .0104,
+healthy convergence, no signs of instability). Per-class IoU trend across the 5 epochs:
+
+| class | train e1 | train e5 | valid e1 | valid e5 | valid peak |
+|---|---:|---:|---:|---:|---:|
+| Tempo | .802 | .931 | .901 | .885 | .908 (e2) |
+| StaffText | .864 | .940 | .862 | .924 | .924 (e5) |
+| Dynamic | .933 | .979 | .967 | .976 | .976 (e5) |
+| MeasureNumber | .959 | .990 | .976 | .989 | .990 (e3) |
+| Fingering | .875 | .872 | no valid data any epoch | — | — |
+
+Train IoU improves monotonically on every class, as expected. Valid IoU mostly improves
+or holds steady, **except Tempo, which peaked at epoch 2 (.908) and settled slightly
+lower by epoch 5 (.885)** — mild overfitting signal on that one class, not a collapse
+(stays well above the released detector's 0% recall regardless of which epoch). Fingering
+never appears in any epoch's validation split (rare class, 18-score valid split may
+simply not contain one). Full trend: `run1/history.json`.
+
+**Moved to the actual page-level metric this whole effort targets**: launched
+`training/ocr/detector_box_eval.py` (matches predicted boxes against ground truth by
+IoU/class per page, reports precision/recall/F1 — "the number that decides whether the
+detector is ready," per its own docstring, distinct from patch IoU which has previously
+not predicted page behavior). Running against the 5-epoch weights, full `valid_index.txt`
+(1,569 pages). Tmux `box_eval`, watcher `watch_box_eval`, log
+`.../detector-retrain/logs/box_eval.log`, output `run1/box_eval.json`. **This is a slow
+job** — full-page sliding-window inference costs several seconds per page even on GPU
+(matches the handoff's own warning about full-page evaluation cost); at the observed
+pace this could take on the order of hours, not minutes. Left running; will check
+progress on the next cycle rather than block on it.
+
+## Page-level detector evaluation: real recall win, real precision problem (2026-09-24)
+
+`detector_box_eval.py` finished against all 1,569 valid pages (IoU threshold 0.5):
+
+| class | precision | recall | F1 | GT boxes |
+|---|---:|---:|---:|---:|
+| Dynamic | 94.8% | 93.4% | 94.1% | 10,738 |
+| MeasureNumber | 96.1% | 99.5% | 97.8% | 1,274 |
+| StaffText | 30.0% | 93.2% | 45.4% | 1,474 |
+| **Tempo** | **10.2%** | **83.9%** | **18.1%** | 949 |
+| Fingering | 0.0% | 0.0% | 0.0% | 2 |
+| overall | 55.4% | 93.3% | 69.5% | 14,437 |
+
+Against the roadmap's own three-part success criterion (`HANDOFF_DETECTOR_RETRAIN.md`
+§2 - beat e4's 85% overall recall, get Tempo recall off 0%, cut over-prediction): **two
+of three clearly met.** Overall recall 93.3% beats e4's 85% (caveat: e4's figure came
+from a different, smaller 8-page methodology, so this is directional not exact). Tempo
+recall went from the released detector's literal 0% to **83.9%** - the headline result
+of the entire day's work. **Over-prediction is not resolved for Tempo/StaffText
+specifically** - Tempo predicts 7,831 boxes against 949 ground truth (8.25x), StaffText
+4,576 against 1,474 (3.1x); Dynamic and MeasureNumber have no such problem (94.8%/96.1%
+precision), so this is class-specific, not corpus-wide. Real improvement over e4's 2.7%
+precision, but not "cut" in the sense the criterion means.
+
+`detector_release_gate.py` **REFUSES** this checkpoint - `Fingering`/`Expression`/
+`Lyrics` never got a validation score across 5 epochs (`Fingering` has 2 ground-truth
+boxes in the entire valid split; `Lyrics`/`Expression` have zero examples in this
+instrumental corpus), which the gate's floor check treats as failure by construction.
+The gate's own documentation says it "cannot see per-class validation support" and is
+"a floor on one failure mode, not a release criterion" - this may be exactly that known
+limitation rather than a real defect in the targeted classes, but the literal verdict
+is REFUSED and is reported as such, not explained away.
+
+**Not a shipping decision.** Full writeup: `results/detector_page_level_eval.md`. The
+question of whether this is good enough to ship, needs another round addressing
+over-prediction, or something else, is left to the user.
+
+## Rest-spanning gate: ruled out batching as the cause, found a deeper indexing problem
+
+Retested the unfiltered-decode patch with `--workers 1 --batch-size 1` to rule out
+cross-example batching as the cause of last cycle's length-607 artifact. **No
+difference** — still 607 entries for both a 32-token and 38-token crop individually.
+Checked position-by-position against `sq8907120_0021_0002_1`'s own `notation.json` and
+found 28/38 mismatches, including the same false "real beam value on a rest" pattern
+from before. **The raw decode sequence is not index-aligned with the note/rest-only
+token count at all**, not just padded beyond it — plausibly includes clef/key/barline/
+padding tokens the simple token-file count doesn't account for. Reading model output by
+positional index without first reading `decode_reference`/`decode_predictions` and the
+target-construction code (`structured_targets.py` or `training_vocabulary.py`) properly
+is not reliable and shouldn't be attempted again by trial and error. Flagged as needing
+real study, not a quick script. Detail: `results/next_actions_3_4.md`.

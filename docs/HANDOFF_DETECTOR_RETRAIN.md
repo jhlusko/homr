@@ -5,6 +5,29 @@ Written 2026-09-18 for an agent with no prior context. Read this first, then
 `~/workspace/OurTextScores/docs/private/OTS_HOMR_PUBLIC_RELEASE_ROADMAP.md` (gitignored,
 on disk only; §0c, §0d and §3 are the relevant sections).
 
+
+> **Status, 2026-09-25: the retrain in this handoff has been done.** Everything below
+> describes the plan as of 2026-09-18, and **§1's instance no longer exists** — the work
+> ran on `ssh -p 40097 root@88.207.87.60` (A100-SXM4-40GB).
+>
+> Result, on all 1,569 held-out pages at IoU 0.5: `Tempo` recall **0% → 83.9%**, overall
+> recall **93.3%** — but `Tempo` precision **10.2%** (7,831 predicted against 949 real) and
+> `StaffText` 30.0%. Two of this handoff's three criteria are met; "cut the over-prediction"
+> is not. `detector_release_gate.py` refuses it, on classes with almost no validation data
+> (`Fingering` 2 boxes, `Lyrics` and `Expression` none). **Ship or retrain against
+> over-prediction is the owner's decision.**
+>
+> The corrected sampler alone would not have got there. Three data defects had to be fixed
+> first: boxes split from `_cleaned.musicxml` contained no `<direction>` text at all (re-split
+> from raw MusicXML); every rendered page read as solid black because MuseScore's PNG keeps
+> ink in the alpha channel (already fixed in the uncommitted `musescore_boxes.py` edit here —
+> commit it, or it will be rediscovered again); and `detector_split.py` split by system, not
+> score, which would have leaked (fixed to 104/18 scores).
+>
+> Details: the roadmap's §3, `homr-artifacts/gpu-roadmap-20260919/STATUS.md`, and `RUNLOG.md`.
+> Weights and evaluation:
+> `homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260924/detector-retrain/run1/`.
+
 ---
 
 ## 1. The instance - set up, not yet used
@@ -159,3 +182,39 @@ rebuild it on the instance instead: `lieder-omr-data` repo, `tools/build_lieder_
 - The user labelled the Lieder boxes by hand and prefers not to do mechanical labelling;
   derive where you can, but see `training/ocr/derive_tempo_boxes.py` for three geometric
   approaches that failed on first pages.
+
+## 2026-09-19: unified DirectionText real-page fine-tuning
+
+Tempo, StaffText, Expression, and SystemText now map to DirectionText. Two four-epoch
+unified runs completed under `/workspace/retrain-direction-20260919`. Select the 0.14
+checkpoint as the adaptation parent (SHA256
+`a03cd63177353360faf7c8a377e061d5130c3eeeab10775fd2c980a08096520c`). It beats 0.7 on
+real-page DirectionText and Dynamic recall; neither is approved for release. Fingering
+is explicitly excluded from the learning-floor gate and reported separately; both
+parent histories pass the corrected gate. This is not a full-page quality gate.
+
+A new run is launched at `/workspace/finetune-direction-20260919`, using Supervisor
+programs `detector-finetune-pipeline` and `detector-finetune-watchdog`. SSH remains
+`ssh -p 20092 root@38.255.16.69`. Local scripts are in
+`../homr-artifacts/detector-finetune-20260919/scripts/`.
+
+- Four epochs, AdamW 2e-5, seed 20260919, 16,384 sampled patches/epoch, batch 32.
+- Half of draws from 60 real training pages (77 DirectionText boxes); half from
+  46,800 cached synthetic patches. Real Dynamics/Lyrics labels are only in held-out
+  scores and are NOT moved into training. This is DirectionText adaptation, not a
+  comprehensive real-data fix for all classes.
+- Preserve the existing score-disjoint split. Exclude 38 sparsely annotated empty
+  real pages instead of treating missing annotation as proof of negative content.
+  On annotated real pages, unlabelled ink stays ignored.
+- Real annotation geometry: no out-of-bounds boxes; a visual tempo-box spot-check
+  aligned. Scan dimensions vary greatly; lyric GT mixes phrases and syllables, so
+  low strict box recall needs further scale/granularity investigation.
+- Epoch selection uses full-page Lieder DirectionText F1 lower bound and synthetic
+  macro F1 (DirectionText/Dynamic/Lyrics), rejects >5pp synthetic Dynamic/Lyrics recall
+  regression, and includes the original parent as fallback. Existing validation
+  cohorts were already inspected; do not call them a fresh untouched test set.
+- Final selected checkpoint receives all-cohort page evaluation. Results:
+  `results/selection.json`, `results/selected-full.json`, `results/gate.json`.
+- Progress: `results/pipeline-status.json`, `results/watchdog.json`, `logs/pipeline.log`.
+  Watchdog checks every 30s and allows at most two restarts; training resumes from an
+  atomic epoch checkpoint. A stage longer than 20 minutes is flagged, not killed.
