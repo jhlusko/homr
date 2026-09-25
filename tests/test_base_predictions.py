@@ -171,3 +171,34 @@ class TestCheckpointIsActuallyLoaded(unittest.TestCase):
         import homr.transformer.staff2score as inference
 
         self.assertNotIn("filepaths.checkpoint", P(inference.__file__).read_text(encoding="utf-8"))
+
+
+class TestBasePredictionsOnnxUsesEncoderDecoderPathsDirectly(unittest.TestCase):
+    """The reason this script exists at all: the released core has no .pth, and
+    scoring it and an E1 export through anything keyed by `config.filepaths.checkpoint`
+    would silently score the same cached graph for both."""
+
+    def test_it_imports_the_onnx_inference_class(self) -> None:
+        from pathlib import Path as P
+
+        import training.transformer.base_predictions_onnx as module
+
+        source = P(module.__file__).read_text(encoding="utf-8")
+
+        self.assertIn("from homr.transformer.staff2score import Staff2Score", source)
+
+    def test_it_takes_encoder_and_decoder_as_explicit_arguments(self) -> None:
+        import training.transformer.base_predictions_onnx as module
+
+        parser_source = module.__file__
+        text = Path(parser_source).read_text(encoding="utf-8")
+
+        self.assertIn('"--encoder"', text)
+        self.assertIn('"--decoder"', text)
+        self.assertNotIn('"--checkpoint"', text)
+
+    def test_it_reuses_record_for_so_downstream_tools_read_it_unchanged(self) -> None:
+        from training.transformer.base_predictions import record_for as canonical
+        from training.transformer.base_predictions_onnx import record_for as reused
+
+        self.assertIs(canonical, reused)
