@@ -16,7 +16,13 @@ class Encoder:
         self.use_gpu = False
         if config.use_gpu_inference:
             try:
-                providers, device = gpu_providers({"cudnn_conv_algo_search": "DEFAULT"})
+                # HEURISTIC, not DEFAULT: onnxruntime's cuDNN path maps DEFAULT to cuDNN's
+                # fallback engines ("OP Conv(...) running in Fallback mode" on all 18 conv
+                # layers). Measured 2026-09-25 on 20 PDMX staves, A100, onnxruntime-gpu 1.30
+                # with cuDNN 9.24: encoder time 28.8 s -> 4.4 s, no warnings, and outputs
+                # identical on 20/20. EXHAUSTIVE was similar (5.1 s) but tunes each new
+                # input shape on first use.
+                providers, device = gpu_providers({"cudnn_conv_algo_search": "HEURISTIC"})
                 self.encoder = ort.InferenceSession(
                     config.filepaths.encoder_path_fp16,
                     providers=providers,
