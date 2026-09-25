@@ -6,19 +6,23 @@ Written 2026-09-18 for an agent with no prior context. Read this first, then
 on disk only; §0c, §0d and §3 are the relevant sections).
 
 
-> **Status, 2026-09-25: the retrain in this handoff has been done.** Everything below
+> **Status, 2026-09-25: the retrain and real-scan evaluation are done.** Everything below
 > describes the plan as of 2026-09-18, and **§1's instance no longer exists** — the work
 > ran on `ssh -p 40097 root@88.207.87.60` (A100-SXM4-40GB).
 >
 > Result, on 1,569 held-out **synthetic** renders at IoU 0.5 — MuseScore re-renders of
 > per-system MusicXML, **no real scans**: `Tempo` recall **0% → 83.9%**, overall
 > recall **93.3%** — but `Tempo` precision **10.2%** (7,831 predicted against 949 real) and
-> `StaffText` 30.0%. Two of this handoff's three criteria are met; "cut the over-prediction"
-> is not. `detector_release_gate.py` refuses it, on classes with almost no validation data
-> (`Fingering` 2 boxes, `Lyrics` and `Expression` none). **Real-scan performance is
-> unmeasured.** The only real-scan figure for this problem is 2026-09-19's collapsed
-> `DirectionText` recall of 19.9% on OSSQ scans, so treat 83.9% as a synthetic upper bound,
-> not a readiness result. The next step is a real-page evaluation, not a ship decision.
+> `StaffText` 30.0%. Two of this handoff's three *synthetic* criteria are met; "cut the
+> over-prediction" is not. `detector_release_gate.py` refuses it, on classes with almost
+> no validation data (`Fingering` 2 boxes, `Lyrics` and `Expression` none).
+> **On real scans, this checkpoint is rejected:** `Tempo` recall is 52/264 (19.7%)
+> on 299 OSSQ pages; after correctly folding `Tempo`/`StaffText`/`Expression`/
+> `SystemText` into `DirectionText` and re-matching boxes, recall is 236/888 (26.6%)
+> on OSSQ and 13/22 (59.1%) on Lieder. The selected 09-19 adaptation parent scored
+> 19.9% OSSQ and 86.4% Lieder. Real OSSQ `Dynamic` recall fell from released `e4`'s
+> 64.8% to 24.4%. The next step is a committed per-model class order and a locked
+> real-page criterion before retraining; see the accepted release sequence.
 >
 > The corrected sampler alone would not have got there. Three data defects had to be fixed
 > first: boxes split from `_cleaned.musicxml` contained no `<direction>` text at all (re-split

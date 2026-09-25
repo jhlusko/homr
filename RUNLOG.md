@@ -14084,3 +14084,33 @@ stopped before training again. It had also begun re-implementing the 09-19 class
 under a different name (`StaffText` rather than `DirectionText`) without updating
 `homr/text_detection.py`, whose `CLASS_ORDER` must match the training channel order; it has
 reverted that edit.
+
+## 2026-09-25: real-scan detector check and folded direction-text result
+
+This supersedes the "unmeasured" statement immediately above. The 2026-09-24 `run1`
+checkpoint was evaluated with the 09-19 real-page evaluator on 299 OSSQ pages, 26 Lieder
+box pages, and 40 Lieder lyrics pages. Its synthetic 83.9% `Tempo` recall became
+**52/264 = 19.7%** on real OSSQ scans. `StaffText` is 26/365 (7.1%), `Expression`
+0/259, and `Dynamic` **854/3,501 (24.4%)**, down from the released `e4` detector's
+2,270/3,501 (64.8%) on those same OSSQ pages. Lieder `Tempo` is 12/22 (54.5%).
+
+The owner accepted the 2026-09-25 release sequence, v7 stem/slur-side policy,
+direction-text class merge, and parking further scan-core v9 work, and rejected this
+detector checkpoint for release. To measure the merge fairly, committed scorer
+`training/ocr/eval_folded_directions.py` (`15113d5`) reran inference in tmux with a
+watcher, then re-matched boxes at IoU 0.5 after aliasing `Tempo`, `StaffText`,
+`Expression`, and `SystemText` to `DirectionText`. Its original per-class counts exactly
+reproduced all three earlier reports. Folded recall is **236/888 = 26.6%** on OSSQ
+(versus the 09-19 adaptation parent's 19.9%) and **13/22 = 59.1%** on Lieder
+(down from that parent's **86.4%**; 59.1% was the rejected fine-tune's result). Arithmetic
+on the separate class matches would have reported just 78/888 on OSSQ, missing 158
+cross-class matches. The lyrics set has no direction ground truth, but the non-lyric
+checkpoint predicted 3,944 direction boxes there. The merged result modestly improves
+OSSQ direction recall; it does not overcome the Dynamic regression or approve release.
+
+Reports and page rows are copied locally under
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/`, in
+`retrain-20260918/results/run1-*` and
+`train-20260924/detector-retrain/folded-directions-real.*`. Next: B2 per-model detector
+class order so the new scheme cannot relabel released models; B3 a locked real-page
+selection/test split and recall-first criterion; only then another train.
