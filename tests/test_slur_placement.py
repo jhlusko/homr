@@ -11,6 +11,7 @@ from training.omr_datasets.slur_placement import (
     note_signature,
     part_placements,
     part_signature,
+    segments_of,
 )
 
 VISIBLE = """
@@ -129,6 +130,44 @@ def _slurred(step: str, number: str = "1", kind: str = "start") -> str:
         f"<duration>1</duration><type>eighth</type>"
         f'<notations><slur type="{kind}" number="{number}"/></notations></note>'
     )
+
+
+class TestSegmentsOf(unittest.TestCase):
+    def test_default_track_reads_unaligned_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp) / "scores" / "C" / "W"
+            (work / "musicxml" / "unaligned").mkdir(parents=True)
+            (work / "musicxml" / "unaligned" / "sq1:0001:0001.musicxml").write_text("<x/>")
+            # A scanned-track file that must NOT be picked up by the default call.
+            (work / "musicxml" / "scanned" / "systemwise").mkdir(parents=True)
+            (work / "musicxml" / "scanned" / "systemwise" / "sq1:0009:0009.musicxml").write_text(
+                "<x/>"
+            )
+
+            found = segments_of(work, "sq1")
+
+            self.assertEqual([p.stem for p in found], ["sq1:0001:0001"])
+
+    def test_scanned_track_reads_the_scanned_systemwise_directory(self) -> None:
+        # A3's rest-spanning-beam gate needs the *scanned* track's segments, not the
+        # synthetic-pagination ones this module defaults to - reading the wrong track
+        # here reproduces the exact silent mislabeling convert_ossq.segments_dir exists
+        # to prevent.
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp) / "scores" / "C" / "W"
+            (work / "musicxml" / "unaligned").mkdir(parents=True)
+            (work / "musicxml" / "unaligned" / "sq1:0001:0001.musicxml").write_text("<x/>")
+            (work / "musicxml" / "scanned" / "systemwise").mkdir(parents=True)
+            (work / "musicxml" / "scanned" / "systemwise" / "sq1:0003:0002.musicxml").write_text(
+                "<x/>"
+            )
+            (work / "musicxml" / "scanned" / "systemwise" / "sq1:0001:0001.musicxml").write_text(
+                "<x/>"
+            )
+
+            found = segments_of(work, "sq1", track="scanned")
+
+            self.assertEqual([p.stem for p in found], ["sq1:0001:0001", "sq1:0003:0002"])
 
 
 class TestPlacementIndex(unittest.TestCase):

@@ -120,10 +120,25 @@ class Alignment:
         return "\n".join(lines)
 
 
-def segments_of(work: Path, score_id: str) -> list[Path]:
-    """A score's systemwise segments in reading order."""
+def segments_of(work: Path, score_id: str, track: str = "synthetic") -> list[Path]:
+    """A score's systemwise segments in reading order.
+
+    `track="synthetic"` (the default, unchanged) reads `musicxml/unaligned` - the
+    synthetic-pagination segments this module was built against. `track="scanned"`
+    reads `musicxml/scanned/systemwise` instead, matching `convert_ossq.py`'s own
+    `segments_dir` split: real-scan crops (what A3's rest-spanning-beam gate needs) are
+    built from the scanned track, and reading the wrong track's segments here would
+    reproduce the exact silent mislabeling `convert_ossq.segments_dir` was written to
+    prevent - a crop paired with whichever music happens to sit at the same (page,
+    system) index in a differently-paginated file.
+    """
+    candidate = (
+        work / "musicxml" / "unaligned"
+        if track == "synthetic"
+        else work / "musicxml" / "scanned" / "systemwise"
+    )
     return sorted(
-        (work / "musicxml" / "unaligned").glob(f"{score_id}:*.musicxml"),
+        candidate.glob(f"{score_id}:*.musicxml"),
         key=lambda path: tuple(int(field) for field in path.stem.split(":")[1:]),
     )
 
