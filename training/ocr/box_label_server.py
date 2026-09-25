@@ -44,7 +44,7 @@ from urllib.parse import parse_qs, urlparse
 CLASSES = ("Tempo",)
 
 #: Everything `detector_masks.CLASS_INDEX` knows that this tool may write.
-AVAILABLE = ("Tempo", "Dynamic", "Expression", "StaffText")
+AVAILABLE = ("DirectionText", "Dynamic")
 
 PAGE = """<!doctype html><meta charset="utf-8"><title>Box labelling {index}/{total}</title>
 <style>
