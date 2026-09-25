@@ -8,9 +8,15 @@ everywhere, the head only where it beams across a rest". That is only safe if th
 Input is `dump_rest_predictions`' JSONL: per staff, the symbol kinds in token order and
 the level-1 predicted and reference beam states per position. A group is a run
 `begin`, `continue`*, `end` over the staff's notes in token order; it spans a rest when a
-rest symbol sits strictly between its first and last note. Anything else inside an open
-run (a flag, a hook, an unbeamed note, a second `begin`) breaks it, and the partial run
-is counted as malformed rather than repaired.
+rest symbol sits strictly between its first and last note. Chord members after the first
+(a note right after a `chord` marker) and grace notes are skipped: they sound with, or
+decorate, a note already in the run, and counting them turned every chord inside a group
+into a second `begin` (2026-09-25: 29,177 of PDMX's malformed *reference* runs, 5,776
+after skipping them). Anything else inside an open run (a flag, a hook, an unbeamed note,
+a second `begin`) breaks it, and the partial run is counted as malformed rather than
+repaired. What remains malformed is mostly two voices interleaved as chord pairs, which
+token order cannot separate. So precision is also reported on **clean staves**, whose
+reference parses with no malformed run.
 
 Two references, reported side by side, because each can be wrong in its own way:
 
@@ -39,6 +45,7 @@ from typing import Any
 
 REST = "r"
 NOTE = "n"
+CHORD = "c"
 
 #: MuseScore rest `BeamMode`s that put the rest *between* beamed notes. `begin32` and
 #: `begin64` break only a secondary beam, so the primary run still passes through the
@@ -53,7 +60,7 @@ def beam_groups(kinds: str, states: list[str]) -> tuple[list[tuple[int, int]], i
     malformed = 0
     start: int | None = None
     for position, kind in enumerate(kinds):
-        if kind != NOTE:
+        if kind != NOTE or (position > 0 and kinds[position - 1] == CHORD):
             continue
         state = states[position]
         if state == "begin":
@@ -132,10 +139,24 @@ class MscxTruth:
         return None if found is None else [mode for _is_rest, mode in found]
 
 
+def current_kinds(record: dict) -> str:
+    """The record's kinds, re-derived from its token file when that is readable.
+
+    Records written before chord and grace kinds existed say `n`/`o` for them; the token
+    file is the authority either way, and re-reading it keeps old runs scoreable without
+    a GPU re-run.
+    """
+    if Path(record["tokens"]).is_file():
+        from training.transformer.dump_rest_predictions import symbol_kinds
+
+        return "".join(symbol_kinds(record["tokens"], len(record["kinds"])))
+    return record["kinds"]
+
+
 def score(records: list[dict], truth: MscxTruth | None) -> dict:
     counts: Counter[str] = Counter()
     for record in records:
-        kinds = record["kinds"]
+        kinds = current_kinds(record)
         predicted, bad_predicted = beam_groups(kinds, record["predicted_beam"][0])
         reference, bad_reference = beam_groups(kinds, record["reference_beam"][0])
         counts["staves"] += 1
@@ -147,6 +168,12 @@ def score(records: list[dict], truth: MscxTruth | None) -> dict:
         counts["predicted_spanning"] += len(predicted_spanning)
         counts["reference_spanning"] += len(reference_spanning)
         counts["predicted_spanning_exact"] += sum(g in reference_set for g in predicted_spanning)
+        if bad_reference == 0:
+            counts["clean_staves"] += 1
+            counts["clean_predicted_spanning"] += len(predicted_spanning)
+            counts["clean_predicted_spanning_exact"] += sum(
+                g in reference_set for g in predicted_spanning
+            )
         counts["reference_spanning_found"] += sum(
             g in set(predicted) for g in reference_spanning
         )
@@ -177,6 +204,9 @@ def score(records: list[dict], truth: MscxTruth | None) -> dict:
         "counts": dict(counts),
         "precision_vs_musicxml_reference": ratio("predicted_spanning_exact", "predicted_spanning"),
         "recall_vs_musicxml_reference": ratio("reference_spanning_found", "reference_spanning"),
+        "precision_vs_musicxml_reference_clean_staves": ratio(
+            "clean_predicted_spanning_exact", "clean_predicted_spanning"
+        ),
         "precision_vs_mscx_beammode": ratio(
             "joined_predicted_spanning_supported", "joined_predicted_spanning"
         ),

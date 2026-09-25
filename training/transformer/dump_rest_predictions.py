@@ -33,21 +33,26 @@ from typing import Any
 from homr.transformer.structured_notation import NoteNotation
 from training.transformer.training_vocabulary import read_tokens
 
-NOTE, REST, OTHER = "n", "r", "o"
+NOTE, REST, OTHER, CHORD, GRACE = "n", "r", "o", "c", "g"
 
 
 def symbol_kinds(token_path: str, decoded_length: int) -> list[str]:
-    """`n`/`r`/`o` for each decoded position that holds a real symbol, in token order.
+    """One kind per decoded position that holds a real symbol, in token order.
 
-    A staff longer than the decoder's window is truncated exactly as its targets were.
+    `n` note, `r` rest, `c` the `chord` marker (the next note sounds with the previous
+    one), `g` grace note (`note_16G`: its own small beam group, drawn inside a main
+    group), `o` anything else. A staff longer than the decoder's window is truncated
+    exactly as its targets were.
     """
     symbols = read_tokens(token_path)
     kinds = []
     for symbol in symbols[:decoded_length]:
-        if "rest" in symbol.rhythm:
+        if symbol.rhythm == "chord":
+            kinds.append(CHORD)
+        elif "rest" in symbol.rhythm:
             kinds.append(REST)
         elif "note" in symbol.rhythm:
-            kinds.append(NOTE)
+            kinds.append(GRACE if symbol.rhythm.endswith("G") else NOTE)
         else:
             kinds.append(OTHER)
     return kinds

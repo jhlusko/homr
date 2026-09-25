@@ -84,5 +84,13 @@ class TestDumpRestPredictions(unittest.TestCase):
             self.assertEqual(names, ["b.txt", "c.txt"])
 
 
+class TestChordAndGraceKinds(unittest.TestCase):
+    def test_chord_markers_and_grace_notes_get_their_own_kinds(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "a.txt"
+            _write_token_file(path, ["note_8", "chord", "note_8", "note_16G", "rest_8"])
+            self.assertEqual(symbol_kinds(str(path), decoded_length=10), ["n", "c", "n", "g", "r"])
+
+
 if __name__ == "__main__":
     unittest.main()

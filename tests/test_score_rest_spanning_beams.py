@@ -88,3 +88,25 @@ class TestScore(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestChordsAndGraces(unittest.TestCase):
+    def test_a_chord_member_repeating_the_state_does_not_break_the_group(self) -> None:
+        # note(begin) chord note(begin) rest note(end): one group spanning the rest.
+        groups, malformed = beam_groups("ncnrn", ["begin", NA, "begin", NA, "end"])
+        self.assertEqual(groups, [(0, 4)])
+        self.assertEqual(malformed, 0)
+
+    def test_grace_notes_inside_a_group_are_skipped(self) -> None:
+        groups, malformed = beam_groups("nggn", ["begin", "begin", "end", "end"])
+        self.assertEqual(groups, [(0, 3)])
+        self.assertEqual(malformed, 0)
+
+    def test_clean_staves_precision_ignores_staves_whose_reference_is_malformed(self) -> None:
+        records = [
+            _record("nrn", ["begin", NA, "end"], ["begin", NA, "end"], "a_0001_0001_1.txt"),
+            _record("nrnn", ["begin", NA, "end", NA], ["begin", NA, "begin", "flag"], "b_0001_0001_1.txt"),
+        ]
+        report = score(records, None)
+        self.assertEqual(report["precision_vs_musicxml_reference"], 0.5)
+        self.assertEqual(report["precision_vs_musicxml_reference_clean_staves"], 1.0)
