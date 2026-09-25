@@ -1,10 +1,11 @@
-"""Pilot DirectionText head-only adaptation from the released seven-class e4 detector.
+"""Adapt released e4 to five classes with a score-audited real/synthetic patch bank.
 
 The released detector has good real OSSQ Dynamic recall but no direction recall. Keep
 its encoder, decoder, and non-direction output filters fixed, remap its output to the
-five-class scheme, and train only the DirectionText filter on the existing disjoint
-real/synthetic patch banks. This is an experiment, not a release decision: select and
-test its epochs with the frozen real-page gate in docs/DETECTOR_REAL_PAGE_RELEASE_GATE_2026-09-25.md.
+five-class scheme, and train only the DirectionText filter for the head-only ablation.
+With --train-all and the audited OSSQ real bank, fit the shared trunk and all outputs
+on OSSQ, Lieder and synthetic labels. Both are experiments, not release decisions:
+select and test epochs with docs/DETECTOR_REAL_PAGE_RELEASE_GATE_2026-09-25.md.
 """
 
 import argparse
@@ -112,11 +113,30 @@ def train(args: argparse.Namespace) -> None:
     )
     real = read_index(args.real_index)
     synthetic = read_index(args.synthetic_index)
-    dataset = PreExtractedPatches(real + synthetic)
+    if args.train_all:
+        if args.ossq_index is None or args.ossq_audit is None:
+            raise ValueError("--train-all requires --ossq-index and --ossq-audit")
+        ossq_audit = json.loads(args.ossq_audit.read_text())
+        if (
+            ossq_audit["page_audit_sha256"] != digest(args.page_audit)
+            or ossq_audit["split_manifest_sha256"] != digest(args.split_manifest)
+            or not set(ossq_audit["selected_scores"]) <= set(json.loads(args.page_audit.read_text())["train_scores"])
+        ):
+            raise ValueError("OSSQ bank audit does not match the approved training split")
+        ossq = read_index(args.ossq_index)
+        if len(ossq) != ossq_audit["pages"] * 16:
+            raise ValueError("OSSQ patch bank size does not match its audited pages")
+        audit["ossq_audit_sha256"] = digest(args.ossq_audit)
+        audit["ossq_index_sha256"] = digest(args.ossq_index)
+        audit["ossq_patches"] = len(ossq)
+        groups = ((ossq, 0.4), (real, 0.2), (synthetic, 0.4))
+    else:
+        groups = ((real, 0.5), (synthetic, 0.5))
+    samples = [sample for group, _fraction in groups for sample in group]
+    dataset = PreExtractedPatches(samples)
     sampler = WeightedRandomSampler(
-        [0.5 / len(real)] * len(real) + [0.5 / len(synthetic)] * len(synthetic),
-        num_samples=args.samples_per_epoch,
-        replacement=True,
+        [fraction / len(group) for group, fraction in groups for _sample in group],
+        num_samples=args.samples_per_epoch, replacement=True,
         generator=torch.Generator().manual_seed(SEED),
     )
     loader = DataLoader(
@@ -133,25 +153,32 @@ def train(args: argparse.Namespace) -> None:
     ).to(args.device)
     old = torch.load(args.e4_weights, map_location="cpu", weights_only=True)
     model.load_state_dict(remap_state(old), strict=True)
-    # Only channel 3 (DirectionText) is trainable. AdamW's weight decay is disabled
-    # because it would alter fixed channels even after their gradients were zeroed.
-    for parameter in model.parameters():
-        parameter.requires_grad_(False)
-    head = model.model.segmentation_head[0]
-    direction_channel = DIRECTION_CLASS_ORDER.index("DirectionText") + 1
-    fixed_weight = head.weight.detach().clone()
-    fixed_bias = head.bias.detach().clone()
-    head.weight.requires_grad_(True)
-    head.bias.requires_grad_(True)
-    channel_mask = torch.zeros_like(head.bias)
-    channel_mask[direction_channel] = 1
-    head.weight.register_hook(lambda grad: grad * channel_mask[:, None, None, None])
-    head.bias.register_hook(lambda grad: grad * channel_mask)
-    optimizer = torch.optim.AdamW((head.weight, head.bias), lr=args.lr, weight_decay=0)
+    if args.train_all:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    else:
+        # Only channel 3 (DirectionText) is trainable. AdamW's weight decay is disabled
+        # because it would alter fixed channels even after their gradients were zeroed.
+        for parameter in model.parameters():
+            parameter.requires_grad_(False)
+        head = model.model.segmentation_head[0]
+        direction_channel = DIRECTION_CLASS_ORDER.index("DirectionText") + 1
+        fixed_weight = head.weight.detach().clone()
+        fixed_bias = head.bias.detach().clone()
+        head.weight.requires_grad_(True)
+        head.bias.requires_grad_(True)
+        channel_mask = torch.zeros_like(head.bias)
+        channel_mask[direction_channel] = 1
+        head.weight.register_hook(lambda grad: grad * channel_mask[:, None, None, None])
+        head.bias.register_hook(lambda grad: grad * channel_mask)
+        optimizer = torch.optim.AdamW((head.weight, head.bias), lr=args.lr, weight_decay=0)
     loss_fn = smp.losses.DiceLoss("multiclass", from_logits=True, ignore_index=255)
     history = []
     metadata = {
-        "recipe": "e4 frozen trunk and non-direction outputs; DirectionText output only",
+        "recipe": (
+            "e4 remapped; all parameters train on audited OSSQ, Lieder and synthetic patches"
+            if args.train_all else
+            "e4 frozen trunk and non-direction outputs; DirectionText output only"
+        ),
         "e4_sha256": E4_SHA256,
         "class_order": DIRECTION_CLASS_ORDER,
         "audit": audit,
@@ -161,9 +188,12 @@ def train(args: argparse.Namespace) -> None:
     }
     (args.out / "recipe.json").write_text(json.dumps(metadata, indent=2) + "\n")
     for epoch in range(1, args.epochs + 1):
-        # Keep BatchNorm running statistics frozen with the e4 trunk. Gradients still
-        # reach the trainable output filter while the module is in evaluation mode.
-        model.eval()
+        # The head-only ablation freezes e4 BatchNorm statistics; the full retrain
+        # updates the shared trunk on real OSSQ Dynamic and DirectionText labels.
+        if args.train_all:
+            model.train()
+        else:
+            model.eval()
         losses = []
         for batch_index, batch in enumerate(loader):
             logits = model(batch["images"].to(args.device))
@@ -173,11 +203,12 @@ def train(args: argparse.Namespace) -> None:
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             optimizer.step()
-            with torch.no_grad():
-                head.weight[:direction_channel].copy_(fixed_weight[:direction_channel])
-                head.weight[direction_channel + 1:].copy_(fixed_weight[direction_channel + 1:])
-                head.bias[:direction_channel].copy_(fixed_bias[:direction_channel])
-                head.bias[direction_channel + 1:].copy_(fixed_bias[direction_channel + 1:])
+            if not args.train_all:
+                with torch.no_grad():
+                    head.weight[:direction_channel].copy_(fixed_weight[:direction_channel])
+                    head.weight[direction_channel + 1:].copy_(fixed_weight[direction_channel + 1:])
+                    head.bias[:direction_channel].copy_(fixed_bias[:direction_channel])
+                    head.bias[direction_channel + 1:].copy_(fixed_bias[direction_channel + 1:])
             losses.append(float(loss))
             if batch_index % 50 == 0:
                 print(f"epoch {epoch} batch {batch_index}/{len(loader)} loss {losses[-1]:.4f}", flush=True)
@@ -200,6 +231,9 @@ def main() -> None:
     parser.add_argument("--real-index", type=Path, required=True)
     parser.add_argument("--synthetic-index", type=Path, required=True)
     parser.add_argument("--valid-index", type=Path, required=True)
+    parser.add_argument("--train-all", action="store_true", help="Fit all weights with audited OSSQ real scans")
+    parser.add_argument("--ossq-index", type=Path)
+    parser.add_argument("--ossq-audit", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--epochs", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=32)
