@@ -18,6 +18,8 @@ def decide(parent: dict, e4: dict, selected: dict, candidate: dict, history: dic
         raise ValueError("no selection-eligible checkpoint; test must not be run")
     if candidate["weights_sha256"] != choice["weights_sha256"]:
         raise ValueError("test checkpoint differs from the selected checkpoint")
+    if candidate.get("thresholds") != choice.get("thresholds"):
+        raise ValueError("test must apply the selection-calibrated thresholds unchanged")
     if tuple(candidate["class_order"]) != DIRECTION_CLASS_ORDER:
         raise ValueError("test checkpoint has wrong class order")
     if set(candidate["corpora"]) != {"ossq_boxes", "lieder_boxes", "lieder_lyrics"}:
@@ -69,6 +71,7 @@ def decide(parent: dict, e4: dict, selected: dict, candidate: dict, history: dic
         "floors": floors, "prediction_caps": caps,
         "candidate": {"ossq_direction": cd, "lieder_direction": cl, "ossq_dynamic": cy},
         "selected_epoch": choice["epoch"], "weights_sha256": choice["weights_sha256"],
+        "thresholds": choice.get("thresholds"),
         "split_manifest_sha256": candidate["split_manifest_sha256"],
     }
 

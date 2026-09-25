@@ -52,6 +52,9 @@ def select(parent: dict, candidates: list[dict], history: dict) -> dict:
                 "lieder_direction": lieder,
                 "synthetic_gate_ok": learned,
                 "eligible": eligible,
+                # Present when the epoch was scored at a selection-calibrated operating point;
+                # the single test read must then apply exactly these thresholds.
+                "thresholds": report.get("thresholds"),
             }
         )
     eligible = [row for row in ranked if row["eligible"]]

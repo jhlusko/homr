@@ -55,32 +55,35 @@ def reference_label(label: str, model_order: tuple[str, ...]) -> str:
     return "StaffText" if label == "SystemText" else label
 
 
-def score_pages(
-    model,
-    pages_path: Path,
-    device: str,
-    limit: int = 0,
-    scores: set[str] | None = None,
-    include_page_rows: bool = False,
-) -> dict:
-    plain: dict[str, Counts] = defaultdict(Counts)
-    merged: dict[str, Counts] = defaultdict(Counts)
+def load_rows(pages_path: Path, scores: set[str] | None = None, limit: int = 0) -> list[dict]:
     rows = [json.loads(line) for line in pages_path.read_text().splitlines() if line.strip()]
     if scores is not None:
         rows = [row for row in rows if row["score"] in scores]
-    if limit:
-        rows = rows[:limit]
+    return rows[:limit] if limit else rows
+
+
+def ground_truth_of(row: dict, model_order: tuple[str, ...]) -> list:
+    annotation = json.loads(Path(row["annotation"]).read_text())
+    return [
+        replace(box, label=reference_label(box.label, model_order))
+        for box in boxes_of(annotation, row["image"])
+        if reference_label(box.label, model_order) in model_order
+    ]
+
+
+def apply_thresholds(predicted: list, thresholds: dict[str, float] | None) -> list:
+    """Drop boxes below their folded class's minimum mean confidence."""
+    if not thresholds:
+        return predicted
+    return [box for box in predicted if box.confidence >= thresholds.get(folded(box.label), 0.0)]
+
+
+def score_predictions(pages: list[tuple[dict, list, list]], include_page_rows: bool = False) -> dict:
+    """Score (row, ground truth, predicted boxes) triples, unmerged and re-matched folded."""
+    plain: dict[str, Counts] = defaultdict(Counts)
+    merged: dict[str, Counts] = defaultdict(Counts)
     page_rows = []
-    model_order = model.detector_class_order
-    for index, row in enumerate(rows, 1):
-        image = row["image"]
-        annotation = json.loads(Path(row["annotation"]).read_text())
-        ground_truth = [
-            replace(box, label=reference_label(box.label, model_order))
-            for box in boxes_of(annotation, image)
-            if reference_label(box.label, model_order) in model_order
-        ]
-        predicted = predict_boxes(model, Path(image), device)
+    for row, ground_truth, predicted in pages:
         plain_page = match_one_page(predicted, ground_truth, 0.5)
         folded_page = match_one_page(
             [replace(box, label=folded(box.label)) for box in predicted],
@@ -93,17 +96,42 @@ def score_pages(
             page_rows.append(
                 {
                     "score": row["score"],
-                    "image": image,
+                    "image": row["image"],
                     "per_class": serialize(plain_page),
                     "folded": serialize(folded_page),
                 }
             )
-        if index % 20 == 0 or index == len(rows):
-            print(f"{pages_path.stem}: {index}/{len(rows)} pages", flush=True)
-    result = {"pages": len(rows), "per_class": serialize(plain), "folded": serialize(merged)}
+    result = {"pages": len(pages), "per_class": serialize(plain), "folded": serialize(merged)}
     if include_page_rows:
         result["page_rows"] = page_rows
     return result
+
+
+def predict_pages(model, rows: list[dict], device: str, label: str) -> list[tuple[dict, list, list]]:
+    pages = []
+    for index, row in enumerate(rows, 1):
+        ground_truth = ground_truth_of(row, model.detector_class_order)
+        pages.append((row, ground_truth, predict_boxes(model, Path(row["image"]), device)))
+        if index % 20 == 0 or index == len(rows):
+            print(f"{label}: {index}/{len(rows)} pages", flush=True)
+    return pages
+
+
+def score_pages(
+    model,
+    pages_path: Path,
+    device: str,
+    limit: int = 0,
+    scores: set[str] | None = None,
+    include_page_rows: bool = False,
+    thresholds: dict[str, float] | None = None,
+) -> dict:
+    rows = load_rows(pages_path, scores, limit)
+    pages = [
+        (row, ground_truth, apply_thresholds(predicted, thresholds))
+        for row, ground_truth, predicted in predict_pages(model, rows, device, pages_path.stem)
+    ]
+    return score_predictions(pages, include_page_rows)
 
 
 def main() -> None:
@@ -116,6 +144,10 @@ def main() -> None:
         "--classes", help="Comma-separated order for older weights without a sidecar"
     )
     parser.add_argument("--limit", type=int, default=0, help="Smoke-test only; omit for report")
+    parser.add_argument(
+        "--thresholds", type=Path,
+        help="Calibration report whose selection-chosen per-class confidence thresholds to apply",
+    )
     parser.add_argument("--split-manifest", type=Path, help="Frozen score-level selection/test split")
     parser.add_argument(
         "--role", choices=("selection", "test", "both"), default="both",
@@ -124,6 +156,12 @@ def main() -> None:
     args = parser.parse_args()
     order = tuple(args.classes.split(",")) if args.classes else None
     model = load_model(args.weights, args.device, order)
+    thresholds = None
+    if args.thresholds:
+        calibration = json.loads(args.thresholds.read_text())
+        if calibration["weights_sha256"] != hashlib.sha256(args.weights.read_bytes()).hexdigest():
+            parser.error("--thresholds were calibrated for different weights")
+        thresholds = calibration["thresholds"]
     manifest_bytes = args.split_manifest.read_bytes() if args.split_manifest else None
     manifest = json.loads(manifest_bytes) if manifest_bytes else None
     if args.role != "both" and manifest is None:
@@ -136,6 +174,8 @@ def main() -> None:
         "iou_threshold": 0.5,
         "corpora": {},
     }
+    if thresholds is not None:
+        report["thresholds"] = thresholds
     if manifest_bytes:
         report["split_manifest_sha256"] = hashlib.sha256(manifest_bytes).hexdigest()
     for pages_path in args.pages:
@@ -151,13 +191,15 @@ def main() -> None:
                 role_info = entry["roles"][role]
                 result = score_pages(
                     model, pages_path, args.device, args.limit,
-                    set(role_info["scores"]), include_page_rows=True,
+                    set(role_info["scores"]), include_page_rows=True, thresholds=thresholds,
                 )
                 if not args.limit and result["pages"] != role_info["pages"]:
                     raise ValueError(f"page count mismatch: {corpus}/{role}")
                 report["corpora"][corpus][role] = result
         else:
-            report["corpora"][name] = score_pages(model, pages_path, args.device, args.limit)
+            report["corpora"][name] = score_pages(
+                model, pages_path, args.device, args.limit, thresholds=thresholds
+            )
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2), flush=True)

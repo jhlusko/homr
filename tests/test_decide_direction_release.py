@@ -42,3 +42,16 @@ def test_frozen_gate_requires_recall_and_prediction_caps():
     passing["corpora"]["ossq_boxes"]["selection"] = {}
     with pytest.raises(ValueError, match="test pages only"):
         decide(parent, e4, chosen, passing, history)
+
+
+def test_test_read_must_apply_selection_thresholds_unchanged():
+    parent = _report((83, 367, 421), (11, 87, 11), (465, 2533, 1660))
+    e4 = _report((0, 33276, 421), (0, 3898, 11), (1101, 5728, 1660))
+    history = {"history": [{"valid": {"DirectionText": .5, "Dynamic": .5, "Lyrics": .5}}]}
+    thresholds = {"DirectionText": .71, "Dynamic": .64}
+    chosen = {"selected": {"epoch": 1, "weights_sha256": "chosen", "thresholds": thresholds}}
+    candidate = _report((105, 367, 421), (11, 87, 11), (1018, 5728, 1660), candidate=True)
+    with pytest.raises(ValueError, match="calibrated thresholds"):
+        decide(parent, e4, chosen, candidate, history)
+    candidate["thresholds"] = dict(thresholds)
+    assert decide(parent, e4, chosen, candidate, history)["thresholds"] == thresholds
