@@ -14212,3 +14212,36 @@ unpushed tree. On the push-less instance, an unpushed commit may run if a git bu
 containing it is saved under `/workspace/context/results/`. The instance agent now works
 on its own judgement and logs every call in `DECISIONS_LOG.md`. The records are copied
 under `homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/context-20260925/`.
+
+## A3 closed: no rest-spanning beam hybrid (2026-09-25)
+
+The gate the roadmap named for the "rule everywhere, head only across rests" hybrid is
+the head's precision on rest-spanning groups: level-1 beam groups with a rest strictly
+between their first and last note, the shape the rule cannot emit. Measured with v7 heads
+on the rareNum core, over each source's validation split:
+
+| source | precision vs MusicXML reference | clean staves only | recall |
+| --- | --- | --- | --- |
+| OSSQ | 41.4% (24/58) | 45.3% (24/53) | 10.2% (of 236) |
+| PDMX | 71.2% (513/721) | 64.9% (137/211) | 45.2% (of 1,134) |
+| Lieder | 2/3 | — | 2/6 |
+
+On OSSQ, MuseScore's own `.mscx` `<Rest><BeamMode>` supports 15/19 predicted groups on the
+925 staves that join through `BeamPlacementIndex`. 4 of the 9 validation scores fail its
+alignment gate on every part (not fully explained; runs of whole-measure rests are one
+concrete divergence). The MusicXML reference agrees with `.mscx` on all 167 beamed rests
+there, so the reference is not losing rest-spanning beams. **Decision (instance D-8,
+confirmed after re-score): no hybrid.**
+
+Two scorer corrections along the way:
+- **`016c653`.** The sink had assumed decoded positions were the note-bearing symbols;
+  they are every token-file symbol. The head's state *at* a rest is masked, and was never
+  trained there, so the gate is scored on the surrounding notes.
+- **`f872c21`.** Chord members (`note chord note`) repeat the beam state, and grace notes
+  carry their own group, so both broke groups: 29,177 of PDMX's reference runs were
+  "malformed", and precision was biased down (PDMX went from 57.0% to 71.2% after the
+  fix). The existing predictions were re-scored from their token files, with no GPU run.
+
+Records: `homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/context-20260925/`
+(`results/a3_beam_gate_report.md` with its addendum, `results/a3/rescored-f872c21/`,
+`a3-rest-eval-v2/`).
