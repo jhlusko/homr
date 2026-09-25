@@ -14162,3 +14162,53 @@ with OSSQ direction ≤367, Dynamic ≤5,728 and Lieder direction ≤87 predicti
 Selection thresholds are 109/467 OSSQ direction, 331/1,841 Dynamic and 7/11 Lieder
 direction matches. These are arithmetic translations of the frozen percentage bars,
 not choices made after seeing a new candidate. No candidate has been trained yet.
+
+## 2026-09-25: B4 fails its test read; dynamics split out; E1 trained from public inputs
+
+**B4, the real-page detector retrain.** This is a full-model retrain from remapped `e4`,
+on 40% audited real OSSQ, 20% real Lieder and 40% synthetic data, with direction text
+merged into `DirectionText` (`4953d0d`). A warm restart took it to 8 epochs. On the
+selection pages, epoch 4 had the best raw direction recall: 210/467, against 94/467 for
+the 09-19 parent. But every epoch over-predicted against the frozen caps, and Dynamic
+regressed with training.
+
+`calibrate_direction_thresholds` (`6191dbc`) picks per-class confidence thresholds on
+selection pages only, so that predicted box counts fit the caps. At those thresholds,
+epoch 4 scored 166/467 direction boxes at the parent's 512, but Dynamic fell to
+742/1,841 at `e4`'s 10,023 boxes, against `e4`'s 1,169. The owner split dynamics into
+their own detector, starting as `e4`. The gate was re-frozen for direction text only
+(`1fa06ef`; `a2a7dfb` fixes the CLI not passing `--direction-only`), and epoch 4 was
+still selected.
+
+The single test read failed:
+- OSSQ direction: 221/421 (floor 105), pass.
+- OSSQ direction boxes: 788 against the 367 cap. The selection-calibrated threshold
+  (0.722) didn't transfer to the test pages.
+- Lieder direction: 8/11 against the required 11/11.
+
+`e4` stays released. No further test read under this gate.
+
+**E1, reproducibility.** The released core is `426` → Arm A
+(`run_scansv4_ab_arms.sh`) → rareNum (`run_rare_numerator_arm.sh`). It was rebuilt from
+public inputs only. The corpora were fetched and verified from their pinned lockfiles
+(the corpus repos are private, so they reached the instance as git bundles), plus
+GrandStaff. Launcher paths became arguments, and each stage writes a
+`recipe_manifest.json` (`f60b5ff`). Stage 1 reached `eval_accuracy` 0.9694, and stage 2
+(3 epochs) finished.
+
+The released core exists only as its pinned ONNX pair (no `.pth` survives), so both
+models are scored through ONNX. The 792 OSSQ benchmark staves (`phase7num` list) all map
+onto published `ossq-scanned-v2` valid by crop ID. PDMX valid grew from 3,349 rows to
+3,422 in the published build, and that drift is recorded. Scoring is in progress.
+
+**A3, the beam gate.** `BeamPlacementIndex` (`542b7b8`) joins each scanned crop to the
+whole-score MusicXML and on to the `.mscx` `<Rest><BeamMode>`; it is validated on
+`sq7383977`. The `--rest-predictions` sink (`c54065d`) correctly refused on a real run:
+decoding returns padded positions (607 against 34 real symbols). Next, thread
+`batch["mask"]` through `evaluate()`'s sinks.
+
+**Process.** `tools/gpu_preflight.sh` (`8a6d8a1`, `76a133d`) refuses a dirty or
+unpushed tree. On the push-less instance, an unpushed commit may run if a git bundle
+containing it is saved under `/workspace/context/results/`. The instance agent now works
+on its own judgement and logs every call in `DECISIONS_LOG.md`. The records are copied
+under `homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/context-20260925/`.
