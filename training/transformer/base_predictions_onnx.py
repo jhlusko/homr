@@ -21,8 +21,34 @@ PyTorch-checkpoint comparison are the same downstream analysis either way.
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 from training.transformer.base_predictions import record_for
+
+
+def cap_onnx_threads(threads: int) -> None:
+    """Give every onnxruntime session this process opens a small CPU thread pool.
+
+    `homr`'s encoder/decoder loaders build `InferenceSession`s with no options, so each
+    session sizes its intra-op pool to the machine: about 53 threads per scoring process
+    on the 24-core instance, although the work runs on the GPU. The container allows 1,280
+    threads, so a handful of parallel scorers plus a training job hit it
+    (`pthread_create ... Resource temporarily unavailable`, 2026-09-25 D-9/D-10). This
+    patches the constructor for *this* scoring process only; production inference is
+    unchanged.
+    """
+    import onnxruntime as ort
+
+    original = ort.InferenceSession
+
+    def capped(*args: Any, **kwargs: Any) -> Any:
+        options = kwargs.get("sess_options") or ort.SessionOptions()
+        options.intra_op_num_threads = threads
+        options.inter_op_num_threads = 1
+        kwargs["sess_options"] = options
+        return original(*args, **kwargs)
+
+    ort.InferenceSession = capped  # type: ignore[misc]
 
 
 def main() -> None:
@@ -33,7 +59,13 @@ def main() -> None:
     parser.add_argument("--decoder", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=0, help="0 = every row")
     parser.add_argument("--gpu", action="store_true", help="Use CUDA/CoreML if available.")
+    parser.add_argument(
+        "--ort-threads", type=int, default=0,
+        help="Cap each onnxruntime session's CPU pool (0 = onnxruntime default, one per core).",
+    )
     args = parser.parse_args()
+    if args.ort_threads:
+        cap_onnx_threads(args.ort_threads)
 
     import cv2
 

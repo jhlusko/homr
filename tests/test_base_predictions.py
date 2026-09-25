@@ -202,3 +202,36 @@ class TestBasePredictionsOnnxUsesEncoderDecoderPathsDirectly(unittest.TestCase):
         from training.transformer.base_predictions_onnx import record_for as reused
 
         self.assertIs(canonical, reused)
+
+
+class TestOnnxThreadCap(unittest.TestCase):
+    def test_every_session_gets_the_capped_pool_and_the_callers_other_arguments(self) -> None:
+        import sys
+        import types
+
+        from training.transformer.base_predictions_onnx import cap_onnx_threads
+
+        created = []
+
+        class Options:
+            intra_op_num_threads = 0
+            inter_op_num_threads = 0
+
+        fake = types.ModuleType("onnxruntime")
+        fake.SessionOptions = Options  # type: ignore[attr-defined]
+        fake.InferenceSession = lambda path, **kw: created.append((path, kw))  # type: ignore[attr-defined]
+        saved = sys.modules.get("onnxruntime")
+        sys.modules["onnxruntime"] = fake
+        try:
+            cap_onnx_threads(3)
+            fake.InferenceSession("enc.onnx", providers=["CUDAExecutionProvider"])
+        finally:
+            if saved is not None:
+                sys.modules["onnxruntime"] = saved
+            else:
+                del sys.modules["onnxruntime"]
+        path, kwargs = created[0]
+        self.assertEqual(path, "enc.onnx")
+        self.assertEqual(kwargs["providers"], ["CUDAExecutionProvider"])
+        self.assertEqual(kwargs["sess_options"].intra_op_num_threads, 3)
+        self.assertEqual(kwargs["sess_options"].inter_op_num_threads, 1)
