@@ -1,6 +1,12 @@
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from training.ocr.detector_box_eval import PRIORITY_CLASSES, Counts, describe
+from homr.text_detector_classes import DIRECTION_CLASS_ORDER, LEGACY_CLASS_ORDER
+from training.ocr.detector_box_eval import PRIORITY_CLASSES, Counts, describe, evaluate
+from training.ocr.detector_data import Box
+from training.ocr.detector_inference import PredictedBox
 
 
 def _totals(**by_label: tuple[int, int, int]) -> dict[str, Counts]:
@@ -63,6 +69,31 @@ class TestDescribe(unittest.TestCase):
 
         for label in ("Lyrics", "Tempo", "StaffText"):
             self.assertTrue(any(ln.startswith(label) for ln in report.splitlines()))
+
+
+class TestCheckpointSpecificGroundTruth(unittest.TestCase):
+    def test_system_text_maps_to_each_checkpoints_own_label(self) -> None:
+        import training.ocr.detector_box_eval as module
+
+        ground_truth = [Box("page", "SystemText", 0, 0, 30, 30)]
+        for order, label in (
+            (LEGACY_CLASS_ORDER, "StaffText"),
+            (DIRECTION_CLASS_ORDER, "DirectionText"),
+        ):
+            with self.subTest(label=label):
+                model = SimpleNamespace(detector_class_order=order)
+                prediction = PredictedBox(label, 0, 0, 30, 30, 0.99)
+                with (
+                    patch.object(module, "load_model", return_value=model),
+                    patch.object(module, "collect", return_value=ground_truth),
+                    patch.object(
+                        module, "read_index", return_value=[SimpleNamespace(image="page")]
+                    ),
+                    patch.object(module, "predict_boxes", return_value=[prediction]),
+                ):
+                    report = evaluate(Path("weights"), Path("boxes"), Path("index"), "cpu")
+                self.assertEqual(report[label].matched, 1)
+                self.assertEqual(report[label].ground_truth, 1)
 
 
 if __name__ == "__main__":

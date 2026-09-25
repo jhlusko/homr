@@ -146,12 +146,12 @@ class TestTheBoxAreaFloor(unittest.TestCase):
         rng = np.random.default_rng(0)
         for _ in range(60):  # single-pixel speckle
             y, x = rng.integers(0, 200, size=2)
-            probs[CLASS_INDEX["Tempo"], y, x] = 2.0
-        probs[CLASS_INDEX["Tempo"], 40:70, 30:120] = 2.0  # one real region
+            probs[CLASS_INDEX["DirectionText"], y, x] = 2.0
+        probs[CLASS_INDEX["DirectionText"], 40:70, 30:120] = 2.0  # one real region
 
         found = boxes_from_probs(probs)
         self.assertEqual(1, len(found), f"speckle leaked through: {len(found)} boxes")
-        self.assertEqual("Tempo", found[0].label)
+        self.assertEqual("DirectionText", found[0].label)
 
     def test_the_floor_is_still_overridable(self) -> None:
         import numpy as np
@@ -161,6 +161,27 @@ class TestTheBoxAreaFloor(unittest.TestCase):
 
         probs = np.zeros((len(CLASS_INDEX) + 1, 50, 50), dtype=np.float32)
         probs[0] = 1.0
-        probs[CLASS_INDEX["Tempo"], 10:14, 10:14] = 2.0
+        probs[CLASS_INDEX["DirectionText"], 10:14, 10:14] = 2.0
         self.assertEqual(0, len(boxes_from_probs(probs)))
         self.assertEqual(1, len(boxes_from_probs(probs, min_area=4)))
+
+
+class TestExcludedFingering(unittest.TestCase):
+    def test_zero_fingering_is_reported_but_does_not_block(self):
+        path = _history(valid={"Dynamic": 0.9, "Tempo": 0.8, "Lyrics": 0.9, "Fingering": 0.0})
+        payload = json.loads(path.read_text())
+        payload["classes"].append("Fingering")
+        path.write_text(json.dumps(payload))
+        verdict = inspect(path)
+        self.assertTrue(verdict.ok)
+        self.assertEqual({"Fingering": 0.0}, verdict.excluded)
+        self.assertNotIn("Fingering", verdict.passed)
+
+    def test_exclusion_does_not_hide_direction_failure(self):
+        path = _history(valid={"Dynamic": 0.9, "DirectionText": 0.0, "Lyrics": 0.9, "Fingering": 0.0})
+        payload = json.loads(path.read_text())
+        payload["classes"] = ["background", "Dynamic", "DirectionText", "Lyrics", "Fingering"]
+        path.write_text(json.dumps(payload))
+        verdict = inspect(path)
+        self.assertFalse(verdict.ok)
+        self.assertEqual({"DirectionText": 0.0}, verdict.failed)

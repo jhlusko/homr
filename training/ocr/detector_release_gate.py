@@ -46,7 +46,7 @@ independently confirmed: 0% precision and recall for `Tempo` over 264 boxes on 2
 import argparse
 import json
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 #: A class below this never learned. Chosen an order of magnitude above the failures it
@@ -58,6 +58,9 @@ FLOOR = 0.05
 #: MeasureNumber is derivable rather than detected; a run that excludes it is not broken.
 OPTIONAL = frozenset({"MeasureNumber"})
 
+# Fingering is outside the approved detector release scope, even when scored.
+EXCLUDED = frozenset({"Fingering"})
+
 
 @dataclass
 class Verdict:
@@ -67,6 +70,7 @@ class Verdict:
     failed: dict[str, float]
     passed: dict[str, float]
     missing: list[str]
+    excluded: dict[str, float | None] = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -93,7 +97,11 @@ def inspect(history_path: Path, floor: float = FLOOR) -> Verdict:
     failed: dict[str, float] = {}
     passed: dict[str, float] = {}
     missing: list[str] = []
+    excluded: dict[str, float | None] = {}
     for name in classes:
+        if name in EXCLUDED:
+            excluded[name] = float(scores[name]) if name in scores else None
+            continue
         if name in OPTIONAL and name not in scores:
             continue
         if name not in scores:
@@ -101,7 +109,7 @@ def inspect(history_path: Path, floor: float = FLOOR) -> Verdict:
             continue
         value = float(scores[name])
         (failed if value < floor else passed)[name] = value
-    return Verdict(str(history_path), len(history), source, failed, passed, missing)
+    return Verdict(str(history_path), len(history), source, failed, passed, missing, excluded)
 
 
 def describe(verdict: Verdict, floor: float) -> str:
@@ -109,6 +117,8 @@ def describe(verdict: Verdict, floor: float) -> str:
         f"{verdict.checkpoint}",
         f"  {verdict.epochs} epochs, scored on {verdict.source}, floor {floor:.2f}",
     ]
+    for name, value in sorted(verdict.excluded.items()):
+        lines.append(f"  EXCLUDED {name:<16}{value}   outside release scope")
     for name, value in sorted(verdict.failed.items(), key=lambda kv: kv[1]):
         lines.append(f"  FAIL  {name:<16}{value:.3f}   never learned")
     for name in verdict.missing:
@@ -139,6 +149,7 @@ def main() -> None:
                         "failed": v.failed,
                         "missing": v.missing,
                         "passed": v.passed,
+                        "excluded": v.excluded,
                     }
                     for v in verdicts
                 ],

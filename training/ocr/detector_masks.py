@@ -50,10 +50,8 @@ from training.ocr.detector_data import Box, collect
 CLASS_ORDER = (
     "Dynamic",
     "Fingering",
-    "Expression",
-    "Tempo",
+    "DirectionText",
     "MeasureNumber",
-    "StaffText",
     "Lyrics",
 )
 
@@ -65,7 +63,12 @@ CLASS_ORDER = (
 #: system) for this detector to separate given the source corpus's SystemText scarcity (3
 #: real boxes total, 27.68). Folding it into StaffText rather than continuing to spend
 #: training attention on a class this detector cannot resolve.
-CLASS_ALIASES = {"SystemText": "StaffText"}
+CLASS_ALIASES = {
+    "SystemText": "DirectionText",
+    "Tempo": "DirectionText",
+    "StaffText": "DirectionText",
+    "Expression": "DirectionText",
+}
 
 BACKGROUND = 0
 CLASS_INDEX = {name: index + 1 for index, name in enumerate(CLASS_ORDER)}

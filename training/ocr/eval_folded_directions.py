@@ -84,9 +84,13 @@ def main() -> None:
     parser.add_argument("--pages", type=Path, nargs="+", required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--classes", help="Comma-separated order for older weights without a sidecar"
+    )
     parser.add_argument("--limit", type=int, default=0, help="Smoke-test only; omit for report")
     args = parser.parse_args()
-    model = load_model(args.weights, args.device)
+    order = tuple(args.classes.split(",")) if args.classes else None
+    model = load_model(args.weights, args.device, order)
     report = {
         "weights": str(args.weights),
         "direction_classes": sorted(DIRECTION_CLASSES),

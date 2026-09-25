@@ -69,7 +69,7 @@ class TestRasterize(unittest.TestCase):
 
         self.assertTrue((mask == CLASS_INDEX["Lyrics"]).all())
 
-    def test_system_text_is_folded_into_staff_text(self) -> None:
+    def test_directional_text_is_collapsed_into_one_class(self) -> None:
         # 27.92: SystemText stayed at 0% whole-page precision/recall even with real
         # synthetic training data, unlike Fingering, which the same technique fixed -
         # folded into StaffText rather than continuing to spend training attention on a
@@ -79,7 +79,7 @@ class TestRasterize(unittest.TestCase):
 
         mask = rasterize(10, 10, boxes)
 
-        self.assertEqual(mask[3, 3], CLASS_INDEX["StaffText"])
+        self.assertEqual(mask[3, 3], CLASS_INDEX["DirectionText"])
 
 
 class TestWriteMasks(unittest.TestCase):

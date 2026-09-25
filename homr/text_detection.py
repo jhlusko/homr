@@ -39,19 +39,11 @@ import numpy as np
 import onnxruntime as ort
 
 from homr.type_definitions import NDArray
+from homr.text_detector_classes import LEGACY_CLASS_ORDER, read_class_order
 
-#: Class 0 is background; 1..N follow this order. Must equal
-#: `training.ocr.detector_masks.CLASS_ORDER` - the exported graph's channel order is
-#: this list, so a divergence silently relabels every box rather than failing.
-CLASS_ORDER = (
-    "Dynamic",
-    "Fingering",
-    "Expression",
-    "Tempo",
-    "MeasureNumber",
-    "StaffText",
-    "Lyrics",
-)
+#: Compatibility aliases for the pinned e2/e4 detectors and pure geometry helpers.
+#: TextDetector itself always uses the order attached to its model.
+CLASS_ORDER = LEGACY_CLASS_ORDER
 
 BACKGROUND = 0
 CLASS_INDEX = {name: index + 1 for index, name in enumerate(CLASS_ORDER)}
@@ -131,11 +123,19 @@ class TextDetector:
                 "downloads; see homr.text_detector_config."
             )
         self.model_path = model_path
+        self.class_order = read_class_order(model_path)
+        self.num_classes = len(self.class_order) + 1
         self.session = ort.InferenceSession(
             model_path, providers=providers or ["CPUExecutionProvider"]
         )
         self.input_name = self.session.get_inputs()[0].name
         self.output_name = self.session.get_outputs()[0].name
+        output_channels = self.session.get_outputs()[0].shape[1]
+        if isinstance(output_channels, int) and output_channels != self.num_classes:
+            raise ValueError(
+                f"{model_path}: graph has {output_channels} output channels, "
+                f"class order requires {self.num_classes}"
+            )
 
     def predict_mask(self, image: NDArray, batch_size: int = 16) -> NDArray:
         """Per-pixel class probabilities for the whole page, tiles averaged in overlap.
@@ -146,7 +146,7 @@ class TextDetector:
         """
         height, width = image.shape[:2]
         origins = tile_origins(height, width)
-        prob_sum = np.zeros((NUM_CLASSES, height, width), dtype=np.float32)
+        prob_sum = np.zeros((self.num_classes, height, width), dtype=np.float32)
         coverage = np.zeros((height, width), dtype=np.float32)
 
         for start in range(0, len(origins), batch_size):
@@ -158,6 +158,11 @@ class TextDetector:
             # silent input distribution shift.
             tensor = np.transpose(tiles, (0, 3, 1, 2)).astype(np.float32) / 255.0
             logits = self.session.run([self.output_name], {self.input_name: tensor})[0]
+            if logits.shape[1] != self.num_classes:
+                raise ValueError(
+                    f"{self.model_path}: graph returned {logits.shape[1]} channels, "
+                    f"class order requires {self.num_classes}"
+                )
             probs = _softmax(np.asarray(logits, dtype=np.float32), axis=1)
 
             for (y, x), tile_probs in zip(batch_origins, probs, strict=True):
@@ -169,19 +174,23 @@ class TextDetector:
         return prob_sum / coverage[None, :, :]
 
     def detect(self, image: NDArray, batch_size: int = 16) -> list[DetectedBox]:
-        return boxes_from_probs(self.predict_mask(image, batch_size))
+        return boxes_from_probs(self.predict_mask(image, batch_size), class_order=self.class_order)
 
 
-def boxes_from_probs(probs: NDArray, min_area: int = MIN_AREA) -> list[DetectedBox]:
+def boxes_from_probs(
+    probs: NDArray, min_area: int = MIN_AREA, class_order: tuple[str, ...] = CLASS_ORDER
+) -> list[DetectedBox]:
     """One box per connected foreground region, per class.
 
     Mirrors the ground truth's own `connectedComponentsWithStats` shape, so a predicted
     box and a ground-truth box are comparable by construction rather than by convention.
     """
+    if probs.shape[0] != len(class_order) + 1:
+        raise ValueError("probability channels do not match detector class order")
     class_map = probs.argmax(axis=0).astype(np.uint8)
     confidence_map = probs.max(axis=0)
     boxes = []
-    for label, class_index in CLASS_INDEX.items():
+    for class_index, label in enumerate(class_order, start=1):
         binary = (class_map == class_index).astype(np.uint8)
         if binary.sum() == 0:
             continue

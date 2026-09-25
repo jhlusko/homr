@@ -4,9 +4,8 @@ tests.
 The runtime cannot import `training.ocr.detector_inference` - that module reaches
 `CamVidModel`, and so torch and pytorch_lightning, neither of which the runtime ships.
 So the geometry exists twice, and the only thing keeping the copies honest is this file.
-A drift in tile stride, patch padding or class order would not raise anywhere: it would
-relabel or misplace boxes quietly, and the whole point of matching the reference is that
-a predicted box and a ground-truth box stay comparable by construction.
+Tile stride and padding must agree; the channel order must follow each checkpoint.
+The released ONNX graphs and the current DirectionText trainer deliberately differ.
 
 Hence: every shared function is asserted equal to the reference on the same inputs,
 including the awkward sizes (pages that are not a multiple of the stride, pages smaller
@@ -20,6 +19,12 @@ from pathlib import Path
 import numpy as np
 
 from homr import text_detection
+from homr.text_detector_classes import (
+    DIRECTION_CLASS_ORDER,
+    LEGACY_CLASS_ORDER,
+    class_order_path,
+    write_class_order,
+)
 
 try:  # The reference implementation is training-side and torch-only.
     import torch
@@ -84,11 +89,9 @@ class MatchesTheTrainingReference(unittest.TestCase):
                 )
 
     def test_class_order_and_indices_agree(self):
-        """The exported graph's channel order *is* this list; a divergence relabels
-        every box rather than failing."""
-        self.assertEqual(text_detection.CLASS_ORDER, REFERENCE_CLASS_ORDER)
-        self.assertEqual(text_detection.CLASS_INDEX, REFERENCE_CLASS_INDEX)
-        self.assertEqual(text_detection.NUM_CLASSES, reference.NUM_CLASSES)
+        """Pinned ONNX keeps its old labels; the current trainer uses DirectionText."""
+        self.assertEqual(text_detection.CLASS_ORDER, LEGACY_CLASS_ORDER)
+        self.assertEqual(REFERENCE_CLASS_ORDER, DIRECTION_CLASS_ORDER)
         self.assertEqual(text_detection.BACKGROUND, 0)
 
     def test_softmax_agrees_with_torch(self):
@@ -110,15 +113,16 @@ class MatchesTheTrainingReference(unittest.TestCase):
         self.assertEqual(int(probs[0, :, 0, 0].argmax()), 3)
 
     def test_box_recovery_agrees_on_a_synthetic_probability_map(self):
-        probs = np.zeros((text_detection.NUM_CLASSES, 60, 80), dtype=np.float32)
+        probs = np.zeros((reference.NUM_CLASSES, 60, 80), dtype=np.float32)
         probs[text_detection.BACKGROUND] = 0.9
-        # Two separated Lyrics blobs, one Tempo blob, and a 2px speck below min_area.
-        probs[text_detection.CLASS_INDEX["Lyrics"], 5:15, 5:25] = 0.99
-        probs[text_detection.CLASS_INDEX["Lyrics"], 30:40, 50:70] = 0.75
-        probs[text_detection.CLASS_INDEX["Tempo"], 2:6, 40:60] = 0.95
-        probs[text_detection.CLASS_INDEX["Fingering"], 50:51, 1:3] = 0.99
+        # Two Lyrics blobs, one DirectionText blob above the reference's 200px floor,
+        # and a 2px speck below both implementations' area floors.
+        probs[REFERENCE_CLASS_INDEX["Lyrics"], 5:15, 5:25] = 0.99
+        probs[REFERENCE_CLASS_INDEX["Lyrics"], 30:40, 50:70] = 0.75
+        probs[REFERENCE_CLASS_INDEX["DirectionText"], 2:12, 40:75] = 0.95
+        probs[REFERENCE_CLASS_INDEX["Fingering"], 50:51, 1:3] = 0.99
 
-        mine = text_detection.boxes_from_probs(probs)
+        mine = text_detection.boxes_from_probs(probs, class_order=REFERENCE_CLASS_ORDER)
         theirs = reference.boxes_from_probs(probs)
 
         self.assertEqual(
@@ -135,12 +139,16 @@ class MatchesTheTrainingReference(unittest.TestCase):
     def test_the_min_area_speck_is_dropped_by_both(self):
         """Guards the equivalence test above from passing vacuously: if neither
         implementation dropped anything, the shared threshold would be untested."""
-        probs = np.zeros((text_detection.NUM_CLASSES, 20, 20), dtype=np.float32)
+        probs = np.zeros((reference.NUM_CLASSES, 20, 20), dtype=np.float32)
         probs[text_detection.BACKGROUND] = 0.9
-        probs[text_detection.CLASS_INDEX["Fingering"], 5:6, 5:7] = 0.99  # area 2 < 4
-        self.assertEqual(text_detection.boxes_from_probs(probs), [])
-        probs[text_detection.CLASS_INDEX["Fingering"], 5:7, 5:7] = 0.99  # area 4
-        self.assertEqual(len(text_detection.boxes_from_probs(probs)), 1)
+        probs[REFERENCE_CLASS_INDEX["Fingering"], 5:6, 5:7] = 0.99  # area 2 < 4
+        self.assertEqual(
+            text_detection.boxes_from_probs(probs, class_order=REFERENCE_CLASS_ORDER), []
+        )
+        probs[REFERENCE_CLASS_INDEX["Fingering"], 5:7, 5:7] = 0.99  # area 4
+        self.assertEqual(
+            len(text_detection.boxes_from_probs(probs, class_order=REFERENCE_CLASS_ORDER)), 1
+        )
 
 
 class ConstantClassModel(nn.Module if HAS_REFERENCE else object):  # type: ignore[misc]
@@ -204,7 +212,9 @@ class ScaleSensitiveModel(nn.Module if HAS_REFERENCE else object):  # type: igno
         return logits
 
 
-def export_model(model: "nn.Module", path: Path) -> str:
+def export_model(
+    model: "nn.Module", path: Path, class_order: tuple[str, ...] = LEGACY_CLASS_ORDER
+) -> str:
     model.eval()
     torch.onnx.export(
         model,
@@ -216,6 +226,7 @@ def export_model(model: "nn.Module", path: Path) -> str:
         dynamic_shapes={"x": (Dim("batch_size"), 3, 320, 320)},
         dynamo=True,
     )
+    write_class_order(path, class_order)
     return str(path)
 
 
@@ -251,6 +262,22 @@ class RunsAnActualOnnxGraphOverAPage(unittest.TestCase):
         box = boxes[0]
         self.assertEqual((box.left, box.top, box.right, box.bottom), (60, 100, 200, 150))
         self.assertGreater(box.confidence, 0.9)
+
+    def test_five_class_graph_uses_its_own_direction_label(self):
+        path = export_model(
+            ConstantClassModel(3, len(DIRECTION_CLASS_ORDER) + 1),
+            Path(self.directory.name) / "direction.onnx",
+            DIRECTION_CLASS_ORDER,
+        )
+        boxes = text_detection.TextDetector(path).detect(
+            np.full((320, 320, 3), 255, dtype=np.uint8)
+        )
+        self.assertEqual([box.label for box in boxes], ["DirectionText"])
+
+    def test_mismatched_class_sidecar_is_rejected(self):
+        write_class_order(self.model_path, DIRECTION_CLASS_ORDER)
+        with self.assertRaisesRegex(ValueError, "output channels"):
+            text_detection.TextDetector(self.model_path)
 
     def test_probabilities_are_normalised_after_stitching(self):
         """Overlap averaging divides by coverage; if that were wrong, probabilities in
@@ -323,6 +350,15 @@ class CachingAndFailure(unittest.TestCase):
             text_detection.TextDetector("/nonexistent/detector.onnx")
         self.assertIn("/nonexistent/detector.onnx", str(caught.exception))
         self.assertIn("optional", str(caught.exception))
+
+    @needs_reference
+    def test_unknown_graph_without_class_metadata_is_rejected(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = export_constant_model("Tempo", Path(directory.name) / "unknown.onnx")
+        class_order_path(path).unlink()
+        with self.assertRaisesRegex(ValueError, "missing"):
+            text_detection.TextDetector(path)
 
     @needs_reference
     def test_both_detectors_stay_resident_together(self):

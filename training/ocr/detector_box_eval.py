@@ -27,7 +27,6 @@ import torch
 
 from training.ocr.detector_data import Box, collect
 from training.ocr.detector_inference import load_model, predict_boxes
-from training.ocr.detector_masks import CLASS_INDEX, canonical_label
 from training.ocr.detector_patches import read_index
 
 
@@ -98,20 +97,28 @@ def match_one_page(
 
 
 def evaluate(
-    weights: Path, boxes_dir: Path, index: Path, device: str, iou_threshold: float = 0.5
+    weights: Path,
+    boxes_dir: Path,
+    index: Path,
+    device: str,
+    iou_threshold: float = 0.5,
+    class_order: tuple[str, ...] | None = None,
 ) -> dict[str, Counts]:
-    model = load_model(weights, device)
-    # `collect` reads detector_data.DETECTION_CLASSES (11 classes); the model was only
-    # ever trained on detector_masks.CLASS_ORDER (6) - Text, InstrumentName,
-    # RehearsalMark and Harmony were never rasterized into a training mask, so scoring
-    # them here would count boxes the detector was never asked to find as missed recall.
-    # `canonical_label` folds SystemText into StaffText (27.92) before that filter, so a
-    # ground-truth SystemText box is scored as a StaffText box, matching what the masks
-    # (and therefore the model's own labels) were built from.
+    model = load_model(weights, device, class_order)
+    model_order = model.detector_class_order
+    # `collect` reads more labels than either detector learned. Restrict references
+    # to this checkpoint's class order so an untrained class is not counted as a miss.
+    # Canonicalise references for this checkpoint's scheme, not the training scheme
+    # imported in this process. Old seven-class weights must not inherit DirectionText.
+    aliases = (
+        {name: "DirectionText" for name in ("SystemText", "Tempo", "StaffText", "Expression")}
+        if "DirectionText" in model_order
+        else {"SystemText": "StaffText"}
+    )
     ground_truth_boxes = [
-        Box(box.image, canonical_label(box.label), box.left, box.top, box.right, box.bottom)
+        Box(box.image, aliases.get(box.label, box.label), box.left, box.top, box.right, box.bottom)
         for box in collect(boxes_dir)
-        if canonical_label(box.label) in CLASS_INDEX
+        if aliases.get(box.label, box.label) in model_order
     ]
     by_image: dict[str, list[Box]] = collections.defaultdict(list)
     for box in ground_truth_boxes:
@@ -185,9 +192,13 @@ def main() -> None:
     parser.add_argument("--iou-threshold", type=float, default=0.5)
     parser.add_argument("--out", type=Path)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--classes", help="Comma-separated order for older weights without a sidecar"
+    )
     args = parser.parse_args()
 
-    totals = evaluate(args.weights, args.boxes, args.index, args.device, args.iou_threshold)
+    order = tuple(args.classes.split(",")) if args.classes else None
+    totals = evaluate(args.weights, args.boxes, args.index, args.device, args.iou_threshold, order)
     print(describe(totals))
     if args.out:
         args.out.write_text(

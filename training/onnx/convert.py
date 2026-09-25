@@ -410,7 +410,11 @@ def quantize_decoder(src_path: str, dst_path: str, overwrite: bool = False) -> s
 
 
 def convert_detector(
-    checkpoint: str, out_classes: int, path_out: str, overwrite: bool = False
+    checkpoint: str,
+    out_classes: int,
+    path_out: str,
+    overwrite: bool = False,
+    class_order: tuple[str, ...] | None = None,
 ) -> str | None:
     """Export a Stage 3 text-detector checkpoint (`detector_e2.pth`, `detector_instr_bg.pth`,
     ...) to ONNX.
@@ -427,6 +431,13 @@ def convert_detector(
     # Local for the same reason as convert_segnet's own import: keeps the encoder,
     # decoder and structured-head exports usable without pytorch_lightning installed.
     from training.architecture.segmentation.model import CamVidModel
+    from homr.text_detector_classes import read_class_order, write_class_order
+
+    order = read_class_order(checkpoint, class_order)
+    if out_classes != len(order) + 1:
+        raise ValueError(
+            f"detector export requested {out_classes} channels for {len(order)} classes"
+        )
 
     model = CamVidModel(
         arch="Unet", encoder_name="resnet18", in_channels=3, out_classes=out_classes
@@ -450,4 +461,5 @@ def convert_detector(
         dynamo=True,
         external_data=False,
     )
+    write_class_order(path_out, order)
     return path_out

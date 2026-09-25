@@ -27,7 +27,8 @@ import numpy as np
 import torch
 
 from training.architecture.segmentation.model import CamVidModel
-from training.ocr.detector_masks import CLASS_INDEX, CLASS_ORDER
+from homr.text_detector_classes import read_class_order
+from training.ocr.detector_masks import CLASS_ORDER
 from training.ocr.detector_patches import PATCH_SIZE, extract_patch
 
 NUM_CLASSES = len(CLASS_ORDER) + 1
@@ -45,15 +46,19 @@ class PredictedBox:
     confidence: float
 
 
-def load_model(weights: Path, device: str) -> CamVidModel:
+def load_model(
+    weights: Path, device: str, class_order: tuple[str, ...] | None = None
+) -> CamVidModel:
+    order = read_class_order(weights, class_order)
     model = CamVidModel(
         arch="Unet",
         encoder_name="resnet18",
         in_channels=3,
-        out_classes=NUM_CLASSES,
+        out_classes=len(order) + 1,
         skip_weights_download=True,
     )
-    model.load_state_dict(torch.load(weights, map_location=device))
+    model.load_state_dict(torch.load(weights, map_location=device, weights_only=True))
+    model.detector_class_order = order
     model.to(device).eval()
     return model
 
@@ -78,7 +83,8 @@ def predict_mask(
     """Per-pixel class probabilities for the whole page, tiles averaged in overlap."""
     height, width = image.shape[:2]
     origins = tile_origins(height, width)
-    prob_sum = np.zeros((NUM_CLASSES, height, width), dtype=np.float32)
+    order = model.detector_class_order
+    prob_sum = np.zeros((len(order) + 1, height, width), dtype=np.float32)
     coverage = np.zeros((height, width), dtype=np.float32)
 
     for start in range(0, len(origins), batch_size):
@@ -86,6 +92,8 @@ def predict_mask(
         tiles = np.stack([extract_patch(image, origin, 255) for origin in batch_origins])
         tensor = torch.from_numpy(tiles).permute(0, 3, 1, 2).float().to(device) / 255.0
         logits = model(tensor)
+        if logits.shape[1] != len(order) + 1:
+            raise ValueError("checkpoint output channels do not match its detector class order")
         probs = logits.softmax(dim=1).cpu().numpy()
 
         for (y, x), tile_probs in zip(batch_origins, probs, strict=True):
@@ -116,14 +124,20 @@ def predict_mask(
 MIN_BOX_AREA = 200
 
 
-def boxes_from_probs(probs: np.ndarray, min_area: int = MIN_BOX_AREA) -> list[PredictedBox]:
+def boxes_from_probs(
+    probs: np.ndarray,
+    min_area: int = MIN_BOX_AREA,
+    class_order: tuple[str, ...] = CLASS_ORDER,
+) -> list[PredictedBox]:
     """One box per connected foreground region, per class - mirrors
     `detector_masks.rasterize`'s ground-truth shape so the two are directly comparable.
     """
+    if probs.shape[0] != len(class_order) + 1:
+        raise ValueError("probability channels do not match detector class order")
     class_map = probs.argmax(axis=0).astype(np.uint8)
     confidence_map = probs.max(axis=0)
     boxes = []
-    for label, class_index in CLASS_INDEX.items():
+    for class_index, label in enumerate(class_order, start=1):
         binary = (class_map == class_index).astype(np.uint8)
         if binary.sum() == 0:
             continue
@@ -147,7 +161,7 @@ def predict_boxes(
     if image is None:
         raise FileNotFoundError(image_path)
     probs = predict_mask(model, image, device, batch_size)
-    return boxes_from_probs(probs)
+    return boxes_from_probs(probs, class_order=model.detector_class_order)
 
 
 def main() -> None:
@@ -155,10 +169,14 @@ def main() -> None:
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--out", type=Path)
+    parser.add_argument(
+        "--classes", help="Comma-separated order for older weights without a sidecar"
+    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
-    model = load_model(args.weights, args.device)
+    order = tuple(args.classes.split(",")) if args.classes else None
+    model = load_model(args.weights, args.device, order)
     boxes = predict_boxes(model, args.image, args.device)
     by_class: dict[str, int] = {}
     for box in boxes:

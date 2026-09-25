@@ -214,6 +214,10 @@ class TestTrainEntryPoint(unittest.TestCase):
             train(self._args(directory))
 
             self.assertTrue((directory / "w.pth").exists())
+            self.assertEqual(
+                json.loads((directory / "w.pth.classes.json").read_text())["class_order"],
+                list(CLASS_NAMES[1:]),
+            )
 
     def test_weights_are_checkpointed_once_per_epoch(self) -> None:
         # 27.91's gap: a long run killed partway used to lose everything, because

@@ -42,6 +42,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from training.architecture.segmentation.model import CamVidModel
+from homr.text_detector_classes import write_class_order
 from training.ocr.detector_masks import CLASS_INDEX, CLASS_ORDER
 from training.ocr.detector_patches import (
     POSITIVE_RATIO,
@@ -283,6 +284,7 @@ def train(args: argparse.Namespace) -> dict:
         if args.weights:
             args.weights.parent.mkdir(parents=True, exist_ok=True)
             torch.save(model.state_dict(), args.weights)
+            write_class_order(args.weights, CLASS_ORDER)
         if args.out:
             args.out.parent.mkdir(parents=True, exist_ok=True)
             args.out.write_text(

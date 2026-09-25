@@ -130,8 +130,9 @@ def evaluate(
     index: Path,
     device: str,
     iou_threshold: float = 0.5,
+    detector_class_order: tuple[str, ...] | None = None,
 ) -> dict:
-    detector = load_model(detector_weights, device)
+    detector = load_model(detector_weights, device, detector_class_order)
     checkpoint = torch.load(recognizer_weights, map_location=device)
     alphabet = Alphabet(checkpoint["alphabet"])
     recognizer = CRNN(len(alphabet), image_height=IMAGE_HEIGHT).to(device)
@@ -205,10 +206,19 @@ def main() -> None:
     parser.add_argument("--index", type=Path, required=True, help="detector_split valid_index.txt")
     parser.add_argument("--iou-threshold", type=float, default=0.5)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--detector-classes", help="Comma-separated order for old weights without a sidecar"
+    )
     args = parser.parse_args()
 
+    order = tuple(args.detector_classes.split(",")) if args.detector_classes else None
     result = evaluate(
-        args.detector_weights, args.recognizer_weights, args.index, args.device, args.iou_threshold
+        args.detector_weights,
+        args.recognizer_weights,
+        args.index,
+        args.device,
+        args.iou_threshold,
+        order,
     )
     print(describe(result))
 
