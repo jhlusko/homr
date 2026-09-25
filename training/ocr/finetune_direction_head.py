@@ -40,6 +40,40 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def save_trainer_state(
+    path: Path, model: torch.nn.Module, optimizer: torch.optim.Optimizer,
+    sampler: WeightedRandomSampler, history: list[dict], metadata: dict,
+) -> None:
+    """Atomic epoch-boundary state for an exact continuation of this recipe."""
+    state = {
+        "model": model.state_dict(), "optimizer": optimizer.state_dict(),
+        "sampler_rng": sampler.generator.get_state(),
+        "torch_rng": torch.get_rng_state(), "cuda_rng": torch.cuda.get_rng_state_all(),
+        "numpy_rng": np.random.get_state(), "python_rng": random.getstate(),
+        "history": history, "metadata": metadata,
+    }
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    torch.save(state, temporary)
+    temporary.replace(path)
+
+
+def load_trainer_state(
+    path: Path, model: torch.nn.Module, optimizer: torch.optim.Optimizer,
+    sampler: WeightedRandomSampler, metadata: dict,
+) -> list[dict]:
+    state = torch.load(path, map_location="cpu", weights_only=False)
+    if state["metadata"] != metadata:
+        raise ValueError("trainer state recipe or data digests changed")
+    model.load_state_dict(state["model"])
+    optimizer.load_state_dict(state["optimizer"])
+    sampler.generator.set_state(state["sampler_rng"])
+    torch.set_rng_state(state["torch_rng"])
+    torch.cuda.set_rng_state_all(state["cuda_rng"])
+    np.random.set_state(state["numpy_rng"])
+    random.setstate(state["python_rng"])
+    return state["history"]
+
+
 def remap_state(old: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
     """Copy e4's non-direction filters exactly; average its three text filters."""
     expected = ("background", *LEGACY_CLASS_ORDER)
@@ -172,7 +206,7 @@ def train(args: argparse.Namespace) -> None:
         head.bias.register_hook(lambda grad: grad * channel_mask)
         optimizer = torch.optim.AdamW((head.weight, head.bias), lr=args.lr, weight_decay=0)
     loss_fn = smp.losses.DiceLoss("multiclass", from_logits=True, ignore_index=255)
-    history = []
+    history: list[dict] = []
     metadata = {
         "recipe": (
             "e4 remapped; all parameters train on audited OSSQ, Lieder and synthetic patches"
@@ -186,8 +220,34 @@ def train(args: argparse.Namespace) -> None:
         "learning_rate": args.lr,
         "samples_per_epoch": args.samples_per_epoch,
     }
-    (args.out / "recipe.json").write_text(json.dumps(metadata, indent=2) + "\n")
-    for epoch in range(1, args.epochs + 1):
+    if args.resume is not None and args.start_weights is not None:
+        raise ValueError("choose exact --resume or weight-only --start-weights, not both")
+    continuation = None
+    if args.resume is not None:
+        history = load_trainer_state(args.resume, model, optimizer, sampler, metadata)
+        continuation = {"kind": "exact", "source": str(args.resume)}
+    elif args.start_weights is not None:
+        if args.history_in is None:
+            raise ValueError("--start-weights requires --history-in")
+        if read_class_order(args.start_weights) != DIRECTION_CLASS_ORDER:
+            raise ValueError("warm-start checkpoint has wrong class order")
+        model.load_state_dict(
+            torch.load(args.start_weights, map_location="cpu", weights_only=True)
+        )
+        history = json.loads(args.history_in.read_text())["history"]
+        continuation = {
+            "kind": "weight-only warm restart; AdamW and random stream reset",
+            "source": str(args.start_weights), "source_sha256": digest(args.start_weights),
+            "history_sha256": digest(args.history_in),
+        }
+    if [row["epoch"] for row in history] != list(range(1, len(history) + 1)):
+        raise ValueError("training history epochs are not contiguous")
+    if args.epochs < len(history):
+        raise ValueError("--epochs must be at least the checkpoint epoch")
+    (args.out / "recipe.json").write_text(
+        json.dumps({**metadata, "continuation": continuation}, indent=2) + "\n"
+    )
+    for epoch in range(len(history) + 1, args.epochs + 1):
         # The head-only ablation freezes e4 BatchNorm statistics; the full retrain
         # updates the shared trunk on real OSSQ Dynamic and DirectionText labels.
         if args.train_all:
@@ -213,12 +273,20 @@ def train(args: argparse.Namespace) -> None:
             if batch_index % 50 == 0:
                 print(f"epoch {epoch} batch {batch_index}/{len(loader)} loss {losses[-1]:.4f}", flush=True)
         checkpoint = args.out / f"epoch-{epoch}.pth"
-        torch.save(model.state_dict(), checkpoint)
+        temporary = checkpoint.with_suffix(checkpoint.suffix + ".tmp")
+        torch.save(model.state_dict(), temporary)
+        temporary.replace(checkpoint)
         write_class_order(checkpoint, DIRECTION_CLASS_ORDER)
         valid_scores = evaluate(model, valid, args.device, ignore_index=255)
         history.append({"epoch": epoch, "loss": sum(losses) / len(losses), "valid": valid_scores})
-        (args.out / "history.json").write_text(
+        history_path = args.out / "history.json"
+        history_tmp = history_path.with_suffix(".json.tmp")
+        history_tmp.write_text(
             json.dumps({"classes": ["background", *DIRECTION_CLASS_ORDER], "history": history}, indent=2) + "\n"
+        )
+        history_tmp.replace(history_path)
+        save_trainer_state(
+            args.out / "trainer-state.pth", model, optimizer, sampler, history, metadata
         )
         print(json.dumps(history[-1]), flush=True)
 
@@ -240,6 +308,9 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--samples-per-epoch", type=int, default=16384)
     parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument("--resume", type=Path, help="Exact epoch-boundary trainer state")
+    parser.add_argument("--start-weights", type=Path, help="Older checkpoint without optimizer state")
+    parser.add_argument("--history-in", type=Path, help="Training history for a weight-only restart")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     train(parser.parse_args())
 
