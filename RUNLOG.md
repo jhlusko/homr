@@ -14145,3 +14145,20 @@ primary number is **real-page box recall**, with IoU 0.5 used only to decide box
 `eval_folded_directions.py` now maps references using each checkpoint's own class order
 and can score/report the frozen split, preserving per-page rows. Next: run the 09-19
 parent and released `e4` on both roles to fill in the frozen baseline bars, then B4.
+
+### 2026-09-25: B3 parent and released baseline scoring complete
+
+Pushed `e1223f4` ran in a clean instance worktree, persistent tmux and a watcher.
+The 09-19 five-class parent finished at 02:55:56 UTC; released seven-class `e4` at
+03:06:54 UTC. Both used the frozen score roles and page-row digests. Their per-page
+reports and logs are copied under
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/detector-b3-baselines/`.
+On OSSQ test, the parent found 83/421 direction boxes (367 predictions) and 465/1,660
+Dynamic boxes (2,533 predictions). On Lieder test, it found 11/11 direction boxes
+(87 predictions). `e4` found 1,101/1,660 OSSQ Dynamic boxes (5,728 predictions),
+and zero direction boxes after folding. The predeclared test rule therefore requires
+at least 105 OSSQ direction, 1,018 OSSQ Dynamic and all 11 Lieder direction matches,
+with OSSQ direction ≤367, Dynamic ≤5,728 and Lieder direction ≤87 predictions.
+Selection thresholds are 109/467 OSSQ direction, 331/1,841 Dynamic and 7/11 Lieder
+direction matches. These are arithmetic translations of the frozen percentage bars,
+not choices made after seeing a new candidate. No candidate has been trained yet.

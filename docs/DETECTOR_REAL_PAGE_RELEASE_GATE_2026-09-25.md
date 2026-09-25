@@ -78,3 +78,29 @@ Before B4, run the parent and `e4` on both roles, archive per-page rows, exact m
 digests and split-manifest digest, and verify the train-score exclusion. These baseline
 runs fill in the numerical bars without changing this criterion. Keep `/workspace/venv`
 on the GPU instance intact; run only pushed code from a clean checkout.
+
+## Baseline fill-in — completed 2026-09-25, criterion unchanged
+
+Both baselines ran from pushed `e1223f4` in persistent tmux. The watcher marked
+completion. Reports, including each page's counts, are archived under
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/detector-b3-baselines/`.
+The parent digest is `a03cd63177353360faf7c8a377e061d5130c3eeeab10775fd2c980a08096520c`;
+released `e4` is `fcb8ca529fa355b0427112bda1c4edd95b2d6cc6c369be0c32f3313987a4ec82`.
+The split-manifest digest is `43f922bc24179a2a182888df54587514db9da4ac0a806ad242c0e8e361fad72f`.
+
+| role/corpus | parent direction matched/predicted/GT | parent dynamic matched/predicted/GT | `e4` dynamic matched/predicted/GT |
+| --- | ---: | ---: | ---: |
+| selection OSSQ | 94 / 512 / 467 | 367 / 3,262 / 1,841 | 1,169 / 10,023 / 1,841 |
+| test OSSQ | 83 / 367 / 421 | 465 / 2,533 / 1,660 | 1,101 / 5,728 / 1,660 |
+| selection Lieder direction | 8 / 38 / 11 | no reference boxes | no reference boxes |
+| test Lieder direction | 11 / 87 / 11 | no reference boxes | no reference boxes |
+
+Thus the selection floors are **109/467** OSSQ direction matches, **331/1,841**
+OSSQ dynamic matches, and **7/11** Lieder direction matches. The test release floors
+are **105/421** OSSQ direction matches, **1,018/1,660** OSSQ dynamic matches, and
+**11/11** Lieder direction matches, with the prediction-count caps already stated
+above: OSSQ direction ≤367, OSSQ dynamic ≤5,728, Lieder direction ≤87. These are
+raw-count translations of the predeclared percentage rules, not newly chosen bars.
+`e4` had zero matched direction boxes after folding on these pages, consistent with
+its known direction failure. The parent's perfect 11/11 Lieder test recall makes that
+part of the release bar demanding; it must not be relaxed after seeing a candidate.
