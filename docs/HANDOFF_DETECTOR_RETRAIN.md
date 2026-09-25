@@ -10,12 +10,15 @@ on disk only; §0c, §0d and §3 are the relevant sections).
 > describes the plan as of 2026-09-18, and **§1's instance no longer exists** — the work
 > ran on `ssh -p 40097 root@88.207.87.60` (A100-SXM4-40GB).
 >
-> Result, on all 1,569 held-out pages at IoU 0.5: `Tempo` recall **0% → 83.9%**, overall
+> Result, on 1,569 held-out **synthetic** renders at IoU 0.5 — MuseScore re-renders of
+> per-system MusicXML, **no real scans**: `Tempo` recall **0% → 83.9%**, overall
 > recall **93.3%** — but `Tempo` precision **10.2%** (7,831 predicted against 949 real) and
 > `StaffText` 30.0%. Two of this handoff's three criteria are met; "cut the over-prediction"
 > is not. `detector_release_gate.py` refuses it, on classes with almost no validation data
-> (`Fingering` 2 boxes, `Lyrics` and `Expression` none). **Ship or retrain against
-> over-prediction is the owner's decision.**
+> (`Fingering` 2 boxes, `Lyrics` and `Expression` none). **Real-scan performance is
+> unmeasured.** The only real-scan figure for this problem is 2026-09-19's collapsed
+> `DirectionText` recall of 19.9% on OSSQ scans, so treat 83.9% as a synthetic upper bound,
+> not a readiness result. The next step is a real-page evaluation, not a ship decision.
 >
 > The corrected sampler alone would not have got there. Three data defects had to be fixed
 > first: boxes split from `_cleaned.musicxml` contained no `<direction>` text at all (re-split

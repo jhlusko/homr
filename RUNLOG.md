@@ -14067,3 +14067,20 @@ positional index without first reading `decode_reference`/`decode_predictions` a
 target-construction code (`structured_targets.py` or `training_vocabulary.py`) properly
 is not reliable and shouldn't be attempted again by trial and error. Flagged as needing
 real study, not a quick script. Detail: `results/next_actions_3_4.md`.
+
+## Correction: the 2026-09-24 detector result is synthetic, not real (2026-09-25)
+
+The entries above report `Tempo` recall 0% → 83.9% "on real pages". The 1,569 held-out
+images behind that figure are MuseScore re-renders of per-system MusicXML
+(`detector-retrain/boxes_v2/<score>:<page>:<system>/…png`) — synthetic, single-system images.
+No real scan was in the evaluation, and the merged docs repeated the claim before it was
+checked.
+
+The only real-scan measurement of this problem is 2026-09-19's collapsed `DirectionText`
+recall of 19.9% on OSSQ scans (86.4% Lieder). Treat 83.9% as a synthetic upper bound; the
+checkpoint's real-scan performance is unmeasured. The instance session found this itself once
+shown the 09-19 entry, which its checkout lacked because it had never been committed, and
+stopped before training again. It had also begun re-implementing the 09-19 class collapse
+under a different name (`StaffText` rather than `DirectionText`) without updating
+`homr/text_detection.py`, whose `CLASS_ORDER` must match the training channel order; it has
+reverted that edit.
