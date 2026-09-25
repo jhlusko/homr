@@ -12,15 +12,28 @@ def class_counts(report: dict, corpus: str, label: str, candidate: bool = False)
     return report["corpora"][corpus]["selection"]["folded"][label]
 
 
-def select(parent: dict, candidates: list[dict], history: dict) -> dict:
+def select(
+    parent: dict, candidates: list[dict], history: dict, direction_only: bool = False
+) -> dict:
+    """`direction_only=True` is decision 13 (2026-09-25): the non-lyric detector splits
+    in two, this model supplies `DirectionText` only, and `Dynamic` comes from `e4`
+    unchanged. The `Dynamic` real-page floor is dropped from eligibility and ranking -
+    a candidate is no longer disqualified or preferred by a class it will never be used
+    for in production. `Dynamic` counts are still recorded (for the record, and because
+    the synthetic per-class learning gate below still checks that head did not break),
+    just not gated on here.
+    """
     base_direction = class_counts(parent, "ossq_boxes", "DirectionText")
     base_dynamic = class_counts(parent, "ossq_boxes", "Dynamic")
     base_lieder = class_counts(parent, "lieder_boxes", "DirectionText")
     floors = {
         "ossq_direction": math.ceil(base_direction["matched"] + 0.03 * base_direction["ground_truth"] - 1e-9),
-        "ossq_dynamic": math.ceil(base_dynamic["matched"] - 0.02 * base_dynamic["ground_truth"] - 1e-9),
         "lieder_direction": base_lieder["matched"] - 1,
     }
+    if not direction_only:
+        floors["ossq_dynamic"] = math.ceil(
+            base_dynamic["matched"] - 0.02 * base_dynamic["ground_truth"] - 1e-9
+        )
     ranked = []
     for epoch, report in enumerate(candidates, start=1):
         if report["split_manifest_sha256"] != parent["split_manifest_sha256"]:
@@ -38,10 +51,11 @@ def select(parent: dict, candidates: list[dict], history: dict) -> dict:
         learned = all(validation.get(label, 0) >= 0.05 for label in ("DirectionText", "Dynamic", "Lyrics"))
         eligible = (
             ossq["matched"] >= floors["ossq_direction"]
-            and dynamic["matched"] >= floors["ossq_dynamic"]
             and lieder["matched"] >= floors["lieder_direction"]
             and learned
         )
+        if not direction_only:
+            eligible = eligible and dynamic["matched"] >= floors["ossq_dynamic"]
         ranked.append(
             {
                 "epoch": epoch,
@@ -58,15 +72,20 @@ def select(parent: dict, candidates: list[dict], history: dict) -> dict:
             }
         )
     eligible = [row for row in ranked if row["eligible"]]
-    best = max(
-        eligible,
-        key=lambda row: (
-            row["ossq_direction"]["matched"], row["ossq_dynamic"]["matched"], -row["epoch"]
-        ),
-        default=None,
+    rank_key = (
+        (lambda row: (row["ossq_direction"]["matched"], -row["epoch"]))
+        if direction_only
+        else (
+            lambda row: (
+                row["ossq_direction"]["matched"], row["ossq_dynamic"]["matched"], -row["epoch"]
+            )
+        )
     )
-    return {"criterion": "frozen B3 selection recall floors; test not accessed", "floors": floors,
-            "selected": best, "candidates": ranked}
+    best = max(eligible, key=rank_key, default=None)
+    criterion = "frozen B3 selection recall floors; test not accessed"
+    if direction_only:
+        criterion += " (direction-only mode, decision 13: Dynamic floor dropped)"
+    return {"criterion": criterion, "floors": floors, "selected": best, "candidates": ranked}
 
 
 def main() -> None:
@@ -75,11 +94,17 @@ def main() -> None:
     parser.add_argument("--epoch", type=Path, nargs="+", required=True)
     parser.add_argument("--history", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--direction-only",
+        action="store_true",
+        help="Decision 13 (2026-09-25): drop the Dynamic floor; Dynamic ships from e4.",
+    )
     args = parser.parse_args()
     result = select(
         json.loads(args.parent.read_text()),
         [json.loads(path.read_text()) for path in args.epoch],
         json.loads(args.history.read_text()),
+        direction_only=args.direction_only,
     )
     args.out.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({"floors": result["floors"], "selected": result["selected"]}, indent=2))

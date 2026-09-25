@@ -104,3 +104,52 @@ raw-count translations of the predeclared percentage rules, not newly chosen bar
 `e4` had zero matched direction boxes after folding on these pages, consistent with
 its known direction failure. The parent's perfect 11/11 Lieder test recall makes that
 part of the release bar demanding; it must not be relaxed after seeing a candidate.
+
+## Split-system amendment — 2026-09-25 (decision 13)
+
+B4 calibrated to this criterion (`results/b4_calibrated_selection.md`): epoch 4 wins
+OSSQ direction text at every epoch tried (+15.4pp over the parent, at the parent's box
+count) but cannot clear the OSSQ `Dynamic` floor at any epoch, and Dynamic gets worse
+with more training rather than better. The owner resolved this as decision 13: the
+non-lyric detector splits into two models. B4's calibrated epoch 4 supplies
+`DirectionText` only; a separate `dynamics` detector supplies `Dynamic`, starting as the
+released `e4` **unchanged** - so there is nothing new to test for `Dynamic` under this
+gate. This section amends, and does not replace, everything above: the split, scoring
+method, and selection procedure are unchanged except as stated here.
+
+**Selection (unchanged split/scores, amended rule).** The `Dynamic` selection floor
+(originally the 09-19 parent's matched count minus 2pp, `training/ocr/select_direction_epoch.py`)
+is dropped. An epoch is no longer disqualified, or preferred over another, by a class it
+will never supply in production. The `Dynamic` and Lieder-direction eligibility
+conditions, and the OSSQ `DirectionText` eligibility condition, are otherwise unchanged.
+Ranking among eligible epochs is by OSSQ `DirectionText` matched count alone (previously
+a tie-break on `Dynamic` came second; with `Dynamic` no longer gating anything, dropping
+it from ranking too avoids preferring an epoch for a channel this checkpoint will not
+ship). Implemented as `select_direction_epoch.select(..., direction_only=True)`
+(`--direction-only` on the CLI).
+
+**Release decision (unchanged split/scores, amended rule).** Condition 3 (OSSQ `Dynamic`
+recall within 5pp of `e4`) and the `Dynamic` half of condition 4 (prediction-count cap)
+are dropped from the test gate. The candidate is tested on direction text only:
+
+1. OSSQ `DirectionText` recall exceeds the 09-19 parent by at least 5 percentage points
+   (frozen numeric floor: **≥ 105/421** matched, from the baseline fill-in above).
+2. Lieder `DirectionText` matches at least as many boxes as the parent (frozen numeric
+   floor: **11/11**).
+3. On OSSQ, `DirectionText` predictions do not exceed the parent's count on the same
+   pages (**≤ 367**). On Lieder direction pages, predictions do not exceed the parent's
+   count (**≤ 87**).
+4. The five-class checkpoint's synthetic history gate still passes for all in-scope
+   classes, **including `Dynamic`** - this is a sanity check that the head did not break
+   during training, independent of whether production uses its output. `Fingering` stays
+   excluded, as before.
+
+Implemented as `decide_direction_release.decide(..., direction_only=True)`
+(`--direction-only` on the CLI); the returned decision object carries `"direction_only":
+true` so a report cannot be mistaken for a combined-gate result. `Dynamic`'s release
+path is now `e4`'s existing, already-shipped behavior - not re-tested here, and not
+re-opened by this amendment.
+
+Everything else in this document (the frozen split, scoring method, precision-as-lower-
+bound stance, one-test-read rule, and the requirement to freeze this before any test
+page is read) is unchanged.
