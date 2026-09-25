@@ -1,3 +1,9 @@
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
 import pytest
 
 from homr.text_detector_classes import DIRECTION_CLASS_ORDER
@@ -93,3 +99,43 @@ def test_direction_only_mode_still_requires_the_synthetic_dynamic_learning_floor
 
     assert result["gate_pass"] is False
     assert result["checks"]["synthetic_learning_floor"] is False
+
+
+def test_cli_direction_only_flag_actually_reaches_decide() -> None:
+    # decide()'s own direction_only parameter is covered above, but the CLI silently
+    # defaulting to False here (a --direction-only flag accepted and then dropped on
+    # the floor before calling decide()) would still leave every direction_only test
+    # above green - only a real subprocess invocation of main() catches that gap.
+    parent = _report((83, 367, 421), (11, 87, 11), (465, 2533, 1660))
+    e4 = _report((0, 33276, 421), (0, 3898, 11), (1101, 5728, 1660))
+    chosen = {"selected": {"epoch": 1, "weights_sha256": "chosen"}}
+    history = {"history": [{"valid": {
+        "DirectionText": .5, "Dynamic": .5, "Lyrics": .5, "MeasureNumber": .5
+    }}]}
+    # A Dynamic count that would fail the combined gate but is irrelevant direction-only.
+    candidate = _report((105, 367, 421), (11, 87, 11), (0, 0, 0), candidate=True)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        paths = {}
+        for name, obj in (
+            ("parent", parent), ("e4", e4), ("selected", chosen),
+            ("candidate", candidate), ("history", history),
+        ):
+            paths[name] = Path(tmp) / f"{name}.json"
+            paths[name].write_text(json.dumps(obj))
+        out_path = Path(tmp) / "out.json"
+
+        subprocess.run(
+            [
+                sys.executable, "-m", "training.ocr.decide_direction_release",
+                *[f"--{name}={path}" for name, path in paths.items()],
+                f"--out={out_path}", "--direction-only",
+            ],
+            check=True, cwd=Path(__file__).resolve().parents[1],
+        )
+
+        result = json.loads(out_path.read_text())
+
+    assert result["direction_only"] is True
+    assert result["gate_pass"] is True
+    assert "ossq_dynamic_recall" not in result["checks"]

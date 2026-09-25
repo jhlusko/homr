@@ -104,11 +104,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     for name in ("parent", "e4", "selected", "candidate", "history", "out"):
         parser.add_argument(f"--{name}", type=Path, required=True)
+    parser.add_argument(
+        "--direction-only",
+        action="store_true",
+        help="Decision 13 (2026-09-25): drop the Dynamic checks; Dynamic ships from e4.",
+    )
     args = parser.parse_args()
-    decision = decide(*[
-        json.loads(getattr(args, name).read_text())
-        for name in ("parent", "e4", "selected", "candidate", "history")
-    ])
+    decision = decide(
+        *[
+            json.loads(getattr(args, name).read_text())
+            for name in ("parent", "e4", "selected", "candidate", "history")
+        ],
+        direction_only=args.direction_only,
+    )
     args.out.write_text(json.dumps(decision, indent=2) + "\n")
     print(json.dumps(decision, indent=2))
 
