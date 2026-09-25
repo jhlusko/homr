@@ -117,11 +117,17 @@ def main() -> None:
     )
     parser.add_argument("--limit", type=int, default=0, help="Smoke-test only; omit for report")
     parser.add_argument("--split-manifest", type=Path, help="Frozen score-level selection/test split")
+    parser.add_argument(
+        "--role", choices=("selection", "test", "both"), default="both",
+        help="When using a split manifest, avoid reading test pages during epoch selection",
+    )
     args = parser.parse_args()
     order = tuple(args.classes.split(",")) if args.classes else None
     model = load_model(args.weights, args.device, order)
     manifest_bytes = args.split_manifest.read_bytes() if args.split_manifest else None
     manifest = json.loads(manifest_bytes) if manifest_bytes else None
+    if args.role != "both" and manifest is None:
+        parser.error("--role requires --split-manifest")
     report = {
         "weights": str(args.weights),
         "weights_sha256": hashlib.sha256(args.weights.read_bytes()).hexdigest(),
@@ -140,7 +146,8 @@ def main() -> None:
             if hashlib.sha256(pages_path.read_bytes()).hexdigest() != entry["source_pages_sha256"]:
                 raise ValueError(f"page-row digest mismatch: {pages_path}")
             report["corpora"][corpus] = {}
-            for role in ("selection", "test"):
+            roles = ("selection", "test") if args.role == "both" else (args.role,)
+            for role in roles:
                 role_info = entry["roles"][role]
                 result = score_pages(
                     model, pages_path, args.device, args.limit,
