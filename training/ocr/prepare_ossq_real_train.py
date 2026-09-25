@@ -68,13 +68,28 @@ def build_score(task: tuple[Path, Path, Path]) -> dict:
     if score != doc_path.stem:
         raise ValueError(f"score mismatch: {doc_path}")
     grouped: dict[str, list[dict]] = defaultdict(list)
+    skipped = Counter()
     for match in doc["matches"]:
         if match["kind"] in KIND_CLASS:
-            grouped[match["page_image"]].append(match)
+            page_id = Path(match["page_image"]).name.split(":", 1)[0]
+            if page_id != score:
+                # Three OCR match groups in sq7070781 point at other scores,
+                # including one held-out score. Never infer permission from the
+                # containing JSON filename when the image says otherwise.
+                skipped["cross_score_matches"] += 1
+            else:
+                grouped[match["page_image"]].append(match)
     rows = []
     labels = Counter()
     for old_name, matches in sorted(grouped.items()):
-        image_path = source_page(old_name, scan_root, score)
+        try:
+            image_path = source_page(old_name, scan_root, score)
+        except FileNotFoundError:
+            # Original OCR export included preview *_teaser.png files absent
+            # from the pinned full-resolution scan tree. Record their loss.
+            skipped["missing_page_matches"] += len(matches)
+            skipped["missing_pages"] += 1
+            continue
         image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
         if image is None:
             raise ValueError(f"unreadable image: {image_path}")
@@ -96,7 +111,8 @@ def build_score(task: tuple[Path, Path, Path]) -> dict:
         if not cv2.imwrite(str(destination), mask):
             raise OSError(f"cannot write mask: {destination}")
         rows.append(f"{image_path},{destination}")
-    return {"score": score, "pages": len(rows), "boxes": dict(labels), "index_rows": rows}
+    return {"score": score, "pages": len(rows), "boxes": dict(labels),
+            "skipped": dict(skipped), "index_rows": rows}
 
 
 def prepare(args: argparse.Namespace) -> dict:
@@ -114,10 +130,15 @@ def prepare(args: argparse.Namespace) -> dict:
     index_rows = sorted(row for result in results for row in result["index_rows"])
     (args.out / "index.txt").write_text("\n".join(index_rows) + "\n")
     totals = Counter()
+    skipped = Counter()
     for result in results:
         totals.update(result["boxes"])
+        skipped.update(result["skipped"])
     summary = {
-        "scores": len(selected), "pages": len(index_rows), "boxes": dict(totals),
+        "score_documents": len(selected),
+        "scores_with_pages": sum(result["pages"] > 0 for result in results),
+        "pages": len(index_rows), "boxes": dict(totals),
+        "skipped": dict(skipped),
         "selected_scores": sorted(doc.stem for doc in selected),
         "matches_sha256": {doc.name: sha256(doc) for doc in selected},
         "page_audit_sha256": sha256(args.page_audit),

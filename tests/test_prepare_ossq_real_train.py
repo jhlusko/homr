@@ -44,3 +44,18 @@ def test_ocr_direction_and_dynamic_map_to_five_class_mask(tmp_path: Path):
     assert mask[10, 10] == 0
     with pytest.raises(ValueError, match="does not belong"):
         source_page(old_name, scan_root, "sq2")
+
+
+def test_cross_score_and_missing_preview_pages_are_counted_and_skipped(tmp_path: Path):
+    doc = tmp_path / "sq1.json"
+    doc.write_text(json.dumps({"score_id": "sq1", "matches": [
+        {"kind": "dynamic", "page_image": "/workspace/b0/ossq-omr/scores/a/sq2:0001.png",
+         "box": {"left": 1, "top": 1, "width": 2, "height": 2}},
+        {"kind": "tempo", "page_image": "/workspace/b0/ossq-omr/scores/a/sq1:0001_teaser.png",
+         "box": {"left": 1, "top": 1, "width": 2, "height": 2}},
+    ]}))
+    result = build_score((doc, tmp_path / "scans", tmp_path / "masks"))
+    assert result["pages"] == 0
+    assert result["skipped"] == {
+        "cross_score_matches": 1, "missing_page_matches": 1, "missing_pages": 1
+    }
