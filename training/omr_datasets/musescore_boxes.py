@@ -36,6 +36,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 #: MuseScore names elements by type in the SVG's class attribute.
 LYRIC_CLASS = "Lyrics"
@@ -160,6 +161,22 @@ def sampled_dpi(name: str, span: tuple[int, int] = DPI_RANGE) -> int:
     return random.Random(name).randint(*span)
 
 
+def flatten_png_background(path: Path) -> None:
+    """Composite MuseScore's transparent PNG onto white before OpenCV drops alpha.
+
+    MuseScore 3 can export black RGB at *every* pixel, with the score encoded only
+    in alpha. Reading that as BGR silently turns the entire training image black.
+    """
+    image = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+    if image is None:
+        raise Unrenderable(f"cannot read {path}")
+    if image.ndim == 3 and image.shape[2] == 4:
+        alpha = image[:, :, 3:4].astype(np.float32) / 255.0
+        opaque = np.rint(image[:, :, :3] * alpha + 255.0 * (1.0 - alpha)).astype(np.uint8)
+        if not cv2.imwrite(str(path), opaque):
+            raise Unrenderable(f"cannot write {path}")
+
+
 def render(score: Path, out_dir: Path, dpi: int = DPI) -> tuple[list[Path], list[Path]]:
     """Export a score to SVG and PNG, one file per page, and return both lists."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -191,6 +208,8 @@ def render(score: Path, out_dir: Path, dpi: int = DPI) -> tuple[list[Path], list
     pngs = sorted(out_dir.glob(f"{name}-*.png"))
     if not svgs or len(svgs) != len(pngs):
         raise Unrenderable(f"{len(svgs)} svg pages against {len(pngs)} png pages")
+    for png in pngs:
+        flatten_png_background(png)
     return svgs, pngs
 
 

@@ -14,6 +14,7 @@ from training.omr_datasets.musescore_boxes import (
     _lines,
     _scale,
     boxes_of_class,
+    flatten_png_background,
     pair,
     sampled_dpi,
     source_dynamics,
@@ -49,6 +50,27 @@ def _svg(paths: str, width: float = 1000, height: float = 500) -> str:
 
 def _lyric_path(left: float, top: float, right: float, bottom: float) -> str:
     return f'<path class="Lyrics" d="M{left},{top} L{right},{bottom} L{left},{bottom}" />'
+
+
+class TestPngBackground(unittest.TestCase):
+    def test_black_rgb_with_alpha_preserves_ink_and_white_paper(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "score.png"
+            image = np.zeros((1, 3, 4), dtype=np.uint8)
+            image[0, :, 3] = [0, 128, 255]
+            cv2.imwrite(str(path), image)
+            flatten_png_background(path)
+            got = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+            np.testing.assert_array_equal(got, [[[255] * 3, [127] * 3, [0] * 3]])
+
+    def test_opaque_png_is_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "score.png"
+            image = np.array([[[7, 80, 240], [255, 255, 255]]], dtype=np.uint8)
+            cv2.imwrite(str(path), image)
+            before = path.read_bytes()
+            flatten_png_background(path)
+            self.assertEqual(path.read_bytes(), before)
 
 
 class TestScale(unittest.TestCase):
