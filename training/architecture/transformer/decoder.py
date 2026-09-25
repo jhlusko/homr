@@ -698,6 +698,16 @@ class ScoreDecoder(nn.Module):
                 positionsi = positionsi.clone()
                 positionsi[:, 1:] = (1 - mix_mask) * positionsi[:, 1:] + mix_mask * pos_sample
 
+            # Under CUDA autocast, PyTorch caches the low-precision copy of each weight the
+            # first time it is cast within the autocast region. The first cast above happened
+            # under no_grad, so the cached copies carry no autograd link, and the second pass
+            # below would reuse them: every nn.Linear (all six output heads, every attention
+            # projection) then gets no gradient, and only the embeddings train. That is what
+            # happened to E1 run 1 (torch 2.6, bf16, 2026-09-25): after step 0 the heads and
+            # attention never moved. Dropping the cache here makes the second pass re-cast
+            # with gradients.
+            torch.clear_autocast_cache()
+
         # Second pass (or standard pass) with (possibly mixed) inputs
         rhythmsp, pitchsp, liftsp, positionsp, articulationsp, slursp, x, _attention, _cache = (
             self.net(
