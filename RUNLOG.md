@@ -14245,3 +14245,29 @@ Two scorer corrections along the way:
 Records: `homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/context-20260925/`
 (`results/a3_beam_gate_report.md` with its addendum, `results/a3/rescored-f872c21/`,
 `a3-rest-eval-v2/`).
+
+## E1 run 1 void: output heads never trained (2026-09-25)
+
+E1 rebuilt the released core from public inputs: `426` → the Arm A mix (6 epochs) →
+rareNum (3 epochs). The archived logs (`homr-artifacts/instance-2026-08-30/b0/train_armA.log`,
+`train_rare_numerators.log`) confirm this is exactly the released lineage.
+
+Scored against the released ONNX core, numerator-neutral: OSSQ 95.02 → 92.40 (−2.62pp,
+CI −3.55 to −1.68); PDMX 88.74 → 82.52 (−6.22pp, 3,299 shared staves). On PDMX, the 5/x
+metre was emitted at the right position on 42/75 staves by the released core and 0/75 by
+E1; 12/x on 51/77 and 0/77. E1 emits no `timeSignatureBeats_*` token at all, in ONNX or
+PyTorch.
+
+Cause, as far as traced:
+- All six `decoder.net.to_logits_*` heads are within about 1e-6 of `426` after 6 + 3 epochs.
+  The embeddings (about 4e-2) and attention layers did move.
+- The early ConvNeXt stages are exactly `426`, despite "Unfreezing backbone at epoch 2.0".
+  Stages after 2 are unused by design (`forward_intermediates(indices=[2])`).
+- The released decoder's rhythm bias differs from `426` by up to 2.5e-2: its heads trained.
+- In a small warm-start probe, the heads are in the AdamW param groups with
+  `requires_grad=True` (325 of 326 parameters), so optimizer membership is not the cause.
+
+Not a recipe problem. Every full-model training on this instance's `/workspace/venv`
+(torch 2.6.0, transformers 4.53.2) is suspect, including core v9. Also on the instance:
+742 of the container's 1,280 threads were held by the image's KDE desktop services; they are
+now stopped (`supervisorctl stop ...`).
