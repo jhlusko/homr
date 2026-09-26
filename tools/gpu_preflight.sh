@@ -32,7 +32,11 @@ if [ $# -ge 1 ] && [ "$head" != "$(git rev-parse --verify "$1^{commit}" 2>/dev/n
   echo "preflight: HEAD $head is not the expected commit $1" >&2
   exit 1
 fi
-git fetch --quiet origin || echo "preflight: fetch failed; checking cached remote refs" >&2
+# Explicit refspec: a single-branch clone (the instance's `/workspace/repo/homr` fetches only
+# `main`) never updates `origin/<other branch>` on a plain `git fetch origin`, and every
+# pushed commit on ossq-benchmark then looks unpushed.
+git fetch --quiet origin '+refs/heads/*:refs/remotes/origin/*' \
+  || echo "preflight: fetch failed; checking cached remote refs" >&2
 if [ -n "$(git branch --remotes --contains "$head")" ]; then
   echo "preflight: ok $head"
   exit 0
