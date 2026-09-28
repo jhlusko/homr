@@ -244,7 +244,7 @@ def analyze(run: Path) -> None:
     reports={arm:{s:json.loads((run/arm/'eval'/f'{s}.json').read_text()) for s in SOURCES} for arm in ARMS}
     metadata={arm:json.loads((run/arm/'identity.json').read_text()) for arm in ARMS}
     for key in ('checkpoint_sha256','plan_sha256','initial_heads_sha256','source_sha256','lr','pixel_policy',
-                'preprocessing_sha256','vocabulary_sha256','sidecar_reader_sha256','torch_version','cuda_version'):
+                'preprocessing_sha256','vocabulary_sha256','sidecar_reader_sha256','torch_version','cuda_version','runtime_source_sha256'):
         assert len({json.dumps(v[key],sort_keys=True) for v in metadata.values()})==1,key
     contrasts={arm:compare(reports['real_only'],reports[arm]) for arm in ARMS[1:]}
     ordering=compare(reports['unordered'],reports['curriculum'])
@@ -294,6 +294,10 @@ def main() -> None:
         capacity=json.loads(args.capacity_report.read_text())
         if not capacity['gate']['capacity_pass']:raise ValueError('Capacity gate has not passed')
         real=read_index(args.real_index)
+        if sha(args.real_index)!='f8c7f272b0fddd2397c5db169698a28e1ebaca82f6cd7a8a2baba5e7441202ca':
+            raise ValueError('Real training index differs from the frozen internal split')
+        if len(real)!=40290 or Counter(r['source'] for r in real)!=Counter(dict(ossq=31496,pdmx=5701,lieder=3093)):
+            raise ValueError('Unexpected real-source pool')
         synthetic=[]
         for dataset,approval in ((args.dataset,args.approval),(args.supplement,args.supplement_approval)):
             rows=qualify(dataset,approval)
@@ -340,7 +344,12 @@ def main() -> None:
     heads=model.decoder.structured_heads
     digest=hashlib.sha256()
     for k,v in sorted(heads.state_dict().items()):digest.update(k.encode());digest.update(v.detach().cpu().numpy().tobytes())
-    identity=dict(checkpoint_sha256=sha(args.checkpoint),plan_sha256=sha(args.run/'plan.json'),
+    source_root=Path(__file__).resolve().parents[2]
+    runtime_files=sorted((source_root/'homr/transformer').glob('*.py'))+sorted((source_root/'training/architecture/transformer').glob('*.py'))
+    runtime_hash=hashlib.sha256()
+    for path in runtime_files:
+        runtime_hash.update(str(path.relative_to(source_root)).encode());runtime_hash.update(sha(path).encode())
+    identity=dict(runtime_source_sha256=runtime_hash.hexdigest(),checkpoint_sha256=sha(args.checkpoint),plan_sha256=sha(args.run/'plan.json'),
                   source_sha256=sha(Path(__file__)),initial_heads_sha256=digest.hexdigest(),arm=args.arm,
                   lr=.001,batch_size=8,pixel_policy=plan['identity']['pixel_policy'],seed=args.seed,
                   torch_version=str(torch.__version__),cuda_version=torch.version.cuda,
@@ -389,6 +398,7 @@ def main() -> None:
             progress=dict(arm=args.arm,step=step,steps=steps,mean_loss=loss_total/offset,elapsed_seconds=elapsed,
                           remaining_seconds=elapsed/offset*(steps-step),support=dict(support))
             write_json(out/'progress.json',progress);print(json.dumps(progress),flush=True)
+    assert all(torch.isfinite(v).all() for v in heads.state_dict().values())
     assert core_hash(model)==frozen_hash
     with torch.no_grad():final_logits=model(**fixed_batch)['logits']
     assert all(torch.equal(a,b) for a,b in zip(fixed_logits,final_logits,strict=True))
