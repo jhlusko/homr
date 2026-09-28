@@ -404,3 +404,14 @@ prespecify **one** extension to 4,000 total updates from saved Adam/sampling-RNG
 with the same LR/classes/data and unchanged thresholds. Use the final 4,000 checkpoint,
 not a favorable earlier checkpoint; if it fails, stop before transfer. Preserve the
 2,000-update weights/report/checkpoint and the blocked prepare attempt.
+
+
+### 2026-09-28 18:26 UTC — V5 capacity passed; matched transfer running
+
+Added 128 MuseScore renders reversing overlapping-slur sides while preserving v4 family seeds, splits and recognition tokens. Final prespecified 4,000-update capacity checkpoint passes all eleven supported heads: stem macro-F1 .987 train/.978 held-out families; slot-2 side 1.000/1.000. Frozen core and recognition outputs are unchanged. The 2,000-update failure remains preserved; no earlier favorable checkpoint was selected. Final artifacts have been copied locally and SHA-256 verified.
+
+Local capacity report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-v5-20260928/full/report.md`.
+
+The committed transfer protocol compares fresh real-only heads, unordered synthetic+real, and staged synthetic+real on public-rareNum-20260927. Each arm has 8,000 updates; unordered/staged use the same literal sample multiset. This is a fixed-pixel clean pilot, not the richer/degraded curriculum. Resume is bit-identical and worker-count pixel/target checks passed. The environment has no pip; metadata capture now uses importlib.metadata without installing or changing the environment. Real-only fitting is running: 200 updates in 18 seconds. ETA for three arms plus internal OSSQ/PDMX/Lieder scoring is 45–70 minutes from 18:26 UTC.
+
+Persistent instance sessions: `synthetic_transfer_20260928`, `synthetic_transfer_watch_20260928`. Local `synthetic_transfer_pull_20260928` waits for completion, downloads the archive, verifies SHA-256 and appends results to the runlog and release sequence. Collector scripts and protocol are copied locally at `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-transfer-pilot-20260928`. Model promotion remains pending the per-source regression/invention gates; one-seed internal results cannot support a release claim.
