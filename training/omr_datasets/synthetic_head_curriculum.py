@@ -19,7 +19,7 @@ import subprocess
 import time
 import xml.etree.ElementTree as ET
 
-VERSION = "synthetic-head-pilot.v3"
+VERSION = "synthetic-head-pilot.v4"
 KINDS = ("stems", "ties", "slurs", "beams")
 DIVISIONS = 240
 MUSIC_FONTS = ("Leland", "Bravura", "Petaluma", "MuseJazz", "Gonville")
@@ -79,6 +79,7 @@ def build_score(seed: int, family: int, variant: int) -> tuple[str, dict]:
             for event in ties: child(notations, "tied", type=event)
             for number, event, side in slurs: child(notations, "slur", type=event, number=number, placement=side)
         locations.append(dict(id=n.get("id"), measure=int(measure.get("number")), beat=str(Fraction(beat, DIVISIONS)+1),
+                              pitch=None if rest else f"{pitch[0]}{pitch[1]}",note_type=note_type,
                               chord=chord, rest=rest, stem=None if rest else stem, ties=list(ties), slurs=list(slurs), beams=beams or {}))
 
     for m in range(2):
@@ -114,23 +115,36 @@ def build_score(seed: int, family: int, variant: int) -> tuple[str, dict]:
                     p = "CDEFGAB".index(step) + (octave-4)*7 + 2
                     note(measure,DIVISIONS,"quarter",("CDEFGAB"[p%7],4+p//7),i*DIVISIONS,chord=True,stem=stem)
         else:
-            n = max(4, 2**depth)
             duration = DIVISIONS // (2**depth)
             note_type = ("eighth","16th","32nd","64th")[depth-1]
-            for i in range(n):
+            # A hook must be isolated at its level. MuseScore ignores direction
+            # overrides among equal-duration notes, so use mixed durations within
+            # one beat for the forward/backward examples at levels 2--4.
+            pattern = [(note_type,duration)]*4
+            if depth >= 2 and variant >= 2:
+                shallow = ("eighth","16th","32nd")[depth-2]
+                pattern = [(note_type,duration),(shallow,duration*2)]
+                if variant == 3: pattern.reverse()
+            onset = 0
+            for i,(written_type,written_duration) in enumerate(pattern):
                 beams = {}
                 for level in range(1,depth+1):
-                    state = "begin" if i == 0 else "end" if i == n-1 else "continue"
-                    if level == depth and variant == 2:
-                        state = "forward hook" if i == 0 else "begin" if i == 1 else "end" if i == n-1 else "continue"
-                    elif level == depth and variant == 3:
-                        state = "backward hook" if i == n-1 else "end" if i == n-2 else "begin" if i == 0 else "continue"
+                    state = "begin" if i == 0 else "end" if i == len(pattern)-1 else "continue"
+                    if depth == 1 and variant >= 2:
+                        state = "begin" if i % 2 == 0 else "end"
+                    elif depth >= 2 and variant >= 2 and level == depth:
+                        if written_type != note_type: continue
+                        state = "forward hook" if variant == 2 else "backward hook"
                     beams[level] = state
-                stem = "down" if variant == 1 else "up"
-                note(measure,duration,note_type,pitches[(m*n+i)%8],i*duration,
+                stem = "down" if variant == 1 or (depth == 1 and variant == 3) else "up"
+                note(measure,written_duration,written_type,pitches[(m*4+i)%8],onset,
                      stem=stem,beams=beams)
-            for beat in range(n*duration//DIVISIONS,4):
-                note(measure,DIVISIONS,"quarter",pitches[0],beat*DIVISIONS,rest=True)
+                onset += written_duration
+            for rest_type,rest_duration in (("quarter",240),("eighth",120),("16th",60),("32nd",30),("64th",15)):
+                while onset + rest_duration <= DIVISIONS*4:
+                    note(measure,rest_duration,rest_type,pitches[0],onset,rest=True)
+                    onset += rest_duration
+            if onset != DIVISIONS*4: raise ValueError("Beam measure does not fill 4/4")
         child(measure, "barline", location="right").append(ET.Element("bar-style"))
         measure.find("barline/bar-style").text = "light-light" if m == 1 else "regular"
     metadata = dict(family=f"family-{family:04d}",kind=kind,variant=variant,seed=family_seed(seed,family),
@@ -146,6 +160,36 @@ def parse_symbols(xml):
     symbols=[symbol for measure in parts[0] for symbol in measure]
     check_token_lines(symbols)
     return symbols
+
+
+def audit_renderer_labels(source_xml, exported_xml):
+    """Detect importer changes; agreement still requires a visible-label review."""
+    from training.omr_datasets.structured_notation_parser import parse_score
+    from homr.transformer.structured_notation import SlurSide
+    source,_ = parse_score(ET.fromstring(source_xml))
+    exported,findings = parse_score(ET.fromstring(exported_xml))
+    source_notes = [n for part in source.values() for n in part]
+    exported_notes = [n for part in exported.values() for n in part]
+    differences = []
+    unstated_sides = 0
+    if len(source_notes) != len(exported_notes):
+        differences.append(dict(field="note_count",source=len(source_notes),exported=len(exported_notes)))
+    if not findings.clean or findings.ambiguous_beaming or findings.voices_beyond_cap:
+        differences.append(dict(field="exported_parser_findings",detail=str(findings)))
+    for index,(original,rendered) in enumerate(zip(source_notes,exported_notes)):
+        for field,left,right in (("beams",original.beam_levels[:4],rendered.beam_levels[:4]),
+                                 ("stem",original.stem,rendered.stem),("tie",original.tie,rendered.tie)):
+            if left != right: differences.append(dict(note=index,field=field,source=left,exported=right))
+        for slot,(left,right) in enumerate(zip(original.slurs[:2],rendered.slurs[:2])):
+            if left[0] != right[0]:
+                differences.append(dict(note=index,field=f"slur{slot+1}",source=left[0],exported=right[0]))
+            if right[1] == SlurSide.UNSPECIFIED and left[1] != right[1]:
+                unstated_sides += 1
+            elif left[1] != right[1]:
+                differences.append(dict(note=index,field=f"slur_side{slot+1}",source=left[1],exported=right[1]))
+    return dict(differences=differences,unstated_exported_slur_sides=unstated_sides,
+                source_notes=len(source_notes),exported_notes=len(exported_notes),
+                visually_verified=False)
 
 
 def generate_case(task):
@@ -174,11 +218,18 @@ def generate_case(task):
         assert [s.notation for s in loaded if s.notation is not None]==[s.notation for s in ordered]
         original=stem.with_suffix(".musicxml"); original.write_text(xml)
         exported=stem.with_name(stem.name+"-export.png")
+        exported_xml=stem.with_suffix(".rendered.musicxml")
+        job=stem.with_suffix(".render-job.json")
+        job.write_text(json.dumps([
+            dict(**{"in":str(original)},out=str(exported),style=style_file),
+            dict(**{"in":str(original)},out=str(exported_xml),style=style_file)
+        ],indent=2)+"\n")
         command=["xvfb-run","-a",musescore_bin]
         if musescore_bin.lower().endswith(".appimage"):
             command.append("--appimage-extract-and-run")
-        command.extend(["--force","-S",style_file,"-o",str(exported),str(original)])
+        command.extend(["--force","-j",str(job)])
         subprocess.run(command,capture_output=True,timeout=90,check=True)
+        renderer_audit=audit_renderer_labels(xml,exported_xml.read_text())
         rendered_png=exported.with_name(exported.stem+"-1.png")
         if not rendered_png.exists() and exported.exists():
             rendered_png=exported
@@ -202,11 +253,12 @@ def generate_case(task):
             for slot,(event,side) in enumerate(item["slurs"][:2],1):
                 support[f"slur{slot}:{event}"]+=1
                 if event!="none" and side!="unspecified": support[f"side{slot}:{side}"]+=1
-        info.update(id=name,font=font,source_revision=revision,status="requires_visual_review",
+        status="rejected_renderer_labels" if renderer_audit["differences"] else "requires_visual_review"
+        info.update(id=name,font=font,source_revision=revision,status=status,renderer_audit=renderer_audit,
                     training_ready=False,seconds=time.monotonic()-started,shape=[image.width,image.height],
                     crop_box=box,renderer="MuseScore",support=dict(support),
                     annotated_symbols=payload["annotatedSymbols"],
-                    files={p.name:sha(p) for p in (original,token,sidecar,path)})
+                    files={p.name:sha(p) for p in (original,token,sidecar,path,exported_xml,job)})
         stem.with_suffix(".json").write_text(json.dumps(info,indent=2)+"\n")
         return info
     except Exception as exc:
@@ -214,24 +266,46 @@ def generate_case(task):
         return info
 
 
+def review_caption(row):
+    kind, variant = row['kind'], row['variant']
+    if kind == 'stems':
+        return f"{'Two-note chords' if variant >= 2 else 'Single notes'}, stems {'down' if variant % 2 else 'up'}; both measures, beats 1–4."
+    if kind == 'ties':
+        return ["No ties.", "Tie: measure 1, beat 1 to beat 2.",
+                "Tie chain: measure 1, beats 1 → 2 → 3.",
+                "Tie across barline: measure 1, beat 4 → measure 2, beat 1; slur above measure 1, beats 1–3."][variant]
+    if kind == 'slurs':
+        return ["No slurs.", "Slur above: measure 1, beats 1–4.",
+                "Slur below: measure 1, beats 1–4.",
+                "Overlapping slurs: above from measure 1, beat 1 to measure 2, beat 2; below from measure 1, beat 3 to measure 2, beat 4."][variant]
+    depth = row['beam_depth']
+    if depth == 1:
+        return f"Eighth notes in {'two pairs' if variant >= 2 else 'one four-note beam group'}; stems {'down' if variant % 2 else 'up'}; both measures, beats 1–2."
+    if variant < 2:
+        return f"Four notes joined at beam levels 1–{depth}; stems {'down' if variant else 'up'}; starts at beat 1 in each measure."
+    hook = next(n for n in row['source_notes'] if not n['rest'] and depth in n['beams'])
+    beat = Fraction(hook['beat'])
+    whole, remainder = divmod(beat.numerator, beat.denominator)
+    label = str(whole) + (f" + {remainder}/{beat.denominator}" if remainder else "")
+    return f"Level {depth} {'forward' if variant == 2 else 'backward'} hook on the {'first' if variant == 2 else 'second'} note, beat {label} in each measure. Mixed note lengths create the hook; rhythm differs from the four-note examples."
+
+
 def review_html(rows):
     import html
     chunks=['<!doctype html><meta charset="utf-8"><title>Synthetic head pilot</title>',
-            '<style>body{font:16px system-ui;margin:2rem;background:#f6f7f8}section{background:white;padding:1rem;margin:1rem 0;border:1px solid #ccc}img{max-width:100%}summary{cursor:pointer}</style>',
-            '<h1>Synthetic head pilot: renderer qualification</h1><p>All examples are quarantined. Verify visible notation against intended labels before training. This is a label audit, not a preference vote.</p>']
+            '<style>body{font:16px system-ui;margin:2rem;background:#f6f7f8}section{background:white;padding:1rem;margin:1rem 0;border:1px solid #ccc}.cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}img{width:100%}summary{cursor:pointer}@media(max-width:800px){.cases{grid-template-columns:1fr}}</style>',
+            '<h1>Synthetic head pilot: renderer qualification</h1><p>All examples await visual qualification. Compare visible notation with the musical descriptions. Click an image to enlarge. No individual preference votes are needed.</p>']
     families={}
     for row in rows: families.setdefault((row['family'],row['font']),[]).append(row)
     for (family,font),cases in sorted(families.items()):
-        chunks.append(f'<section><h2>{family} — {html.escape(font)} — {cases[0]["kind"]}</h2>')
-        for row in cases:
-            name=row['id']; details=[]
-            for n in row['source_notes']:
-                if n['ties'] or n['slurs']:
-                    details.append(f"Measure {n['measure']}, beat {n['beat']}: ties {n['ties']}; slurs {n['slurs']}")
-            chunks.append(f'<h3>Variant {row["variant"]}</h3>')
-            if row['status']=='failed': chunks.append(f'<p>Failed: {html.escape(row["error"])}</p>'); continue
-            chunks.append(f'<img loading="lazy" src="samples/{name}.png" alt="{name}"><p>{html.escape("; ".join(details))}</p><details><summary>Labels and provenance</summary><a href="samples/{name}.musicxml">Original MusicXML</a> · <a href="samples/{name}.json">Metadata</a></details>')
-        chunks.append('</section>')
+        chunks.append(f'<section><h2>{family} — {html.escape(font)} — {cases[0]["kind"]}</h2><div class="cases">')
+        for row in sorted(cases,key=lambda r:r['variant']):
+            name=row['id']
+            chunks.append(f'<article><h3>{html.escape(review_caption(row))}</h3><p>{html.escape(row["status"])}</p>')
+            if row['status']=='failed':
+                chunks.append(f'<p>Failed: {html.escape(row["error"])}</p></article>'); continue
+            chunks.append(f'<a href="samples/{name}.png" target="_blank"><img loading="lazy" src="samples/{name}.png" alt="{html.escape(review_caption(row))}"></a><details><summary>Labels and provenance</summary><a href="samples/{name}.musicxml">Original MusicXML</a> · <a href="samples/{name}.rendered.musicxml">MuseScore export</a> · <a href="samples/{name}.json">Metadata</a></details></article>')
+        chunks.append('</div></section>')
     return '\n'.join(chunks)
 
 
@@ -292,19 +366,27 @@ def main():
                 (a.out/'progress.json').write_text(json.dumps(progress,indent=2)+'\n')
                 print(json.dumps(progress),flush=True)
     summary=Counter(); support=Counter(); duplicate_contrasts=[]
-    for split in ('train','valid','test'):
-        records=[r for r in rows if r['split']==split and r['status']!='failed']
-        (a.out/f'index_candidates_{split}.txt').write_text(''.join(f"samples/{r['id']}.png,samples/{r['id']}.tokens\n" for r in records))
-        summary[f'{split}_renders']=len(records); summary[f'{split}_families']=len({r['family'] for r in records})
     grouped={}
     for row in rows:
-        summary[row['status']]+=1; support.update(row.get('support',{}))
         grouped.setdefault((row['family'],row['font']),[]).append(row)
     for group in grouped.values():
         for i,left in enumerate(group):
             for right in group[i+1:]:
                 if left['status']!='failed' and right['status']!='failed' and left['files'][left['id']+'.png']==right['files'][right['id']+'.png']:
                     duplicate_contrasts.append([left['id'],right['id']])
+    duplicate_ids={name for pair in duplicate_contrasts for name in pair}
+    for row in rows:
+        if row['id'] in duplicate_ids:
+            row['status']='rejected_identical_pixels'
+        if row['status']!='failed':
+            (a.out/'samples'/f"{row['id']}.json").write_text(json.dumps(row,indent=2)+'\n')
+        summary[row['status']]+=1
+        if row['status']=='requires_visual_review': support.update(row.get('support',{}))
+    (a.out/'samples.jsonl').write_text(''.join(json.dumps(row)+'\n' for row in rows))
+    for split in ('train','valid','test'):
+        records=[r for r in rows if r['split']==split and r['status']=='requires_visual_review']
+        (a.out/f'index_candidates_{split}.txt').write_text(''.join(f"samples/{r['id']}.png,samples/{r['id']}.tokens\n" for r in records))
+        summary[f'{split}_renders']=len(records); summary[f'{split}_families']=len({r['family'] for r in records})
     report=dict(identity=identity,total=len(rows),counts=dict(summary),label_support=dict(support),
                 identical_pixels_across_variants=duplicate_contrasts,training_ready=False,
                 reason='Renderer intent has not been visually qualified. Candidate indexes are not training releases.',

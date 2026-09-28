@@ -29,3 +29,25 @@ def test_all_variants_of_a_motif_stay_in_one_deterministic_split() -> None:
         assert all(build_score(seed, family, variant)[1]["split"] == expected
                    for variant in range(4))
         assert split_for(seed, family) == expected
+
+
+def test_hook_examples_have_isolated_deepest_beams_and_complete_measures() -> None:
+    for family in (7, 11, 15):
+        for variant in (2, 3):
+            xml, info = build_score(20260928, family, variant)
+            depth = info['beam_depth']
+            for measure in ET.fromstring(xml).findall('./part/measure'):
+                assert sum(int(n.findtext('duration')) for n in measure.findall('note')) == 960
+                notes = [n for n in measure.findall('note') if n.find('rest') is None]
+                assert len(notes) == 2
+                beams = [n.find(f"beam[@number='{depth}']") for n in notes]
+                assert sum(b is not None for b in beams) == 1
+                assert beams[0 if variant == 2 else 1].text == ('forward hook' if variant == 2 else 'backward hook')
+
+
+def test_renderer_audit_rejects_changed_beam_labels() -> None:
+    from training.omr_datasets.synthetic_head_curriculum import audit_renderer_labels
+    original, _ = build_score(20260928, 7, 2)
+    assert not audit_renderer_labels(original, original)['differences']
+    changed = original.replace('forward hook', 'backward hook')
+    assert any(d['field'] == 'beams' for d in audit_renderer_labels(original, changed)['differences'])

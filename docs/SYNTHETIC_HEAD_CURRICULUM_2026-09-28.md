@@ -204,3 +204,32 @@ Generation can run on CPU independently after implementation is approved. Do not
 interrupt or contaminate the current LR/epoch experiment. Preserve its environment;
 use installed tools or qualify alternatives without rebuilding its venv. Actual renderer
 availability and throughput must be checked before promising a full corpus ETA.
+
+## Corrected renderer qualification (v4, 2026-09-28)
+
+The v3 pilot had 160 identical-image contrast pairs in 48 beam families. MuseScore
+ignored hook-direction overrides on equal-duration notes. V4 uses a short note before
+or after a longer note within one beat to produce isolated level 2–4 hooks. These are
+rhythm-changing contrasts, not identical-token examples. Level 1 uses a four-note group
+versus two pairs; level-1 hooks remain an explicit coverage gap.
+
+Every render now includes a MuseScore-exported MusicXML audit of note count, stems,
+ties, beam levels and slur events/explicit sides. Unspecified exported slur sides are
+reported and still require visual checking. Mismatches and identical-image contrasts
+are excluded from candidate indexes. All outputs remain `training_ready=false`.
+The gallery gives side-by-side examples with musical measure/beat descriptions.
+
+Local bounded qualification (16 families, four variants, Leland and Bravura):
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-v4-qualification-20260928/`.
+Four generator/audit regression tests pass. A corrected 256-family pilot follows only
+if this bounded run has no renderer-label differences or duplicate contrasts.
+Frozen-core capacity testing follows visible-label qualification; no training is launched
+on unqualified samples.
+
+Bounded run completed: **128/128 renders, zero failures, zero renderer-label
+mismatches, zero duplicate contrasts**, in 87.77 seconds locally with two workers.
+Selected examples were visually inspected for stem direction, tie/slur spans and
+beam groups; this is not an exhaustive approval of every sample. The corrected full
+pilot is CPU generation only, in persistent tmux with a completion watcher. Its
+local destination is
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-v4-20260928/`.
