@@ -273,3 +273,42 @@ identity before the 2,048-image probe. The smoke has too few independent familie
 meet the full capacity bars. Nine targeted generator/probe tests pass, including exact
 uninterrupted-versus-resumed linear updates. Provisional full extraction/fitting ETA:
 30–60 GPU-minutes, to replace with measured throughput.
+
+### 2026-09-28 16:26 UTC — synthetic capacity smoke results copied locally
+
+Local verified report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/smoke/report.json`. Fresh linear heads over the frozen `public-rareNum-20260927` core; dynamics excluded. Teacher-forced clean synthetic diagnostic, not real-source validation or release.
+
+Completed 200 updates. Core tensors unchanged: True; recognition logits identical: True. Simple training slur-span F1: 1.000. Strict capacity gate: False.
+
+| Head | Training macro-F1 | Capacity support/bar |
+|---|---:|---|
+| beam.level.1 | 1.000 | insufficient support |
+| beam.level.2 | 1.000 | insufficient support |
+| stem.direction | 0.870 | insufficient support |
+| tie.state | 0.896 | insufficient support |
+| advance.delta | 0.995 | insufficient support |
+| slur.slot.1.event | 0.836 | below .95 |
+| slur.slot.1.side | 0.888 | insufficient support |
+| slur.slot.2.event | 0.933 | insufficient support |
+| slur.slot.2.side | 1.000 | insufficient support |
+
+Image-control comparisons and all class/family supports are in the report. Flags, level-1 hooks and slot-2 above-side contrasts are absent. A smoke cannot meet full independent-family bars. Review the full diagnostic before expanding the corpus or starting the three-arm curriculum.
+
+Capacity smoke completed: 128 images extracted in 7.19 s; 100 updates in 1.20 s,
+then resumed to 200 with cached features and a matching identity. Core tensor hash
+and fixed-input recognition logits are exactly unchanged. Nine active heads / 18
+optimizer tensors updated. Beam levels 3/4 are absent from **training support** because
+this smoke's only depth-3/4 families are assigned to test/validation; their sidecar labels
+are intact. This is expected and does not justify moving held-out families into training.
+Token-matched contrast positions: stem accuracy 64.6% normal versus 35.4% swapped;
+slot-1 side 81.3% versus 18.8% (only 32 positions); primary grouping 100% versus 0%
+(only 16 positions). These small training controls show preliminary image dependence,
+not family-generalization or scan gains.
+
+The full capacity sequence is persistent in instance tmux, waiting on the CPU pilot.
+At 16:25 UTC generation was 544/2,048, zero failures, about 61 minutes left. Once its
+complete audit passes, the 2,000-update full diagnostic should take a few minutes based
+on measured smoke throughput. Its watcher archives success/failure; the local collector
+pulls/checksums smoke/full reports and appends local paths/results to this doc, RUNLOG
+and the private release sequence. Local collection requires an awake/connected laptop;
+remote generation and capacity execution persist when the laptop closes.
