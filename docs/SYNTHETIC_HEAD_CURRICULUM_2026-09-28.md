@@ -1,13 +1,12 @@
 # Synthetic curriculum for structured heads — proposed 2026-09-28
 
-**Status: generator implemented; MuseScore renderer-qualification pilot pending.** The
-generator and parser-integrity tests are being committed separately. It renders original
-MusicXML with MuseScore, applies the selected engraving font through MuseScore style
-files, and keeps all output quarantined (`training_ready=false`) until visual review. No
-training has started, and the bounded LR/epoch comparison remains unchanged. Its result
-should settle the optimizer setting before a full curriculum comparison. This proposal
-targets heads over the frozen `public-rareNum-20260927` core, not another full-core
-adaptation.
+**Status: generator committed as `ed3f368`; MuseScore qualification pilot running.**
+The 256-family, two-font pilot renders original MusicXML with MuseScore and applies the
+selected engraving font through MuseScore style files. Its output stays quarantined
+(`training_ready=false`) until visual review. No training has started, and the bounded
+LR/epoch comparison remains unchanged. Its result should settle the optimizer setting
+before a full curriculum comparison. This proposal targets heads over the frozen
+`public-rareNum-20260927` core, not another full-core adaptation.
 
 ## Question and motivation
 
