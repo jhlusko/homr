@@ -89,6 +89,7 @@ def clean_sample(dataset: Path, row: dict, image_id: str | None = None) -> dict:
     from training.transformer.training_vocabulary import read_tokens, to_decoder_branches
     from training.omr_datasets.notation_sidecar import attach_sidecar
     from training.architecture.transformer.structured_targets import build_targets, notation_positions
+    dataset = Path(row.get('_dataset', dataset))
     symbols = read_tokens(str(dataset / 'samples' / (row['id'] + '.tokens')))
     if not attach_sidecar(dataset / 'samples' / (row['id'] + '.tokens'), symbols):
         raise ValueError('Missing notation sidecar')
@@ -302,6 +303,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dataset', required=True, type=Path)
     parser.add_argument('--approval', required=True, type=Path)
+    parser.add_argument('--supplement', type=Path)
+    parser.add_argument('--supplement-approval', type=Path)
     parser.add_argument('--checkpoint', required=True, type=Path)
     parser.add_argument('--out', required=True, type=Path)
     parser.add_argument('--steps', type=int, default=2000)
@@ -325,6 +328,19 @@ def main() -> None:
     from training.architecture.transformer.structured_heads import StructuredNotationHeads
     from training.transformer import image_utils, training_vocabulary
     rows = qualify(args.dataset, args.approval)
+    for row in rows: row['_dataset'] = str(args.dataset.resolve())
+    if bool(args.supplement) != bool(args.supplement_approval):
+        parser.error('Supplement requires its explicit approval manifest')
+    if args.supplement:
+        extra = qualify(args.supplement, args.supplement_approval)
+        for row in extra: row['_dataset'] = str(args.supplement.resolve())
+        if set(r['id'] for r in rows) & set(r['id'] for r in extra):
+            raise ValueError('Duplicate sample identity across datasets')
+        original = {r['family']: r for r in rows}
+        for row in extra:
+            if row['family'] in original and (row['split'], row['seed']) != (original[row['family']]['split'], original[row['family']]['seed']):
+                raise ValueError('Supplement changed family split or musical seed')
+        rows.extend(extra)
     config = Config()
     config.enable_structured_heads = True
     model = TrOMR(config)
@@ -334,6 +350,8 @@ def main() -> None:
     original_core_hash = core_hash(model)
     identity = dict(schema='synthetic-capacity.v1', checkpoint_sha256=sha(args.checkpoint),
                     dataset_sha256=sha(args.dataset / 'SHA256SUMS'), approval_sha256=sha(args.approval),
+                    supplement_sha256=sha(args.supplement / 'SHA256SUMS') if args.supplement else None,
+                    supplement_approval_sha256=sha(args.supplement_approval) if args.supplement else None,
                     script_sha256=sha(Path(__file__)), seed=args.seed, lr=args.lr, batch_size=args.batch_size,
                     optimizer='Adam', balanced_class_sampling=True, frozen_core=True, dynamics_excluded=True,
                     image_augmentation=False, teacher_forced=True, training_gate_macro_f1=.95,
@@ -409,7 +427,7 @@ def main() -> None:
     lines += ['', f"Simple training slur-span F1: {gate['simple_slur_spans']['f1']:.3f}.",
               f"Overall capacity gate: {gate['capacity_pass']}.",
               'Image-swap controls, per-class support and gaps are in report.json.',
-              'Level-1 hooks, flags and slot-2 above-side contrasts are absent from this generator.']
+              'Level-1 hooks and flags are absent; inspect per-class support for remaining coverage gaps.']
     (args.out / 'report.md').write_text('\n'.join(lines) + '\n')
     files = sorted(p for p in args.out.iterdir() if p.is_file() and p.name not in ('SHA256SUMS', 'COMPLETE'))
     (args.out / 'SHA256SUMS').write_text(''.join(f'{sha(p)}  {p.name}\n' for p in files))

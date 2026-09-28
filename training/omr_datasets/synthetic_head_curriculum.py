@@ -19,7 +19,10 @@ import subprocess
 import time
 import xml.etree.ElementTree as ET
 
-VERSION = "synthetic-head-pilot.v4"
+VERSION = "synthetic-head-pilot.v5"
+# Supplements share the v4 musical families and splits; schema changes must not
+# create a second identity for the same melody.
+FAMILY_SEED_VERSION = "synthetic-head-pilot.v4"
 KINDS = ("stems", "ties", "slurs", "beams")
 DIVISIONS = 240
 MUSIC_FONTS = ("Leland", "Bravura", "Petaluma", "MuseJazz", "Gonville")
@@ -30,7 +33,7 @@ def sha(path: Path) -> str:
 
 
 def family_seed(seed: int, family: int) -> int:
-    return int.from_bytes(hashlib.sha256(f"{VERSION}:{seed}:{family}".encode()).digest()[:4], "big")
+    return int.from_bytes(hashlib.sha256(f"{FAMILY_SEED_VERSION}:{seed}:{family}".encode()).digest()[:4], "big")
 
 
 def split_for(seed: int, family: int) -> str:
@@ -46,7 +49,8 @@ def child(node, tag, text=None, **attrs):
 
 def build_score(seed: int, family: int, variant: int) -> tuple[str, dict]:
     """Four contrasts per family; all derived images share a family split."""
-    if variant not in range(4): raise ValueError("variant must be 0..3")
+    if variant not in range(5) or (variant == 4 and KINDS[family % len(KINDS)] != "slurs"):
+        raise ValueError("variant 4 is the reversed-overlap slur contrast; other motifs use 0..3")
     rng = random.Random(family_seed(seed, family))
     kind = KINDS[family % len(KINDS)]
     pitches = [("CDEFGAB"[p % 7], 4 + p // 7) for p in [rng.randrange(0, 12) for _ in range(8)]]
@@ -104,7 +108,7 @@ def build_score(seed: int, family: int, variant: int) -> tuple[str, dict]:
                         if index == 0: slurs.append((1,"start","above"))
                         if index == 2: slurs.append((1,"stop","above"))
                 if kind == "slurs":
-                    spans = [(1,0,3,"above")] if variant == 1 else [(1,0,3,"below")] if variant == 2 else [(1,0,5,"above"),(2,2,7,"below")] if variant == 3 else []
+                    spans = [(1,0,3,"above")] if variant == 1 else [(1,0,3,"below")] if variant == 2 else [(1,0,5,"above"),(2,2,7,"below")] if variant == 3 else [(1,0,5,"below"),(2,2,7,"above")] if variant == 4 else []
                     for number,start,stop,side in spans:
                         if index == start: slurs.append((number,"start",side))
                         if index == stop: slurs.append((number,"stop",side))
@@ -277,7 +281,8 @@ def review_caption(row):
     if kind == 'slurs':
         return ["No slurs.", "Slur above: measure 1, beats 1–4.",
                 "Slur below: measure 1, beats 1–4.",
-                "Overlapping slurs: above from measure 1, beat 1 to measure 2, beat 2; below from measure 1, beat 3 to measure 2, beat 4."][variant]
+                "Overlapping slurs: above from measure 1, beat 1 to measure 2, beat 2; below from measure 1, beat 3 to measure 2, beat 4.",
+                "Overlapping slurs: below from measure 1, beat 1 to measure 2, beat 2; above from measure 1, beat 3 to measure 2, beat 4."][variant]
     depth = row['beam_depth']
     if depth == 1:
         return f"Eighth notes in {'two pairs' if variant >= 2 else 'one four-note beam group'}; stems {'down' if variant % 2 else 'up'}; both measures, beats 1–2."
@@ -314,12 +319,20 @@ def main():
     p.add_argument('--out',type=Path,required=True)
     p.add_argument('--families',type=int,default=256)
     p.add_argument('--seed',type=int,default=20260928)
+    p.add_argument('--family-ids',nargs='+',type=int,help='Render an explicit subset, retaining canonical family identities')
+    p.add_argument('--variant-ids',nargs='+',type=int,default=[0,1,2,3])
     p.add_argument('--music-fonts',nargs='+',default=['Leland','Bravura'])
     p.add_argument('--workers',type=int,default=2)
     p.add_argument('--musescore-bin',default=str(Path('datasets/MuseScore')))
     p.add_argument('--source-revision',default='uncommitted')
     a=p.parse_args()
     if not 1<=a.families<=100000 or not 1<=a.workers<=16: p.error('Invalid families/workers')
+    families=sorted(set(a.family_ids)) if a.family_ids is not None else list(range(a.families))
+    variants=sorted(set(a.variant_ids))
+    if not families or min(families)<0 or max(families)>=100000 or any(v not in range(5) for v in variants):
+        p.error('Invalid selected family or variant IDs')
+    if 4 in variants and any(KINDS[f % len(KINDS)]!='slurs' for f in families):
+        p.error('Variant 4 requires slur families only')
     if any(font not in MUSIC_FONTS for font in a.music_fonts):
         p.error(f'Music fonts must be selected from {", ".join(MUSIC_FONTS)}')
     a.out.mkdir(parents=True,exist_ok=True)
@@ -346,15 +359,15 @@ def main():
             '</Style></museScore>\n'
         )
         styles[font]=str(style)
-    identity=dict(schema=VERSION,generator_sha256=sha(Path(__file__)),seed=a.seed,families=a.families,
+    identity=dict(schema=VERSION,generator_sha256=sha(Path(__file__)),seed=a.seed,families=len(families),family_ids=families,variant_ids=variants,
                   music_fonts=a.music_fonts,source_revision=a.source_revision,musescore=version,
-                  variants=4,training_ready=False)
+                  variants=len(variants),training_ready=False)
     previous=a.out/'identity.json'
     if previous.exists(): raise SystemExit('Output already initialized; choose a new directory (no overwrites)')
     previous.write_text(json.dumps(identity,indent=2)+'\n')
     os.environ['OMP_NUM_THREADS']='1'; os.environ['OPENBLAS_NUM_THREADS']='1'
     tasks=[(str(a.out),a.seed,family,variant,font,str(musescore),styles[font],a.source_revision)
-           for family in range(a.families) for variant in range(4) for font in a.music_fonts]
+           for family in families for variant in variants for font in a.music_fonts]
     rows=[]; started=time.monotonic()
     with (a.out/'samples.jsonl').open('w') as handle, ProcessPoolExecutor(max_workers=a.workers) as pool:
         for i,row in enumerate(pool.map(generate_case,tasks),1):

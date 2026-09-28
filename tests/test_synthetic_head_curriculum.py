@@ -51,3 +51,25 @@ def test_renderer_audit_rejects_changed_beam_labels() -> None:
     assert not audit_renderer_labels(original, original)['differences']
     changed = original.replace('forward hook', 'backward hook')
     assert any(d['field'] == 'beams' for d in audit_renderer_labels(original, changed)['differences'])
+
+
+def test_reversed_overlap_changes_sides_only_and_preserves_v4_identity():
+    from training.omr_datasets.synthetic_head_curriculum import parse_symbols
+    from training.transformer.training_vocabulary import token_lines_to_str
+    from homr.transformer.structured_notation import SlurSide, SlurEvent
+    for family in (2, 6, 10, 14):
+        original, old = build_score(20260928, family, 3)
+        reversed_xml, new = build_score(20260928, family, 4)
+        assert old['seed'] == new['seed'] and old['split'] == new['split']
+        assert token_lines_to_str(parse_symbols(original)) == token_lines_to_str(parse_symbols(reversed_xml))
+        notes, findings = parse_score(ET.fromstring(reversed_xml))
+        assert findings.clean
+        second = [n.slurs[1] for part in notes.values() for n in part if n.slurs[1][0] != SlurEvent.NONE]
+        assert second and all(side == SlurSide.ABOVE for _, side in second)
+
+
+def test_supplement_keeps_published_v4_family_seed_and_split():
+    from training.omr_datasets.synthetic_head_curriculum import family_seed
+    assert family_seed(20260928, 3) == 4207139528
+    assert split_for(20260928, 11) == 'test'
+    assert split_for(20260928, 15) == 'valid'

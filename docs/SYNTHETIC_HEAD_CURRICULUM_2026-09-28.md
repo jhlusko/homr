@@ -375,3 +375,22 @@ was started by the completion watcher.
 
 Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/full/report.md`.
 Local complete renderer: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-v4-20260928/`.
+
+## Slot-2 side supplement and transfer preparation (2026-09-28)
+
+Owner authorized closing the coverage gap and proceeding to the matched transfer
+experiment. Generator v5 adds variant 4 to slur families: the original overlapping
+spans keep identical notes/tokens/endpoints, with slot 1 BELOW and slot 2 ABOVE.
+The family seed namespace stays v4, preserving every original melody and split.
+`--family-ids` and `--variant-ids` render only the new subset; v4 artifacts are reused.
+Eight local renders (four families, both fonts) pass the exported-label audit and were
+visually inspected: both spans and sides are visible and match their labels. The
+supplement renders all 64 original slur families in both fonts (128 new images).
+
+The capacity CLI accepts separately qualified supplemental artifacts, forbids duplicate
+sample IDs and conflicting family seeds/splits, and constructs token-identical image
+swaps across base and supplemental examples. Run a fresh 2,000-update diagnostic on
+2,176 total images with the same seed/.001 Adam/balanced-position protocol. This tests
+both slot-2 sides and their image dependence; flags and level-1 hooks stay outside the
+pilot's demonstrated coverage. Freeze the transfer protocol before its real scoring;
+no deployment, provider change or publication is part of this work.
