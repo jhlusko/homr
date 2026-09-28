@@ -394,3 +394,13 @@ swaps across base and supplemental examples. Run a fresh 2,000-update diagnostic
 both slot-2 sides and their image dependence; flags and level-1 hooks stay outside the
 pilot's demonstrated coverage. Freeze the transfer protocol before its real scoring;
 no deployment, provider change or publication is part of this work.
+
+V5 final 2,000-update capacity result: slot-2 side training macro-F1 1.000, held-out
+validation .969; the missing ABOVE contrast is covered. Stem training macro-F1 .949
+misses the unchanged .95 bar (validation .945). Overall gate false; the transfer
+preparer correctly rejects this report before drawing/fitting real examples. Loss
+continues falling and the sampled fit fluctuates around the bar (1,500 passed), so
+prespecify **one** extension to 4,000 total updates from saved Adam/sampling-RNG state,
+with the same LR/classes/data and unchanged thresholds. Use the final 4,000 checkpoint,
+not a favorable earlier checkpoint; if it fails, stop before transfer. Preserve the
+2,000-update weights/report/checkpoint and the blocked prepare attempt.
