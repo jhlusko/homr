@@ -66,3 +66,15 @@ def test_unapproved_generator_cannot_be_used(tmp_path):
     approval.write_text(json.dumps({'approved': False}))
     with pytest.raises(ValueError, match='qualification'):
         qualify(tmp_path, approval)
+
+
+def test_cross_dataset_image_swap_keeps_original_tokens(tmp_path):
+    from training.transformer.synthetic_head_capacity import sample_paths
+    base, supplement = tmp_path/'base', tmp_path/'supplement'
+    row = dict(id='old-overlap',_dataset=str(base))
+    token, image = sample_paths(base,row,'reversed-overlap',supplement)
+    assert token == base/'samples/old-overlap.tokens'
+    assert image == supplement/'samples/reversed-overlap.png'
+    token, image = sample_paths(base,dict(id='new',_dataset=str(supplement)))
+    assert token == supplement/'samples/new.tokens'
+    assert image == supplement/'samples/new.png'

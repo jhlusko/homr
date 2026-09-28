@@ -81,7 +81,14 @@ def core_hash(model: nn.Module) -> str:
     return digest.hexdigest()
 
 
-def clean_sample(dataset: Path, row: dict, image_id: str | None = None) -> dict:
+def sample_paths(dataset: Path, row: dict, image_id: str | None = None, image_dataset: Path | None = None):
+    target_root = Path(row.get("_dataset", dataset))
+    image_root = Path(image_dataset) if image_dataset is not None else target_root
+    return (target_root / "samples" / (row["id"] + ".tokens"),
+            image_root / "samples" / ((image_id or row["id"]) + ".png"))
+
+
+def clean_sample(dataset: Path, row: dict, image_id: str | None = None, image_dataset: Path | None = None) -> dict:
     from homr.staff_parsing import add_image_into_tr_omr_canvas
     from training.transformer.image_utils import (
         read_image_to_ndarray, prepare_for_tensor, ndarray_to_tensor, pad_to_3_dims,
@@ -89,14 +96,14 @@ def clean_sample(dataset: Path, row: dict, image_id: str | None = None) -> dict:
     from training.transformer.training_vocabulary import read_tokens, to_decoder_branches
     from training.omr_datasets.notation_sidecar import attach_sidecar
     from training.architecture.transformer.structured_targets import build_targets, notation_positions
-    dataset = Path(row.get('_dataset', dataset))
-    symbols = read_tokens(str(dataset / 'samples' / (row['id'] + '.tokens')))
-    if not attach_sidecar(dataset / 'samples' / (row['id'] + '.tokens'), symbols):
+    token_path, image_path = sample_paths(dataset, row, image_id, image_dataset)
+    symbols = read_tokens(str(token_path))
+    if not attach_sidecar(token_path, symbols):
         raise ValueError('Missing notation sidecar')
     branches = to_decoder_branches(symbols)
     length = len(symbols) + 2
     targets = build_targets([notation_positions(symbols, length)], 4, 2)
-    image = read_image_to_ndarray(str(dataset / 'samples' / ((image_id or row['id']) + '.png')))
+    image = read_image_to_ndarray(str(image_path))
     image = prepare_for_tensor(add_image_into_tr_omr_canvas(image))
     batch = {name: getattr(branches, name)[:length].unsqueeze(0)
              for name in ('rhythms', 'pitchs', 'lifts', 'positions', 'articulations', 'slurs', 'mask')}
@@ -108,6 +115,7 @@ def clean_sample(dataset: Path, row: dict, image_id: str | None = None) -> dict:
 def extract(model: nn.Module, dataset: Path, rows: list[dict], out: Path, device: str) -> list[dict]:
     model.eval()
     controls = image_controls(rows)
+    metadata = {r['id']: r for r in rows}
     records = []
     started = time.monotonic()
     with torch.no_grad():
@@ -123,7 +131,9 @@ def extract(model: nn.Module, dataset: Path, rows: list[dict], out: Path, device
             record = dict(id=row['id'], family=row['family'], split=row['split'], kind=row['kind'],
                           hidden=hidden, targets={k: v[0] for k, v in item['targets'].items()})
             if row['id'] in controls:
-                swapped = clean_sample(dataset, row, controls[row['id']])
+                image_id = controls[row['id']]
+                image_root = Path(metadata[image_id].get('_dataset', dataset))
+                swapped = clean_sample(dataset, row, image_id, image_root)
                 swap_batch = {k: v.to(device) for k, v in swapped['batch'].items()}
                 assert all(torch.equal(batch[k], swap_batch[k]) for k in batch if k != 'inputs')
                 record['swapped_hidden'] = model(**swap_batch)['hidden'].detach().cpu()[0]
