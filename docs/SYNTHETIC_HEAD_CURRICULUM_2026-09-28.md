@@ -233,3 +233,43 @@ beam groups; this is not an exhaustive approval of every sample. The corrected f
 pilot is CPU generation only, in persistent tmux with a completion watcher. Its
 local destination is
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-v4-20260928/`.
+
+## Owner qualification and capacity protocol (2026-09-28)
+
+The owner reviewed the 128-image v4 gallery (all four motif kinds, beam depths 1–4,
+both fonts) and approved the visible labels: “they all look good. proceed”. Approval
+covers these generator/renderer templates for **synthetic capacity diagnostics only**.
+Full-pilot examples must still pass every source-artifact checksum, renderer-label audit,
+no-duplicate contrast check and family-split check. Original generator artifacts remain
+unchanged/quarantined; a separate qualification manifest records the approved scope.
+
+`training/transformer/synthetic_head_capacity.py` extracts the frozen
+`public-rareNum-20260927` decoder states using clean fixed images (normal canvas and
+normalization, no augmentation), authoritative token branches and existing shifted
+structured targets. It fits fresh linear heads, excludes dynamics, preserves family
+splits, and never adapts the core. Core tensor hashes and fixed-input recognition logits
+must remain exactly unchanged. Feature caches carry data/core/source identities.
+
+Capacity protocol is fixed before fitting: Adam .001 (the completed LR/epoch trial
+selected no candidate), seed 20260928, 2,000 updates, 128 balanced positions per active
+head per update, no focal loss or class weights. This per-class sampling is for capacity
+only, not the later equal-budget three-arm real-transfer comparison. Report every class,
+including absent classes, and train/valid/test macro-F1. Training capacity bar: .95
+macro-F1 on heads with at least two represented classes, at least 20 positions and four
+training families for every represented class; simple-slur complete-span F1 .90 with
+at least 20 reference spans. Insufficient support is a gap, never a pass. No result
+selects a real-data model or triggers full curriculum training automatically.
+
+Image dependence: swap images within the same family/font and **identical token bytes**;
+keep the original tokens and targets. Recompute decoder states, and report normal versus
+swapped performance only at positions whose target labels differ between these token
+twins. This isolates visual dependence for covered stem/grouping/slur-side contrasts.
+Ties/hooks with different teacher-forcing tokens remain potentially token-confounded;
+passing synthetic fit alone cannot establish their visual dependence or scan transfer.
+
+Save resumable Adam/head/sampling-RNG state every 250 updates, with exact identity checks.
+A 128-image smoke checks extraction, actual head gradients, report output and frozen-core
+identity before the 2,048-image probe. The smoke has too few independent families to
+meet the full capacity bars. Nine targeted generator/probe tests pass, including exact
+uninterrupted-versus-resumed linear updates. Provisional full extraction/fitting ETA:
+30–60 GPU-minutes, to replace with measured throughput.
