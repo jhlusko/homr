@@ -1,12 +1,15 @@
 # Synthetic curriculum for structured heads — proposed 2026-09-28
 
-**Status: generator committed as `ed3f368`; MuseScore qualification pilot running.**
-The 256-family, two-font pilot renders original MusicXML with MuseScore and applies the
-selected engraving font through MuseScore style files. Its output stays quarantined
-(`training_ready=false`) until visual review. No training has started, and the bounded
-LR/epoch comparison remains unchanged. Its result should settle the optimizer setting
-before a full curriculum comparison. This proposal targets heads over the frozen
-`public-rareNum-20260927` core, not another full-core adaptation.
+**Status: generator committed as `ed3f368`; MuseScore pilot complete, not training-ready.**
+The 256-family, two-font run produced 2,048 images with zero render failures. SHA-256
+verification passed after copying the result locally. The duplicate-image audit found
+160 identical-image pairs among beam variants across 48 motif families, despite
+differing intended beam labels. This is a renderer/contrast defect to fix before any
+candidate is promoted. The output stays quarantined (`training_ready=false`); no training
+has started, and the bounded LR/epoch comparison remains unchanged. This proposal targets
+heads over the frozen `public-rareNum-20260927` core, not another full-core adaptation.
+
+Local run artifact: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-20260928/`.
 
 ## Question and motivation
 
