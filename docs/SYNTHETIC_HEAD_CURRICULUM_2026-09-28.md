@@ -1,15 +1,25 @@
 # Synthetic curriculum for structured heads — proposed 2026-09-28
 
-**Status: generator committed as `ed3f368`; MuseScore pilot complete, not training-ready.**
-The 256-family, two-font run produced 2,048 images with zero render failures. SHA-256
-verification passed after copying the result locally. The duplicate-image audit found
-160 identical-image pairs among beam variants across 48 motif families, despite
-differing intended beam labels. This is a renderer/contrast defect to fix before any
-candidate is promoted. The output stays quarantined (`training_ready=false`); no training
-has started, and the bounded LR/epoch comparison remains unchanged. This proposal targets
-heads over the frozen `public-rareNum-20260927` core, not another full-core adaptation.
+**Status: v4 owner-approved; full frozen-core capacity diagnostic completed 2026-09-28 17:30 UTC.**
+All 2,048 renders passed generation; ten sufficiently supported heads passed the .95
+training macro-F1 bar. Simple training slur-span F1 was 1.000 (424 spans); family-held-out
+validation span F1 was also 1.000 (64 spans). Slot-2 side has only BELOW supervision,
+so its two-sided capacity remains untested and the strict overall gate is **false**.
+This is teacher-forced synthetic capacity evidence, not real-source transfer or release.
+No larger curriculum has started. Frozen core weights and recognition logits stayed
+exactly unchanged. Detailed results and coverage gaps are recorded below.
 
-Local run artifact: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-20260928/`.
+Generator corrections `719b680`; capacity probe `6209b05`. This targets heads over the
+frozen `public-rareNum-20260927` core, not another full-core adaptation.
+Local capacity results destination:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/full/`.
+Local corrected render destination:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-v4-20260928/`.
+
+Historical v3 pilot (`ed3f368`): 2,048 images, zero render failures, but 160 identical-image
+beam contrast pairs in 48 families with differing intended labels. It remains quarantined;
+v4 fixes the contrast construction. Its archived local result is
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-20260928/`.
 
 ## Question and motivation
 
@@ -312,3 +322,56 @@ on measured smoke throughput. Its watcher archives success/failure; the local co
 pulls/checksums smoke/full reports and appends local paths/results to this doc, RUNLOG
 and the private release sequence. Local collection requires an awake/connected laptop;
 remote generation and capacity execution persist when the laptop closes.
+
+### 2026-09-28 17:49 UTC — synthetic capacity full results copied locally
+
+Local verified report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/full/report.json`. Fresh linear heads over the frozen `public-rareNum-20260927` core; dynamics excluded. Teacher-forced clean synthetic diagnostic, not real-source validation or release.
+
+Completed 2000 updates. Core tensors unchanged: True; recognition logits identical: True. Simple training slur-span F1: 1.000. Strict capacity gate: False.
+
+| Head | Training macro-F1 | Capacity support/bar |
+|---|---:|---|
+| beam.level.1 | 1.000 | pass |
+| beam.level.2 | 1.000 | pass |
+| beam.level.3 | 1.000 | pass |
+| beam.level.4 | 1.000 | pass |
+| stem.direction | 0.967 | pass |
+| tie.state | 1.000 | pass |
+| advance.delta | 1.000 | pass |
+| slur.slot.1.event | 0.995 | pass |
+| slur.slot.1.side | 1.000 | pass |
+| slur.slot.2.event | 1.000 | pass |
+| slur.slot.2.side | 1.000 | insufficient support |
+
+Image-control comparisons and all class/family supports are in the report. Flags, level-1 hooks and slot-2 above-side contrasts are absent. A smoke cannot meet full independent-family bars. Review the full diagnostic before expanding the corpus or starting the three-arm curriculum.
+
+### 2026-09-28 17:50 UTC — full synthetic capacity interpretation and completed transfer
+
+Corrected renderer: 2,048/2,048 renders, zero failures, zero label mismatches or duplicate
+contrasts. 207/24/25 family-disjoint train/validation/test families. All 14,346 render
+artifact checks and all 16 full-probe artifact checks pass locally; final heads, cached
+features and resumable Adam/RNG state are retained. Full probe finished 17:30 UTC;
+feature extraction took 105.53 s and fitting/evaluation 76.68 s. No GPU jobs remain.
+
+Ten sufficiently supported heads pass the .95 training macro-F1 bar. Family-held-out
+validation macro-F1: beam levels 1–4 1.000, stem .9594, tie .9899, advance .9960,
+slot-1 event 1.000, slot-1 side .9785, slot-2 event 1.000. Simple slur spans: F1 1.000
+on 424 train / 64 validation / 24 test reference spans. Slot-2 side has only BELOW
+(class 2, 212 training endpoints in 53 families): its 1.000 fit is a constant-class
+result, so it remains unqualified. Strict overall capacity gate remains false.
+Absent flags and level-1 hooks are still declared coverage gaps.
+
+Token-matched validation image controls: stems 90.36→9.64% on 768 differing-label
+positions; slot-1 side 96.88→3.13% on 64 positions. Stem test control 89.15→10.85%
+on 1,088 positions. This establishes image dependence for these covered distinctions;
+it does not establish it for token-confounded tie/hook examples or prove scan transfer.
+Core tensors and fixed-input recognition logits remain exactly unchanged; 11 active
+heads / 22 optimizer tensors updated, with dynamics excluded.
+
+Next: add the missing slot-2 ABOVE contrast and requalify the capacity diagnostic;
+then freeze the matched real-only / unordered synthetic+real / ordered curriculum
+experiment and source-wise real internal gates. No larger curriculum or deployment
+was started by the completion watcher.
+
+Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/full/report.md`.
+Local complete renderer: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-v4-20260928/`.
