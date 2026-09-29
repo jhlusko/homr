@@ -32,7 +32,9 @@ def main():
         progress_age = time.time() - progress_path.stat().st_mtime if progress_path.exists() else None
         epoch = read(a.run / "full" / "epoch-status.json")
         alive = running(a.session)
-        if (a.run / "full" / "COMPLETE").exists():
+        if (a.run / "SUPERSEDED").exists():
+            state = "superseded"
+        elif (a.run / "full" / "COMPLETE").exists():
             state = "complete"
         elif (a.run / "full" / "EARLY_STOPPED.json").exists():
             state = "early_stopped"
