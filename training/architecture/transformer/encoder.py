@@ -25,7 +25,7 @@ class ConvNeXtEncoder(nn.Module):
         # Use configurable pretrained flag
         self.model = timm.create_model(
             "convnext_tiny",
-            pretrained=True,
+            pretrained=getattr(config, "encoder_pretrained", True),
             in_chans=config.channels,
             num_classes=0,
             global_pool="",
