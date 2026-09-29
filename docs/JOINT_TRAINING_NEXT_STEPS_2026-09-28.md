@@ -15,6 +15,12 @@ core are OSSQ -0.038/-0.023/-0.046 pp, PDMX -0.146/-0.178/-0.160 pp, and Lieder
 These are internal teacher-forced diagnostics with core-seen score identities; they are
 not untouched autoregressive release evaluation.
 
+The epoch-12 refresh reinforces the tradeoff: PDMX rhythm/pitch deltas are
+-0.182/-0.224 pp and Lieder -0.269/-0.198 pp. Lieder slur-span F1 fluctuates
+83.10 -> 81.38 from epochs 11 to 12, so improvements are not monotonic. Rare beam
+levels and second-slot slur events/sides need separate support-aware checks; aggregate
+slur metrics can hide the rare slot.
+
 Continue the already-running 35-epoch recipe as an unchanged baseline with all epoch
 weights retained. Select checkpoints based on recognition/notation tradeoffs rather than
 assuming the last epoch is best. The current >3-pp rhythm guard is a catastrophe guard,
