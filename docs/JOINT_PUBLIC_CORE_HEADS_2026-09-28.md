@@ -1,3 +1,5 @@
+> **2026-09-29 UTC update:** Joint training stopped by user request after epoch 27. The earlier 35-epoch continuation plan below is superseded. Scoring is complete. Owner prioritizes OSSQ/Lieder and considers epoch 27 a promotion candidate; see JOINT_TRAINING_NEXT_STEPS_2026-09-28.md for suggested follow-up. No production promotion has occurred.
+
 # Joint public core and fresh notation heads — 2026-09-28
 
 Owner requested a long integrated run and chose **public core + new heads trained

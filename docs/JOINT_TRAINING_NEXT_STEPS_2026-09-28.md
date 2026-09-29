@@ -1,3 +1,5 @@
+> **2026-09-29 update:** Scoring and local collection are complete. Owner prioritizes OSSQ/Lieder over synthetic PDMX: epoch 27 is a promotion candidate, with real-score evaluation and review still suggested. Earlier instructions to continue the stopped run are superseded. No new training or promotion has been launched.
+
 # Joint training interpretation and next experiments — 2026-09-28
 
 ## Observations, not promotion evidence
@@ -74,3 +76,17 @@ probabilities and optimizer-update budget explicitly.
 Source-independent corpus improvements do not depend on the current joint run passing.
 The three-route lyrics/direction/dynamics plan is documented separately in
 `TEXT_LYRICS_DYNAMICS_PLAN_2026-09-28.md`; dynamics remains review-only at inference.
+
+### 2026-09-29 — owner priorities and suggested promotion follow-up
+
+Owner values real OSSQ and Lieder more than synthetic PDMX and considers joint epoch 27 worth advancing. This supersedes the preceding blanket “do not promote” recommendation: PDMX deterioration is a diagnostic tradeoff, not an automatic veto. Epoch 27 is a promotion candidate; no production promotion or pin change has occurred. OSSQ symbol error improves 2.372% -> 1.862% (21.5% relative); Lieder rises 3.542% -> 3.728%. Both score-bootstrap delta intervals overlap zero. Notation gains are substantial.
+
+Suggested next steps, not completed work:
+1. Evaluate untouched real-score holdouts against the currently accepted full core-plus-heads stack. The completed comparison used the real-only 8,400-update frozen heads, not necessarily the strongest accepted stack.
+2. Use separate OSSQ and Lieder primary gates; treat PDMX as diagnostic. Prespecify an acceptable Lieder regression margin before inspecting new evaluation outcomes. No numerical margin has been agreed.
+3. Generate divergent side-by-side examples, prioritizing Lieder pitch/rhythm regressions and OSSQ improvements.
+4. Package epoch 27 as a local candidate pin with the existing model retained for rollback; promotion follows evaluation/review.
+
+Owner would prefer a longer training job while away. Full random initialization is a distinct experiment from the previously agreed public-core-plus-new-heads joint training. No random-initialized job is launched by this documentation update. The existing runner requires a checkpoint and pins the old training index; supporting a new initialization or corpus needs explicit implementation and smoke/resume checks. PDMX-v2 is still rendering (13,800/31,901 sources, approximately 9.5 hours remaining at 07:15 UTC, then packaging); no claim that v2 is ready.
+
+Suggested long-run recipe: explicit real-source sampling to prevent expanded PDMX from dominating; immutable score-level development/test splits before fitting; individual recognition/head-loss logging; resumable optimizer/RNG state; per-source checkpoints and evaluation. Use an optimizer-update budget, not an epoch count across changed data. If starting with the public core, test a lower core learning rate to preserve recognition while learning heads. If starting fully random, use an initialization-appropriate learning-rate/warmup schedule rather than copying the fine-tuning schedule; retain the public-initialized run as a control. A multi-day duration is plausible but not measured, and no completion ETA is promised before throughput/convergence observations.
