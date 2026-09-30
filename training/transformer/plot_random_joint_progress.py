@@ -170,7 +170,22 @@ def main():
         watch=json.loads(watch_file.read_text())
         summary['watch_state']=watch.get('state','unknown')
         summary['watch_checked_utc']=watch.get('checked_utc')
-    summary['estimated_remaining_hours']=progress.get('remaining_seconds',0)/3600
+    summary['training_only_remaining_hours']=progress.get('remaining_seconds',0)/3600
+    summary['estimated_remaining_hours']=summary['training_only_remaining_hours']
+    summary['eta_basis']='elapsed time per update in the active phase; future validation overhead is not yet measured'
+    # Startup update speed omits the expensive per-epoch evaluations. Prefer
+    # intervals between completed epochs, including the evaluations between them.
+    for phase in reversed(range(len(runs))):
+        complete=[r for r in train if r['phase']==phase_names[phase] and r['updates']%1260==0
+                  and (phase,r['updates']//1260) in val and 'elapsed_seconds' in r]
+        if len(complete)<2:continue
+        window=complete[-6:];first,last=window[0],window[-1]
+        elapsed=last['elapsed_seconds']-first['elapsed_seconds']
+        if elapsed<=0:continue
+        seconds_per_update=elapsed/(last['updates']-first['updates'])
+        summary['estimated_remaining_hours']=seconds_per_update*(progress['total_updates']-progress['updates'])/3600
+        summary['eta_basis']=f'{len(window)-1} completed epoch intervals in {phase_names[phase]}, including validation overhead'
+        break
     summary['progress_updated_utc']=dt.datetime.fromtimestamp((run/'full/progress.json').stat().st_mtime,dt.timezone.utc).isoformat()
     summary['latest_validation_epoch']=latest[1]
     summary['last_complete_validation_epoch']=max(e[1] for e in epochs if isinstance(e[1],int))
@@ -189,13 +204,13 @@ def main():
     html=f'<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="300"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fresh music-model loss curves</title><style>{style}</style><h1>Fresh music-model training curves</h1><p>ImageNet encoder; music decoder and notation heads initialized randomly. Snapshot: epoch {progress["epoch"]:.2f}/160, {progress["updates"]:,}/{progress["total_updates"]:,} updates. Last fully evaluated epoch: {summary["last_complete_validation_epoch"]:g}. Latest validation snapshot: epoch {latest[1]:g} ({val_phase[latest]}).</p>'
     html+=f'<p class="muted">Page generated: {summary["generated_utc"]}. Latest training update: {summary["progress_updated_utc"]}. Watcher: {summary.get("watch_state","unknown")} at {summary.get("watch_checked_utc","unknown")}.</p>'
     if summary['estimated_remaining_hours'] is not None:
-        html+=f'<p>Training ETA: about {summary["estimated_remaining_hours"]:.1f} hours at the measured rate; validation and interruptions add time.</p>'
+        html+=f'<p>Completion ETA: about {summary["estimated_remaining_hours"]:.1f} hours, based on {summary["eta_basis"]}. Interruptions add time.</p>'
     else:
         from html import escape
         html+=f'<p><strong>Training is stopped.</strong> {escape(summary.get("stop_reason","No active training session at the last check."))} No completion ETA while stopped.</p>'
     if 'token_audit' in summary:
         audit=summary['token_audit'];total=sum(audit['rows_by_source'].values())
-        html+=f'<p>Training-label audit: {audit["invalid_rows"]:,} of {total:,} crops contain labels outside the current decoder vocabulary. The audit prepares exclusions and does not change labels or restart training.</p>'
+        html+=f'<p>Training-label audit: {audit["invalid_rows"]:,} of {total:,} crops contain labels outside the current decoder vocabulary. The exclusion inventory and filtered index are recorded with the run.</p>'
     html+='<p class="muted">Training phases: original PDMX-v1 to update 21,420 (solid lines); PDMX-v2 to update 22,000 (dashed); then PDMX-v2 with oversized Lieder crops capped before augmentation (dotted). Vertical lines mark switches. Validation lines remain separate by phase; PDMX validation is the same v1 holdout throughout.</p>'
     if len(runs)>=4:html+='<p class="muted">From update 49,800, six PDMX crops with unsupported articulation combinations are excluded (dash-dot lines). This continuation preserves the existing optimizer, schedule, and 60% OSSQ / 25% Lieder / 15% PDMX sampling.</p>'
     html+='<p class="muted">Training lines average up to 40 logged batches (each logged every 10 updates); faint lines are raw batch losses. A head is plotted only when its batch has targets. Validation is teacher-forced on fixed internal crops; these curves do not measure decoded-score quality or justify promotion.</p>'
