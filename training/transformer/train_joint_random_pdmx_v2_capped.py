@@ -102,6 +102,7 @@ def main():
     p.add_argument('--accumulation',type=int,default=4);p.add_argument('--workers',type=int,default=4)
     p.add_argument('--seed',type=int,default=20260928);p.add_argument('--max-updates',type=int)
     p.add_argument('--resume',type=Path);p.add_argument('--migrate-from',type=Path)
+    p.add_argument('--audit-report',type=Path,help='Verified token audit authorizing a filtered-index continuation of the capped run')
     p.add_argument('--draws-per-epoch',type=int,default=40290)
     p.add_argument('--no-augmentation',action='store_true')
     p.add_argument('--skip-eval',action='store_true');a=p.parse_args()
@@ -116,6 +117,14 @@ def main():
     torch.backends.cuda.enable_flash_sdp(False);torch.backends.cuda.enable_mem_efficient_sdp(False)
     torch.backends.cuda.enable_math_sdp(True)
     rows=read_index(a.train_index)
+    audit=None
+    if a.audit_report:
+        audit=json.loads(a.audit_report.read_text())
+        if audit['state']!='complete' or sha(a.train_index)!=audit['proposed_index_sha256']:
+            raise ValueError('The training index does not match the completed token audit')
+        expected_sources={s:n-audit['invalid_by_source'].get(s,0) for s,n in audit['rows_by_source'].items()}
+        if dict(Counter(r['source'] for r in rows))!=expected_sources:
+            raise ValueError('Filtered source counts differ from the token audit')
     from homr.transformer.configs import Config
     from training.architecture.transformer.tromr_arch import TrOMR
     from training.architecture.transformer.structured_heads import StructuredNotationHeads
@@ -157,6 +166,10 @@ def main():
                   preprocessing_sha256=sha(Path(image_utils.__file__)),vocabulary_sha256=sha(Path(training_vocabulary.__file__)),
                   torch_version=str(torch.__version__),cuda_version=torch.version.cuda,
                   validation_indices={s:sha(a.validation_dir/f'index_{s}_internal_valid.txt') for s in ('ossq','pdmx','lieder')})
+    if audit:
+        identity['initialization']='migrated capped model, optimizer, scheduler, and RNG; unsupported token rows excluded by completed audit'
+        identity['token_audit_sha256']=sha(a.audit_report)
+        identity['excluded_rows']=audit['invalid_rows']
     write_json(a.run/'identity.json',identity)
     epoch=0;batch_offset=0;updates=0;support=Counter();gradient_seen=set()
     if a.resume:
@@ -173,6 +186,12 @@ def main():
                   'total_updates':total,'batch_size':a.batch_size,'accumulation':a.accumulation,
                   'source_shares':dict(zip(pools,a.source_shares)),
                   'sampler':'source-weighted uniform crops with replacement'}
+        if audit:
+            expected['name']='random-core-heads-pdmx-v2-capped-20260929'
+            expected['train_index_sha256']=audit['index_sha256']
+            expected['sources']=audit['rows_by_source']
+            expected['augmentation_pre_resize']=identity['augmentation_pre_resize']
+        expected['draws_per_epoch']=a.draws_per_epoch
         for key in ('encoder_pretrained','epochs','seed','core_lr','heads_lr','structured_scale',
                     'optimizer','weight_decay','warmup_updates','bf16','tf32','deterministic_algorithms',
                     'attention_backend','augmentation','scheduled_sampling','runtime_sha256',
@@ -259,7 +278,11 @@ def main():
             for source in ('ossq','pdmx','lieder'):
                 baseline=json.loads((a.run/'eval-initial'/f'{source}.json').read_text())
                 current=json.loads((out/f'{source}.json').read_text())
-                previous=json.loads((a.run/f'eval-epoch-{epoch-1:02d}'/f'{source}.json').read_text())
+                previous_file=a.run/f'eval-epoch-{epoch-1:02d}'/f'{source}.json'
+                # A new phase can start mid-epoch; its first completed epoch
+                # has no preceding completed evaluation in this directory.
+                if not previous_file.exists():continue
+                previous=json.loads(previous_file.read_text())
                 bar=baseline['teacher_forced_accuracy']['rhythms']-.03
                 if current['teacher_forced_accuracy']['rhythms']<bar and previous['teacher_forced_accuracy']['rhythms']<bar:
                     bad.append(source)
