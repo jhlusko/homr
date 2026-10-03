@@ -33,6 +33,8 @@ An isolated probe confirms `kern_to_symbol_duration('0')` currently returns frac
 
 ## Next work
 
+The requested OSSQ/Lieder quantification is complete: see `REAL_TIMING_LABEL_CENSUS_2026-10-03.md`. It reads no PDMX data and reports canonical versus published-score scope, frozen label exposures, historical parser checks, full roundtrip failure coverage and conditional onset/order counts.
+
 1. Audit the frequency of six-quarter measure rests and non-integral reciprocal tuplets in canonical real-source references and frozen labels. Verify which archived parser built each published pin before claiming a historical label defect.
 2. Make a narrowly tested future-build correction for representable full-bar durations, and design explicit ratio support or a documented rejection path for durations the integer reciprocal vocabulary cannot preserve. Retain published corpus pins; any regenerated labels require a new version. No broad whole-rest runtime rewrite or new training is justified yet.
 3. Strengthen full-page evaluation to report onset/meter/voice-aware failures separately from ordered event edits, then certify genuinely new page references and OSSQ scan alignment. Continue text-fusion calibration/C1 independently.

@@ -2,6 +2,12 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — OSSQ/Lieder timing census complete
+
+No PDMX was read. All 39,137 OSSQ and 3,867 published-index Lieder labels were available. Among canonical references for indexed score identities (85 OSSQ / 212 Lieder), the current formula loses full-rest timing on 356 / 132 events and non-integral reciprocal-tuplet timing on 2,031 / 46 consistent-source events. These categories affect 21 / 22 score identities and are 0.233% / 0.065% of printed timed events; full canonical score events are not interchangeable with retained crop exposures. Relevant historical OSSQ parser functions match current source. See `REAL_TIMING_LABEL_CENSUS_2026-10-03.md` for precise definitions, larger-collection counts and local artifacts.
+
+Whole-score reference roundtrips complete in 809.8 seconds on one CPU thread. Published-score success coverage is 75/85 OSSQ and 212/212 Lieder; ten OSSQ exports reject detachedLegato. With advance output disabled, onset changes occur in inventory-preserved measures in 30/75 successful OSSQ scores and 160/212 Lieder scores. These fixed-staff/measure diagnostics are not voice-aware equivalence or model error rates. Eleven tests pass; both tmux jobs complete, no remaining ETA. Next: bound a ground-truth advance A/B to locate lost grouping timing; inspect representative real-source rests/duplets and make narrowly tested future-build representation corrections before changing corpus pins or training. Text-fusion/C1 remain independent work.
+
 ### 2026-10-03 — cached timing ablation complete
 
 Exact XML replay passes for both stacks. Late tuplet/beam/tie/slur-crossing repairs do not change pitch/rhythm edits on Lorelei. The canonical-reference label roundtrip reproduces the five shared vocal duration errors: six-quarter whole-bar rests collapse to `rest_1`, and 2:3 eighth-note duplets round to `note_5`. Piano ordering changes also show that ordered edits can penalize unchanged event inventory. No runtime or published label policy changed. See `PAGE_TIMING_LABEL_AUDIT_2026-10-03.md` for local evidence, limitations and the `rest_0` duration-unit warning.
