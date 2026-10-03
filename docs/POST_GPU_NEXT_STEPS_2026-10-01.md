@@ -2,6 +2,12 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — reference advance A/B complete
+
+Reference advance reduces moved-onset events 470 → 412 on OSSQ and 15,855 → 5,252 on Lieder, on common inventory-preserved measures. No newly lost correct inventories. There are 39 Lieder exact-count regressions; the count does not measure distance. A grace-cursor probe removes four genuinely worse cases in two scores. A separate synthetic probe exposes zero-duration rounding when advance changes XML divisions. See `REFERENCE_ADVANCE_ABLATION_2026-10-03.md`. All jobs complete on one CPU thread; no remaining ETA.
+
+Next: narrowly tested printed-duration division allocation and future-build grace cursor corrections; repeat reference qualification before evaluating predicted advance. No model promotion or published pin change. Text-fusion/C1 and new full-page references remain open.
+
 ### 2026-10-03 — OSSQ/Lieder timing census complete
 
 No PDMX was read. All 39,137 OSSQ and 3,867 published-index Lieder labels were available. Among canonical references for indexed score identities (85 OSSQ / 212 Lieder), the current formula loses full-rest timing on 356 / 132 events and non-integral reciprocal-tuplet timing on 2,031 / 46 consistent-source events. These categories affect 21 / 22 score identities and are 0.233% / 0.065% of printed timed events; full canonical score events are not interchangeable with retained crop exposures. Relevant historical OSSQ parser functions match current source. See `REAL_TIMING_LABEL_CENSUS_2026-10-03.md` for precise definitions, larger-collection counts and local artifacts.

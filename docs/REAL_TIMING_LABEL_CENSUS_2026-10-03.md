@@ -1,5 +1,7 @@
 # OSSQ / Lieder timing-label census — 2026-10-03
 
+Completed follow-up: see `REFERENCE_ADVANCE_ABLATION_2026-10-03.md` for the matched reference-advance A/B, grace-label regression investigation and XML duration-precision blocker.
+
 Scope is OSSQ and Lieder only. This audit counts canonical-reference encoding losses and reads the recovered public-core train/validation label files. It runs on one CPU thread without model inference, rendering, training or corpus changes.
 
 ## References for scores included in the published corpora
