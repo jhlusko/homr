@@ -2,6 +2,12 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — cached timing ablation complete
+
+Exact XML replay passes for both stacks. Late tuplet/beam/tie/slur-crossing repairs do not change pitch/rhythm edits on Lorelei. The canonical-reference label roundtrip reproduces the five shared vocal duration errors: six-quarter whole-bar rests collapse to `rest_1`, and 2:3 eighth-note duplets round to `note_5`. Piano ordering changes also show that ordered edits can penalize unchanged event inventory. No runtime or published label policy changed. See `PAGE_TIMING_LABEL_AUDIT_2026-10-03.md` for local evidence, limitations and the `rest_0` duration-unit warning.
+
+Next: measure these representation problems across frozen labels and canonical references, establish historical parser provenance, then implement a narrowly tested future-build correction and strengthen onset/meter-aware page scoring. Do not enable a blanket sole-rest rewrite or retrain before that audit. All jobs complete on one CPU thread; six tests pass, no remaining ETA. Full-page untouched references/OSSQ alignment and text-fusion/C1 still remain open.
+
 ### 2026-10-03 — reference audit and paired original-page diagnostic complete
 
 See `FULL_PAGE_DIAGNOSTIC_2026-10-03.md` for the current result and local reproduction paths. The reference audit finds no verified untouched locally scoreable pages: four certified Lieder pages are from Lorelei, explicitly previously bar-count evaluated; OSSQ scan alignment is missing. A deterministically selected Lorelei page was scored with matched accepted/candidate float32 exports. Candidate pitch edit error improves 1.955% → 1.397%, while rhythm/event edits worsen 3.599% → 4.370%. Accidental projection differences are deletions, not substitutions. This one-page diagnostic does not apply the crop-token Lieder regression gate or justify promotion.

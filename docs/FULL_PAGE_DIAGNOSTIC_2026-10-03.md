@@ -31,6 +31,8 @@ The accidental increase consists entirely of deletion edits: three versus five, 
 
 ## Shared timing issues to investigate next
 
+Follow-up completed: `PAGE_TIMING_LABEL_AUDIT_2026-10-03.md`. Exact cached replay and repair ablations locate these shared timing errors in the current label representation, not late repair on this page. The two fractional events are explicitly marked duplets (2:3 eighths), not dotted glyphs. Original comparison scores below remain intact; the follow-up does not waive their errors or promote the candidate.
+
 Both XML outputs encode the vocal whole-bar rests in measures 6–8 as four quarters, while the 12/8 reference requires six. The XML generator gives positive-duration rests their decoded duration and only treats a zero-duration rest as a full-measure rest. This identifies a representation/export boundary to audit; it does not yet establish whether recognition or export should change. Both outputs also emit 4/5-quarter durations for two reference 3/4-quarter events in measure 12. Investigate cached symbols and tuplet-repair policy before attributing those changes to training.
 
 Candidate raw headers predict 2/8, while accepted raw headers predict 12/8; both final XML outputs contain 12/8. The final meter correction must not hide that raw recognition difference. Additional candidate rhythm changes remain and cannot be excused by the shared errors.
