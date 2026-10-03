@@ -1,10 +1,10 @@
 # Joint epoch-27 training-held-out comparison — 2026-10-01
 
-## Running locally
+## Completed local comparison
 
-The full raw crop comparison is running in persistent tmux `joint_full_holdout_20261001`; watcher `joint_full_holdout_watch_20261001` checks every 60 seconds. It uses **two CPU threads**, no GPU or remote instance. The local WSL machine must remain awake; tmux survives terminal disconnects but cannot run while the laptop is suspended.
+The full raw crop comparison completed **8,422/8,422 decodes with zero failures**. Candidate symbol error improved by 1.455 percentage points on OSSQ and 0.418 points on Lieder. The first 3,501 accepted-model decodes used two CPU threads; the remainder used one at the owner's request. See `execution-history.json` for the preserved resource provenance. No GPU or remote instance was used.
 
-**4,211 crops × 2 model pairings = 8,422 decodes**: OSSQ 3,911 crops / 9 score identities; Lieder 300 / 13. Initial estimate **6–8 hours**, around **23:00 UTC Oct 1 to 01:00 UTC Oct 2**, subject to measured crop lengths and CPU load. The watcher estimates remaining time by source and model, using pilot throughput until enough full-run samples exist.
+**4,211 crops × 2 model pairings = 8,422 decodes**: OSSQ 3,911 crops / 9 score identities; Lieder 300 / 13. This completed job has no remaining ETA. Runtime/export qualification is a separate gate; the first ONNX pilot matched recognition on 21/22 crops and did not pass strict parity.
 
 Status: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/FULL_WATCH_STATUS.json` and `FULL_STATUS.md`.
 Logs: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/logs/full-{accepted_oldcore_v7,public_joint27}.log`.

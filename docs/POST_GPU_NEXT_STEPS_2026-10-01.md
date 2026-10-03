@@ -2,11 +2,17 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — corrected diagnostic passes strict export parity
+
+The ONNX one-token continuation workaround changes cross-attention cache semantics. Eager decoding sends empty continuation context, but the exported graph rejected its zero-length head-split reshape. An isolated graph correction makes the eight-head dimension explicit and permits literal zero dimensions; a diagnostic runtime supplies empty context. All 22 pilot crops now match eager recognition and complete serialized notation exactly, with all encoder, cached-eager and head-projection checks passing. No tolerance was relaxed.
+
+Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-context-full-parity-20261003/`. Reproduce with `training/onnx/audit_joint_context_cache.py --repair-empty-reshape --full-parity` and the source/export/output directories recorded in the release sequence. Job complete on one CPU thread. Next: integrate the correction with graph capability metadata so older graphs remain compatible, cover greedy/margin/fork paths, then repeat full-page smoke. The shipping runtime is unchanged; the original page smoke does not qualify the corrected graph. New-score accuracy, GPU/HTTP latency and text-fusion/C1 remain open.
+
 ### 2026-10-02 — export parity is a release blocker
 
 The epoch-27 public-joint checkpoint has isolated ONNX exports and a bounded parity audit. Encoder and head logits are numerically close, but greedy recognition differs on one of 22 pilot crops at a low-margin rhythm decision. Keep the accepted stack as the runtime baseline and do not publish candidate advantages as deployment results until the cause is understood or the release gate explicitly accepts this behavior. Full-page functional smoke completed on one Lieder and one OSSQ page; it is a validity check, not an accuracy benchmark. Both produced valid MusicXML and no automatic dynamics: Lieder 148.7 seconds CPU-only, OSSQ 124.8 seconds CPU-only. This closes basic export/pipeline wiring, but not strict parity, full-page accuracy, GPU latency, detector fusion, or C1 lyric attachment.
 
-The training-held-out real-source comparison is now running locally in persistent tmux, with a completion watcher and two CPU threads. All44 pilot decodes passed. Full run:4,211 crops/8,422 decodes; initial ETA6–8h. Lieder margin accepted:+0.25pp. This uses previously evaluated validation scores and raw eager crop decoding, not untouched/full-page qualification. See `JOINT_HOLDOUT_QUALIFICATION_2026-10-01.md` for exact local paths, limitations and next gates. No training or GPU job launched; no model promoted.
+The training-held-out real-source comparison completed all 8,422 decodes without failures. Candidate symbol error improved by 1.455 percentage points on OSSQ and 0.418 points on Lieder, passing the accepted +0.25-point Lieder regression margin. The first 3,501 accepted-model decodes used two CPU threads; remaining decodes used one. This uses previously evaluated validation scores and raw eager crop decoding, not untouched/full-page qualification. See `JOINT_HOLDOUT_QUALIFICATION_2026-10-01.md` for exact local paths, limitations and next gates. No training or GPU job launched; no model promoted.
 
 ## Archived experiment state
 
@@ -57,7 +63,7 @@ Public-initialized joint **2026-09-29 epoch 27** has better recognition and end-
 
 Only eight independent OSSQ score identities underlie the 2,871 crops. Large failures are concentrated, but Lieder/PDMX still degrade after removing their worst 5% (a diagnostic, not an evaluation filter). Random80 emits 149 invalid-pitch note symbols on PDMX versus 32 frozen and 15 public27. Invalid combinations motivate a bounded decoding-constraint experiment but do not explain the whole real-source gap. EOS causes were not logged, and no library/optimizer cause has been demonstrated.
 
-Next: qualify the full public27 stack on untouched real-score/full-page inputs; for the random branch, test decoder consistency and termination logging before spending on more training. The random run remains paused at epoch81; a separate local real-source crop comparison is running as described above. See `error-audit.md` for limits and the detailed experiment recommendation.
+Next: resolve export parity, then qualify the full public27 stack on untouched real-score/full-page inputs; for the random branch, test decoder consistency and termination logging before spending on more training. The random run remains paused at epoch81; the separate local real-source crop comparison is complete. See `error-audit.md` for limits and the detailed experiment recommendation.
 
 ## Original sequence, with steps 1–3 now completed
 
@@ -67,4 +73,4 @@ Next: qualify the full public27 stack on untouched real-score/full-page inputs; 
 4. **Choose a bounded follow-up only after the audit.** Keep the existing recognition baseline and accepted runtime policies in place. If the audit finds a code/protocol defect, fix it and re-decode the affected retained checkpoints before drawing training conclusions. If the regression is model behavior, select a targeted experiment on the public-initialized stack or a limited resume of the random-start run, with actual decoded OSSQ/Lieder recognition gates. Do not automatically spend another ~15 GPU-hours or transplant heads between incompatible core feature representations.
 5. **Return to release qualification after selecting a complete stack.** Measure untouched real-score/full-page performance with the selected core, heads, runtime policies and detector fusion. Then regenerate final side-by-side examples (E3), finalize pins/calibration/provenance and update the public OTS-HOMR model description to claims supported by those results. C1 lyric-recognition/attachment quality and the lyrics/directions/dynamics fusion plan remain separate release work; random-start scoring does not close them.
 
-No GPU is needed for steps 1–3. Random-start training/decoding is inactive; the separate local joint qualification has an initial6–8h ETA. The comparison, initial error audit and gallery are now complete.
+No GPU is needed for steps 1–3. Random-start training/decoding is inactive. The comparison, initial error audit, gallery and full raw crop comparison are complete; export/runtime qualification remains open.
