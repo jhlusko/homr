@@ -2,6 +2,12 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — timing qualification complete; predicted advance remains off
+
+Five-arm reference qualification completes in 22.2 minutes on one CPU thread, with exact archived controls and unchanged failure coverage. Matched old/corrected advance onsets improve OSSQ 412 → 354 and Lieder 5,248 → 2,169, with zero worse exact-count measures. Overall event edits change 8,330 → 8,370 and 14,051 → 13,578. Four Lieder inventories regress: three expose existing duplet-label rounding, one collapses co-onset duplicate rests. OSSQ grace notes can now collide with a voltaStart marker and disappear in already lossy measures. These are explicit blockers to a clean qualification.
+
+Cached accepted/candidate Lorelei advance A/B also completes: accepted eligible onsets 0 → 1 moved event; candidate 0 → 0, event/pitch/rhythm/accidental edits unchanged. Keep predicted advance disabled. See `TIMING_FIX_QUALIFICATION_2026-10-03.md` for counts, located cases, local paths and next steps. All jobs finished, no remaining ETA. Next: protect grace notes in ending-marker groups, test/requalify real sources, resolve rest/voice preservation and future-build tuplet representation before publishing new labels or training. Text-fusion/C1 and new full-page references remain open.
+
 ### 2026-10-03 — timing corrections under qualification
 
 Local fixes preserve the parser cursor for grace notes and include every printed note/rest duration when selecting XML divisions, while keeping meter inference based on consumed group time. Seventy focused tests pass, including a mixed-duration triplet regression and grace sequence/chord cursor coverage. No published corpus or model pins changed.

@@ -1,5 +1,7 @@
 # Reference-derived rhythmic advance: OSSQ/Lieder, 2026-10-03
 
+Completed correction qualification and cached predicted-advance diagnostic: see `TIMING_FIX_QUALIFICATION_2026-10-03.md`. The initial reference improvements below are retained unchanged; the follow-up finds preservation blockers and keeps predicted advance disabled.
+
 Reference-derived advance recovers substantial Lieder timing lost by legacy grouping. This tests canonical MusicXML → current parser labels → XML, **not model predictions or recognition accuracy**. Parser-derived sidecars contain errors themselves.
 
 | Same inventory-preserved staff measures | OSSQ | Lieder |
