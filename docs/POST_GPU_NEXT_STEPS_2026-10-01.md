@@ -2,6 +2,12 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — reference audit and paired original-page diagnostic complete
+
+See `FULL_PAGE_DIAGNOSTIC_2026-10-03.md` for the current result and local reproduction paths. The reference audit finds no verified untouched locally scoreable pages: four certified Lieder pages are from Lorelei, explicitly previously bar-count evaluated; OSSQ scan alignment is missing. A deterministically selected Lorelei page was scored with matched accepted/candidate float32 exports. Candidate pitch edit error improves 1.955% → 1.397%, while rhythm/event edits worsen 3.599% → 4.370%. Accidental projection differences are deletions, not substitutions. This one-page diagnostic does not apply the crop-token Lieder regression gate or justify promotion.
+
+Both stacks complete in about 118 CPU seconds on one thread. All tmux jobs are complete. Next local task: cached-symbol/XML-only ablations of shared 12/8 whole-bar-rest and fractional-duration errors, retaining original results. Then certify genuinely new full-page references and OSSQ scan alignment. Detector-fusion calibration/C1 lyrics remain parallel release work; no new training or production change.
+
 ### 2026-10-03 — integrated runtime correction qualified locally
 
 New decoder exports explicitly support empty continuation context and carry `homr.decoder.empty_continuation_context=1`. The runtime selects that behavior for greedy, margin and prefix decoding; existing unmarked graphs retain the legacy path. Actual runtime qualification, without the diagnostic monkeypatch, passes all 22 strict crop parity checks and all 12 head projection checks. Margin/prefix/fork checks pass with a constant 1,280-token cross-attention cache across 616 steps. Eight focused unit tests pass.
