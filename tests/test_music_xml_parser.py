@@ -5,17 +5,27 @@ import unittest
 from typing import Any
 
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
+from training.omr_datasets.music_xml_parser import TokensMeasure
+from homr.transformer.vocabulary import EncodedSymbol
 from training.transformer.training_vocabulary import (
     token_lines_to_str,
 )
 
 
 class TestMusicXmlParser(unittest.TestCase):
-    """
-    MusicXML testing is mostly covered by training/validate_music_xml_conversion.py
-    This script requires that the data sets are downloaded and converted and uses
-    the data sets to check that back and forth conversion works.
-    """
+    def test_grace_sequence_and_chord_leave_cursor_unchanged(self) -> None:
+        measure = TokensMeasure()
+        measure.current_position = 12
+        for chord in (False, True, False):
+            measure.append_note(0, chord, 1, False,
+                                EncodedSymbol('note_16G', 'C4', '_', '_', '_'))
+            self.assertEqual(measure.current_position, 12)
+            self.assertEqual(measure.symbols[-1].position, 12)
+        measure.append_note(0, False, 4, False,
+                            EncodedSymbol('note_4', 'D4', '_', '_', '_'))
+        self.assertEqual(measure.current_position, 16)
+
+    # Corpus roundtrip coverage also lives in training/validate_music_xml_conversion.py.
 
     def test_parse_xml_with_backup(self) -> None:
         self.maxDiff = None

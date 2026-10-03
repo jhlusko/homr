@@ -17,6 +17,22 @@ def notation(advance):
 
 
 class TestReferenceAdvanceAblation(unittest.TestCase):
+    def test_advance_preserves_printed_triplet_duration(self):
+        voice = [EncodedSymbol('timeSignatureBeats_4'), EncodedSymbol('timeSignature/4'),
+                 EncodedSymbol('note_12', 'C4', '_', '_', '_', 'upper'),
+                 EncodedSymbol('chord'),
+                 EncodedSymbol('note_4', 'E4', '_', '_', '_', 'upper',
+                               notation=notation(AdvanceClass.EIGHTH)),
+                 EncodedSymbol('note_8', 'G4', '_', '_', '_', 'upper'),
+                 EncodedSymbol('barline')]
+        with patch.dict(os.environ):
+            baseline, _, _ = export_with_counts([voice], False)
+            advanced, _, _ = export_with_counts([voice], True)
+        a, b = staff_events(baseline)[0], staff_events(advanced)[0]
+        self.assertEqual([e['duration'] for e in a], [e['duration'] for e in b])
+        self.assertEqual(b[0]['duration'], '1/3')
+        self.assertEqual(b[-1]['onset'], '1/2')
+
     def test_common_onset_gain_cannot_hide_new_inventory_loss(self):
         result, examples = paired_timing([[event()]], [[event(onset='1')]], [[event(duration='1/2')]])
         self.assertEqual(result['advance_lost_inventory_staff_measures'], 1)

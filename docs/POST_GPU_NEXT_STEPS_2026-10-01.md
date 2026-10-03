@@ -2,6 +2,12 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — timing corrections under qualification
+
+Local fixes preserve the parser cursor for grace notes and include every printed note/rest duration when selecting XML divisions, while keeping meter inference based on consumed group time. Seventy focused tests pass, including a mixed-duration triplet regression and grace sequence/chord cursor coverage. No published corpus or model pins changed.
+
+Five-arm OSSQ/Lieder qualification runs on one CPU thread in tmux `real_timing_fixes_20261003`, with watcher `real_timing_fixes_watch_20261003`. It exactly replays archived disabled/enabled controls, then evaluates precision-only enabled output and both fixes with advance disabled/enabled. Results are local at `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/real-timing-fixes-20261003-v2/`. Read `watch-status.json`, `run.log`, `scores.jsonl`, and eventually `EXIT`/`report.json`. An initial input-format failure is retained in sibling `real-timing-fixes-20261003/`. Qualification is pending; do not infer promotion or regenerate published corpora from these local source changes.
+
 ### 2026-10-03 — reference advance A/B complete
 
 Reference advance reduces moved-onset events 470 → 412 on OSSQ and 15,855 → 5,252 on Lieder, on common inventory-preserved measures. No newly lost correct inventories. There are 39 Lieder exact-count regressions; the count does not measure distance. A grace-cursor probe removes four genuinely worse cases in two scores. A separate synthetic probe exposes zero-duration rounding when advance changes XML divisions. See `REFERENCE_ADVANCE_ABLATION_2026-10-03.md`. All jobs complete on one CPU thread; no remaining ETA.

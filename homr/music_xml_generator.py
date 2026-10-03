@@ -1267,6 +1267,15 @@ def find_division_and_time_signature_nominator(voice: list[SymbolChord]) -> tupl
     duration_in_measure = Fraction(0)
     measure_duration = []
     for chord in voice:
+        # Printed members may have finer durations than the group's consumed
+        # cursor advance. Preserve both grids; meter inference still uses only
+        # the consumed duration below.
+        durations.extend(
+            symbol.get_duration().fraction
+            for symbol in chord.symbols
+            if symbol.rhythm.startswith(("note", "rest"))
+            and symbol.get_duration().fraction > 0
+        )
         if chord.is_barline() and duration_in_measure > Fraction(0):
             measure_duration.append(duration_in_measure)
             duration_in_measure = Fraction(0)

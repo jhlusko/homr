@@ -175,6 +175,7 @@ class TokensMeasure:
         self, staff: int, is_chord: bool, duration: int, invisible: bool, symbol: EncodedSymbol
     ) -> None:
         is_grace = "G" in symbol.rhythm
+        cursor_before_note = self.current_position
         symbol.position = self._get_staff_position(staff)
         if is_chord:
             previous_symbol = self.symbols[-1]
@@ -189,6 +190,11 @@ class TokensMeasure:
                     EncodedSymbolWithPos(self.current_position, symbol, insert_before=is_grace)
                 )
             self.current_position += duration
+        # Grace notes have no elapsed MusicXML duration. In particular, the
+        # missing-duration fallback in _process_note must not shift later notes
+        # or the rhythmic-advance targets derived from their positions.
+        if is_grace:
+            self.current_position = cursor_before_note
 
     def _get_staff_no(self, symbol: EncodedSymbolWithPos) -> int:
         if symbol.symbol.position == "lower":
