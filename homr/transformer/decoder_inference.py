@@ -26,6 +26,12 @@ class ScoreDecoder:
         self.ignore_index = ignore_index
         self.config = config
         self.net = transformer
+        # Only newly exported graphs explicitly guarantee zero-length context.
+        self.empty_continuation_context = (
+            transformer.get_modelmeta().custom_metadata_map.get(
+                "homr.decoder.empty_continuation_context"
+            ) == "1"
+        )
         self.io_binding = self.net.io_binding()
         self.max_seq_len = config.max_seq_len
         self.eos_token = config.eos_token
@@ -70,6 +76,9 @@ class ScoreDecoder:
             (1, config.decoder_dim), dtype=np.float16 if fp16 else np.float32
         )
 
+    def _continuation_context(self, context: NDArray) -> NDArray:
+        return context[:, :0 if self.empty_continuation_context else 1]
+
     def generate(
         self,
         start_tokens: NDArray,
@@ -91,7 +100,7 @@ class ScoreDecoder:
         cache, kv_input_names, kv_output_names = self.init_cache()
         output_names = self.output_names + kv_output_names
         context = kwargs["context"]
-        context_reduced = kwargs["context"][:, :1]
+        context_reduced = self._continuation_context(kwargs["context"])
         staff_context_emb = kwargs.get("staff_context_emb", self._zero_staff_context_emb)
 
         symbols: list[EncodedSymbol] = []
@@ -250,7 +259,7 @@ class ScoreDecoder:
         cache, kv_input_names, kv_output_names = self.init_cache()
         output_names = self.output_names + kv_output_names
         context = kwargs["context"]
-        context_reduced = kwargs["context"][:, :1]
+        context_reduced = self._continuation_context(kwargs["context"])
         staff_context_emb = kwargs.get("staff_context_emb", self._zero_staff_context_emb)
 
         symbols: list[EncodedSymbol] = []
@@ -420,7 +429,7 @@ class ScoreDecoder:
             raise ValueError("prefix must contain at least a BOS token")
 
         context = kwargs["context"]
-        context_reduced = kwargs["context"][:, :1]
+        context_reduced = self._continuation_context(kwargs["context"])
         cache, kv_input_names, kv_output_names = self.init_cache()
         output_names = self.output_names + kv_output_names
 

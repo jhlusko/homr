@@ -246,6 +246,12 @@ def convert_decoder(overwrite: bool, out_dir: str | None = None) -> str | None:
         export_params=True,
         dynamo=False,
     )
+    import onnx
+    from training.onnx.decoder_context import enable_empty_context
+
+    graph = onnx.load(path_out)
+    enable_empty_context(graph, config.decoder_heads, config.decoder_depth)
+    onnx.save(graph, path_out)
     return path_out
 
 

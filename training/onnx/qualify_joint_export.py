@@ -68,7 +68,7 @@ def provenance(source, out):
     if sha(spec['joint']) != spec['sha256']['joint']:
         raise ValueError('Joint checkpoint changed')
     root = Path(__file__).resolve().parents[2]
-    files = ['training/onnx/convert.py', 'training/onnx/qualify_joint_export.py',
+    files = ['training/onnx/convert.py', 'training/onnx/decoder_context.py', 'training/onnx/qualify_joint_export.py',
              'homr/transformer/configs.py', 'homr/transformer/decoder_inference.py',
              'homr/transformer/encoder_inference.py', 'homr/transformer/structured_decode.py',
              'training/architecture/transformer/encoder.py',

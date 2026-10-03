@@ -2,6 +2,14 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — integrated runtime correction qualified locally
+
+New decoder exports explicitly support empty continuation context and carry `homr.decoder.empty_continuation_context=1`. The runtime selects that behavior for greedy, margin and prefix decoding; existing unmarked graphs retain the legacy path. Actual runtime qualification, without the diagnostic monkeypatch, passes all 22 strict crop parity checks and all 12 head projection checks. Margin/prefix/fork checks pass with a constant 1,280-token cross-attention cache across 616 steps. Eight focused unit tests pass.
+
+Repeated full-page functional smoke passes: Lieder 116.2 CPU seconds, OSSQ 108.3, both with nonempty well-formed XML and zero automatic dynamics. One CPU thread; all tmux jobs completed, `FOLLOWUP_EXIT=0`. Evidence and hash-verified tested source are at `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-integrated-runtime-20261003/`. Shipping graphs and provider pins were not changed. Local source snapshots include pre-existing uncommitted pipeline work, so the correction commit is not by itself a clean-checkout reproduction of every tested policy.
+
+Next: audit a full-page ground-truth evaluation manifest against training and model-selection score identities, then compare complete accepted/candidate pipelines. Continue detector-fusion area/recall calibration and C1 lyrics independently. Untouched full-page accuracy, GPU/HTTP timing, final example regeneration and promotion remain open; no additional training is justified by the resolved export mismatch.
+
 ### 2026-10-03 — corrected diagnostic passes strict export parity
 
 The ONNX one-token continuation workaround changes cross-attention cache semantics. Eager decoding sends empty continuation context, but the exported graph rejected its zero-length head-split reshape. An isolated graph correction makes the eight-head dimension explicit and permits literal zero dimensions; a diagnostic runtime supplies empty context. All 22 pilot crops now match eager recognition and complete serialized notation exactly, with all encoder, cached-eager and head-projection checks passing. No tolerance was relaxed.

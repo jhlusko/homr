@@ -49,6 +49,12 @@ def process(page, models, arm, out):
                     threads=1,device='CPU',title_detection=False,
                     text_detectors='not run: current boxes are diagnostics only; this is core/heads/segmentation/export smoke',
                     scope='functional local runtime; not paired ground-truth accuracy or final GPU/provider latency')
+    code_root = Path(__file__).resolve().parents[2]
+    identity['code_sha256'] = {name: sha(code_root / name) for name in (
+        'training/onnx/qualify_joint_pages.py', 'homr/main.py',
+        'homr/transformer/configs.py', 'homr/transformer/decoder_inference.py',
+        'homr/transformer/staff2score.py', 'homr/transformer/structured_decode.py',
+        'homr/music_xml_generator.py')}
     write(out/'identity.json',identity)
     tick = time.monotonic()
     try:
