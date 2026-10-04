@@ -2,6 +2,14 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-04 — native rest stretch explained; full Lieder crop replay finds a migration gate
+
+All 29 duration conflicts are rests whose raw XML duration × explicit native staff stretch equals the written value. Fourteen reach training in three IMSLP624193 crops; the other 15 are outside accepted crop boundaries. Original scans agree with the written rests. Keep elapsed/ratio masks until staff-time/export semantics are qualified, rather than inventing dots/tuplets or excluding entire scores.
+
+Full actual Lieder replay finishes in 358.6 seconds on one CPU thread: 212 scores, 3,867 crops. 3,700 are byte-identical (3,409 train / 291 valid); 167 change serialization (158 / 9). They preserve the note/rest identity inventory, but include 47 group-boundary changes, 95 order changes and 25 other changes with the same note order. Musical equivalence is not established; keep changed crops separate. The identical training subset supplies 128,120 timed crop occurrences and supports every target value in identical validation, with 14 elapsed/ratio masks and no unseen mixed-source classes.
+
+Next: controlled parser/merger/serializer audit of the 167 changes, especially successive grace notes; recover OSSQ crop alignment/support; explicit scoring views; resumable frozen-core head training. [Write-up and evidence](LIEDER_REST_STRETCH_AND_CROP_SUPPORT_2026-10-04.md). Twenty-eight focused tests pass. All audits finished, ETA zero; the original-scan review remains at http://localhost:8765/ in persistent tmux.
+
 ### 2026-10-04 — source-grid timing labels and normalized targets qualified
 
 Timing label v3 retains original divisions and duration ticks, with positive/consistent provenance checks before attachment and backward reading of v2 labels. Missing older grids are not guessed. The full 297-reference control check takes 18.5 minutes on one CPU thread: 75 OSSQ / 212 Lieder exact controls, ten unchanged OSSQ export failures. All 2,372 selected token windows remain byte-identical; 43,807 timing records retain their old semantics. Normalized target construction and decoder shifts pass; 29 selected OSSQ target occurrences normalize, eleven elapsed and eleven ratio targets remain unseen/masked. Two unsupported legacy OSSQ windows remain explicit gaps.

@@ -42,6 +42,8 @@ These windows come from canonical scores and the real label writer/reader. They 
 
 ## Next work
 
+Follow-up: [native rest stretch and actual Lieder crop support](LIEDER_REST_STRETCH_AND_CROP_SUPPORT_2026-10-04.md) explains all 29 source discrepancies and finds 14 in training. Full crop replay separates 3,700 identical and 167 changed labels; those ordering/grouping differences are the next migration gate. Duration/ratio masks remain in place.
+
 Investigate the 29 unresolved Lieder events against source notation/images, establish support on actual training crops, and freeze both raw-source and bounded notation-duration scoring views before fitting. Then wire opt-in, resumable frozen-core training for the four new heads. Measure shared-core gradients before choosing joint loss weights; retain pitch/rhythm/accidental reporting and the agreed Lieder +0.25 percentage-point symbol-error ceiling, with OSSQ reported separately. Predicted advance remains disabled.
 
 Background: [target design](EXACT_TIMING_MODEL_TARGETS_2026-10-04.md) and [previous dataset qualification](EXACT_TIMING_DATASET_INTEGRATION_2026-10-04.md).

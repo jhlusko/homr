@@ -54,6 +54,8 @@ Bundles contain no optimizer state. An old joint optimizer is not implicitly mig
 
 ## Loss and experiment sequence
 
+Later source/crop audit: [Lieder rest stretch and crop support](LIEDER_REST_STRETCH_AND_CROP_SUPPORT_2026-10-04.md) attributes all 29 conflicts to native staff stretch/export arithmetic, keeps the 14 training occurrences masked, and reports actual class support. The 167 non-identical crop replays require ordering/grouping qualification before migration. OSSQ crop support remains to be measured.
+
 The loss API requires four explicit finite nonnegative weights. It does not append these heads to the old recognition + notation/12 objective or silently divide by a new head count. Tests use unit weights to verify mechanics; these are not a selected training recipe.
 
 1. Source divisions and selected canonical-window serialization are qualified by [v3 follow-up](EXACT_TIMING_SOURCE_GRID_2026-10-04.md). Remaining: derive actual training-crop support against the frozen train-only manifest, investigate the 29 unresolved Lieder events, and track unsupported canonical crop windows separately. Before fitting, freeze two scoring views: original source ticks and notation-derived durations for the bounded quantization cases. Apply the same policy to accepted and candidate outputs; no blanket onset tolerance or post-hoc gate change.
