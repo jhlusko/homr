@@ -6,6 +6,39 @@ from training.omr_datasets.staff_merging import create_chord_over_two_staffs
 
 
 class TestStaffMerging(unittest.TestCase):
+    def test_ending_marker_cannot_take_the_note_advance_target(self) -> None:
+        from homr.transformer.structured_notation import NoteNotation, StemDirection
+        note = EncodedSymbol(
+            'note_4', 'C4', notation=NoteNotation((), StemDirection.NOT_APPLICABLE, ())
+        )
+        marker = EncodedSymbol('voltaStop')
+        result = create_chord_over_two_staffs([note, marker], AdvanceClass.QUARTER)
+        self.assertEqual([s.rhythm for s in result], ['voltaStop', 'note_4'])
+        self.assertEqual(note.notation.advance, AdvanceClass.QUARTER)
+
+    def test_ending_markers_preserve_grace_notes_through_parser_and_export(self) -> None:
+        from homr.music_xml_generator import generate_xml, XmlGeneratorArguments
+        from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
+
+        for ending_type in ("start", "stop", "discontinue"):
+            with self.subTest(ending_type=ending_type):
+                xml = f'''<score-partwise><part id="P1"><measure number="1">
+                <attributes><divisions>4</divisions><time><beats>4</beats>
+                <beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+                <barline location="left"><ending number="1" type="{ending_type}"/></barline>
+                <note><grace/><pitch><step>C</step><octave>5</octave></pitch><type>16th</type></note>
+                <note><grace/><pitch><step>B</step><octave>4</octave></pitch><type>16th</type></note>
+                <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration>
+                <type>quarter</type></note></measure></part></score-partwise>'''
+                parts = music_xml_string_to_tokens(xml)
+                voices = [[s for m in part for s in m] for part in parts]
+                rendered = generate_xml(XmlGeneratorArguments(), voices, '')
+                notes = rendered.findall('.//note')
+                self.assertEqual(len(notes), 3)
+                self.assertEqual(sum(n.find('grace') is not None for n in notes), 2)
+                self.assertEqual(rendered.find('.//ending').get('type'), ending_type)
+                self.assertEqual(notes[-1].findtext('duration'), '1')
+
     def test_chord_merging(self) -> None:
 
         result = create_chord_over_two_staffs(

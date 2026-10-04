@@ -1,5 +1,7 @@
 # Timing fixes: OSSQ/Lieder qualification, 2026-10-03
 
+Follow-up: `GRACE_ENDING_FIX_2026-10-03.md` qualifies standalone ending-marker separation and restores nineteen OSSQ grace notes without regressions versus the corrected-label controls. The earlier results below remain intact. Duplicate-rest and duplet-representation blockers remain unresolved.
+
 The five-arm reference qualification completes with exact archived control replay. Grace cursor correction substantially improves Lieder timing and ordered event edits, but **the fixes do not yet pass a clean inventory-preservation gate**. Keep predicted advance disabled: the cached accepted/candidate page diagnostic finds no eligible timing gain and one accepted-stack onset regression.
 
 The local corrections are committed as `7ef93bc`: grace notes preserve the parser cursor; XML division selection preserves every printed note/rest duration as well as cursor advances. Meter inference remains based on consumed group time. Seventy focused tests pass. Published corpora, checkpoint identities, model/provider pins and production were not changed.

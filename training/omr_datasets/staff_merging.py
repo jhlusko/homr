@@ -199,6 +199,7 @@ def create_chord_over_two_staffs(
     key = []
     time = []
     clef = []
+    endings = []
     notes_or_rests = []
     for symbol in symbols:
         rhythm = symbol.rhythm
@@ -213,6 +214,11 @@ def create_chord_over_two_staffs(
                 time.append(symbol)
         elif rhythm.startswith("clef"):
             clef.append(symbol)
+        elif rhythm in ("voltaStart", "voltaStop", "voltaDiscontinue"):
+            # Ending markers share an onset with grace notes but cannot be chord
+            # members: the exporter handles a marker group without rendering
+            # any pitched members. Keep each marker as a standalone symbol.
+            endings.append(symbol)
         else:
             notes_or_rests.append(symbol)
     result = []
@@ -224,6 +230,7 @@ def create_chord_over_two_staffs(
         result.append(symbol)
     result.extend(key)
     result.extend(time)
+    result.extend(endings)
 
     # The advance target belongs to this simultaneity as a whole, not to any one voice
     # within it, and is stamped on the LAST member - matching where the renderer already

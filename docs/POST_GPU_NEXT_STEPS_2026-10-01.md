@@ -2,6 +2,12 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — grace/ending-marker preservation correction qualified
+
+The label merger emits ending markers separately from note chords. Eighty-two focused tests pass, including all three ending types and advance-target ownership. The full 297-reference OSSQ/Lieder comparison completes in 17.6 minutes on one CPU thread with exact prior controls and unchanged failure coverage. Nineteen grace notes are restored across three OSSQ scores, aggregate event edits improve 8,370 → 8,351, and three canonical inventories recover. Lieder is unchanged. No new inventory loss, common-onset regression or per-score event/pitch/rhythm/accidental edit regression. See `GRACE_ENDING_FIX_2026-10-03.md` for local results. All jobs complete, no remaining ETA.
+
+Next: preserve simultaneous duplicate rests with explicit voice/backup semantics and qualify that correction; resolve exact future-build tuplet/ratio representation before publishing new corpus versions. This narrow preservation fix does not qualify the combined label changes or predicted advance, which remains disabled. Published corpora/model/provider pins are unchanged; text-fusion/C1 and new full-page references remain independent work.
+
 ### 2026-10-03 — timing qualification complete; predicted advance remains off
 
 Five-arm reference qualification completes in 22.2 minutes on one CPU thread, with exact archived controls and unchanged failure coverage. Matched old/corrected advance onsets improve OSSQ 412 → 354 and Lieder 5,248 → 2,169, with zero worse exact-count measures. Overall event edits change 8,330 → 8,370 and 14,051 → 13,578. Four Lieder inventories regress: three expose existing duplet-label rounding, one collapses co-onset duplicate rests. OSSQ grace notes can now collide with a voltaStart marker and disappear in already lossy measures. These are explicit blockers to a clean qualification.
