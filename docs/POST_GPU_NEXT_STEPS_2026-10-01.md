@@ -2,6 +2,15 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-04 — exact timing representation audit and isolated prototype
+
+Indexed canonical OSSQ/Lieder issues re-located with source hashes: OSSQ 2,031 tuplet losses and 356 whole-rest losses; Lieder 46 and 132. Existing tokens match duration for 1,871/42 tuplets and 246/41 full rests, but no tuplet alternative preserves written base, dots and ratio together. All full-rest alternatives are six-quarter dotted-whole aliases that lose full-measure-rest identity. Six located duplet notes corroborate the three remaining inventory regressions. No blanket note_5 or rest_1 rewrite.
+
+An isolated versioned exact-timing sidecar codec preserves rational elapsed duration, written type/dots, full-rest status, time-modification and tuplet elements. Selected-field JSON/reconstruction checks pass all 2,565 located events; six tests pass. It is not consumed by current training/runtime and is not a complete XML exporter or model gate. Full source notes are retained. One CPU thread, persistent tmux/watchers, EXIT=0; runtime 8.7 seconds, all jobs finished.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/EXACT_TIMING_REPRESENTATION_2026-10-04.md`. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/exact-timing-representation-20261004-v3/`. Original token-only analysis and failed whitespace-sensitive v2 probe are retained separately. Next: define and integrate the versioned label contract through parser/merger/crop serialization, retaining tuplet ownership/visibility and checkpoint compatibility; then model-prediction migration, full OSSQ/Lieder qualification and new corpus versions. No GPU needed for the label contract work. Predicted advance remains off; existing corpus/model/provider pins unchanged.
+
+
 ### 2026-10-03 — simultaneous-rest preservation qualified
 
 The exporter preserves co-onset duplicate rests using explicit backups and separate voices. Full 297-reference qualification finishes in 17.8 minutes on one CPU thread; exact prior controls and all ten OSSQ failures replay. Coverage remains 75/85 OSSQ and 212/212 Lieder. Restored rests: OSSQ 3 across 3 scores; Lieder 117 across 29 scores. Event edits improve 8,351 → 8,348 and 13,578 → 13,461; rhythm improves by the same amounts, pitch/accidental unchanged. Correct inventories recover in 3 OSSQ and 108 Lieder measures. No new failures, correct-inventory losses, common-onset or per-score edit regressions.
