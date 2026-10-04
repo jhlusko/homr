@@ -9,6 +9,9 @@ import time
 import xml.etree.ElementTree as ET
 
 from homr.transformer.vocabulary import serialized_chords
+from homr.transformer.vocabulary import EncodedSymbol
+from training.architecture.transformer.exact_timing_targets import HEADS, build_timing_targets
+from training.architecture.transformer.structured_targets import align_to_decoder_output
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar, attach_sidecar
 from training.transformer.training_vocabulary import read_tokens, token_lines_to_str
@@ -19,7 +22,7 @@ from training.onnx.roundtrip_real_timing_labels import measure_timing
 from training.onnx.score_full_page_musicxml import compare, staff_events
 
 
-def check_crops(out, parts):
+def check_crops(out, parts, manifest=None):
     counts, failures = Counter(), []
     for part_no, measures in enumerate(parts, 1):
         starts = {0, max(0, len(measures)-3)}
@@ -51,6 +54,22 @@ def check_crops(out, parts):
                 raise RuntimeError('Crop timing/text roundtrip mismatch: ' + str(path))
             counts['verified_crops'] += 1
             counts['timed_symbols'] += sum(x is not None for x in actual)
+            if manifest is not None:
+                sequence = [EncodedSymbol('BOS'), *restored, EncodedSymbol('EOS')]
+                targets, diagnostics = build_timing_targets([sequence], manifest['classes'],
+                    sequence_length=len(sequence)+1, duration_policy='tick-quantized')
+                shifted = align_to_decoder_output(targets)
+                for head in HEADS:
+                    if (targets[head][0, 0].item() != -100 or
+                            not (targets[head][0, -2:] == -100).all()):
+                        raise RuntimeError('Control/padding timing target was supervised')
+                    if not (shifted[head] == targets[head][:, 1:]).all():
+                        raise RuntimeError('Decoder target shift mismatch')
+                    counts[head + '.supervised'] += (shifted[head] != -100).sum().item()
+                    counts[head + '.unseen'] += diagnostics['unseen'][head]
+                for reason, count in diagnostics['masked_reasons'].items():
+                    counts['target_reason.' + reason] += count
+                counts['verified_target_windows'] += 1
     return dict(counts), failures
 
 
@@ -59,7 +78,11 @@ def main():
     parser.add_argument('--baseline', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--scores', nargs='*')
+    parser.add_argument('--target-manifest', type=Path)
     args = parser.parse_args()
+    manifest = json.loads(args.target_manifest.read_text()) if args.target_manifest else None
+    if manifest is not None and manifest.get('durationPolicy') != 'tick-quantized':
+        raise ValueError('Requires the frozen tick-quantized target manifest')
     args.out.mkdir(parents=True, exist_ok=True)
     if (args.out / 'scores.jsonl').exists():
         raise ValueError('Refusing to overwrite qualification')
@@ -114,7 +137,7 @@ def main():
                             or metrics != previous['metrics'] or timing != previous['timing']):
                         raise RuntimeError('Legacy control mismatch: ' + row['score'] + ' ' + arm)
                     record['arms'][arm] = dict(status='ok', xml_sha256=xml_sha, metrics=metrics, timing=timing)
-                crops, gaps = check_crops(args.out / 'crops' / row['score'], parts)
+                crops, gaps = check_crops(args.out / 'crops' / row['score'], parts, manifest)
                 unchanged_failure = any(a['status'] == 'failed' for a in record['arms'].values())
                 record.update(status='failed' if unchanged_failure else 'ok', crops=crops, crop_gaps=gaps)
                 totals[row['source']].update(crops)
@@ -127,12 +150,16 @@ def main():
     files = list(old['code_sha256']) + ['homr/transformer/vocabulary.py',
         'training/omr_datasets/exact_timing_labels.py', 'training/omr_datasets/exact_timing_sidecar.py',
         'training/omr_datasets/notation_sidecar.py', 'training/transformer/training_vocabulary.py',
+        'training/architecture/transformer/exact_timing_targets.py',
+        'training/architecture/transformer/structured_targets.py',
         str(Path(__file__).resolve().relative_to(root_path))]
     write(args.out / 'report.json', dict(sources=totals, seconds=time.monotonic()-tick,
         records=len(rows), threads=1, bounded=bool(args.scores),
         code_sha256={f: sha(root_path/f) for f in files},
         baseline_report_sha256=sha(args.baseline/'report.json'),
         baseline_records_sha256=sha(args.baseline/'scores.jsonl'),
+        target_manifest=str(args.target_manifest) if args.target_manifest else None,
+        target_manifest_sha256=sha(args.target_manifest) if args.target_manifest else None,
         limitation='Additive metadata; exact old XML/metrics/timing, selected real measure windows '
             'through shared label writer/reader, no image rendering or full crop rebuild. '
             'Unsupported legacy crop tokens reported as gaps. No model prediction/loss changes.'))

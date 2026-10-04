@@ -8,7 +8,25 @@ notations remain separate so a dotted alias cannot replace a duplet silently.
 from fractions import Fraction
 import xml.etree.ElementTree as ET
 
-SCHEMA = 'homr.exact-timing-label.v2'
+SCHEMA = 'homr.exact-timing-label.v3'
+READABLE_SCHEMAS = (SCHEMA, 'homr.exact-timing-label.v2')
+
+
+def validate_source_grid(payload):
+    """Validate provenance without guessing a grid for older labels."""
+    if payload.get('schema') not in READABLE_SCHEMAS:
+        raise ValueError('Unknown timing schema')
+    if payload['schema'] == SCHEMA:
+        divisions = Fraction(payload['source_divisions'])
+        ticks = Fraction(payload['source_duration_ticks'])
+        if divisions <= 0 or ticks <= 0 or ticks / divisions != Fraction(payload['elapsed_quarters']):
+            raise ValueError('Inconsistent source tick grid')
+
+
+def semantic_timing(payload):
+    """Fields preserved by XML reconstruction, independent of its tick grid."""
+    return {key: value for key, value in payload.items()
+            if key not in ('schema', 'source_divisions', 'source_duration_ticks')}
 
 
 def _canonical_xml(element):
@@ -26,6 +44,7 @@ def extract_exact_timing(note, divisions):
     modification = note.find('time-modification')
     rest = note.find('rest')
     return dict(schema=SCHEMA, elapsed_quarters=str(elapsed),
+        source_divisions=str(divisions), source_duration_ticks=str(elapsed * divisions),
         written_type=note.findtext('type'), dots=len(note.findall('dot')),
         full_measure_rest=rest is not None and rest.get('measure') == 'yes',
         time_modification_xml=_canonical_xml(modification)
@@ -44,8 +63,10 @@ def apply_exact_timing(note, payload, divisions):
     Caller owns note ordering/voices and MusicXML child ordering. This audit
     adapter is not the production score exporter. Refuses lossy tick rounding.
     """
-    if payload['schema'] not in (SCHEMA, 'exact-timing-proposal-v1'):
+    if payload['schema'] not in (*READABLE_SCHEMAS, 'exact-timing-proposal-v1'):
         raise ValueError('Unknown timing schema')
+    if payload['schema'] in READABLE_SCHEMAS:
+        validate_source_grid(payload)
     elapsed = Fraction(payload['elapsed_quarters'])
     divisions = Fraction(divisions)
     ticks = elapsed * divisions
@@ -79,7 +100,7 @@ def apply_exact_timing(note, payload, divisions):
     for notations in note.findall('notations'):
         for tuplet in notations.findall('tuplet'):
             notations.remove(tuplet)
-    if payload['schema'] == SCHEMA:
+    if payload['schema'] in READABLE_SCHEMAS:
         for container in payload['tuplet_containers']:
             while len(note.findall('notations')) <= container['index']:
                 ET.SubElement(note, 'notations')

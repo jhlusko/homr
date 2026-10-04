@@ -2,6 +2,14 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-04 — source-grid timing labels and normalized targets qualified
+
+Timing label v3 retains original divisions and duration ticks, with positive/consistent provenance checks before attachment and backward reading of v2 labels. Missing older grids are not guessed. The full 297-reference control check takes 18.5 minutes on one CPU thread: 75 OSSQ / 212 Lieder exact controls, ten unchanged OSSQ export failures. All 2,372 selected token windows remain byte-identical; 43,807 timing records retain their old semantics. Normalized target construction and decoder shifts pass; 29 selected OSSQ target occurrences normalize, eleven elapsed and eleven ratio targets remain unseen/masked. Two unsupported legacy OSSQ windows remain explicit gaps.
+
+Next: audit the 29 unresolved Lieder source events, establish actual training-crop support and freeze raw-source/bounded-duration scoring views, then wire opt-in resumable frozen-core head training. This is dataset/target qualification, not a trained-model or recognition improvement. See [source-grid evidence](EXACT_TIMING_SOURCE_GRID_2026-10-04.md). Published pins and runtime remain unchanged; predicted advance stays off.
+
+All 2,565 located issue events also pass selected-field reconstruction at a different exact tick grid; 94 related tests pass. Final comparisons complete successfully. A completion-receipt launcher bug is repaired with originals retained; scoring itself completed normally. All jobs finished, remaining ETA zero.
+
 ### 2026-10-04 — exact timing targets, source quantization and additive checkpoint prototype
 
 Implemented four experimental output-only heads: elapsed note/rest duration, written type/dots, cumulative sounding ratio and full-measure-rest flag. These are independent of advance-to-next-onset and printed rareNum labels. Targets mask BOS/EOS/padding/grace/missing/unseen values; rest identity is supervised only on rests. Existing forward/recognition/notation objectives and runtime remain unchanged.

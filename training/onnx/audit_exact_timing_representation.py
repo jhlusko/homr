@@ -14,7 +14,7 @@ import time
 import xml.etree.ElementTree as ET
 
 from homr.transformer.vocabulary import build_rhythm, kern_to_symbol_duration
-from training.omr_datasets.exact_timing_labels import extract_exact_timing, apply_exact_timing
+from training.omr_datasets.exact_timing_labels import extract_exact_timing, apply_exact_timing, semantic_timing
 from training.onnx.audit_full_page_references import read_mxl
 from training.onnx.qualify_joint_export import sha, write
 
@@ -83,7 +83,7 @@ def main():
                 payload = extract_exact_timing(note, divisions)
                 restored = copy.deepcopy(note)
                 apply_exact_timing(restored, json.loads(json.dumps(payload)), divisions * 2)
-                if extract_exact_timing(restored, divisions * 2) != payload:
+                if semantic_timing(extract_exact_timing(restored, divisions * 2)) != semantic_timing(payload):
                     raise ValueError('Exact-timing sidecar roundtrip mismatch')
                 # A ratio-equivalent duration alone does not preserve a duplet
                 # glyph, bracket, normal-type, nesting or a full-measure rest.

@@ -1,10 +1,12 @@
 # Exact timing dataset integration — 2026-10-04
 
+Later contract follow-up: [source-grid v3](EXACT_TIMING_SOURCE_GRID_2026-10-04.md) adds original divisions and duration ticks, retaining v2 reader compatibility. The results below describe the earlier v2 qualification.
+
 Follow-up: `EXACT_TIMING_MODEL_TARGETS_2026-10-04.md` defines additive prediction targets, train-only inventories and a separate checkpoint prototype. It identifies bounded source tick quantization and the next contract requirement: source divisions, which the v2 metadata below does not retain. The normalized target policy refuses to train from sidecars missing that field.
 
 Exact reference timing now survives the current HOMR MusicXML parser, staff merger, crop selection, token serialization and sidecar attachment. The token vocabulary, token durations and legacy model targets are unchanged. Model losses and runtime export do not consume these labels yet.
 
-## Versioned contract
+## Versioned contract at the v2 qualification
 
 Timed non-grace pitched notes and rests carry `EncodedSymbol.exact_timing`, outside equality, hashing, string serialization and decoded duration. Grace/control symbols remain unannotated. The metadata records exact rational elapsed quarters, written type/dots, full-measure-rest identity, time-modification XML, and nested tuplet elements with their source notation-container index and attributes (including visibility). The label schema is `homr.exact-timing-label.v2`; the isolated audit adapter still understands the preceding prototype-v1 payload.
 

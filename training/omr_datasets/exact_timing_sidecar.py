@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from homr.transformer.vocabulary import serialized_chords
-from training.omr_datasets.exact_timing_labels import SCHEMA
+from training.omr_datasets.exact_timing_labels import validate_source_grid
 
 FILE_SCHEMA = 'homr.exact-timing-sidecar.v1'
 
@@ -53,8 +53,11 @@ def attach_exact_timing_sidecar(token_path, symbols):
             _identity(s) != r['identity'] for s, r in zip(candidates, records)):
         raise ExactTimingMismatch('Exact-timing symbol identity/order mismatch')
     for row in records:
-        if row['timing'] is not None and row['timing'].get('schema') != SCHEMA:
-            raise ExactTimingMismatch('Unsupported exact-timing label schema')
+        if row['timing'] is not None:
+            try:
+                validate_source_grid(row['timing'])
+            except (ValueError, KeyError, TypeError, ZeroDivisionError) as error:
+                raise ExactTimingMismatch('Invalid exact-timing label: ' + str(error)) from error
     # Mutate only after every pairing has been validated.
     for symbol, record in zip(candidates, records, strict=True):
         symbol.exact_timing = record['timing']

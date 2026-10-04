@@ -3,7 +3,7 @@ import unittest
 import json
 import xml.etree.ElementTree as ET
 
-from training.omr_datasets.exact_timing_labels import extract_exact_timing, apply_exact_timing
+from training.omr_datasets.exact_timing_labels import extract_exact_timing, apply_exact_timing, semantic_timing
 
 from training.onnx.audit_exact_timing_representation import duration_candidates
 
@@ -34,7 +34,10 @@ class TestExactTimingRepresentation(unittest.TestCase):
         payload = json.loads(json.dumps(extract_exact_timing(note, 4)))
         apply_exact_timing(note, payload, 12)
         self.assertEqual(note.findtext('duration'), '9')
-        self.assertEqual(extract_exact_timing(note, 12), payload)
+        self.assertEqual(semantic_timing(extract_exact_timing(note, 12)), semantic_timing(payload))
+        self.assertEqual(payload['source_divisions'], '4')
+        self.assertEqual(payload['source_duration_ticks'], '3')
+        self.assertEqual(extract_exact_timing(note, 12)['source_duration_ticks'], '9')
         self.assertEqual(note.findtext('type'), 'eighth')
         self.assertIsNotNone(note.find('./notations/slur'))
         self.assertEqual(len(note.findall('./notations/tuplet')), 2)

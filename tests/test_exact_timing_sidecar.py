@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -8,6 +9,8 @@ from training.omr_datasets.exact_timing_sidecar import ExactTimingMismatch, timi
 from training.omr_datasets.music_xml_parser import music_xml_string_to_tokens
 from training.omr_datasets.notation_sidecar import write_sidecar, attach_sidecar
 from training.transformer.training_vocabulary import read_tokens, token_lines_to_str
+from training.architecture.transformer.exact_timing_targets import build_timing_targets
+from homr.transformer.vocabulary import EncodedSymbol
 
 
 def fixture():
@@ -30,6 +33,61 @@ def symbols():
 
 
 class TestExactTimingSidecar(unittest.TestCase):
+    def test_tick_grid_survives_serialization_and_normalizes_explicit_nested_ratio(self):
+        note = ET.fromstring('''<note><pitch><step>E</step><octave>5</octave></pitch>
+            <duration>53</duration><type>16th</type><time-modification>
+            <actual-notes>9</actual-notes><normal-notes>4</normal-notes>
+            </time-modification></note>''')
+        symbol = EncodedSymbol('note_16', 'E5')
+        symbol.exact_timing = extract_exact_timing(note, 480)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'crop.tokens'
+            path.write_text(token_lines_to_str([symbol]))
+            write_sidecar(path, [symbol])
+            restored = read_tokens(str(path))
+            attach_sidecar(path, restored)
+            classes = {'timing.elapsed': ['1/9'], 'timing.written': ['16th:0'],
+                       'timing.ratio': ['9:4'], 'timing.full_rest': ['no', 'yes']}
+            targets, diagnostics = build_timing_targets([restored], classes, duration_policy='tick-quantized')
+            self.assertEqual(targets['timing.elapsed'].item(), 0)
+            self.assertEqual(targets['timing.ratio'].item(), 0)
+            self.assertEqual(diagnostics['masked_reasons'], {'explicit_ratio_tick_quantization_normalized': 1})
+            self.assertEqual(restored[0].exact_timing['elapsed_quarters'], '53/480')
+            self.assertEqual(restored[0].exact_timing['source_duration_ticks'], '53')
+
+    def test_v2_labels_remain_readable_without_guessed_source_grid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'crop.tokens'
+            path.write_text(token_lines_to_str(symbols()))
+            write_sidecar(path, symbols())
+            payload = json.loads(timing_sidecar_path(path).read_text())
+            for record in payload['symbols']:
+                if record['timing'] is not None:
+                    record['timing']['schema'] = 'homr.exact-timing-label.v2'
+                    record['timing'].pop('source_divisions')
+                    record['timing'].pop('source_duration_ticks')
+            timing_sidecar_path(path).write_text(json.dumps(payload))
+            restored = read_tokens(str(path))
+            attach_sidecar(path, restored)
+            duplet = next(s for s in restored if s.pitch == 'E5')
+            self.assertNotIn('source_divisions', duplet.exact_timing)
+            shell = ET.fromstring('<note><pitch><step>E</step><octave>5</octave></pitch></note>')
+            apply_exact_timing(shell, duplet.exact_timing, 4)
+            self.assertEqual([n.get('print-object') for n in shell.findall('notations')], ['no', 'yes'])
+
+    def test_inconsistent_source_grid_refused_before_any_attachment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'crop.tokens'
+            path.write_text(token_lines_to_str(symbols()))
+            write_sidecar(path, symbols())
+            payload = json.loads(timing_sidecar_path(path).read_text())
+            payload['symbols'][-1]['timing']['source_duration_ticks'] = '999'
+            timing_sidecar_path(path).write_text(json.dumps(payload))
+            restored = read_tokens(str(path))
+            with self.assertRaisesRegex(ExactTimingMismatch, 'source tick grid'):
+                attach_sidecar(path, restored)
+            self.assertTrue(all(s.exact_timing is None for s in restored))
+
     def test_crop_roundtrip_preserves_rest_duplet_and_grace_alignment(self):
         parsed = symbols()
         # Crop selection does not reconstruct symbols or detach their metadata.

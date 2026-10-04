@@ -77,8 +77,10 @@ class TestTimingTargets(unittest.TestCase):
         self.assertEqual(flags, ['ratio_source_duration_disagreement'])
 
     def test_quantized_contract_refuses_sidecars_without_source_tick_resolution(self):
+        symbol = duplet_symbol()
+        symbol.exact_timing.pop('source_divisions')
         with self.assertRaisesRegex(ValueError, 'source-divisions'):
-            build_timing_targets([[duplet_symbol()]], manifest()['classes'], duration_policy='tick-quantized')
+            build_timing_targets([[symbol]], manifest()['classes'], duration_policy='tick-quantized')
 
 
 class TestTimingMigration(unittest.TestCase):
