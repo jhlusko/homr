@@ -2,6 +2,19 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-04 — exact timing dataset integration qualified with explicit gaps
+
+Current HOMR MusicXML parsing attaches exact reference timing outside legacy token identity/duration. Staff merging, crop selection and the shared notation writer/reader preserve it in token-hash-guarded `.timing.json` files, using serialized symbol order. Label schema v2 retains tuplet notation-container ownership and visibility. Existing vocabulary, legacy token/notation targets, runtime export and checkpoint shapes are unchanged; training losses do not consume the new metadata.
+
+Full 297-reference check completes in 733.0 seconds on one CPU thread, persistent tmux/watchers EXIT=0. Both prior XML/metrics/timing controls replay exactly for 75 OSSQ and 212 Lieder scores; all ten OSSQ detachedLegato export failures reproduce unchanged. Selected windows verify OSSQ 1,235 / 16,381 timed symbols, Lieder 1,137 / 27,426. Two OSSQ windows are explicit unsupported legacy-token gaps: sq12772795 merged part 1 index 214 (note_72), sq8928855 part 1 index 20 (note_19). Lieder has no selected-window gap. This qualifies additive metadata for tested serializable windows, not a full image/corpus rebuild or model improvement.
+
+The updated v2 contract additionally reconstructs all 2,565 located canonical problem events, including tuplet container ownership/visibility, in 9.1 seconds. Forty-eight focused tests and three subtests pass. Three-score Lieder preflight verifies 18 windows / 499 timed symbols. All jobs complete; remaining ETA zero.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/EXACT_TIMING_DATASET_INTEGRATION_2026-10-04.md`. Local artifacts under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/exact-timing-pipeline-qualification-20261004-v2/`, sibling `exact-timing-pipeline-preflight-20261004/` and `exact-timing-representation-20261004-v4/`, with tested snapshots, source/reference/control hashes, label windows, gaps and completion receipts. Initial failed checker run is retained separately.
+
+Next: derive model targets for exact elapsed duration and written notation, including rare/unrepresentable legacy rhythms, and define explicit checkpoint/runtime migration. Reference sidecars must not be injected into production decoding. Then train/qualify on OSSQ/Lieder and publish new corpus versions. Public OSSQ/Lieder vendored snapshots remain unchanged; future builds must explicitly update that pin and retain timing files in packaging. No published corpus/model/provider pin or deployment changes. Predicted advance remains disabled. Target-design work can proceed locally without GPU.
+
+
 ### 2026-10-04 — exact timing representation audit and isolated prototype
 
 Indexed canonical OSSQ/Lieder issues re-located with source hashes: OSSQ 2,031 tuplet losses and 356 whole-rest losses; Lieder 46 and 132. Existing tokens match duration for 1,871/42 tuplets and 246/41 full rests, but no tuplet alternative preserves written base, dots and ratio together. All full-rest alternatives are six-quarter dotted-whole aliases that lose full-measure-rest identity. Six located duplet notes corroborate the three remaining inventory regressions. No blanket note_5 or rest_1 rewrite.

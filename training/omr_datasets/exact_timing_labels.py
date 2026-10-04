@@ -1,14 +1,14 @@
 """Experimental versioned timing sidecars for future corpus builds.
 
-Independent of legacy rhythm tokens and checkpoint vocabulary. No current
-builder, trainer or runtime consumes this format. Duration is exact; printed
+Independent of legacy rhythm tokens and checkpoint vocabulary. Dataset parsing
+and sidecar writing carry this format; model losses and runtime ignore it. Printed
 type/dots, full-measure-rest status, time modification and nested tuplet
 notations remain separate so a dotted alias cannot replace a duplet silently.
 """
 from fractions import Fraction
 import xml.etree.ElementTree as ET
 
-SCHEMA = 'exact-timing-proposal-v1'
+SCHEMA = 'homr.exact-timing-label.v2'
 
 
 def _canonical_xml(element):
@@ -31,7 +31,11 @@ def extract_exact_timing(note, divisions):
         time_modification_xml=_canonical_xml(modification)
             if modification is not None else None,
         tuplet_notations_xml=[_canonical_xml(t)
-            for t in note.findall('./notations/tuplet')])
+            for t in note.findall('./notations/tuplet')],
+        tuplet_containers=[dict(index=index, attributes=dict(container.attrib),
+            tuplets=[_canonical_xml(t) for t in container.findall('tuplet')])
+            for index, container in enumerate(note.findall('notations'))
+            if container.findall('tuplet')])
 
 
 def apply_exact_timing(note, payload, divisions):
@@ -40,7 +44,7 @@ def apply_exact_timing(note, payload, divisions):
     Caller owns note ordering/voices and MusicXML child ordering. This audit
     adapter is not the production score exporter. Refuses lossy tick rounding.
     """
-    if payload['schema'] != SCHEMA:
+    if payload['schema'] not in (SCHEMA, 'exact-timing-proposal-v1'):
         raise ValueError('Unknown timing schema')
     elapsed = Fraction(payload['elapsed_quarters'])
     divisions = Fraction(divisions)
@@ -75,7 +79,19 @@ def apply_exact_timing(note, payload, divisions):
     for notations in note.findall('notations'):
         for tuplet in notations.findall('tuplet'):
             notations.remove(tuplet)
-    if payload['tuplet_notations_xml']:
+    if payload['schema'] == SCHEMA:
+        for container in payload['tuplet_containers']:
+            while len(note.findall('notations')) <= container['index']:
+                ET.SubElement(note, 'notations')
+            notations = note.findall('notations')[container['index']]
+            notations.attrib.clear()
+            notations.attrib.update(container['attributes'])
+            for text in container['tuplets']:
+                tuplet = ET.fromstring(text)
+                if tuplet.tag != 'tuplet':
+                    raise ValueError('Invalid tuplet notation payload')
+                notations.append(tuplet)
+    elif payload['tuplet_notations_xml']:
         notations = note.find('notations')
         if notations is None:
             notations = ET.SubElement(note, 'notations')

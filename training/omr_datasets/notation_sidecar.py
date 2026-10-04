@@ -105,6 +105,9 @@ def write_sidecar(token_path: str | Path, symbols: Sequence[EncodedSymbol]) -> P
     in source order, 80.0% applying one sort, **100% applying both**. Reconstructing the
     order here instead of sharing it is what made a partial fix worse than no fix.
     """
+    from training.omr_datasets.exact_timing_sidecar import write_exact_timing_sidecar
+
+    write_exact_timing_sidecar(token_path, symbols)
     ordered = [symbol for chord in serialized_chords(list(symbols)) for symbol in chord]
     records = [_encode(s.notation) for s in ordered if s.notation is not None]
     if not records:
@@ -129,6 +132,9 @@ def attach_sidecar(token_path: str | Path, symbols: Sequence[EncodedSymbol]) -> 
     """
     path = sidecar_path(token_path)
     if not path.is_file():
+        from training.omr_datasets.exact_timing_sidecar import attach_exact_timing_sidecar
+
+        attach_exact_timing_sidecar(token_path, symbols)
         return 0
 
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -152,6 +158,9 @@ def attach_sidecar(token_path: str | Path, symbols: Sequence[EncodedSymbol]) -> 
             f"{len(candidates)} note-bearing ones - writer and reader disagree"
         )
 
+    from training.omr_datasets.exact_timing_sidecar import attach_exact_timing_sidecar
+
+    attach_exact_timing_sidecar(token_path, symbols)
     for symbol, record in zip(candidates, records, strict=True):
         symbol.notation = _decode(record)
     return declared

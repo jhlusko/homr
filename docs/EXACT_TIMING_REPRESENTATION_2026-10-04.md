@@ -1,5 +1,7 @@
 # Exact timing representation audit — 2026-10-04
 
+Follow-up: `EXACT_TIMING_DATASET_INTEGRATION_2026-10-04.md` records the additive parser/merger/crop/sidecar implementation and its real-source qualification. The isolated prototype findings below remain the audit baseline; the integration uses a new label schema to retain notation-container ownership and visibility.
+
 The remaining tuplet and whole-measure-rest errors require a versioned representation change. Changing `note_5` globally, or substituting dotted notes solely to match elapsed time, would corrupt valid quintuplets or printed duplets. Current runtime, vocabulary, training inputs and published pins remain unchanged.
 
 ## Indexed OSSQ/Lieder findings
@@ -41,4 +43,3 @@ No GPU needed for steps 1–2. Training/model qualification follows only after t
 Local artifacts: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/exact-timing-representation-20261004-v3/`: report, all located events, original XML notes, diagnostic sidecars, reference/code hashes, source snapshots and completion receipts. Sibling initial run contains the token-only analysis; v2 retains a failed whitespace-sensitive prototype check, corrected by canonical serialization in v3. All jobs complete; remaining ETA zero.
 
 Tools: `training/onnx/audit_exact_timing_representation.py`, `training/omr_datasets/exact_timing_labels.py`, `tests/test_exact_timing_representation.py`. See `SIMULTANEOUS_REST_FIX_2026-10-03.md` for the preceding qualified rest-preservation fix.
-

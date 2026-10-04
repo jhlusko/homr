@@ -671,19 +671,27 @@ def _process_note(part: TokensPart, note: ET.Element) -> None:
     # note becomes. The symbol keeps it through sorting, chord grouping and
     # deduplication without it ever affecting identity.
     notation = part.notation.extract(note)
+    exact_timing = None
+    if not is_grace and duration > 0 and part.divisions > 0:
+        from training.omr_datasets.exact_timing_labels import extract_exact_timing
+
+        exact_timing = extract_exact_timing(note, part.divisions)
     if len(rest) > 0:
         if rest[0] is not None and rest[0].get("measure", None):
             rhythm = _measure_rest_rhythm(duration, part.divisions)
+            sym = EncodedSymbol(rhythm, empty, empty, empty, empty, notation=notation)
+            sym.exact_timing = exact_timing
             part.append_rest(
                 staff,
                 is_chord,
                 duration,
                 invisible,
-                EncodedSymbol(rhythm, empty, empty, empty, empty, notation=notation),
+                sym,
             )
         else:
             rhythm = _rhythm_token("rest", base_duration, dots, is_grace)
             sym = EncodedSymbol(rhythm, empty, empty, art, slur, notation=notation)
+            sym.exact_timing = exact_timing
             part.append_rest(staff, is_chord, duration, invisible, sym)
     pitch = _children(note, "pitch")
     if len(pitch) > 0:
@@ -691,6 +699,7 @@ def _process_note(part: TokensPart, note: ET.Element) -> None:
         lift = _lift_from_pitch_or_accidental(pitch[0], note)
         rhythm = _rhythm_token("note", base_duration, dots, is_grace)
         sym = EncodedSymbol(rhythm, pitch_name, lift, art, slur, notation=notation)
+        sym.exact_timing = exact_timing
 
         part.append_note(staff, is_chord, max(duration, 1), invisible, sym)
 

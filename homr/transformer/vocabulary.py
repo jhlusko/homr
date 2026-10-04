@@ -346,6 +346,9 @@ class EncodedSymbol:
         self.structured_choices: tuple[HeadChoice, ...] = ()
 
         self._duration: SymbolDuration | None = None
+        # Future-build reference timing, outside token identity and duration
+        # decoding. Legacy checkpoints and runtime keep using rhythm tokens.
+        self.exact_timing: dict | None = None
 
     def is_control_symbol(self) -> bool:
         return self.rhythm in ("BOS", "EOS", "PAD")
