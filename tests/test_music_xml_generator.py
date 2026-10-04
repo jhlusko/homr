@@ -60,7 +60,59 @@ def _first_measure(xml: ET.Element) -> ET.Element:
     return m
 
 
+def _timed_notes(measure: ET.Element) -> list[tuple[str, Fraction, Fraction]]:
+    division = Fraction(measure.findtext('attributes/divisions'))
+    cursor = previous = Fraction(0)
+    result = []
+    for child in measure:
+        if child.tag == 'backup':
+            cursor -= Fraction(child.findtext('duration')) / division
+        elif child.tag == 'forward':
+            cursor += Fraction(child.findtext('duration')) / division
+        elif child.tag == 'note':
+            duration = Fraction(child.findtext('duration', '0')) / division
+            onset = previous if child.find('chord') is not None else cursor
+            if child.find('chord') is None:
+                previous = onset
+                cursor += duration
+            result.append((_pitch(child), onset, duration))
+    return result
+
+
 class TestMusicXmlGenerator(unittest.TestCase):
+    def test_simultaneous_rests_keep_voices_and_the_following_onset(self) -> None:
+        voice = [EncodedSymbol('rest_4', '_', '_', '_', '_', 'upper'), EncodedSymbol('chord'),
+                 EncodedSymbol('rest_4', '_', '_', '_', '_', 'upper'),
+                 EncodedSymbol('note_4', 'C4', '_', '_', '_', 'upper'), EncodedSymbol('barline')]
+        root = generate_xml(XmlGeneratorArguments(), [voice], '')
+        measure = root.find('part/measure')
+        rests = [n for n in measure.findall('note') if n.find('rest') is not None]
+        self.assertEqual(len(rests), 2)
+        self.assertEqual(len({n.findtext('voice') for n in rests}), 2)
+        self.assertTrue(all(n.find('chord') is None for n in rests))
+        self.assertEqual(_timed_notes(measure),
+                         [('rest', Fraction(0), Fraction(1)),
+                          ('rest', Fraction(0), Fraction(1)),
+                          ('C', Fraction(1), Fraction(1))])
+
+    def test_simultaneous_rests_with_a_longer_note_keep_cursor_advance(self) -> None:
+        from unittest.mock import patch
+        import os
+        carrier = NoteNotation((), StemDirection.NOT_APPLICABLE, (), advance=AdvanceClass.EIGHTH)
+        voice = [EncodedSymbol('note_2', 'C4', '_', '_', '_', 'upper'), EncodedSymbol('chord'),
+                 EncodedSymbol('rest_4', '_', '_', '_', '_', 'upper'), EncodedSymbol('chord'),
+                 EncodedSymbol('rest_4', '_', '_', '_', '_', 'upper', notation=carrier),
+                 EncodedSymbol('note_4', 'D4', '_', '_', '_', 'upper'), EncodedSymbol('barline')]
+        with patch.dict(os.environ, {'HOMR_STRUCTURED_EXPORT': 'advance'}):
+            root = generate_xml(XmlGeneratorArguments(), [voice], '')
+        self.assertCountEqual(_timed_notes(_first_measure(root)),
+                              [('C', Fraction(0), Fraction(2)),
+                               ('rest', Fraction(0), Fraction(1)),
+                               ('rest', Fraction(0), Fraction(1)),
+                               ('D', Fraction(1, 2), Fraction(1))])
+        backups = root.findall('.//backup/duration')
+        self.assertTrue(all(int(b.text) > 0 for b in backups))
+
     """
     MusicXML testing is mostly covered by training/validate_music_xml_conversion.py
     This script requires that the data sets are downloaded and converted and uses

@@ -1,5 +1,7 @@
 # Preserve grace notes beside ending markers — 2026-10-03
 
+Follow-up complete: simultaneous duplicate-rest preservation qualifies on OSSQ/Lieder and leaves the cached model page unchanged. See `SIMULTANEOUS_REST_FIX_2026-10-03.md`; the duplicate-rest blocker described below is now resolved, while duplet representation remains open.
+
 The MusicXML label merger now emits `voltaStart`, `voltaStop` and `voltaDiscontinue` as standalone structural symbols before the note chord. Ending markers consume no time and no longer hide pitched members of their group. Other marker ordering, grace cursor handling, duration allocation and the advance allowlist remain unchanged. This is a future-build label correction; published corpora and model/provider pins are unchanged, and predicted advance remains disabled.
 
 Previously, a zero-time grace note could share a source onset with an ending marker. `create_chord_over_two_staffs` treated that marker as a note-chord member; the XML exporter handled the leading marker and ignored the chord's notes. Correcting the grace cursor exposed this issue in OSSQ Beethoven sq9396439.

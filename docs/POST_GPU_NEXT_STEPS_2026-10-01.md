@@ -2,6 +2,17 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-03 — simultaneous-rest preservation qualified
+
+The exporter preserves co-onset duplicate rests using explicit backups and separate voices. Full 297-reference qualification finishes in 17.8 minutes on one CPU thread; exact prior controls and all ten OSSQ failures replay. Coverage remains 75/85 OSSQ and 212/212 Lieder. Restored rests: OSSQ 3 across 3 scores; Lieder 117 across 29 scores. Event edits improve 8,351 → 8,348 and 13,578 → 13,461; rhythm improves by the same amounts, pitch/accidental unchanged. Correct inventories recover in 3 OSSQ and 108 Lieder measures. No new failures, correct-inventory losses, common-onset or per-score edit regressions.
+
+Cached accepted/candidate Lorelei outputs remain unchanged; this previously evaluated page has no affected predicted groups and is not a generalization gate. Seventy-seven focused tests and three subtests pass. Both persistent jobs/watchers complete EXIT=0; remaining ETA zero.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/SIMULTANEOUS_REST_FIX_2026-10-03.md`. Local artifacts under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/simultaneous-rest-qualification-20261003/`, sibling `simultaneous-rest-preflight-20261003/` and `cached-page-rests-20261003/`, including reports, controls, XML, source/hash and completion receipts. These are reference roundtrip diagnostics, not recognition rates.
+
+Next: exact future-build tuplet/ratio and whole-measure-rest representation audit against OSSQ/Lieder canonical XML. The three duplet inventory regressions remain; duplicate-rest blocker is resolved. No blanket rhythm-token rewrite, corpus publication, model/provider pin change or deployment. Predicted advance remains disabled; broader model checks, text-fusion/C1 and untouched-page references remain separate work. No GPU needed for the next audit.
+
+
 ### 2026-10-03 — grace/ending-marker preservation correction qualified
 
 The label merger emits ending markers separately from note chords. Eighty-two focused tests pass, including all three ending types and advance-target ownership. The full 297-reference OSSQ/Lieder comparison completes in 17.6 minutes on one CPU thread with exact prior controls and unchanged failure coverage. Nineteen grace notes are restored across three OSSQ scores, aggregate event edits improve 8,370 → 8,351, and three canonical inventories recover. Lieder is unchanged. No new inventory loss, common-onset regression or per-score event/pitch/rhythm/accidental edit regression. See `GRACE_ENDING_FIX_2026-10-03.md` for local results. All jobs complete, no remaining ETA.

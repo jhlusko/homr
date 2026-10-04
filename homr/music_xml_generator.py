@@ -1190,9 +1190,13 @@ def build_note_chord(
                     # There are other notes, so to avoid the rest being merged into the
                     # chord, we emit a backup
                     result.append(build_backup(group_duration, state))
-                # Ideally we expect len(rests) == 1, but in dataset we see cases where
-                # there are multiple rests. So here we just take the first rest
-                result.append(build_note_or_rest(rests[0], i, False, state, note_chord.tuplet_mark))
+                # Explicit co-onset rests can belong to different voices. Keep
+                # each one at the same onset; rebalance_measure_voices assigns
+                # distinct overlapping voices when the measure is complete.
+                for rest_index, rest in enumerate(rests):
+                    if rest_index:
+                        result.append(build_backup(group_duration, state))
+                    result.append(build_note_or_rest(rest, i, False, state, note_chord.tuplet_mark))
 
         if i != len(by_duration) - 1 and group_duration > Fraction(0):
             result.append(build_backup(group_duration, state))
