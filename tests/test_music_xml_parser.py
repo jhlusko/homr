@@ -13,6 +13,43 @@ from training.transformer.training_vocabulary import (
 
 
 class TestMusicXmlParser(unittest.TestCase):
+    def test_arpeggio_does_not_spread_between_grace_groups_or_principal_notes(self) -> None:
+        measure = TokensMeasure()
+        for pitch, rhythm, chord, articulation in [
+            ('C5', 'note_16G', False, '_'),
+            ('D5', 'note_16G', False, 'arpeggiate'),
+            ('E5', 'note_16G', True, '_'),
+            ('F5', 'note_4', False, '_'),
+        ]:
+            measure.append_note(0, chord, 1 if 'G' in rhythm else 4, False,
+                                EncodedSymbol(rhythm, pitch, '_', articulation, '_'))
+        notes = {s.pitch: s for s in measure.complete_measure(divisions=4)
+                 if s.rhythm.startswith('note')}
+        self.assertEqual(notes['C5'].articulation, '_')
+        self.assertEqual(notes['D5'].articulation, 'arpeggiate')
+        self.assertEqual(notes['E5'].articulation, 'arpeggiate')
+        self.assertEqual(notes['F5'].articulation, '_')
+
+    def test_sequential_graces_remain_ordered_but_explicit_chord_stays_together(self) -> None:
+        measure = TokensMeasure()
+        for pitch, chord in [('E5', False), ('G5', False), ('F5', True), ('D5', False)]:
+            measure.append_note(0, chord, 1, False,
+                                EncodedSymbol('note_16G', pitch, '_', '_', '_'))
+        measure.append_note(0, False, 4, False,
+                            EncodedSymbol('note_4', 'C5', '_', '_', '_'))
+        measure.append_position_change(-4)
+        measure.append_note(1, False, 4, False,
+                            EncodedSymbol('note_4', 'C3', '_', '_', '_'))
+        lines = token_lines_to_str(measure.complete_measure(divisions=4)).splitlines()
+        self.assertEqual(len(lines), 5)  # Three grace groups, principal chord, barline.
+        self.assertIn('E5', lines[0])
+        self.assertIn('G5', lines[1])
+        self.assertIn('F5', lines[1])
+        self.assertIn('D5', lines[2])
+        self.assertIn('C5', lines[3])
+        self.assertIn('C3', lines[3])
+        self.assertEqual(measure.current_position, 4)
+
     def test_grace_sequence_and_chord_leave_cursor_unchanged(self) -> None:
         measure = TokensMeasure()
         measure.current_position = 12

@@ -138,6 +138,7 @@ class TokensMeasure:
         self.symbols: list[EncodedSymbolWithPos] = []
         self.current_position = 0
         self.new_page = False
+        self._grace_orders: dict[tuple[int, int], int] = {}
 
     def append_symbol(self, symbol: EncodedSymbol) -> None:
         if symbol.rhythm.startswith("note"):
@@ -177,17 +178,27 @@ class TokensMeasure:
         is_grace = "G" in symbol.rhythm
         cursor_before_note = self.current_position
         symbol.position = self._get_staff_position(staff)
+        grace_order = 0
+        if is_grace:
+            if is_chord:
+                grace_order = self.symbols[-1].grace_order
+            else:
+                key = (staff, self.current_position)
+                grace_order = self._grace_orders.get(key, 0) + 1
+                self._grace_orders[key] = grace_order
         if is_chord:
             previous_symbol = self.symbols[-1]
             if not invisible:
                 self.symbols.append(
-                    EncodedSymbolWithPos(previous_symbol.position, symbol, insert_before=is_grace)
+                    EncodedSymbolWithPos(previous_symbol.position, symbol, insert_before=is_grace,
+                                         grace_order=grace_order)
                 )
             self.current_position = previous_symbol.position + duration
         else:
             if not invisible:
                 self.symbols.append(
-                    EncodedSymbolWithPos(self.current_position, symbol, insert_before=is_grace)
+                    EncodedSymbolWithPos(self.current_position, symbol, insert_before=is_grace,
+                                         grace_order=grace_order)
                 )
             self.current_position += duration
         # Grace notes have no elapsed MusicXML duration. In particular, the
@@ -214,15 +225,16 @@ class TokensMeasure:
         """
         arpegiatted_positions = set()
         for entry in symbols_with_pos:
-            pos, sym = entry.position, entry.symbol
+            sym = entry.symbol
             if "arpeggiate" in sym.articulation:
-                # `pos` is the position in the measure, `sym.position` is the upper/lower staff.
-                arpegiatted_positions.add((pos, sym.position))
+                # Grace sequences and the principal chord share elapsed time,
+                # but do not share an arpeggio marking.
+                arpegiatted_positions.add((entry.sort_order(), entry.grace_order, sym.position))
 
         for entry in symbols_with_pos:
-            pos, sym = entry.position, entry.symbol
+            sym = entry.symbol
             if (
-                (pos, sym.position) in arpegiatted_positions
+                (entry.sort_order(), entry.grace_order, sym.position) in arpegiatted_positions
                 and "arpeggiate" not in sym.articulation
                 and sym.rhythm.startswith(("note", "rest"))
                 and not sym.rhythm.startswith("note_0")

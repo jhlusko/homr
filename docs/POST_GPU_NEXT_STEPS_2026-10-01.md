@@ -2,6 +2,17 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-04 — grace serialization repaired and qualified on OSSQ/Lieder
+
+Controlled old-cursor ablation reproduces all 167 changed Lieder crops byte-for-byte, isolating the earlier grace-cursor correction as the cause. Fixed two exposed regressions: consecutive zero-duration graces were merged/reordered as a chord, and principal-chord arpeggios leaked into grace groups. Source grace order/chord membership now passes across 85 OSSQ / 212 Lieder references, 6,728 / 1,156 visible pitched grace notes and 46 explicit grace chords, with zero mismatches.
+
+Final actual crop replay: 3,867 Lieder crops, 3,770 byte-identical (3,473 train / 297 valid), 97 remaining differences (94 / 3). Seventy regain parity; no new differences among previously identical crops. All note/rest identity inventories, original image hashes, certified boundaries and splits remain unchanged. Remaining categories: 45 group-boundary-only, 37 note-order changes with the same inventory, 15 same-order/other-field changes. Twenty-one crops change slur attribution, one accent/tenuto attribution, three control inventories; counts overlap. Their ordinary onset/export/numerator semantics remain unqualified, so keep them outside metadata-only migration. Fourteen native-stretch elapsed/ratio masks remain; no unseen mixed-source timing classes.
+
+47 focused tests and three subtests pass. Full replay 386.4s; source check 301.3s, sequential one-CPU-thread persistent tmux/watchers. All five final receipts EXIT=0; all jobs complete, ETA zero. No published corpus/model/provider pin or runtime inference change. Next: independently qualify the 97 ordinary-onset/slur/numerator differences; recover certified OSSQ crop alignment/support; explicit stretch scoring policy; resumable frozen-core exact-timing head trainer.
+
+Write-up: /home/jhlusko/workspace/homr/docs/GRACE_SERIALIZATION_AUDIT_2026-10-04.md. Final evidence: /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lieder-grace-and-arpeggio-qualification-20261004/. Ablation: sibling lieder-grace-cursor-ablation-20261004/ (167 crops/71 scores, 22.4s), with pre-arpeggio-scope source snapshots. Failed intermediate diagnostic receipts are retained; final source clock handling accounts for valid voice backups. Existing original-scan viewer stays at http://localhost:8765/; no per-case decisions requested.
+
+
 ### 2026-10-04 — native rest stretch explained; full Lieder crop replay finds a migration gate
 
 All 29 duration conflicts are rests whose raw XML duration × explicit native staff stretch equals the written value. Fourteen reach training in three IMSLP624193 crops; the other 15 are outside accepted crop boundaries. Original scans agree with the written rests. Keep elapsed/ratio masks until staff-time/export semantics are qualified, rather than inventing dots/tuplets or excluding entire scores.

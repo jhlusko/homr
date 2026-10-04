@@ -1,6 +1,7 @@
 import dataclasses
 from collections import defaultdict
 from fractions import Fraction
+from typing import TypeVar
 
 from homr.transformer.structured_notation import AdvanceClass
 from homr.transformer.vocabulary import (
@@ -18,6 +19,8 @@ _ADVANCE_DURATIONS: tuple[tuple[Fraction, AdvanceClass], ...] = tuple(
     for state in AdvanceClass
     if state not in (AdvanceClass.NOT_APPLICABLE, AdvanceClass.ZERO, AdvanceClass.OTHER)
 )
+
+_SortKey = TypeVar("_SortKey", int, tuple[int, int])
 
 
 def _advance_class_for_fraction(whole_notes: Fraction) -> AdvanceClass:
@@ -80,8 +83,8 @@ def _advance_from_own_duration(symbols: list[EncodedSymbol]) -> AdvanceClass:
 
 
 def _group_advances(
-    key_to_position: dict[int, int], divisions: int | None
-) -> dict[int, AdvanceClass]:
+    key_to_position: dict[_SortKey, int], divisions: int | None
+) -> dict[_SortKey, AdvanceClass]:
     """Per-key advance class: the gap from this key's true onset to the next one.
 
     `key_to_position` maps a `sort_order()` key to the RAW true onset it was built from -
@@ -103,11 +106,11 @@ def _group_advances(
     """
     if divisions is None or divisions <= 0:
         return {}
-    keys_by_position: defaultdict[int, list[int]] = defaultdict(list)
+    keys_by_position: defaultdict[int, list[_SortKey]] = defaultdict(list)
     for key, position in key_to_position.items():
         keys_by_position[position].append(key)
     distinct_positions = sorted(keys_by_position)
-    advances: dict[int, AdvanceClass] = {}
+    advances: dict[_SortKey, AdvanceClass] = {}
     for index, position in enumerate(distinct_positions):
         keys_here = sorted(keys_by_position[position])
         for key in keys_here[:-1]:
@@ -120,11 +123,16 @@ def _group_advances(
 
 
 class EncodedSymbolWithPos:
-    def __init__(self, position: int, symbol: EncodedSymbol, insert_before: bool = False) -> None:
+    def __init__(
+        self, position: int, symbol: EncodedSymbol, insert_before: bool = False,
+        grace_order: int = 0,
+    ) -> None:
         self.position = position
         self.symbol = symbol
         self.rhythm = symbol.rhythm
         self.insert_before = insert_before
+        # Source sequence within one zero-duration onset; not elapsed time.
+        self.grace_order = grace_order
 
     def sort_order(self) -> int:
         return self.position * 2 - (1 if self.insert_before else 0)
@@ -158,8 +166,8 @@ def merge_upper_and_lower_staff(
     if divisions is not None and advance_from_own_duration:
         raise ValueError("divisions and advance_from_own_duration are mutually exclusive")
     voices = [voice for voice in voices if len(voice) > 0]
-    positions: defaultdict[int, list[EncodedSymbol]] = defaultdict(list)
-    key_to_position: dict[int, int] = {}
+    positions: defaultdict[tuple[int, int], list[EncodedSymbol]] = defaultdict(list)
+    key_to_position: dict[tuple[int, int], int] = {}
     for voice_no, voice in enumerate(voices):
         position = "upper" if voice_no == 0 else "lower"
         for symbol in voice:
@@ -168,7 +176,7 @@ def merge_upper_and_lower_staff(
                 and symbol.symbol.position == nonote
             ):
                 symbol.symbol.position = position
-            key = symbol.sort_order()
+            key = (symbol.sort_order(), symbol.grace_order)
             positions[key].append(symbol.symbol)
             key_to_position[key] = symbol.position
 

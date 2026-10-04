@@ -1,5 +1,7 @@
 # Lieder rest stretch and actual crop support — 2026-10-04
 
+Follow-up: [Grace serialization audit and repair](GRACE_SERIALIZATION_AUDIT_2026-10-04.md) isolates the 167 differences and records subsequent qualification. The counts below describe the pre-repair replay.
+
 All 29 previously unresolved duration conflicts are rests whose native staff time-signature stretch explains the discrepancy exactly. They are not evidence of missing dots or low-quality pieces. Fourteen reach the frozen training set, in three crops of Causeries de vagues; the other 15 are outside accepted crop boundaries. Keep elapsed/ratio supervision masked while the source-time representation is resolved; written rest labels remain usable.
 
 ## Native source and exporter evidence
