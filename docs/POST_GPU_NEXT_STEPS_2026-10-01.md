@@ -2,6 +2,21 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-04 — exact timing targets, source quantization and additive checkpoint prototype
+
+Implemented four experimental output-only heads: elapsed note/rest duration, written type/dots, cumulative sounding ratio and full-measure-rest flag. These are independent of advance-to-next-onset and printed rareNum labels. Targets mask BOS/EOS/padding/grace/missing/unseen values; rest identity is supervised only on rests. Existing forward/recognition/notation objectives and runtime remain unchanged.
+
+Train-only canonical inventory covers 76/9 OSSQ train/valid scores (928,090/97,914 events) and 199/13 Lieder (256,383/18,269). Strict raw ticks yield 52/21/18/2 classes. Bounded floor/ceil normalization of explicit ratio durations yields 51/21/22/2, classifying all 446 OSSQ conflicts as source tick quantization, including nested 9:4 tuplets stored as 53/480 rather than 1/9 quarter. It masks 29 unresolved Lieder elapsed/ratio targets (IMSLP622105 3, IMSLP624193 21, IMSLP632172 5). Whole-source frequencies are not actual training-crop support.
+
+Mixed training classes cover all Lieder validation values; OSSQ retains 15 unseen elapsed, one written and 23 ratio targets, explicitly masked/reported without adding validation classes. The normalized policy requires source divisions, absent from current v2 sidecars; sequence target building refuses that missing provenance. Next dataset step: a versioned source-grid field and requalification, not a training launch from old sidecars.
+
+An explicitly untrained separate addon binds the accepted Sept18 core checksum and the exact target contract; 512 feature dimensions from accepted v7 ONNX, 49,248 parameters. Saved weights reload/shape-check, base file remains checksum-identical, and inference loading refuses untrained heads. Twenty focused tests pass, including core/logit/RNG invariance in a small fixture, wrong-base/class-order guards, head-only gradients, source masking and decoder alignment. No real decoder or training gate ran.
+
+Loss weights must be explicit; the new heads do not silently change recognition + notation/12. Suggested sequence: source-grid metadata and crop support; opt-in frozen-core head warm-up with resumable auxiliary optimizer; per-group shared-core gradient measurement before selecting joint weights; OSSQ/Lieder prediction-only XML qualification, including nested bracket treatment. Retain agreed Lieder +0.25 pp symbol-error ceiling and separate pitch/rhythm/accidental and OSSQ reporting. No GPU needed for the next metadata/trainer wiring work.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/EXACT_TIMING_MODEL_TARGETS_2026-10-04.md`. Local evidence under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/timing-target-inventory-20261004/`, sibling `timing-target-inventory-quantized-20261004/` and `timing-addon-init-20261004/`, with class manifests, source/split hashes, located source examples, initialized addon and tested snapshots. Inventories finish in 74.5/142.9 seconds on one CPU thread with persistent tmux/watchers, EXIT=0. All jobs finished; ETA zero. No published corpus/model/provider pin, deployment or website advantage claim changed; predicted advance remains off.
+
+
 ### 2026-10-04 — exact timing dataset integration qualified with explicit gaps
 
 Current HOMR MusicXML parsing attaches exact reference timing outside legacy token identity/duration. Staff merging, crop selection and the shared notation writer/reader preserve it in token-hash-guarded `.timing.json` files, using serialized symbol order. Label schema v2 retains tuplet notation-container ownership and visibility. Existing vocabulary, legacy token/notation targets, runtime export and checkpoint shapes are unchanged; training losses do not consume the new metadata.

@@ -1,5 +1,7 @@
 # Exact timing dataset integration — 2026-10-04
 
+Follow-up: `EXACT_TIMING_MODEL_TARGETS_2026-10-04.md` defines additive prediction targets, train-only inventories and a separate checkpoint prototype. It identifies bounded source tick quantization and the next contract requirement: source divisions, which the v2 metadata below does not retain. The normalized target policy refuses to train from sidecars missing that field.
+
 Exact reference timing now survives the current HOMR MusicXML parser, staff merger, crop selection, token serialization and sidecar attachment. The token vocabulary, token durations and legacy model targets are unchanged. Model losses and runtime export do not consume these labels yet.
 
 ## Versioned contract
