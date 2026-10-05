@@ -24,3 +24,5 @@ The attachment evaluator should compare predicted `(source_part, note ordinal/on
 No runtime schema or service behavior was changed. This audit prevents the release sequence from treating detector boxes or ordered OCR character coverage as attachment evidence.
 
 The schema-only contract is implemented in `OurTextScores/services/ots-homr-modal/lyric_attachment.py` with fail-closed validation tests. It is intentionally not imported by the scanner engine until a producer and attachment policy are qualified.
+
+The first diagnostic producer is now `lyric_attachment_policy.py`. Its nearest-x baseline requires explicit staff bands and note anchors, refuses unmatched boxes, and preserves duplicates. It is a measurable baseline only; it is not wired into the service.

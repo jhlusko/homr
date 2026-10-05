@@ -1,5 +1,7 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The off-by-default nearest-x lyric attachment baseline is implemented and tested in OTS-HOMR. It requires explicit vocal staff/note geometry and is not enabled. Next score it against native targets before considering a producer integration.
+
 The off-by-default `LyricAttachment` contract is now implemented and tested in the OTS-HOMR service. It validates native target identity, verse, note ordinal/onset and confidence without producing records. Next wire a producer only after its attachment policy is defined.
 
 The C1 interface audit found that native attachment targets exist, but the current service emits no predicted lyric-to-note attachment object. Implement that off-by-default output contract before measuring verse/note attachment; do not score a proxy.
