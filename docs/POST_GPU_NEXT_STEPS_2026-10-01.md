@@ -1,5 +1,11 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — isolated alias export and expanded layout review
+
+The confidence-gated XML experiment removed only structurally owned duplicate phrase spans from cached outputs: 3 Franz candidate, 15 `sq7358579` candidate and 3 `sq9146376` candidate spans. All tie and non-slur invariants passed. This remains a source-free diagnostic, not a runtime policy or promotion gate. See `homr/docs/ALIAS_XML_EXPERIMENT_2026-10-05.md`.
+
+The eight additional lyric layouts are visually suitable for calibration review, with identity and boundary certification still pending. Review http://localhost:8765/c1-layouts/. Next run the existing OCR/geometry diagnostics and manually certify visible rows by layout stratum. Keep fusion disabled.
+
 ### 2026-10-05 — alias-confidence controls and broader lyric packet prepared
 
 All8 cached arms replay exactly with both endpoint provenance. Conservative NONE-event/owned-tie confidence diagnostic at0.90 removes21/44 joint source-tie-only duplicates while preserving the known Franz phrase;0.80 removes30 but loses it. Accepted at0.90 removes4/38. No universal calibration or XML/runtime edit. Next opt-in cached owned-span export experiment with independent phrase/multiplicity/boundary controls. See `homr/docs/ALIAS_CONFIDENCE_DIAGNOSTIC_2026-10-05.md`.
