@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — tie-alias and staff-gap experiments completed
+
+Exact predicted tie/phrase duplicates include38 accepted and44 joint source-tie-only spans. Joint also has one source-correct Franz phrase duplicated by an erroneous predicted tie, so unconditional deduplication would lose a correct phrase. Start-only suppression remains unsafe for longer phrases beginning on tied notes. Next recover both endpoint confidences before an opt-in cached suppression experiment, with simultaneous/true-phrase/boundary controls. See `homr/docs/TIE_PHRASE_ALIAS_AUDIT_2026-10-05.md`.
+
+Scan-only staff-gap filtering removes all12 reviewed non-lyric regions; same-row recovery restores all5 dropped lyric fragments. On these two calibration pages:75/75 existing lyric-row OCR regions,0 outside,5/408 character edits (same as full-page OCR). This rule was designed after reviewing calibration and does not certify voice ownership, held-out precision/recall or attachment. Review: http://localhost:8765/c1-geometry/. Next freeze broader layouts and use identified runtime system/staff geometry rather than promote the raster prototype. See `homr/docs/C1_STAFF_GEOMETRY_2026-10-05.md`.
+
+Seventeen focused tests pass; all current compute complete, ETA0. Defaults, model pins, disabled fusion and checkbox unchanged. Provider/production latency qualification follows selected-stack acceptance; no new training/deployment scheduled.
+
 ### 2026-10-05 — complete-span and lyric-fragment audits completed
 
 Conditional complete-span counts now distinguish sounding ties, engraved ties and phrase slurs, with simultaneous-event, tie-chain and boundary tests. Joint improves supported Glazunov ties26→30/30 and Franz11→14/24; phrase matches improve on three pages, unchanged Haydn. Both stacks still have extra phrase spans. Next identify exact tie-alias phrase pairs with simultaneous true-phrase controls before any exporter change. See `homr/docs/NOTATION_SPAN_AUDIT_2026-10-05.md`.
