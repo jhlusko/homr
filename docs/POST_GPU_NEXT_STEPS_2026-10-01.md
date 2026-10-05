@@ -1,5 +1,7 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The native-ground-truth C1 text scorer now restricts source lyrics to each selected page's physical measure window. It is a coverage diagnostic only; verse assignment and note attachment remain to be wired against native targets.
+
 Native lyric ground truth is now the primary evaluation source for the expanded pages. The ordered source-text coverage diagnostic is complete; manual scan rows are optional visual checks, not a prerequisite. See `homr/docs/C1_NATIVE_GROUND_TRUTH_SCORING_2026-10-05.md`.
 
 An expanded lyric-row transcription worksheet is available at http://localhost:8765/c1-row-worksheet/. It keeps OCR candidates separate from any future scan-derived reference labels.

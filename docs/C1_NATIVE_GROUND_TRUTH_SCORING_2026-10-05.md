@@ -17,4 +17,4 @@ The current score is an ordered character coverage diagnostic between page-windo
 
 The low scores on dense bilingual/continuation pages reflect concatenated OCR order and non-lyric text interleaving; they are not evidence that the native source is wrong. The high scores on sparse single-verse pages are encouraging but still do not certify region precision or attachment.
 
-Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-layout-expansion-20261005/native-text-diagnostic-v2.json`. The scorer is `training/onnx/score_native_lyric_text.py`. Next use native source targets to evaluate verse/note attachment directly in the OMR output and use scan galleries only for detector coverage and false-positive adjudication.
+Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-layout-expansion-20261005/native-text-diagnostic-v3.json`. The scorer is `training/onnx/score_native_lyric_text.py`. Next use native source targets to evaluate verse/note attachment directly in the OMR output and use scan galleries only for detector coverage and false-positive adjudication.
