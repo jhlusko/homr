@@ -1,5 +1,9 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — expanded lyric OCR and geometry failure controls
+
+The eight frozen calibration layouts completed full-page OCR (594 regions, 54s) and pinned-e2 OCR (8m02s). The raster staff-gap diagnostic found valid five-line groups on only five pages and failed its minimum precondition on three pages. No lyric score or production filter was produced. See `homr/docs/C1_EXPANDED_SCORING_2026-10-05.md`.
+
 ### 2026-10-05 — isolated alias export and expanded layout review
 
 The confidence-gated XML experiment removed only structurally owned duplicate phrase spans from cached outputs: 3 Franz candidate, 15 `sq7358579` candidate and 3 `sq9146376` candidate spans. All tie and non-slur invariants passed. This remains a source-free diagnostic, not a runtime policy or promotion gate. See `homr/docs/ALIAS_XML_EXPERIMENT_2026-10-05.md`.
