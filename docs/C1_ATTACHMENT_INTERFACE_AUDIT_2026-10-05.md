@@ -22,3 +22,5 @@ Required next interface, kept off by default:
 The attachment evaluator should compare predicted `(source_part, note ordinal/onset, verse)` tuples against native targets, report detector/OCR misses separately from attachment errors, and preserve melisma, multiple-verse, multiple-staff and page-boundary skips. It must not infer a correct attachment from text similarity alone.
 
 No runtime schema or service behavior was changed. This audit prevents the release sequence from treating detector boxes or ordered OCR character coverage as attachment evidence.
+
+The schema-only contract is implemented in `OurTextScores/services/ots-homr-modal/lyric_attachment.py` with fail-closed validation tests. It is intentionally not imported by the scanner engine until a producer and attachment policy are qualified.
