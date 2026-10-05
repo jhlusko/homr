@@ -1,5 +1,7 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The eight expanded pages now have a page-level identity/full-page/layout checklist. Row transcription and note-pixel attachment remain pending; see the local `c1-layout-expansion-20261005/visual-certification.json` artifact.
+
 The expanded packet now also has a crop review aid at http://localhost:8765/c1-layout-crops/. It preserves full-page fallback on staff-detection failures and does not score or label crops.
 
 ### 2026-10-05 — expanded OCR review gallery available
