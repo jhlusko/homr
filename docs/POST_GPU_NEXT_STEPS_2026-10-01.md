@@ -14,6 +14,14 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — nine-case tuplet review available locally
+
+Review: http://localhost:8765/ (persistent `tuplet-review-server` tmux session, loopback only). All nine successful-repair negative controls show original hash-verified OSSQ crops beside reference labels, raw accepted-stack predictions, current cleanup and rejected guard. Crop-relative measure labels describe triplet-to-ordinary-note changes. Case8 clearly shows16 raw rhythm errors,0 after current cleanup,8 remaining under the guard; case9 is the sole explicit predicted2/2 example.
+
+“Eight have no predicted meter” means no time-signature declaration was emitted in these standalone crop decodes; it does not establish absent printed or inherited full-page meter. Reconstructed display meters are explicitly identified as XML-export context. MuseScore4.6.5 outputs were audited for visible notes AND rests, timing, onset and staff;20/36 panels have changes (including inserted rests), flagged on the page. Original scans and stored labels remain authoritative. This gallery requires no individual voting and is not a new promotion gate.
+
+Local site, all images/XML and provenance: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/review/`. Generator: `homr/training/transformer/review_guarded_tuplets.py`; guarded renderer reuse verifies inputs, binary and exact reconstructed XML. Nine cards/81 unique linked assets return HTTP200. Rendering/watcher complete, ETA0; the serving tmux remains active. No inference/default change, promotion, push, upload or deployment.
+
 ### 2026-10-04 — first predicted-context tuplet guard tested, not accepted
 
 Implemented a diagnostic-only exact-fill guard using predicted meter or strongly supported local bar length, with crop-boundary and staff/chord ambiguity safeguards. All4,211 paired real-source caches and10 Grieg complete-voice XML variants complete; raw33,688 metrics and prior controls replay. It protects23/23 otherwise-perfect predictions but retains0/9 complete successful-repair controls (one partial), so do not activate it. Eight negative controls lack predicted meter; context/boundary safeguards are too restrictive for standalone crops.

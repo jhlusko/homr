@@ -60,3 +60,13 @@ One-thread/core tmux launch, logs, EXIT0 and completion watcher:
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004-launch/`
 
 Tools: `training/transformer/audit_guarded_tuplet_cleanup.py` and `training/onnx/ablate_page_guarded_tuplets.py`. Both require new output directories and preserve input/source hash receipts. Eleven new guard tests cover explicit/missing/changed meter, exact fills, short bars, boundaries, staff/chord ambiguity and default restoration. With existing cleanup controls,22 tests pass; Ruff/Black pass. Complete, ETA0; no job running, inference change, promotion, push, upload or deployment.
+
+## Visual review
+
+### 2026-10-04 — nine-case tuplet review available locally
+
+Review: http://localhost:8765/ (persistent `tuplet-review-server` tmux session, loopback only). All nine successful-repair negative controls show original hash-verified OSSQ crops beside reference labels, raw accepted-stack predictions, current cleanup and rejected guard. Crop-relative measure labels describe triplet-to-ordinary-note changes. Case8 clearly shows16 raw rhythm errors,0 after current cleanup,8 remaining under the guard; case9 is the sole explicit predicted2/2 example.
+
+“Eight have no predicted meter” means no time-signature declaration was emitted in these standalone crop decodes; it does not establish absent printed or inherited full-page meter. Reconstructed display meters are explicitly identified as XML-export context. MuseScore4.6.5 outputs were audited for visible notes AND rests, timing, onset and staff;20/36 panels have changes (including inserted rests), flagged on the page. Original scans and stored labels remain authoritative. This gallery requires no individual voting and is not a new promotion gate.
+
+Local site, all images/XML and provenance: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/review/`. Generator: `homr/training/transformer/review_guarded_tuplets.py`; guarded renderer reuse verifies inputs, binary and exact reconstructed XML. Nine cards/81 unique linked assets return HTTP200. Rendering/watcher complete, ETA0; the serving tmux remains active. No inference/default change, promotion, push, upload or deployment.
