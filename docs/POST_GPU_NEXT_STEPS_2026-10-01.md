@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — complete-span and lyric-fragment audits completed
+
+Conditional complete-span counts now distinguish sounding ties, engraved ties and phrase slurs, with simultaneous-event, tie-chain and boundary tests. Joint improves supported Glazunov ties26→30/30 and Franz11→14/24; phrase matches improve on three pages, unchanged Haydn. Both stacks still have extra phrase spans. Next identify exact tie-alias phrase pairs with simultaneous true-phrase controls before any exporter change. See `homr/docs/NOTATION_SPAN_AUDIT_2026-10-05.md`.
+
+Pinned-e2 area200/10% selection retains70/75 existing lyric-row OCR fragments but also12 visually confirmed non-lyric regions; drops5 lyric fragments. Raising overlap loses more lyrics and leaves titles/credits. Seventeen original-scan examples: http://localhost:8765/c1-selection/. Next broaden frozen calibration and test system/voice geometry while preserving OCR context; verse/note attachment remains separate. See `homr/docs/C1_LYRIC_SELECTION_AUDIT_2026-10-05.md`.
+
+All current audit compute complete, ETA0;13 focused tests pass. Current defaults/pins and disabled fusion remain unchanged. Final provider identity and production latency/failure qualification still follow selected-stack acceptance; no training/deployment scheduled.
+
 ### 2026-10-05 — cached slur ownership and intact OCR selection completed
 
 Eight exact XML replays trace all155 unspecified starts to preserved core endpoints with no matching structured start slot. Legacy tokens conflate ties and phrases; source evidence includes75 tie-only and7 simultaneous tie/phrase starts. No blanket fallback/deletion is justified. See `homr/docs/SLUR_EVENT_OWNERSHIP_2026-10-05.md`.
