@@ -1,5 +1,12 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — complete-voice context recovered
+
+All 32 selected witnesses were replayed with available neighboring same-page systems. Current cleanup preserves 22/23 correct raw predictions and repairs 8/9 false-tuplet controls; the rejected guard achieves 23/23 and 7/9 respectively. These note/rest metrics exclude repeated key-signature headers and are diagnostic, not full-page release scores. All nine repair controls have earlier-page predicted meter evidence; three have same-page declarations (one in the target itself). Cross-page meter is not currently carried by HOMR. The review at http://localhost:8765/ includes recovered context and original full-page scan links.
+
+An actual Mendelssohn page repeat confirms candidate reranking corrects all 16 reviewed raw triplet errors before voice cleanup; output XML matches the first run exactly. See `homr/docs/TUPLET_VOICE_CONTEXT_2026-10-05.md`. Canonical local results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/voice-context-20261005-v2/`. Independent native OSSQ measure-boundary certification remains open. Keep current inference defaults; next qualify identical complete stacks with certified page inputs, and test any meter-local cleanup against both control groups.
+
+
 ## Current release priorities — 2026-10-04
 
 This order supersedes the historical status table and earlier running-job entries below. The accepted September18 core plus September24 v7 heads remains the local comparison/rollback stack; it is not asserted to equal the deployed provider pin. Public-joint-core-heads-20260928 epoch27 is the leading qualification candidate: the completed paired real-source crop comparison improves symbol error by1.455pp on OSSQ and0.418pp on Lieder. Corrected ONNX/runtime parity passes, but functional page smoke and crop scores do not establish full-page accuracy or promotion. One matched Lieder page improves pitch while worsening rhythm.
