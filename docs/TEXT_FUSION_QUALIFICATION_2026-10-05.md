@@ -1,5 +1,12 @@
 # Text-fusion qualification — 2026-10-05
 
+Follow-up: [DirectionText artifact recovery and C1 page linkage](TEXT_FUSION_C1_LINKAGE_2026-10-05.md)
+confirms B4 epoch4's distinct five-class weights are available locally but failed the
+direction-only test; they are not the current seven-class experiment e4 pin. Two
+calibration-only original pages now have128 native lyric targets linked to independently
+certified page/system windows, with explicit bilingual verse-order controls. This is
+not per-note pixel attachment or a new accuracy result.
+
 ## Scope and conclusion
 
 This continues the authorized local fusion track alongside page-reference certification.
