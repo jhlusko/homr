@@ -14,6 +14,16 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — first predicted-context tuplet guard tested, not accepted
+
+Implemented a diagnostic-only exact-fill guard using predicted meter or strongly supported local bar length, with crop-boundary and staff/chord ambiguity safeguards. All4,211 paired real-source caches and10 Grieg complete-voice XML variants complete; raw33,688 metrics and prior controls replay. It protects23/23 otherwise-perfect predictions but retains0/9 complete successful-repair controls (one partial), so do not activate it. Eight negative controls lack predicted meter; context/boundary safeguards are too restrictive for standalone crops.
+
+Guard-only symbol errors: OSSQ accepted4,185→4,070, joint27 2,773→2,595; Lieder380→373 and327→326. These aggregate improvements do not override the failed negative controls or OSSQ pitch regressions. Grieg guard-only scores are unchanged; its combined unison-preserving arm reproduces the prior two-note recovery.
+
+Next recover predicted meter/staff/voice and true measure-boundary context on complete-voice controls rather than weaken safeguards to fit known crops. Keep unison/noise qualification independent, and continue complete-stack page qualification and text fusion; this optional guard is not a new mandatory release blocker. No new training needed.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/GUARDED_TUPLET_EXPERIMENT_2026-10-04.md`. Local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/` and `page-guarded-tuplet-20261004/` alongside it. Twenty-two focused tests and Ruff/Black pass. One-thread/core tmux job/watcher complete, ETA0; defaults unchanged, no promotion, push, upload or deployment.
+
 ### 2026-10-04 — cleanup stages isolated; context guard is next
 
 Completed all4,211 OSSQ/Lieder cached pairs and14 Grieg complete-voice XML ablations. Raw33,688 metrics replay; standard/no-pitch controls match the previous audit. Tuplet removal explains the remaining standalone-crop damage: disabling it reduces OSSQ symbol errors by107 accepted/178 joint27 and Lieder7/1. Both tuplets and pitch dedup disabled recover raw aggregate scores. Lower-staff/header ablations do not improve measured recognition here; header/meter export is not covered by those metrics.
