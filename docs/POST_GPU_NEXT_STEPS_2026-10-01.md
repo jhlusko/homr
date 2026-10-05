@@ -14,6 +14,18 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — two OSSQ opening pages certified; paired diagnostic starting
+
+Beethoven sq8071278 page1 maps to physical measures1–36 (systems8/10/9/9); Grieg sq9631717 page1 maps to1–28 (7/9/6/6). Agent visual edition/boundary/part review and all-four-part source-layout checks pass; original/source hashes and a17-score selection pool are frozen before recognition. Both scores were already evaluated in RUNLOG27.81, so this is diagnostic evidence, not untouched testing. Corpus-wide scanned-system metadata remains absent.
+
+Accepted September18/v7 versus public-joint-core-heads-20260928 epoch27 uses prior float32 exports and identical Lorelei diagnostic policies, without text/OCR, reference injection or D1 rule activation. Four sequential one-thread page decodes start in persistent tmux with a completion watcher; initial ETA20–40 minutes, revised after first result. Failures remain failures; completed arms are resumable with input/code identity guards. Nine focused tests and new-file Ruff/Black pass.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/OSSQ_OPENING_PAGE_DIAGNOSTIC_2026-10-04.md`. Certification: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-page-certification-20261004/`. Run/status: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/` (`progress.json`, `EXIT`, per-score comparison, completion-report.md when finished). No promotion, training, upload, push or deploy.
+
+<!-- ossq-opening-pair-20261004-status-begin -->
+OSSQ paired diagnostic: prepared; four sequential decodes pending, estimated20–40 minutes. Completion watcher updates this block.
+<!-- ossq-opening-pair-20261004-status-end -->
+
 ### 2026-10-04 — native slur evidence and export contract
 
 Archived all six unresolved phrase endpoints with source/native hashes and verbatim native anchors. Exact-measure/pitch evidence supports retaining all six, including multiple stops and cross-voice spans; complete native event/span mapping is still uncertified. Do not replace extraction with a voice-only pairing rule. Proposed opt-in contract requires explicit producer/field availability, separate tie/phrase ownership, span identity independent of voice, non-stealing boundary stops, detailed tremolo type/strokes and predicted-output qualification. Default inference unchanged.
