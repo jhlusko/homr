@@ -7,6 +7,7 @@ from homr.music_xml_generator import (
     XmlGeneratorArguments,
     build_time_signature,
     generate_xml,
+    stated_numerator_contradicts_bars,
 )
 from homr.transformer.vocabulary import (
     TIME_SIGNATURE_BEATS_PREFIX,
@@ -36,6 +37,50 @@ class TestVocabulary(unittest.TestCase):
 
 
 class TestRendering(unittest.TestCase):
+    def test_inherited_common_time_is_omitted_before_late_two_four(self) -> None:
+
+        symbols = [
+            EncodedSymbol("clef_G2"),
+            EncodedSymbol("note_1", "C5"),
+            EncodedSymbol("barline"),
+            EncodedSymbol("note_1", "C5"),
+            EncodedSymbol("barline"),
+            EncodedSymbol("timeSignatureBeats_2"),
+            EncodedSymbol("timeSignature/4"),
+            EncodedSymbol("note_2", "C5"),
+            EncodedSymbol("barline"),
+        ]
+        self.assertFalse(stated_numerator_contradicts_bars(symbols, Fraction(1)))
+        self.assertIn(("2", "4"), self._time(symbols))
+
+    def test_common_time_then_two_four_is_not_rejected_by_modal_duration(self) -> None:
+
+        symbols = [
+            EncodedSymbol("clef_G2"),
+            EncodedSymbol("timeSignature/4"),
+            EncodedSymbol("note_1", "C5"),
+            EncodedSymbol("barline"),
+            EncodedSymbol("note_1", "C5"),
+            EncodedSymbol("barline"),
+            EncodedSymbol("timeSignatureBeats_2"),
+            EncodedSymbol("timeSignature/4"),
+            EncodedSymbol("note_2", "C5"),
+            EncodedSymbol("barline"),
+        ]
+        self.assertFalse(stated_numerator_contradicts_bars(symbols, Fraction(1)))
+        times = self._time(symbols)
+        self.assertEqual(times[0], ("4", "4"))
+        self.assertIn(("2", "4"), times)
+
+    def test_constant_incompatible_meter_guard_still_applies(self) -> None:
+
+        self.assertTrue(
+            stated_numerator_contradicts_bars(
+                [EncodedSymbol("timeSignatureBeats_2"), EncodedSymbol("timeSignature/4")],
+                Fraction(1),
+            )
+        )
+
     def _time(self, symbols):
         xml = generate_xml(XmlGeneratorArguments(None, None, None), [symbols], "")
         times = list(xml.iter("time"))

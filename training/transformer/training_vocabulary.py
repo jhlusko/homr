@@ -179,8 +179,22 @@ def max_tuplet_ratio() -> float:
         return DEFAULT_MAX_TUPLET_RATIO
 
 
-def token_lines_to_str(symbols: list[EncodedSymbol]) -> str:
-    chord_strings = [_chord_to_str(c) for c in serialized_chords(symbols)]
+LEGACY_ANNOTATION_POLICY = "legacy-staff-hoist-v1"
+NOTE_ANCHOR_POLICY = "note-anchors-v2"
+ANNOTATION_POLICIES = (LEGACY_ANNOTATION_POLICY, NOTE_ANCHOR_POLICY)
+
+
+def token_lines_to_str(
+    symbols: list[EncodedSymbol], *, annotation_policy: str = LEGACY_ANNOTATION_POLICY
+) -> str:
+    if annotation_policy not in ANNOTATION_POLICIES:
+        raise ValueError(f"Unknown annotation policy: {annotation_policy}")
+    chords = serialized_chords(symbols)
+    chord_strings = (
+        [_chord_to_str(c) for c in chords]
+        if annotation_policy == LEGACY_ANNOTATION_POLICY
+        else ["&".join(str(symbol) for symbol in chord) for chord in chords]
+    )
     return str.join("\n", chord_strings)
 
 
@@ -279,7 +293,12 @@ def read_token_lines(lines: list[str]) -> list[EncodedSymbol]:
     return result
 
 
-def read_tokens(filepath: str) -> list[EncodedSymbol]:
+def read_tokens(
+    filepath: str, *, expected_annotation_policy: str | None = None
+) -> list[EncodedSymbol]:
+    from training.omr_datasets.label_serialization import validate_label_policy
+
+    validate_label_policy(filepath, expected_policy=expected_annotation_policy)
     with open(filepath, encoding="utf-8") as f:
         lines = f.readlines()
         return read_token_lines(lines)

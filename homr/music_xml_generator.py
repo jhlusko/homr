@@ -1338,6 +1338,14 @@ def stated_numerator_contradicts_bars(voice: list[EncodedSymbol], modal: Fractio
     """
     if modal is None:
         return False
+    # A crop may omit its inherited opening signature. A first declaration
+    # after sounded material can be a genuine mid-crop change, so the modal
+    # duration of earlier bars cannot safely contradict that declaration.
+    for symbol in voice:
+        if symbol.rhythm.startswith(("timeSignature/", TIME_SIGNATURE_BEATS_PREFIX)):
+            break
+        if symbol.rhythm.startswith(("note", "rest")):
+            return False
     stated = {
         int(symbol.rhythm.split("_")[1])
         for symbol in voice
@@ -1345,14 +1353,18 @@ def stated_numerator_contradicts_bars(voice: list[EncodedSymbol], modal: Fractio
     }
     if len(stated) != 1:
         return False
-    denominators = {
+    denominator_tokens = [
         int(symbol.rhythm.split("/")[1])
         for symbol in voice
         if symbol.rhythm.startswith("timeSignature/")
-    }
-    if len(denominators) != 1:
+    ]
+    # Common time has no separate numerator token. A later 2/4 declaration
+    # can therefore leave only one *distinct* numerator while the crop still
+    # changes from 4/4 to 2/4. Repeated denominator declarations are evidence
+    # of multiple signature locations, even when their values are identical.
+    if len(denominator_tokens) != 1:
         return False
-    denominator = next(iter(denominators))
+    denominator = denominator_tokens[0]
     return next(iter(stated)) != modal * denominator
 
 

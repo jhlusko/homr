@@ -1,5 +1,20 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-04 — versioned note anchors and meter guard qualified
+
+Opt-in `note-anchors-v2` bundles preserve per-note articulation/combined tie-slur fields and carry hash-bound policy manifests plus notation/timing sidecars. Existing/default/unmarked labels remain `legacy-staff-hoist-v1`; vocabulary IDs and channel order are unchanged. All110 changed Lieder crops round-trip7,653 symbols/6,573 timed symbols, with zero combined endpoint errors and no missing/duplicated/misplaced events in legacy export without source sidecars. Remaining286 onset errors and578 literal phrase differences (481 tie-only aliases,30 added tie endpoint types,67 lost phrase multiplicities) are explicit representation limits, not model recognition scores or complete structured-slur fidelity.
+
+Revised meter guard protects repeated declarations and a first declaration after notes/rests have begun, including crops omitting their inherited opening signature. Full3,867-crop replay restores14 numerator tokens across8 scores; all match source meters and all non-numerator strings/image hashes/timing support remain unchanged. Of these14,13 are newly affected:3,757 frozen-identical crops and110 changed crops. Keep all110 outside metadata-only migration; retain the14 native-stretch timing masks.
+
+Runtime check on the actual14 crops repairs all14 exported meters, with byte-identical non-time XML and identical event/onset audits. Broad paired runtime guard check on85 OSSQ/212 Lieder finishes in13.1 minutes with exact unchanged outputs and the same10 known OSSQ detachedLegato failures; no new failures or regressions. Coverage75/85 OSSQ,212/212 Lieder. Whole-score controls do not substitute for the affected-crop check.113 focused compatibility tests, new-file Ruff and Black checks pass. Persistent qualification/watchers/finalizer completed successfully; no heavy job remains, ETA zero.
+
+The one prior timing regression is explained: source part3 physical measure21 of IMSLP592442 contains interleaved staff notes whose next onset gap is shorter than the minimum member duration. Legacy advancement overshoots. Preserve correct grouping; own-duration heads alone cannot encode the missing gap. Predicted advance remains off and source timing is not injected into inference.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md`. All final evidence is local under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/label-policy-meter-qualification-20261004-v2/`: anchor-bundles-final/report.json, crop-meter-gate-release.json, crop-runtime-meter-gate-release.json, runtime-meter-gate.json, full-lieder/report.json, onset-progression-final.json, tests-final.log, finalize.EXIT and qualified-final-source snapshots/receipt. First failed candidate remains archived in sibling label-policy-meter-qualification-20261004 with interruption EXIT130; it is not a passed gate.
+
+Next: independently qualify separate ties/phrase slurs and articulation ownership in structured export; recover certified OSSQ crop alignment/support; then wire resumable frozen-core timing-head training using qualified labels. No GPU, corpus/model/provider pin change, upload, push or deployment in this work.
+
+
 ## Current local follow-up — 2026-10-01
 
 ### 2026-10-04 — remaining Lieder onset groups qualified; source-anchor prototype succeeds
