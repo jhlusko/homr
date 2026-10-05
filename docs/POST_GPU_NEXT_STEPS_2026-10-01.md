@@ -14,6 +14,14 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — OSSQ paired page diagnostic complete
+
+Four decodes succeeded,2/2 paired pages, EXIT0,6m46s sequential one-thread wall time; tmux and completion watcher finished, ETA zero. Epoch27 improves Beethoven pitch3→1/383 and rhythm21→18/455; accidental totals remain1/383 but change from an insertion to a substitution. Grieg is identical: pitch2/372, rhythm/event46/380, accidental2/372. Both scores were historically evaluated; diagnostic only, not untouched testing, crop SER or final-policy promotion.
+
+Shared errors are concrete:18 Beethoven full-bar rests export4 quarters instead of3;44 Grieg paired-tremolo half glyphs have source elapsed1 quarter/2:1 time modification but export2; both stacks collapse simultaneous D4 voices in Grieg measures9–10. Original metrics remain intact. Earlier Lorelei epoch27 pitch improves7→5 but rhythm worsens14→17. These three pages modestly favor epoch27 on OSSQ without settling promotion.
+
+All evidence local: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/` (`summary.json`, `completion-report.md`, per-score `comparison.json`/`edit-audit.json`, Grieg `source-duration-audit.json`, environment/source snapshots). Write-up: `/home/jhlusko/workspace/homr/docs/OSSQ_OPENING_PAGE_DIAGNOSTIC_2026-10-04.md`. Ten focused tests pass. Next bounded cached-label/export checks for these timing/voice cases, broader reviewed real-page coverage and final-policy verification; text fusion independent. No push, promotion, upload, deployment or training.
+
 ### 2026-10-04 — two OSSQ opening pages certified; paired diagnostic starting
 
 Beethoven sq8071278 page1 maps to physical measures1–36 (systems8/10/9/9); Grieg sq9631717 page1 maps to1–28 (7/9/6/6). Agent visual edition/boundary/part review and all-four-part source-layout checks pass; original/source hashes and a17-score selection pool are frozen before recognition. Both scores were already evaluated in RUNLOG27.81, so this is diagnostic evidence, not untouched testing. Corpus-wide scanned-system metadata remains absent.
@@ -23,7 +31,7 @@ Accepted September18/v7 versus public-joint-core-heads-20260928 epoch27 uses pri
 Write-up: `/home/jhlusko/workspace/homr/docs/OSSQ_OPENING_PAGE_DIAGNOSTIC_2026-10-04.md`. Certification: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-page-certification-20261004/`. Run/status: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/` (`progress.json`, `EXIT`, per-score comparison, completion-report.md when finished). No promotion, training, upload, push or deploy.
 
 <!-- ossq-opening-pair-20261004-status-begin -->
-OSSQ paired diagnostic: prepared; four sequential decodes pending, estimated20–40 minutes. Completion watcher updates this block.
+OSSQ paired diagnostic completed 2026-10-05T03:31:13.289459+00:00: 4/4 successful arms, 2/2 fully paired pages; EXIT0. ETA zero. Results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/completion-report.md`. No promotion/deployment.
 <!-- ossq-opening-pair-20261004-status-end -->
 
 ### 2026-10-04 — native slur evidence and export contract

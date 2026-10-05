@@ -203,3 +203,52 @@ def test_pair_runner_preserves_failures_and_resumes_without_redecoding(tmp_path,
     pages.write_text(json.dumps([]))
     with pytest.raises(ValueError, match="cannot resume"):
         runner.run(pages, models, output)
+
+
+def test_event_audit_accepts_plain_reference_and_preserves_failed_arm(tmp_path, monkeypatch):
+    import sys
+
+    from training.onnx.audit_page_event_differences import main
+    from training.onnx.score_full_page_musicxml import compare, staff_events
+
+    root = quartet()
+    measure = root.find("part/measure")
+    measure.append(
+        ET.fromstring(
+            "<note><pitch><step>C</step><octave>4</octave></pitch><duration>3</duration></note>"
+        )
+    )
+    source = tmp_path / "source.musicxml"
+    ET.ElementTree(root).write(source)
+    reference = staff_events(root, 0, 4)
+    root.find("part/measure/note/pitch/step").text = "D"
+    accepted = tmp_path / "accepted"
+    accepted.mkdir()
+    xml = accepted / "page.musicxml"
+    ET.ElementTree(root).write(xml)
+    report = {
+        "page": {
+            "reference": str(source),
+            "reference_sha256": sha(source),
+            "start_measure": 0,
+            "end_measure": 4,
+        },
+        "arms": {
+            "accepted": {
+                "status": "ok",
+                "xml_sha256": sha(xml),
+                "metrics": compare(reference, staff_events(root)),
+            },
+            "candidate": {"status": "failed", "error": "fixture"},
+        },
+    }
+    (tmp_path / "comparison.json").write_text(json.dumps(report))
+    monkeypatch.setattr(sys, "argv", ["audit", "--run", str(tmp_path)])
+    main()
+    result = json.loads((tmp_path / "edit-audit.json").read_text())
+    assert result["arms"]["accepted"]["edit_types"]["pitch"] == {"replace": 1}
+    assert result["arms"]["accepted"]["event_differences"][0]["location"] == {
+        "reference_measure": "1",
+        "quarter_note_beat": "1",
+    }
+    assert result["arms"]["candidate"] == {"status": "failed", "error": "fixture"}

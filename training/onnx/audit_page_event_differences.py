@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 
 from rapidfuzz.distance import Levenshtein
 
-from training.onnx.audit_full_page_references import read_mxl
+from training.onnx.score_paired_page_diagnostic import read_reference
 from training.onnx.qualify_joint_export import sha, write
 from training.onnx.score_full_page_musicxml import project, staff_events
 
@@ -21,11 +21,14 @@ def main():
     page = report['page']
     if sha(page['reference']) != page['reference_sha256']:
         raise ValueError('Reference changed')
-    root = read_mxl(page['reference'])
+    root = read_reference(page['reference'])
     reference = staff_events(root, page['start_measure'], page['end_measure'])
     measure_numbers = [m.get('number') for m in root.find('part').findall('measure')]
     arms = {}
     for arm in ('accepted', 'candidate'):
+        if report['arms'][arm].get('status', 'ok') != 'ok':
+            arms[arm] = dict(status='failed', error=report['arms'][arm].get('error'))
+            continue
         xml = args.run / arm / 'page.musicxml'
         if sha(xml) != report['arms'][arm]['xml_sha256']:
             raise ValueError('XML changed')
@@ -56,10 +59,11 @@ def main():
             summaries[metric] = dict(counts)
         arms[arm] = dict(edit_types=summaries, event_differences=examples)
     write(args.run / 'edit-audit.json', dict(arms=arms, scorer_sha256=sha(__file__),
+        comparison_sha256=sha(args.run / 'comparison.json'),
         limitation='Locations follow one optimal sequence alignment and are not uniquely adjudicated. '
                    'Beat unit is a quarter note, not necessarily the notated meter beat. '
                    'Pitch/accidental deletions and insertions are coverage errors, not head substitutions.'))
-    print(json.dumps({arm: data['edit_types'] for arm, data in arms.items()}, indent=2))
+    print(json.dumps({arm: data.get('edit_types', {'status': 'failed'}) for arm, data in arms.items()}, indent=2))
 
 
 if __name__ == '__main__':

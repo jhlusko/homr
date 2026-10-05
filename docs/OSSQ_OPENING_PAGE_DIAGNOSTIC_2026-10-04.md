@@ -23,4 +23,28 @@ Scoring is per-physical-staff ordered MusicXML event Levenshtein, with pitch, fr
 
 Paired results/status: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/`: `progress.json`, `completed-arms.json`, `summary.json` when finished, per-score `comparison.json`, `EXIT`, and `completion-report.md` from the watcher. Sequential four-decode estimate20–40 minutes initially; revise after first completed arm. The watcher records completion/failure and updates dated status blocks in the release docs.
 
-Nine focused reference/certification/scoring/resume tests pass; new-file Ruff/Black pass. Next read the paired OSSQ diagnostic beside Lorelei, audit concrete divergent cases, then expand independently certified OSSQ/Lieder page inputs before a complete-stack promotion gate. Text-fusion calibration remains independent. No model promotion, upload, push or deployment.
+Ten focused reference/certification/scoring/resume/edit-audit tests pass; new-file Ruff/Black pass. Next read the paired OSSQ diagnostic beside Lorelei, audit concrete divergent cases, then expand independently certified OSSQ/Lieder page inputs before a complete-stack promotion gate. Text-fusion calibration remains independent. No model promotion, upload, push or deployment.
+
+## Completed results
+
+All4/4 arms succeeded,2/2 fully paired pages, EXIT0. Total sequential wall time405.9 seconds (6m46s); watcher completed2026-10-05 03:31UTC and updated release-doc status blocks. No running job remains, ETA zero.
+
+| Page / metric | Accepted | Epoch27 |
+|---|---:|---:|
+| Beethoven pitch | 0.783% (3/383) | 0.261% (1/383) |
+| Beethoven rhythm | 4.615% (21/455) | 3.956% (18/455) |
+| Beethoven combined event | 4.615% (21/455) | 4.176% (19/455) |
+| Beethoven accidental | 0.261% (1/383) | 0.261% (1/383) |
+| Grieg pitch | 0.538% (2/372) | 0.538% (2/372) |
+| Grieg rhythm / event | 12.105% (46/380) | 12.105% (46/380) |
+| Grieg accidental | 0.538% (2/372) | 0.538% (2/372) |
+
+**Beethoven:**18 rhythm substitutions are shared whole-bar rests exported as4 quarters rather than source3. Accepted additionally has one deletion/two insertions; epoch27 removes those coverage errors but introduces one B-natural/B-flat substitution (cello, measure32). Equal accidental totals therefore conceal different error types: accepted insertion versus candidate substitution. Do not infer improved accidental-head accuracy from the pitch reduction. All original scores remain unchanged.
+
+**Grieg:**44 shared duration substitutions occur on Violin2 measures18–28, four notes per bar. Every source note is written half, has duration480 with divisions480, 2:1 time modification and alternating one-stroke tremolo start/stop; model XML uses two quarters rather than source one. This is the written/elapsed/tremolo representation boundary, not evidence that epoch27 learned a worse rhythm head. Both also collapse two source voices' simultaneous D4 whole notes into one note in each of measures9 and10. The ordered edit alignment assigns two deletions to measure10; that alignment location is not unique. Raw per-measure XML confirms the actual voice collapse across both bars. Neither discrepancy is waived or normalized out of the published diagnostic.
+
+Per-score `edit-audit.json` separates substitutions/insertions/deletions and records quarter-note beat locations; Grieg `source-duration-audit.json` preserves all44 raw source notes and source/comparison hashes. `environment.json` records CPU Torch2.14.0, ONNXRuntime1.30.0 and other local package versions. Snapshot receipts bind the tested runtime; later edit-audit tooling is separately hashed.
+
+Read beside the earlier Lieder Lorelei page: epoch27 improves pitch7→5 errors, but worsens rhythm14→17. The two OSSQ pages favor epoch27 modestly; these three diagnostic pages do not establish broad generalization or settle promotion.
+
+**Next:** use the cached predictions for bounded full-bar-rest, paired-tremolo and same-pitch multi-voice export/label checks; distinguish recognized written glyphs from elapsed timing and avoid reference injection in inference. Extend paired page coverage with independently reviewed mappings and truthful training/selection provenance, then test final D1/text/provider policies. Keep the crop Lieder+0.25pp gate separate. Text-fusion calibration continues independently. No new training or unconditional notation redesign is required to release a stack that passes its declared gates.
