@@ -1,5 +1,9 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — expanded OCR review gallery available
+
+The eight additional pages now have a scan/OCR inspection gallery at http://localhost:8765/c1-layout-ocr/. It is intentionally unscored and includes no guessed lyric attachment. Use it to choose independently certified visible-row references while preserving the geometry-failure pages.
+
 ### 2026-10-05 — expanded lyric OCR and geometry failure controls
 
 The eight frozen calibration layouts completed full-page OCR (594 regions, 54s) and pinned-e2 OCR (8m02s). The raster staff-gap diagnostic found valid five-line groups on only five pages and failed its minimum precondition on three pages. No lyric score or production filter was produced. See `homr/docs/C1_EXPANDED_SCORING_2026-10-05.md`.
