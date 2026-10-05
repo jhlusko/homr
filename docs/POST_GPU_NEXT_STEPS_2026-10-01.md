@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — cached slur ownership and intact OCR selection completed
+
+Eight exact XML replays trace all155 unspecified starts to preserved core endpoints with no matching structured start slot. Legacy tokens conflate ties and phrases; source evidence includes75 tie-only and7 simultaneous tie/phrase starts. No blanket fallback/deletion is justified. See `homr/docs/SLUR_EVENT_OWNERSHIP_2026-10-05.md`.
+
+Intact full-page OCR selected by pinned Lyrics-box overlap gives10–11/408 character edits at predeclared10% coverage, versus56/408 for nested detector crops and5/408 for full-page OCR. Higher coverage loses more fragments. Calibration only, not semantic precision/attachment or release qualification. Review: http://localhost:8765/c1-intact-lines/. See `homr/docs/C1_INTACT_LINE_SELECTION_2026-10-05.md`.
+
+Next priorities: independent tie/phrase span ownership with simultaneous-event controls; broader frozen semantic lyric calibration and missed-fragment audit; then verse/note attachment and final provider/production latency qualification. Defaults/pins remain unchanged; direction fusion still blocked. All current jobs complete, ETA0; no new training or deployment.
+
 ### 2026-10-05 — matched notation policies and scan-row lyric diagnostics completed
 
 All8/8 real-page policy arms succeeded in9m47s, one CPU thread with completed tmux watcher. Recognition and strict timing/meter metrics reproduce the earlier four-page baseline exactly. On unique shared source/prediction timing/pitch anchors, OSSQ stems: accepted18→12 errors/543 after reviewed policy, joint6→6/543. Lieder: legacy stem policy accepted128→130/652, joint6→6/652. These conditional results favor joint stems, while not qualifying universal policy or promotion. OSSQ slur-start errors: accepted14→7/88, joint12→13/88. Joint Glazunov includes11 exported starts without explicit side and one start-count mismatch, not12 wrong-side predictions; the OSSQ rule adds one Haydn wrong side. Next audit preserved core endpoints versus structured slots/export before filling unknown sides. Candidate use of the v7-calibrated0.8 cutoff remains provisional. Report: `homr/docs/PAGE_NOTATION_POLICY_2026-10-05.md`; local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/page-notation-policy-20261005/`.

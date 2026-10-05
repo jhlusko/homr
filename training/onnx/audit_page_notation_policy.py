@@ -12,7 +12,7 @@ from training.onnx.qualify_joint_export import sha, write
 from training.onnx.score_paired_page_diagnostic import read_reference
 
 
-def anchors(root, start=0, end=None):
+def anchors(root, start=0, end=None, provenance=None):
     rows = defaultdict(list)
     staff_offset = 0
     for part in root.findall("part"):
@@ -60,7 +60,17 @@ def anchors(root, start=0, end=None):
                         for s in element.findall("notations/slur")
                         if s.get("type") == "start"
                     ]
-                    local.append((key, {"stem": element.findtext("stem"), "slur_starts": slurs}))
+                    row = {
+                        "stem": element.findtext("stem"),
+                        "slur_starts": slurs,
+                        "tie_start": any(
+                            t.get("type") == "start"
+                            for t in [*element.findall("tie"), *element.findall("notations/tied")]
+                        ),
+                    }
+                    if provenance is not None:
+                        row["provenance"] = provenance.get(id(element))
+                    local.append((key, row))
         for key, row in local:
             rows[key].append(row)
         staff_offset += staff_count
