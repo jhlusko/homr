@@ -1,5 +1,7 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Native lyric ground truth is now the primary evaluation source for the expanded pages. The ordered source-text coverage diagnostic is complete; manual scan rows are optional visual checks, not a prerequisite. See `homr/docs/C1_NATIVE_GROUND_TRUTH_SCORING_2026-10-05.md`.
+
 An expanded lyric-row transcription worksheet is available at http://localhost:8765/c1-row-worksheet/. It keeps OCR candidates separate from any future scan-derived reference labels.
 
 The eight expanded pages now have a page-level identity/full-page/layout checklist. Row transcription and note-pixel attachment remain pending; see the local `c1-layout-expansion-20261005/visual-certification.json` artifact.

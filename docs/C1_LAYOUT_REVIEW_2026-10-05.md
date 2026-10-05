@@ -6,7 +6,7 @@ Review the packet at http://localhost:8765/c1-layouts/. The thumbnails are for l
 
 The next scoring pass should run full-page OCR, pinned-e2 regions, and the staff-gap geometry diagnostic on these pages, then create independent visible-row references. Report results by layout stratum. Preserve title, tempo, credit, bilingual verse, and incomplete-staff failure cases rather than filtering them out.
 
-I completed a page-level identity/full-page/layout review for all eight pages. The checklist is in the local artifact `c1-layout-expansion-20261005/visual-certification.json`; every page is marked identity and complete-page checked, while row transcription and note-pixel attachment remain explicitly pending.
+I completed a page-level identity/full-page/layout review for all eight pages. The checklist is in the local artifact `c1-layout-expansion-20261005/visual-certification.json`; every page is marked identity and complete-page checked. Native ground truth is the primary text/verse/note reference; scan-row transcription is not required for the source-text diagnostic. Note-pixel attachment remains a separate pending gate.
 
 The transcription worksheet is at http://localhost:8765/c1-row-worksheet/. It lists OCR candidates by vertical position beside the original scan. OCR is only a prompt for review; any reference row must be transcribed from the scan.
 
