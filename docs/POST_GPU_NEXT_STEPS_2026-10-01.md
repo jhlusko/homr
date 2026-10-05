@@ -14,6 +14,14 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — real-source cached cleanup ablation complete
+
+All4,211 paired OSSQ/Lieder crops (9/13 score identities), all33,688 stored recognition metrics and paired input hashes pass. Disabling only pitch dedup improves symbol errors OSSQ accepted4,185→4,174 / joint27 2,773→2,758 and Lieder380→340 /327→287. Of74 changed crop/model pairs,60 improve,7 regress,7 tie. Preserved collisions include unwanted repetitions, rests and malformed note/rest fields, so defaults remain unchanged.
+
+Other cleanup still increases standalone-crop errors relative to raw predictions; production cleans concatenated voices, so isolate these stages before inferring a full-page fix. Next: stage-wise cached cleanup audit and full-voice/page positive/negative controls, then continue final-policy page qualification and independent text fusion. No additional training is needed for this investigation.
+
+Details: `/home/jhlusko/workspace/homr/docs/CACHED_PITCH_DEDUP_AUDIT_2026-10-04.md`. Local reports/cases/hashes: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/cached-pitch-dedup-20261004/`. Seven tests and Ruff/Black pass. Complete, ETA0; no running job, promotion, default change, push, upload or deployment.
+
 ### 2026-10-04 — cached timing audit locates a runtime cleanup defect
 
 Exact four-arm cached XML replay and8/8 source-part round-trips complete. Late repair/meter ablations leave original timing scores unchanged. Beethoven source labels preserve elapsed timing, but encode whole-bar rests as dotted-half tokens; models choose ordinary whole-rest tokens. A predicted-meter sole-rest hypothesis repairs18 durations (accepted rhythm21→3; epoch27 18→0), but incomplete-bar safety remains unqualified.
