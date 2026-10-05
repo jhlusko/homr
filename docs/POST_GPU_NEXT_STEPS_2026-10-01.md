@@ -14,6 +14,14 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — native slur evidence and export contract
+
+Archived all six unresolved phrase endpoints with source/native hashes and verbatim native anchors. Exact-measure/pitch evidence supports retaining all six, including multiple stops and cross-voice spans; complete native event/span mapping is still uncertified. Do not replace extraction with a voice-only pairing rule. Proposed opt-in contract requires explicit producer/field availability, separate tie/phrase ownership, span identity independent of voice, non-stealing boundary stops, detailed tremolo type/strokes and predicted-output qualification. Default inference unchanged.
+
+Ten focused tests and new-file Ruff/Black pass. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/native-slur-evidence-20261004/evidence.json`. Contract and full-page input checklist: `/home/jhlusko/workspace/homr/docs/STRUCTURED_EXPORT_CONTRACT_2026-10-04.md`.
+
+Full-page inputs remain the gating work: zero verified untouched Lieder pages; OSSQ122 scores/2,986 scan pages have no certified scanned-system metadata. Next certify a small identity-selected OSSQ page/reference mapping before broad paired inference; distinguish diagnostic/model-selection from independent testing. Text-fusion calibration proceeds independently. No running job, ETA zero; broad-run ETA requires a frozen eligible manifest and one-thread pilot. No training, upload, pin change, push or deployment.
+
 ### 2026-10-04 — bounded structured-export audit complete; release priorities retained
 
 Five source-oracle arms on110 real Lieder crops retain all6,811 source events and exact non-span XML. Structured ties match both source `<tied>` and `<tie>` fields exactly; phrase endpoints still have578 mismatched notes under current export because the combined legacy field wins. Diagnostic structured phrase ownership reduces that to6; source voice identity repairs13 additional agreed spans, and suppressing unmatched-stop fallback repairs the final6. All391 interior spans agreed by independent voice/part source views match in the strict diagnostic arm.51 other interior span exposures and6 endpoint mismatches remain unqualified; differing source scope does not prove bad source notation.
