@@ -1,0 +1,9 @@
+{
+  "rows_sha256": "452bd61d884c73ca1f4960b2657462ccdcd96945a396432c0443cf1ab1d672b3",
+  "reference_origin": "Manual transcription of original scans and verified row crops; native verse mapping from independent page linkage",
+  "OCR_used_to_generate_or_select_reference": false,
+  "review_blinded_to_prior_OCR": false,
+  "partition": "calibration",
+  "scope": "12 complete visible lyric rows; Chaminade first system contains only vocal rests; no note pixel anchors",
+  "normalization": "Unicode NFC and casefold; curly apostrophes to ASCII; discard whitespace and layout connectors - _ \u2014 \u2013 \u00b7; preserve remaining punctuation and diacritics"
+}

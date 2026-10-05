@@ -1,0 +1,218 @@
+[
+  {
+    "id": "IMSLP154060-system2-verse2",
+    "score": "IMSLP154060",
+    "page_id": "IMSLP154060:05dd4142e01479c22af8a01e",
+    "system_index": 1,
+    "source_verse": "2",
+    "box": [
+      1139,
+      1581,
+      2136,
+      1635
+    ],
+    "visible_text": "If I were a star - ling gay A -",
+    "image_sha256": "5395aef88e3e9d01cfafbc1cb310836966787add8f9d24577669d7951d2548a9",
+    "crop_sha256": "7799d65f051680a6ff7f13e6968be060ff7b6bf72cbb6c559a2631d11d25b026",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP154060-system2-verse1",
+    "score": "IMSLP154060",
+    "page_id": "IMSLP154060:05dd4142e01479c22af8a01e",
+    "system_index": 1,
+    "source_verse": "1",
+    "box": [
+      1139,
+      1639,
+      2136,
+      1697
+    ],
+    "visible_text": "Si j'é - tais l'oi - seau lé - ger Des",
+    "image_sha256": "5395aef88e3e9d01cfafbc1cb310836966787add8f9d24577669d7951d2548a9",
+    "crop_sha256": "cb20620f5cdfb1275b1ab2264705d9343e7c4a28271705eff01cff944f4016c3",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP154060-system3-verse2",
+    "score": "IMSLP154060",
+    "page_id": "IMSLP154060:05dd4142e01479c22af8a01e",
+    "system_index": 2,
+    "source_verse": "2",
+    "box": [
+      318,
+      2494,
+      2136,
+      2555
+    ],
+    "visible_text": "mong for - est le - gions, Ah! I'd swift - ly fly a - way To",
+    "image_sha256": "5395aef88e3e9d01cfafbc1cb310836966787add8f9d24577669d7951d2548a9",
+    "crop_sha256": "72f25d0d981ba4a8c7bb5a2723c026c50e594a8e42a3b22fc221caea9a0a35b0",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP154060-system3-verse1",
+    "score": "IMSLP154060",
+    "page_id": "IMSLP154060:05dd4142e01479c22af8a01e",
+    "system_index": 2,
+    "source_verse": "1",
+    "box": [
+      353,
+      2555,
+      2136,
+      2614
+    ],
+    "visible_text": "fo - rêts sau - va - ges, Ah! je vou - drais voy - a - ger Sur",
+    "image_sha256": "5395aef88e3e9d01cfafbc1cb310836966787add8f9d24577669d7951d2548a9",
+    "crop_sha256": "75b3ef0253b02922af50a3531a0ba79742b1de098614573a51f8e9663c7e9d26",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system1-verse1",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 0,
+    "source_verse": "1",
+    "box": [
+      704,
+      545,
+      2078,
+      590
+    ],
+    "visible_text": "Nun holt mir ei - ne Kan - ne Wein, und",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "b5c1499d37178b78543c6acea3fce942cf0c68387f8ed527e4fb778b294683c6",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system1-verse2",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 0,
+    "source_verse": "2",
+    "box": [
+      704,
+      590,
+      2078,
+      640
+    ],
+    "visible_text": "Go fetch a flask of spark - ling wine, and",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "af80d9e1dce4668c5d677993613180a58fa71dceada906e8047acf960766ee55",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system2-verse1",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 1,
+    "source_verse": "1",
+    "box": [
+      335,
+      1166,
+      2078,
+      1215
+    ],
+    "visible_text": "lasst den Be - cher sein von Gol - de, denn ei - nen Trunk noch will ich",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "570d1c8704fae306f53be110c37aaa8f9dbd0336ee547acc2220338927a98861",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system2-verse2",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 1,
+    "source_verse": "2",
+    "box": [
+      335,
+      1215,
+      2078,
+      1265
+    ],
+    "visible_text": "fill · it in a crys - tal glas - sie, I'll drink a health be - fore I",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "67c1c3f686ac8e1eb6f0fade320fdd8167acc1433a2bf9bcf9a7cabf18d344f2",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system3-verse1",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 2,
+    "source_verse": "1",
+    "box": [
+      335,
+      1810,
+      1467,
+      1856
+    ],
+    "visible_text": "weih'n vor mei - nem Ab - schied dir, o Hol - de!",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "796d43c0db243547136adc8ef721735d36013b69537eec0cc4f51556dba0bf2c",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system3-verse2",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 2,
+    "source_verse": "2",
+    "box": [
+      335,
+      1856,
+      1467,
+      1908
+    ],
+    "visible_text": "go, a health to thee, my bonnie las - sie!",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "aca07eb5e9a1d6e713e774c40855987f36e8c7a972523552eae75fc0702ccfe7",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system4-verse1",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 3,
+    "source_verse": "1",
+    "box": [
+      729,
+      2416,
+      2078,
+      2468
+    ],
+    "visible_text": "Am Dam - me dor - ten schwankt das Boot, der",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "eaf4430e7173a1f32ce4ad7d95f2e200ae4dfa57addfe4be8c019a32856135e5",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  },
+  {
+    "id": "IMSLP89794-system4-verse2",
+    "score": "IMSLP89794",
+    "page_id": "IMSLP89794:14b7cfbe80a9289694f0aff9",
+    "system_index": 3,
+    "source_verse": "2",
+    "box": [
+      729,
+      2468,
+      2078,
+      2523
+    ],
+    "visible_text": "The skiff is tos - sing in the bay, the",
+    "image_sha256": "8b0f1a766610ce4e724af6312004bf9b56235d4cec4ad6bfc0c6992bb7eb488e",
+    "crop_sha256": "64fd83300f0de654707db8143434558ca3772f71d3d01de9a06b4e71306dea21",
+    "note_attachment_certified": false,
+    "original_scan_and_row_crop_visually_checked": true
+  }
+]
