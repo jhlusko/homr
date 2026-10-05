@@ -440,3 +440,11 @@ Next: resolve export parity, then qualify the full public27 stack on untouched r
 5. **Return to release qualification after selecting a complete stack.** Measure untouched real-score/full-page performance with the selected core, heads, runtime policies and detector fusion. Then regenerate final side-by-side examples (E3), finalize pins/calibration/provenance and update the public OTS-HOMR model description to claims supported by those results. C1 lyric-recognition/attachment quality and the lyrics/directions/dynamics fusion plan remain separate release work; random-start scoring does not close them.
 
 No GPU is needed for steps 1–3. Random-start training/decoding is inactive. The comparison, initial error audit, gallery and full raw crop comparison are complete; export/runtime qualification remains open.
+# 2026-10-05 attachment baseline
+
+The C1 attachment contract is now implemented in the OTS service as an off-by-default
+diagnostic policy. The existing MuseScore/rendered-source nearest-x benchmark is the baseline:
+98.2% overall (26,503/26,998 syllables), 93.0% on melismas, and 98.7% on one-note syllables.
+See `docs/C1_ATTACHMENT_BASELINE_2026-10-05.md`. The next release measurement is a staged
+score using native ground truth, with detector misses, OCR errors, and attachment errors
+reported separately after a producer exposes note anchors and lyric boxes.

@@ -14305,3 +14305,1576 @@ environment with scheduled sampling on is suspect. The released core's heads did
 2026-08 environment (`/workspace/b0/homr/.venv`, versions not recorded) evidently didn't hit
 this. Still unexplained: E1's early ConvNeXt stages also stayed at `426` despite the logged
 "Unfreezing backbone at epoch 2.0". Check them in run 2.
+
+## E1 run 2: public-input core misses the per-corpus reproducibility gate (2026-09-26)
+
+Trained from `426` on fixed `homr` `2b44af8`: Arm A, 6 epochs, then rareNum, 3 epochs
+(`2026-09-26 00:18–02:03 UTC`). Unlike run 1, all six output heads moved: the smallest
+max change versus `426` was 2.9e-3 after stage 1 and 4.2e-3 after stage 2. PyTorch and
+the new ONNX export matched exactly on every branch for 10/10 real PDMX staves. The
+comparison used one ONNX scoring path, identical indexed staves, no failed rows, and
+numerator-neutral accuracy. It is a valid result under the criterion frozen before training.
+
+| corpus | released | E1 run 2 | paired difference (95% CI) | ±1.5pp |
+| --- | ---: | ---: | ---: | --- |
+| OSSQ (792) | 95.02% | 94.13% | −0.89pp (−1.39, −0.40) | pass |
+| PDMX (3,422) | 88.37% | 86.13% | −2.23pp (−2.98, −1.52) | fail |
+| Lieder (300) | 94.61% | 90.20% | −4.41pp (−7.21, −1.79) | fail |
+
+The rare-numerator gate passes: 5/x 46/84 E1 versus 49/84 released (93.9%), and
+12/x 73/115 versus 70/115 (104.3%). The published PDMX valid split has 3,422 rows,
+not the private plan's 3,349; both models used the same published rows. **Overall
+verdict: fail.** No model was promoted or pinned. Investigate the Lieder v4→v8 data
+change, then OSSQ/PDMX builds and code drift, before any public accuracy claim. D3's
+head refit remains parked while the core gap is unresolved.
+
+Pulled instance evidence to `../homr-artifacts/gpu-roadmap-20260919/instance-results/
+workspace/train-20260926/e1-run2/`: final stage weights and trainer checkpoints,
+ONNX export, all three paired scoring sets, per-corpus JSON reports, logs, input
+manifests and the instance's `report_run2.md`. Stage-1 weight SHA-256 is
+`0520a7c25719ef8eb9bcf65a1b0a13956da26a63f9dadbc24f8142f018bb0b32`;
+stage-2 is `f8a90026465456ab53b2e807e4a4800870250c2790cc3ba98c56f14f1202fe15`.
+
+## C2 targeted latency remeasurement on fixed staff code (2026-09-26)
+
+The instance's `c2_remeasure_instance.py` (PID 2034161, tmux `c2_remeasure`)
+finished with exit code 0 around 04:31 UTC. It used clean `homr` `2be0926`
+(containing the `a4c88fb` HEURISTIC encoder setting and staff-region fix) and
+the warm non-lyric `OtsHomrEngine.transcribe` path on three earlier problem pages:
+
+| OSSQ page | previous paired run | fixed-code baseline |
+| --- | --- | ---: |
+| `sq10414906:0002` | OpenCV resize failure after 7.771 s | 115.200 s, success |
+| `sq16138966:0002` | internal 280 s timeout after 282.747 s | 249.133 s, success |
+| `sq16138966:0003` | 331.607 s baseline, 333.796 s paired | 131.381 s, success |
+
+One warm baseline sample per page does not establish a new p95 or paired
+latency-gate pass; this script did not run the extra lyrics detector, HTTP/cold
+start or fusion geometry. The formerly timed-out page has only 30.867 s of
+baseline headroom under the 280 s limit. Repeat the 20-page paired benchmark
+on the fixed checkout before reconsidering the gate. Script, JSON and log
+are preserved under `../homr-artifacts/gpu-roadmap-20260919/instance-results/
+workspace/c2-latency-20260925/remeasure-heuristic/`; SHA-256 matched the
+instance. The code commit was fetched without changing the local branch as
+`instance/c2-resizebug-20260926`.
+
+## C2 full paired latency rerun on fixed code (2026-09-26)
+
+The quiet A100 instance ran the 22 full-resolution OSSQ pages from the first
+paired attempt through the same warm pinned core/non-lyric detector path and
+then the extra pinned lyrics detector on each page. Clean HOMR commit `2be0926`
+contains the HEURISTIC encoder change (`a4c88fb`) and staff-region fix.
+Persistent tmux run `c2_fixed_paired2_20260926` and watcher started 05:28:56
+UTC; the run exited 0 at 06:09:10 UTC. All 22 pages produced results, no failures.
+
+| metric | earlier attempt | fixed-code rerun |
+| --- | ---: | ---: |
+| successful / attempted | 20 / 22 | 22 / 22 |
+| paired median | 143.522 s | 114.604 s |
+| conservative paired p95 | 333.796 s (max at n=20) | 195.091 s (second-slowest at n=22) |
+| paired maximum | 333.796 s; another page timed out | 249.589 s |
+| extra lyrics median | 1.714 s | 1.7765 s |
+
+The page that timed out before now finishes in 249.589 s paired, leaving
+30.411 s under the 280 s limit. The former 333.796 s page finishes in
+134.758 s. The **measured warm paired gate passes**: p95 is 84.909 s below
+280 and no page failed. This excludes HTTP/cold start and future fusion
+geometry, so it is not a production latency guarantee. Calibration and C1
+lyric read/attach remain independent release blockers.
+
+An initial attempt was stopped after it reproduced the old OpenCV resize
+failure: the runner pointed model files to the fixed checkout but imported
+old staged HOMR code via `PYTHONPATH`. Its log is marked invalid. The corrected
+runner imported `homr.staff_parsing` from the `2be0926` checkout and restarted
+all 22 pages. Only the corrected run is reported above. The final report,
+manifest, script, logs and timestamps were pulled to
+`../homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/
+c2-latency-20260925/fixed-paired-22/`; report and log SHA-256 matched the
+instance, and local recomputation verified the page set and percentiles.
+
+## 2026-09-27: E1 backbone failure reproduced on a new RTX 4090
+
+The rented 24 GB RTX 4090 ran the E1 experiments from an isolated environment
+with torch 2.6.0+cu124,
+Transformers 4.53.2 and x-transformers 2.16.1, with working CUDA. The exact
+`2b44af8` checkout, checksum-verified public OSSQ v2/PDMX v1/Lieder v8 shards,
+all published indexes, and checkpoint 426. The checkpoint matches the archived
+SHA-256. Completed E1 artifacts are stored locally under
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/`.
+
+A two-step frozen/two-step unfrozen probe on real OSSQ data reproduced the bug:
+eager execution updated the ConvNeXt stem twice, while `torch.compile` left
+its gradient `None` and its weights bitwise unchanged. An actual three-epoch
+HF Trainer probe confirmed that the stem stayed in the optimizer, yet took
+zero steps after the logged epoch-2 unfreeze only with compilation; eager
+Trainer took two steps. This isolates the failure to compilation across the
+freeze transition in the E1 environment. The exact library-version boundary
+remains untested. Details and numerical probes are in
+`docs/E1_RUN2_INVESTIGATION_2026-09-26.md`.
+
+`training/transformer/train.py` now disables compile for runs that freeze the
+backbone and aborts if it has not moved after two unfrozen optimizer steps.
+Two guard tests, the existing scheduled-sampling gradient test, and a repeat
+eager Trainer probe passed on the instance. The corrected public-input
+stage 1 started 03:16:45 UTC in persistent tmux `e1_public_stage1`, with
+`e1_public_monitor` checking every two minutes. It requests 34,510 OSSQ,
+3,567 Lieder (the actual public count), and 6,700 PDMX rows; exact sampled
+and post-filter rows are saved in the run directory. The archived E1 gate is
+unchanged. This new run and any eventual private-Lieder comparison must be
+scored on all three frozen held-out corpora before promotion.
+
+## 2026-09-27: D3 runtime investigation and completion
+
+The first D3 head-refit attempt was stopped at the user's direction after
+about 2h44m without an epoch report. It had used zero DataLoader workers and
+did not save checkpoints until all six epochs completed. Loader profiling on
+the RTX 4090 found 2.54 examples/s at zero workers versus 10.24–10.48 with
+4–8 workers; a short pass through the full model measured 10.65 and 12.00
+examples/s, respectively. This points to serialized CPU image preprocessing
+as the main avoidable delay. Profiling and cancelled-run evidence is archived
+locally under
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/profile-and-resume-smoke/`.
+
+The trainer was updated to save an atomic epoch checkpoint with head weights,
+Adam state, reports and RNG state, and to reject resume if the index, core or
+key training settings differ. Sixteen focused tests and an epoch-boundary
+resume smoke test passed. The eight-worker restart completed all six epochs
+and all three evaluations on the exact 44,199-row filtered E1 public sample.
+Its final model, state, index, reports, predictions, and comparison are stored
+locally under
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/final-run/`.
+The comparison failed the frozen non-regression criterion on ten supported
+metrics; do not promote these heads. See
+`docs/E1_D3_RUNTIME_RETRY_2026-09-27.md` for the closeout.
+
+## 2026-09-27: whole release-sequence closeout
+
+The eligible core is named `public-rareNum-20260927` (SHA-256
+`89a97a2084743db22323969341c0bfb08c77f098c47ed3e40740df4f0b5709a0`). This is the
+public-input E1 rare-number continuation, not historical failed run 2: all three
+paired held-out accuracy gates pass, and exact
+position 5/x and 12/x counts are 91.8% and 85.7% of released. The three-epoch
+continuation used 572 available PDMX replay rows; 226 planned GrandStaff rows
+were unavailable, and no substitute data was introduced. The report and paired
+scores are archived locally at
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/rareNum-continuation/public-rareNum-pdmx/`.
+
+D3 then completed the six-epoch structured-head refit on the exact 44,199-row
+filtered E1 public training sample, followed by OSSQ, PDMX, and Lieder source
+evaluations and a v7 comparison. Final training loss was 1.7747 over 265,194
+row-epochs. The historical approved v7 mixed head index was absent, so use of
+the E1 sample is an explicit recipe deviation, not a recreation of the v7 mix.
+The trainer now saves atomic epoch checkpoints and can resume with index/core/
+configuration identity checks. The initial zero-worker run was cancelled at
+the owner's direction after ~2h44 without an epoch checkpoint. Profiling traced
+its throughput failure to CPU oversubscription: one-thread batch input took
+0.111–0.166 s versus 2.32–6.34 s with default 255-thread settings, while a GPU
+update stayed near 0.07 s. Sixteen focused tests and an epoch-boundary resume
+smoke test passed.
+
+Final D3 artifacts, including trained heads, resumable state, exact training
+index, three source reports/predictions, and comparison, are archived at
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/final-run/`.
+The staged v7 baselines are in the sibling `d3-head-refit/v7-head-baseline/` directory.
+The portable comparison report is
+`report/d3_v7_comparison.local.md`; it reports the gate result and all source deltas.
+All 12 source artifacts listed in the transfer SHA-256 manifest verified locally. The run is complete but no model was promoted,
+published, pinned, or deployed. The predeclared non-regression gate failed on ten
+supported metrics: OSSQ beam levels 2/3; PDMX beam levels 2/3, hooks, ties; Lieder
+beam 1, stems, slur spans, ties. PDMX stems improved by 11.60 pp and Lieder hooks
+by 9.82 pp, but the cross-source regressions outweigh those gains. Do not promote
+the D3 heads; `public-rareNum-20260927` remains a separate candidate, and its pairing
+with released v7 heads is now being scored across the three published validation sets. The
+control is `public-rareNum-20260927-core-v7heads-control`, with an inference-only job and
+watcher in persistent tmux; at 18:40 UTC it had written 496/3,904 OSSQ predictions with no
+missing-image warnings. Provisional ETA is 20–30 minutes. The RTX 4090 is in use for this
+evaluation, with no training active.
+
+The independent-seed replicate and bounded learning-rate sweep have not
+started. After the control evaluation, run the planned independent-seed E1 replicate if the rental budget allows,
+followed by the bounded learning-rate sweep. Rental cutoff/cost is not exposed
+by the instance capability status. The sweep also needs a fresh validation
+split grouped by score and disjoint from training. The local workspace has
+corpus build recipes and the D3 row index, but not the pinned training
+image/token shards needed to materialize and score that split. Confirm data
+availability and rental budget before scheduling those runs.
+
+## 2026-09-28: head compatibility audit closeout
+
+The corrected preprocessing/source-weighting audit completed at 23:38 UTC on the RTX
+4090. Both three-epoch arms and both fixed head controls finished all three source
+evaluations; 77 transferred artifacts passed local SHA-256 verification. The complete
+local archive is
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/head-compatibility-audit-20260927/`.
+
+The controlled v7-like source mix improved PDMX beam 2 (+2.42 pp), hooks (+2.25 pp),
+ties (+2.02 pp), and Lieder beam 1 (+3.01 pp) versus the D3 mix, but regressed OSSQ beam
+3 by 9.94 pp, OSSQ beam 2 by 2.74 pp, PDMX beam 3 by 4.49 pp, and PDMX nonzero advance
+by 2.31 pp. Neither arm passes cross-source non-regression; neither is promoted. The
+full table is `.../source_mix_results.md` in the local archive.
+
+The audit also corrected an evaluation reproducibility issue: Albumentations 2.0.8's
+cached transforms had independent RNGs, so repeated validation reads changed images and
+44/72 probe staves changed discrete predictions. Seeding the transform from NumPy per
+sample made all repeated predictions and reports identical and made resumed training
+bitwise-identical to uninterrupted training in the smoke test. Historical old-core/v7
+comparisons remain descriptive because they used the earlier stochastic preprocessing.
+No model was promoted, published, pinned, or deployed. The next model experiment should
+target OSSQ beam-3 stability with score-grouped or per-head/source weighting, after
+reviewing the corrected controls.
+
+Other release tracks remain separate. D1 policy wiring and its 12-case local
+side-by-side review are complete; the owner said the review looked good. D1
+still needs the provider identity/pin contract and real-page OSSQ verification
+before activation. C2's guarded checkbox and box-fusion path are local and
+disabled; the fixed-code warm paired 22-page run passed (22/22, conservative
+p95 195.091 s, max 249.589 s), but final-path overhead, score-disjoint fusion
+calibration, and C1 lyric read/attach quality still block enabling it. B4's
+test read failed and `e4` remains released. Dynamics stays review-only, the
+rest-spanning beam hybrid remains rejected, ordinary-group beam arbitration is
+open, and E3 examples should be regenerated against any final promoted models.
+
+
+## 2026-09-27: rareNum core with released v7 heads — control closeout
+
+The inference-only `public-rareNum-20260927` + `mixed-v2stems-v7` control completed at
+19:09 UTC across the published OSSQ, PDMX, and Lieder validation indexes. The RTX 4090
+is idle. Reports and prediction files were pulled to
+`homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/public-rareNum-20260927-core-v7heads-control/`; all artifacts listed in the remote SHA-256 manifest verify locally. Evaluated sequence counts (3,904 / 3,293 / 298) match the v7 baseline reports.
+
+The core-swap diagnostic is documented in that archive's
+`report/v7_core_swap_comparison.md`. Holding the released heads fixed, the new core
+regresses supported metrics including OSSQ ties (-2.55 pp), PDMX beam levels 1/2
+(-1.21/-1.60 pp), hooks (-1.25 pp), slur spans (-2.41 pp), ties (-2.45 pp), and
+nontrivial advance (-1.24 pp), and Lieder ties (-3.21 pp) and slur spans (-1.83 pp).
+This is not a validated replacement stack. The core itself passed its previously frozen
+core gates, but it still lacks a compatible validated head checkpoint: D3's refit failed
+its independent predeclared non-regression gate. Do not promote the D3 heads or infer that
+the core alone can replace the released stack. Next model work should establish compatible
+heads for the explicitly dated core; seed replicate and LR sweep remain deferred pending
+training-data/split readiness and rental budget.
+
+
+## 2026-09-27 20:35 UTC: head audit found unseeded validation augmentation
+
+Audit found a concrete reproducibility bug before the planned source-weighting trial:
+15/16 repeated validation reads changed input tensors because Albumentations 2.0.8
+Compose owns RNGs not covered by the loader's Python/NumPy seeds. Seeding the cached
+geometric transform from NumPy on every call fixes the observed issue. The new regression
+tests fail before the change; 23 focused tests pass afterward. A 96-row GPU smoke now
+produces identical weights across all 24 tensors for uninterrupted versus epoch-resumed
+training (max difference 0; before fix 0.012303). No environment was rebuilt or installed.
+
+All 7,495 archived staves have matching saved references and positions across the three
+head comparisons; no D3 training/evaluation token or score-ID overlap was found. Those
+checks alone do not ensure identical transformed pixels. Earlier attribution of score
+regressions to core/head incompatibility was too strong. D3's changed recipe remains a
+plausible contributor: 34,367 OSSQ / 6,310 PDMX / 3,522 Lieder, versus the historical
+v7 pre-filter recipe of 35,226 / 18,004 / 10,701 (threefold Lieder). Its +11.60 pp PDMX
+stem macro-F1 mainly reflects the rare no-stem class; up/down accuracy fell 0.74 pp.
+
+Correction: v7 is an accepted local candidate, not the deployed provider head pin. These
+head reports use ground-truth decoder tokens; they do not validate an entire page pipeline.
+
+The bounded headmix diagnostic started in persistent tmux `headmix_20260927`, with
+`headmix_20260927_watch`. It first checks repeated GPU predictions before/after the fix,
+then trains two identically initialized head sets on the same new core and unique pool
+for three equal-sized epochs. Only source draw proportions differ. It scores both arms
+and existing v7/D3 heads with corrected preprocessing, retaining every epoch and raw
+predictions. Initial ETA about three hours (23:35 UTC). The local tmux session
+`headmix_20260927_pull` pulls completed artifacts and verifies checksums while the laptop
+is available. No model is promoted. See `docs/HEAD_COMPATIBILITY_AUDIT_2026-09-27.md`;
+local evidence and the frozen protocol are at
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/head-compatibility-audit-20260927/`.
+
+## 2026-09-28 02:10 UTC — recovered pinned core; corrected baseline scoring and beam-3 audit
+
+The source-weighting sequence completed at 2026-09-27 23:38:54 UTC. All 12 evaluations
+and 77 artifacts are local and checksum verified. Neither three-epoch mix is an
+across-source winner; see `source_mix_results.md` in the local evidence root above.
+
+Corrected an earlier incorrect claim that the old core only survives as ONNX: the local
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/retrain-20260918/weights/OTS-homr.pth`
+is the checkpoint named by the v7 manifest. Its SHA-256
+`1b2855ce3facea9aa8b0017f6e30143abd9aa43569a2f9ce1ab46bf8bf818fa3` exactly matches
+the current local provider core pin. All 127 directly comparable named parameters in
+the pinned encoder/decoder ONNX graphs also match (partial tensor check, not runtime
+parity). An identical file was downloaded from the immutable HF pin directly onto the
+instance after the laptop upload proved slow; that upload was stopped. No secrets were
+logged and the existing environment was left unchanged.
+
+The old-core/v7 corrected control started **02:07:12 UTC**, with the existing evaluator,
+same three validation indexes and fixed preprocessing, batch 8/workers 8/CPU threads 1.
+Persistent instance sessions `oldcore_control_20260928` and
+`oldcore_control_watch_20260928`; local `oldcore_control_pull_20260928` pulls and verifies
+checksums, then generates `corrected_old_core_comparison.md/json`. Initial estimate
+35–50 minutes. The evaluator loaded all 326 core parameters and then the accepted v7
+heads successfully. Results will be archived under `fixed_controls/old_core_v7_heads/`
+inside the local evidence root above. These are teacher-forced metrics, not full pages.
+
+CPU analysis `beam3_failure_audit.py` checks all 7,495 identities/references and computes
+per-class confusion matrices and per-score paired errors. V7-like mix versus D3 mix:
+OSSQ 142 broken/69 fixed beam-3 notes, with forward hooks accounting for 56 broken/0
+fixed; PDMX forward hooks 84 broken/2 fixed. Forward→backward confusions rise 2→50 on
+OSSQ and 16→89 on PDMX. OSSQ beam-3 supervision spans only nine scores, with two scores
+accounting for 100/142 broken notes; Lieder has no beam-3 support. Reports are local
+`beam3_failure_audit.md/json`. Next decision should use the corrected baseline plus
+directional-label/coverage evidence and score-grouped internal validation. No speculative
+full-core retrain, broad LR sweep, deployment, or promotion was started.
+
+## 2026-09-28 03:12 UTC — corrected old-core control complete, recovered locally
+
+Completed 02:39:29 UTC (32m17s): OSSQ 3,904, PDMX 3,293, Lieder 298; all 7,495 staves.
+At the 03:11 status check the laptop watcher had not pulled results. Stopped that local
+tmux session and ran the pull script directly. All nine evaluation artifacts pass local
+SHA-256 verification; all identities and references match across the five model
+combinations. GPU idle and remote scoring/watch sessions exited. Existing environment
+unchanged. Local report:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/head-compatibility-audit-20260927/corrected_old_core_comparison.md`.
+
+Fixed v7 heads on the new core versus pinned old core: ties macro-F1 −3.09 pp OSSQ,
+−2.60 pp PDMX, −2.86 pp Lieder; stem direction −1.83 pp OSSQ/−1.20 pp PDMX; slur-span
+F1 −2.46 pp PDMX. Gains include OSSQ beam-3 +2.31 pp and Lieder hooks +9.79 pp.
+Preprocessing randomness did not account for the main regressions. None of the tested
+new-core head sets clears cross-source non-regression against the corrected old-core/v7
+candidate. Retain that accepted local candidate while investigating; these are
+teacher-forced head metrics, not a production pipeline ranking. Next is hook-direction
+label coverage and score concentration, with score-grouped internal validation before
+a targeted head trial. No further GPU run has started.
+
+## 2026-09-28 03:28 UTC — hook coverage audited; internal beam-3 loss trial started
+
+Authoritative token/sidecar audit of all 44,199 filtered headmix rows completed. Counts,
+per-score support, exact simulated sampler exposures, and frozen internal indexes are
+local at
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/head-compatibility-audit-20260927/hook-coverage-20260928/`.
+Eight artifacts pass SHA-256 checks. Direct XML forward/backward mappings preserve both
+directions; OSSQ vendor mapping agrees; augmentation has no horizontal mirror. This is
+not full visual verification of each published label.
+
+OSSQ/PDMX/Lieder beam-3 forward counts 738/293/13; backward 1,360/343/37. Lieder's 13
+forward labels come from only two scores. The realized three-epoch source sampler cut
+OSSQ forward exposure 2,214→1,466 while raising PDMX 879→1,728. Fixed internal split
+uses complete score groups, 40,290 train / 3,909 validation rows, selected by seed
+20260928 stable hashes then training-label-only rare-class coverage. No published
+validation score IDs overlap. Existing head weights saw this holdout, so both arms use
+fresh initialization; the frozen core has seen training-corpus scores.
+
+Started 03:25:54 UTC: `public-rareNum-20260927-head-hookloss-20260928`, plain loss versus
+beam-3-only inverse-square-root class weights capped at 4. Same frozen core, fresh
+head seed 20260928, samples, augmentations, Adam .001 and fixed three epochs; other
+heads stay plain. Weighted 96-row resume smoke passes bit-exactly for all 24 tensors.
+The full arms must have 22 bit-identical non-beam-3 tensors before final internal scoring.
+Prespecified result bar: OSSQ/PDMX beam-3 macro-F1 +1 pp each, forward-hook F1 increases,
+backward-hook F1 loses no more than 1 pp. Final scoring is internal only; no epoch
+selection, published-validation read, broad sweep, or promotion is chained.
+
+Local protocol/scripts/results directory:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/head-compatibility-audit-20260927/hookloss-20260928/`.
+Persistent remote tmux `hookloss_20260928` and `hookloss_watch_20260928`; local
+`hookloss_pull_20260928` pulls/verifies on completion while laptop is available. Every
+epoch retains weights and optimizer/RNG state. Initial ETA 04:36–04:56 UTC. Existing
+instance environment preserved.
+
+03:31 UTC update: first full epoch reached 800/5,037 batches in 204 seconds. Early
+throughput is slower than the previous source-mix run; revised overall ETA
+**05:25–06:05 UTC**. Remote training/watch and local pull sessions are live. Weighted
+smoke verification is also copied locally under `hookloss-20260928/smoke-verification.json`.
+
+## 2026-09-28 04:31 UTC — direct public-input core versus upstream benchmark launched
+
+Owner requested direct experiments supporting an eventual ots-homr page update. Comparing
+upstream checkpoint 426, locally pinned OTS core SHA 1b2855ce..., and public-rareNum-20260927
+SHA 89a97a20... through the same FP32 PyTorch architecture/greedy decoder and static crop
+preprocessing, with native vocabularies and strict state loading. No permissive vocabulary
+widening, added heads, reranking or post-decode repairs. All native upstream branches are
+archived from b6fd20809a8dcaf10dfd39a4ca4f64c6f056e644. It has 260 rhythm classes versus
+279 in the two newer cores. Contrary to the old PIPELINE caveat, upstream has native `N`
+at lift index 4 and all seven lift classes; corrected that statement in PIPELINE.md.
+
+Data frozen to 792 OSSQ benchmark staves, 3,422 PDMX validation, 300 Lieder v8 validation.
+Same crops/references for all three models; image hashes retained. Failures count as empty
+predictions, not exclusion. Primary metric shared-vocabulary joint-symbol edit error rate
+after removing numerator symbols; full-vocabulary errors, branch errors, pitch+accidental
+note errors, exact staves, historical positional accuracy and 5/x/12/x exact-position
+detections reported separately. Confidence intervals use paired 2,000-replicate bootstrap
+over score groups. Pure-Python bit-vector edit distance verified against independent DP
+on 1,000 random pairs and tuple symbols. No test data, model selection, or retraining is
+part of this comparison; these published validation sets were inspected previously.
+
+The 12-crop/three-source smoke passed all 36 predictions with strict loads, matching crop
+hashes and references, no sequence-limit hits. Scoring began around 04:30 UTC in four
+disjoint row shards. GPU utilization reached 100%, about 5.5 GB memory including the
+ongoing head trial. No environment changes. Timing is under concurrent load and supports
+no production-latency claim. Initial full benchmark ETA **06:00–07:30 UTC**, refined
+after longer PDMX rows establish throughput.
+
+Remote tmux: `public_core_bench_20260928`, worker suffixes `_0` through `_3`,
+`public_core_bench_watch_20260928`. Local `public_core_bench_pull_20260928` archives and
+verifies completed artifacts. Each JSONL is resumable with provenance checks. Local
+protocol/scripts/forthcoming report:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-core-vs-upstream/`.
+After verification, update PIPELINE.md results first and prepare a local ots-homr page
+update distinguishing the publicly rebuilt candidate from the deployed engine. No
+improvement is assumed in advance, and no deployment/push is part of this task.
+
+## 2026-09-28 09:10 UTC — upstream benchmark and hook-loss trial completed and archived
+
+Direct three-core benchmark completed 06:04:35 UTC. Head-loss trial completed
+05:31:56 UTC. At 09:04 UTC the GPU was idle, 1 MiB allocated; only the pre-existing
+ssh_tmux session remained. No follow-on GPU job launched and the Python environment
+was left unchanged. Laptop pull sessions resumed on this check-in; the benchmark pull
+script was also invoked directly to collect promptly. Both watchers exited after success.
+
+Local benchmark: all **96 artifact checksums passed**, report regenerated locally from
+all 13,542 predictions, identical references/image hashes across the three cores.
+No failures or sequence-limit hits. Shared-symbol error upstream→public: OSSQ
+14.47→5.22% (−9.25 pp, paired score CI −12.13 to −7.23), PDMX 7.44→4.69%
+(−2.75 pp, −3.81 to −1.95), Lieder 5.76→2.53% (−3.23 pp, −5.02 to −1.71).
+All three support improvement over upstream. Public-minus-pinned differences are
+inconclusive: −0.03/+0.17/−0.06 pp with intervals crossing zero. This is not proof
+of equivalence or of a better model than the pinned core. PDMX numerator exact-position
+counts public 5/x 45/84, 12/x 60/115; upstream 0/84, 0/115; pinned 48/84, 70/115.
+The pinned 5/x count is one below the prior runtime's 49/84: retain inference context.
+
+Local benchmark report/protocol/predictions:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-core-vs-upstream/`.
+
+Hook-loss archive: all **63 artifact checksums passed**, including both arms' weights,
+resumable states and six internal evaluations. All 22 other-head tensors and predictions
+are identical. Beam-3 macro-F1 weighted-minus-plain +0.58 pp OSSQ/+0.76 pp PDMX fails
+the ≥1 pp criterion. Forward-hook F1 +1.58 pp OSSQ but −2.01 pp PDMX; PDMX recall rises
+40→45% while precision/F1 do not support the intended improvement. Prespecified
+hypothesis **not supported**. No promotion or published-validation confirmation chained.
+Local full evidence:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/head-compatibility-audit-20260927/hookloss-20260928/`.
+
+Updated PIPELINE first, then the local `OurTextScores/frontend/app/ots-homr/page.tsx`:
+new core error-rate table and pitch/accidental gains, numerator capability separately,
+links to static full results/protocol, clear candidate/deployed distinction and
+previously-inspected validation/replay-deviation limits. Historical deployed positional
+figures remain separately labelled. Removed unsupported attribution of core gains to
+cross-staff agreement. Added public report Markdown/JSON and protocol copies under
+`OurTextScores/frontend/public/benchmarks/`. Updated release sequence and head audit.
+Frontend TypeScript check and targeted page ESLint pass; both repo diff checks pass.
+No deployment or push. Compatible new-core heads remain the release blocker.
+
+## 2026-09-28 09:38 UTC — remaining-head audit, core package, bounded LR/epoch run
+
+Owner agreed to the proposed next sequence and authorized proceeding. Completed the
+saved-prediction audit and local reproducibility package, then launched the bounded
+head optimization comparison; no publish/upload/provider change or broad search.
+
+CPU audit joins five corrected configurations over all 7,495 staves, verifies identity
+and references, and recomputes ties macro-F1, directional stem accuracy and complete
+slur-span F1 exactly against saved reports. Positional slur diagnostics exclude masked
+non-notes using tie UNKNOWN; complete spans stay separate. Core-swap PDMX ties fix
+791/break 1,286; stems fix 6,547/break 9,098. Top-two scores account for just 7.7% of
+tie breaks and 4.8% of stem breaks. Tie start/stop detection falls on all sources.
+PDMX matched slur spans fix 119/break 96, but inventions rise 616→874: a precision
+loss, not simply missing spans. Refits change the miss/invention balance without
+establishing a broadly acceptable head set. Full tables/confusions/score concentrations
+and divergent cases are local:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260927/d3-head-refit/head-compatibility-audit-20260927/remaining-head-audit-20260928/`.
+Reproduction script `audit_remaining_heads.py` is one directory above.
+
+Core package is local and reviewable, all 63 file checksums pass:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-core-reproducibility/`.
+Includes initial/final checkpoint identities, verified weights, public corpus locks,
+nine portable ordered indexes, original manifests and sampled rows, recorded package
+versions, runtime/training source at 2b44af8 plus the original eager-freeze patch,
+portable preparation/training/resume launchers and benchmark report/protocol. All
+original stage index hashes match provenance. A CPU preparation smoke on the existing
+instance resolves every packaged pair against previously verified corpora, extracts
+source and applies the patch; no download/install/GPU training. Source archive excludes
+historical outputs and binary artifacts, explicitly enumerated. Portable output names
+identify an archive rerun rather than claiming a nonexistent extracted Git identity.
+Training wrapper guards the trainer's checkpoint-folder deletion path unless resume
+is explicit. Historical stage-2 Lieder draw count remains 3,622 (repeats), not stage-1
+3,567. Preserve 572 PDMX replay rows and missing 226 GrandStaff disclosure.
+
+Additional reproducibility limit: original **core** training predates the Albumentations
+Compose RNG fix discovered in head auditing. A seed-identical rerun is not promised to
+give identical checkpoint bytes; the later fix is not retroactive. Preserve the recorded
+recipe/code, label future corrected-core reruns separately. Head resume has its own
+bit-exact GPU verification. Tracked explanation:
+`/home/jhlusko/workspace/homr/docs/PUBLIC_CORE_REPRODUCIBILITY_2026-09-28.md`.
+
+Experiment `head-lr-epochs-20260928` launched **09:23:35 UTC**. Old-core control at
+Adam .001 and public-core arms .0003/.001/.003. Fresh seed20260928 heads; all four
+use the same 40,290 internal training rows, source order/draw counts, deterministic
+augmentation/seeds, frozen/eval-mode core, batch8/workers8/CPU1, plain losses, no AMP.
+Six epochs maximum; evaluate epoch3 and epoch6 against the 3,909 fixed score-grouped
+internal rows. All24 tensors pass uninterrupted/resumed two-epoch smoke exactly.
+Report's identical-candidate selection smoke correctly selects none. Supported metric
+non-regression is source-wise (>=100 targets, no >1 pp loss versus old-control epoch6),
+at least one >=1 pp gain; rank eligible by worst-cell change, equal-source mean, then
+fewer epochs/lower LR. No per-head winner mixing or published-validation tuning.
+Full-training confirmation is a separate follow-up only if a configuration passes.
+
+At 09:37 UTC, the control is in epoch2 at 1,000/5,037 batches; epoch1 saved weights,
+manifest and optimizer/RNG checkpoint at 09:34 UTC (518 KB resumable state, 166 KB heads).
+Observed ~11 minutes/epoch on the quiet box. Total initial ETA **15:30–17:30 UTC**
+(08:30–10:30 Vancouver), refined after internal scoring throughput.
+Remote tmux `head_lr_epochs_20260928` and `head_lr_epochs_watch_20260928`; local
+`head_lr_epochs_pull_20260928` pulls/verifies/regenerates on completion/failure while
+laptop is available. Remote jobs persist if laptop closes; local transfer resumes when
+available. No Python environment changes. Local protocol/scripts/results:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/head-lr-epochs/`.
+Updated release sequence, head audit and PIPELINE; both repository diff checks pass.
+
+## 2026-09-28 09:47 UTC — synthetic head curriculum planned, not launched
+
+Owner requested a synthetic curriculum plan. Inspected existing original-MusicXML
+structured parser, Verovio/MuseScore render paths, structured targets/dataset and linear
+head architecture. Wrote
+`/home/jhlusko/workspace/homr/docs/SYNTHETIC_HEAD_CURRICULUM_2026-09-28.md` and linked it
+in the release sequence. No generator, new training run or environment mutation.
+
+Proposed first step: renderer fidelity/label checks and ~256 motif families / 1,000–2,000
+qualified renders for a small frozen-feature capacity probe. XML intent is not proof of
+rendered labels; parser must read original XML before cleaning, using copies. Prioritize
+tie starts/stops, stem direction, slur spans/inventions and beam-hook direction, with
+matched hard negatives, canonical slots and correct inapplicable/unknown masks. Dynamics
+excluded from curriculum training/promotion. More samples cannot guarantee information
+missing from the frozen decoder's linearly accessible representation.
+
+Provisional four-stage schedule: 1,000 updates at 75% synthetic, 2,000 at 50%, 2,000 at
+25%, 3,000 at 10%, with real replay throughout. Clean contrasts → musical context →
+qualified degradation → real consolidation. At batch8, 64,000 draws, 20,400 synthetic /
+43,600 real. Freeze this after rendering/coverage profiling, not now as a run authorization.
+Three equal-update controls: real-only, globally shuffled identical synthetic/real draw
+multiset, and ordered curriculum. Same initialization/optimizer and augmentation seeds;
+all members/renders of a motif family remain in one split. Real score-grouped internal
+validation decides transfer; synthetic gains alone do not qualify release or beam policy.
+One selected candidate gets separate full-training confirmation against old-core/v7 gates.
+
+Planning estimates: ~1 working day for implementation/qualification; pilot 1–3 CPU-hours
+plus 30–60 GPU-minutes; bounded comparison initially 2–4 GPU-hours, replaced by measured
+throughput. Current LR/epoch run remains active and untouched: at 09:46 UTC old-core
+control epoch2 batch4,400/5,037, no FAILED marker. Completion ETA still 15:30–17:30 UTC
+(08:30–10:30 Vancouver). Both repo diff checks pass.
+
+### 2026-09-28 — synthetic curriculum v4 renderer correction
+
+Committed `719b680`: replace ignored beam-hook overrides with mixed-duration,
+within-beat hooks at levels 2–4; use primary-beam group/pair contrasts at level 1
+(level-1 hooks still uncovered). Add MuseScore-export label audit and reject
+mismatches/duplicate contrasts from candidate indexes. Review descriptions now
+identify measure, beat, stem direction and complete tie/slur spans side by side.
+Four regression tests pass. Local qualification completed 128 renders in 87.77 s:
+zero failures, label mismatches or identical-image contrasts. Selected visible
+examples inspected; all data still awaits full visual qualification before training.
+
+Review: http://localhost:8765/synthetic-head-v4-qualification-20260928/review.html
+Local artifacts: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-v4-qualification-20260928/`.
+
+Corrected 2,048-render CPU pilot launched 16:03 UTC in instance tmux
+`synthetic_v4_20260928`, watcher `synthetic_v4_watch_20260928`; source SHA matches
+committed local generator. ETA initially 60–90 minutes, to refine from progress.
+Local tmux `synthetic_v4_pull_20260928` waits for archive completion, pulls results
+and verifies SHA256SUMS. Instance tasks persist if the laptop closes; automatic
+local pull requires the laptop to remain running/reconnect. Planned local results:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-v4-20260928/`.
+No GPU training or changes to the training environment made.
+
+### 2026-09-28 16:26 UTC — synthetic capacity smoke results copied locally
+
+Local verified report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/smoke/report.json`. Fresh linear heads over the frozen `public-rareNum-20260927` core; dynamics excluded. Teacher-forced clean synthetic diagnostic, not real-source validation or release.
+
+Completed 200 updates. Core tensors unchanged: True; recognition logits identical: True. Simple training slur-span F1: 1.000. Strict capacity gate: False.
+
+| Head | Training macro-F1 | Capacity support/bar |
+|---|---:|---|
+| beam.level.1 | 1.000 | insufficient support |
+| beam.level.2 | 1.000 | insufficient support |
+| stem.direction | 0.870 | insufficient support |
+| tie.state | 0.896 | insufficient support |
+| advance.delta | 0.995 | insufficient support |
+| slur.slot.1.event | 0.836 | below .95 |
+| slur.slot.1.side | 0.888 | insufficient support |
+| slur.slot.2.event | 0.933 | insufficient support |
+| slur.slot.2.side | 1.000 | insufficient support |
+
+Image-control comparisons and all class/family supports are in the report. Flags, level-1 hooks and slot-2 above-side contrasts are absent. A smoke cannot meet full independent-family bars. Review the full diagnostic before expanding the corpus or starting the three-arm curriculum.
+
+### 2026-09-28 16:27 UTC — owner approves v4; capacity smoke passed, full diagnostic queued
+
+Owner approved all reviewed examples (“they all look good. proceed”). Recorded a
+hash-bound template approval for the capacity diagnostic; original generator outputs
+remain unchanged. Committed probe/test/protocol as `6209b05`, nine targeted tests pass,
+including exact checkpoint-resume updates and token-conditioned image controls.
+
+GPU smoke: feature extraction 7.19 s for 128 images, 100 updates 1.20 s, resumed to 200.
+Actual optimizer updates on nine heads / 18 tensors, all finite. Frozen core tensor hash
+and recognition outputs remain identical. Beam-3/4 labels are intact but the smoke's
+only depth-3/4 families are held out; no split change made. Preliminary training stem
+image-swap control falls 64.6→35.4%; slot-1 side 81.3→18.8% on just 32 positions.
+Not a real-source gain, capacity pass or promotion. All ten smoke artifacts pass SHA256.
+Local report:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/smoke/report.md`.
+
+Persistent controller `synthetic_capacity_20260928` waits for full CPU generation,
+then checks all source hashes/audits/family splits and runs the fixed 2,000-update
+capacity diagnostic. Checkpoints every 250 updates; full images/heads remain diagnostic.
+Remote watcher `synthetic_capacity_watch_20260928`; local collector/doc updater
+`synthetic_capacity_pull_20260928`. At 16:25 UTC renderer 544/2,048 (no failures),
+~61 minutes left, then a few minutes of GPU feature extraction/fit (measured smoke).
+Expected local full results:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/full/`.
+No environment installs, core adaptation, larger curriculum, deployment or push.
+
+### 2026-09-28 17:49 UTC — synthetic capacity full results copied locally
+
+Local verified report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/full/report.json`. Fresh linear heads over the frozen `public-rareNum-20260927` core; dynamics excluded. Teacher-forced clean synthetic diagnostic, not real-source validation or release.
+
+Completed 2000 updates. Core tensors unchanged: True; recognition logits identical: True. Simple training slur-span F1: 1.000. Strict capacity gate: False.
+
+| Head | Training macro-F1 | Capacity support/bar |
+|---|---:|---|
+| beam.level.1 | 1.000 | pass |
+| beam.level.2 | 1.000 | pass |
+| beam.level.3 | 1.000 | pass |
+| beam.level.4 | 1.000 | pass |
+| stem.direction | 0.967 | pass |
+| tie.state | 1.000 | pass |
+| advance.delta | 1.000 | pass |
+| slur.slot.1.event | 0.995 | pass |
+| slur.slot.1.side | 1.000 | pass |
+| slur.slot.2.event | 1.000 | pass |
+| slur.slot.2.side | 1.000 | insufficient support |
+
+Image-control comparisons and all class/family supports are in the report. Flags, level-1 hooks and slot-2 above-side contrasts are absent. A smoke cannot meet full independent-family bars. Review the full diagnostic before expanding the corpus or starting the three-arm curriculum.
+
+### 2026-09-28 17:50 UTC — full synthetic capacity interpretation and completed transfer
+
+Corrected renderer: 2,048/2,048 renders, zero failures, zero label mismatches or duplicate
+contrasts. 207/24/25 family-disjoint train/validation/test families. All 14,346 render
+artifact checks and all 16 full-probe artifact checks pass locally; final heads, cached
+features and resumable Adam/RNG state are retained. Full probe finished 17:30 UTC;
+feature extraction took 105.53 s and fitting/evaluation 76.68 s. No GPU jobs remain.
+
+Ten sufficiently supported heads pass the .95 training macro-F1 bar. Family-held-out
+validation macro-F1: beam levels 1–4 1.000, stem .9594, tie .9899, advance .9960,
+slot-1 event 1.000, slot-1 side .9785, slot-2 event 1.000. Simple slur spans: F1 1.000
+on 424 train / 64 validation / 24 test reference spans. Slot-2 side has only BELOW
+(class 2, 212 training endpoints in 53 families): its 1.000 fit is a constant-class
+result, so it remains unqualified. Strict overall capacity gate remains false.
+Absent flags and level-1 hooks are still declared coverage gaps.
+
+Token-matched validation image controls: stems 90.36→9.64% on 768 differing-label
+positions; slot-1 side 96.88→3.13% on 64 positions. Stem test control 89.15→10.85%
+on 1,088 positions. This establishes image dependence for these covered distinctions;
+it does not establish it for token-confounded tie/hook examples or prove scan transfer.
+Core tensors and fixed-input recognition logits remain exactly unchanged; 11 active
+heads / 22 optimizer tensors updated, with dynamics excluded.
+
+Next: add the missing slot-2 ABOVE contrast and requalify the capacity diagnostic;
+then freeze the matched real-only / unordered synthetic+real / ordered curriculum
+experiment and source-wise real internal gates. No larger curriculum or deployment
+was started by the completion watcher.
+
+Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-20260928/full/report.md`.
+Local complete renderer: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-head-pilot-musescore-v4-20260928/`.
+
+
+### 2026-09-28 18:26 UTC — V5 capacity passed; matched transfer running
+
+Added 128 MuseScore renders reversing overlapping-slur sides while preserving v4 family seeds, splits and recognition tokens. Final prespecified 4,000-update capacity checkpoint passes all eleven supported heads: stem macro-F1 .987 train/.978 held-out families; slot-2 side 1.000/1.000. Frozen core and recognition outputs are unchanged. The 2,000-update failure remains preserved; no earlier favorable checkpoint was selected. Final artifacts have been copied locally and SHA-256 verified.
+
+Local capacity report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-capacity-v5-20260928/full/report.md`.
+
+The committed transfer protocol compares fresh real-only heads, unordered synthetic+real, and staged synthetic+real on public-rareNum-20260927. Each arm has 8,000 updates; unordered/staged use the same literal sample multiset. This is a fixed-pixel clean pilot, not the richer/degraded curriculum. Resume is bit-identical and worker-count pixel/target checks passed. The environment has no pip; metadata capture now uses importlib.metadata without installing or changing the environment. Real-only fitting is running: 200 updates in 18 seconds. ETA for three arms plus internal OSSQ/PDMX/Lieder scoring is 45–70 minutes from 18:26 UTC.
+
+Persistent instance sessions: `synthetic_transfer_20260928`, `synthetic_transfer_watch_20260928`. Local `synthetic_transfer_pull_20260928` waits for completion, downloads the archive, verifies SHA-256 and appends results to the runlog and release sequence. Collector scripts and protocol are copied locally at `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-transfer-pilot-20260928`. Model promotion remains pending the per-source regression/invention gates; one-seed internal results cannot support a release claim.
+
+
+### Synthetic fixed-pixel transfer completion — 2026-09-28T19:33:28.778090+00:00
+
+All three matched arms finished; transferred artifacts passed SHA-256 verification. Final one-seed internal comparison: {"contrasts": {"curriculum": {"best_delta_pp": 5.375466352945102, "by_source": {"lieder": {"advance_nontrivial": {"delta_pp": 1.0315470758069378, "support": 5853, "supported": true}, "beam1": {"delta_pp": -3.030647603755332, "support": 8508, "supported": true}, "beam2": {"delta_pp": -2.079810218740774, "support": 2588, "supported": true}, "beam3": {"delta_pp": 5.375466352945102, "support": 222, "supported": true}, "beam4": {"delta_pp": 0.0, "support": 0, "supported": false}, "exact_beam_vector": {"delta_pp": -3.725905030559473, "support": 8508, "supported": true}, "hooks": {"delta_pp": 1.5533323303746016, "support": 166, "supported": true}, "slur_sides": {"delta_pp": 0.11433189003708932, "support": 255, "supported": true}, "slur_spans": {"delta_pp": -1.060969406293144, "support": 869, "supported": true}, "stem_direction": {"delta_pp": 0.8184741303712384, "support": 13684, "supported": true}, "stem_macro": {"delta_pp": -0.13234598077223048, "support": 13684, "supported": true}, "ties": {"delta_pp": 0.8124660333188927, "support": 659, "supported": true}}, "ossq": {"advance_nontrivial": {"delta_pp": 0.5864487280824893, "support": 67583, "supported": true}, "beam1": {"delta_pp": -0.3480346577108273, "support": 57755, "supported": true}, "beam2": {"delta_pp": -2.9487604519947253, "support": 22050, "supported": true}, "beam3": {"delta_pp": -5.170068319079613, "support": 2686, "supported": true}, "beam4": {"delta_pp": 4.93243748747057, "support": 276, "supported": true}, "exact_beam_vector": {"delta_pp": -0.8380226820188685, "support": 57755, "supported": true}, "hooks": {"delta_pp": -3.6033353186420647, "support": 1739, "supported": true}, "slur_sides": {"delta_pp": -1.1844509258637226, "support": 7142, "supported": true}, "slur_spans": {"delta_pp": 0.6261440848688848, "support": 12393, "supported": true}, "stem_direction": {"delta_pp": -0.5428785245880863, "support": 78839, "supported": true}, "stem_macro": {"delta_pp": -0.3541144390821316, "support": 78839, "supported": true}, "ties": {"delta_pp": 0.5102517121038486, "support": 6208, "supported": true}}, "pdmx": {"advance_nontrivial": {"delta_pp": 1.869644500653389, "support": 20582, "supported": true}, "beam1": {"delta_pp": -0.4295688871311709, "support": 27438, "supported": true}, "beam2": {"delta_pp": -0.4227274568206485, "support": 10165, "supported": true}, "beam3": {"delta_pp": -2.093553973421347, "support": 1114, "supported": true}, "beam4": {"delta_pp": 10.404830033120726, "support": 74, "supported": false}, "exact_beam_vector": {"delta_pp": -0.8346089365114051, "support": 27438, "supported": true}, "hooks": {"delta_pp": -4.219502183080193, "support": 858, "supported": true}, "slur_sides": {"delta_pp": -1.6862592093551565, "support": 831, "supported": true}, "slur_spans": {"delta_pp": -0.9191923754460318, "support": 749, "supported": true}, "stem_direction": {"delta_pp": -0.08901416808841933, "support": 40443, "supported": true}, "stem_macro": {"delta_pp": -14.129156942055465, "support": 40443, "supported": true}, "ties": {"delta_pp": 1.7572312619653752, "support": 3091, "supported": true}}}, "eligible": false, "guardrails": [{"delta_pp": 0.29608893434900363, "metric": "stems.up.recall", "passes": true, "source": "ossq"}, {"delta_pp": 0.029634019854785087, "metric": "stems.not_applicable.recall", "passes": true, "source": "ossq"}, {"delta_pp": -1.2905392439071184, "metric": "stems.down.recall", "passes": false, "source": "ossq"}, {"delta_pp": -7.533539731682149, "metric": "ties.start.recall", "passes": false, "source": "ossq"}, {"delta_pp": 5.791106514994826, "metric": "ties.stop.recall", "passes": true, "source": "ossq"}, {"delta_pp": 11.249999999999993, "metric": "ties.start_and_stop.recall", "passes": true, "source": "ossq"}, {"delta_pp": 9.541984732824426, "metric": "slur_sides.above.recall", "passes": true, "source": "ossq"}, {"delta_pp": -16.703869047619047, "metric": "slur_sides.below.recall", "passes": false, "source": "ossq"}, {"delta_pp": 8.461538461538465, "metric": "beam2.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -4.691812327506906, "metric": "beam2.backward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": -0.9216589861751168, "metric": "beam3.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -1.038062283737018, "metric": "beam3.backward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": -1.791333817477609, "metric": "slur_inventions_per_reference", "passes": true, "source": "ossq"}, {"delta_pp": 5.426688809128411, "metric": "stems.up.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -4.8172299779573935, "metric": "stems.down.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 0.1434720229555264, "metric": "stems.not_applicable.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -1.4285714285714235, "metric": "ties.start.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 4.116766467065869, "metric": "ties.stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 7.294117647058823, "metric": "ties.start_and_stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -16.55629139072847, "metric": "slur_sides.below.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 10.018903591682415, "metric": "slur_sides.above.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 19.85559566787004, "metric": "beam2.forward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -5.631067961165048, "metric": "beam2.backward_hook.recall", "passes": false, "source": "pdmx"}, {"delta_pp": -2.9372496662216308, "metric": "slur_inventions_per_reference", "passes": true, "source": "pdmx"}, {"delta_pp": -8.789954337899541, "metric": "stems.down.recall", "passes": false, "source": "lieder"}, {"delta_pp": 6.810631229235886, "metric": "stems.up.recall", "passes": true, "source": "lieder"}, {"delta_pp": 0.21668472372697867, "metric": "stems.not_applicable.recall", "passes": true, "source": "lieder"}, {"delta_pp": -8.143322475570036, "metric": "ties.start.recall", "passes": false, "source": "lieder"}, {"delta_pp": 3.5598705501618144, "metric": "ties.stop.recall", "passes": true, "source": "lieder"}, {"delta_pp": 14.70588235294118, "metric": "slur_sides.above.recall", "passes": true, "source": "lieder"}, {"delta_pp": -16.806722689075627, "metric": "slur_sides.below.recall", "passes": false, "source": "lieder"}, {"delta_pp": 11.764705882352944, "metric": "beam2.backward_hook.recall", "passes": true, "source": "lieder"}, {"delta_pp": -2.646720368239355, "metric": "slur_inventions_per_reference", "passes": true, "source": "lieder"}], "worst_delta_pp": -14.129156942055465}, "unordered": {"best_delta_pp": 4.703623665350243, "by_source": {"lieder": {"advance_nontrivial": {"delta_pp": 0.8788005836254387, "support": 5853, "supported": true}, "beam1": {"delta_pp": -1.7212634409217609, "support": 8508, "supported": true}, "beam2": {"delta_pp": -2.9047395901241835, "support": 2588, "supported": true}, "beam3": {"delta_pp": 4.703623665350243, "support": 222, "supported": true}, "beam4": {"delta_pp": 0.0, "support": 0, "supported": false}, "exact_beam_vector": {"delta_pp": -3.0441937000470154, "support": 8508, "supported": true}, "hooks": {"delta_pp": 0.715470011534014, "support": 166, "supported": true}, "slur_sides": {"delta_pp": -6.82241665553498, "support": 255, "supported": true}, "slur_spans": {"delta_pp": -2.910199691542392, "support": 869, "supported": true}, "stem_direction": {"delta_pp": 0.0876936568254938, "support": 13684, "supported": true}, "stem_macro": {"delta_pp": -0.5072816916609213, "support": 13684, "supported": true}, "ties": {"delta_pp": -0.2720141154221922, "support": 659, "supported": true}}, "ossq": {"advance_nontrivial": {"delta_pp": -4.073109323646873, "support": 67583, "supported": true}, "beam1": {"delta_pp": -0.952728298848371, "support": 57755, "supported": true}, "beam2": {"delta_pp": -2.021508613926004, "support": 22050, "supported": true}, "beam3": {"delta_pp": -0.9816081434089741, "support": 2686, "supported": true}, "beam4": {"delta_pp": 2.374894000307598, "support": 276, "supported": true}, "exact_beam_vector": {"delta_pp": -0.7670331573023992, "support": 57755, "supported": true}, "hooks": {"delta_pp": 1.1155279693558007, "support": 1739, "supported": true}, "slur_sides": {"delta_pp": 0.39483784050741155, "support": 7142, "supported": true}, "slur_spans": {"delta_pp": -0.16599184455602378, "support": 12393, "supported": true}, "stem_direction": {"delta_pp": -1.6273671659965183, "support": 78839, "supported": true}, "stem_macro": {"delta_pp": -1.0966504694863821, "support": 78839, "supported": true}, "ties": {"delta_pp": 0.5140683457253159, "support": 6208, "supported": true}}, "pdmx": {"advance_nontrivial": {"delta_pp": 1.6764066816630452, "support": 20582, "supported": true}, "beam1": {"delta_pp": -0.9460911124156812, "support": 27438, "supported": true}, "beam2": {"delta_pp": -2.986094190531341, "support": 10165, "supported": true}, "beam3": {"delta_pp": -4.021596658451032, "support": 1114, "supported": true}, "beam4": {"delta_pp": 6.872294372294374, "support": 74, "supported": false}, "exact_beam_vector": {"delta_pp": -1.2464465340039421, "support": 27438, "supported": true}, "hooks": {"delta_pp": -4.797763233782193, "support": 858, "supported": true}, "slur_sides": {"delta_pp": -4.8539060056377314, "support": 831, "supported": true}, "slur_spans": {"delta_pp": -0.46504964319662445, "support": 749, "supported": true}, "stem_direction": {"delta_pp": -1.8272630615928653, "support": 40443, "supported": true}, "stem_macro": {"delta_pp": -11.66829402647689, "support": 40443, "supported": true}, "ties": {"delta_pp": 3.4529708478783117, "support": 3091, "supported": true}}}, "eligible": false, "guardrails": [{"delta_pp": -3.407714462598588, "metric": "stems.up.recall", "passes": false, "source": "ossq"}, {"delta_pp": 0.029634019854785087, "metric": "stems.not_applicable.recall", "passes": true, "source": "ossq"}, {"delta_pp": -0.04077912109000659, "metric": "stems.down.recall", "passes": true, "source": "ossq"}, {"delta_pp": -3.9559683522531808, "metric": "ties.start.recall", "passes": false, "source": "ossq"}, {"delta_pp": 2.6542571527059633, "metric": "ties.stop.recall", "passes": true, "source": "ossq"}, {"delta_pp": 14.749999999999996, "metric": "ties.start_and_stop.recall", "passes": true, "source": "ossq"}, {"delta_pp": 2.716659182757075, "metric": "slur_sides.above.recall", "passes": true, "source": "ossq"}, {"delta_pp": -3.125, "metric": "slur_sides.below.recall", "passes": false, "source": "ossq"}, {"delta_pp": 0.0, "metric": "beam2.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": 10.027598896044154, "metric": "beam2.backward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -0.9216589861751168, "metric": "beam3.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -0.34602076124566894, "metric": "beam3.backward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -0.5164205599935454, "metric": "slur_inventions_per_reference", "passes": true, "source": "ossq"}, {"delta_pp": 1.933894037606465, "metric": "stems.up.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -5.051432770022046, "metric": "stems.down.recall", "passes": false, "source": "pdmx"}, {"delta_pp": -0.0358680057388816, "metric": "stems.not_applicable.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -4.511278195488721, "metric": "ties.start.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 2.095808383233533, "metric": "ties.stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 20.0, "metric": "ties.start_and_stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -3.31125827814569, "metric": "slur_sides.below.recall", "passes": false, "source": "pdmx"}, {"delta_pp": -5.8601134215500945, "metric": "slur_sides.above.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 0.0, "metric": "beam2.forward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 3.689320388349515, "metric": "beam2.backward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -4.138851802403204, "metric": "slur_inventions_per_reference", "passes": true, "source": "pdmx"}, {"delta_pp": -8.789954337899541, "metric": "stems.down.recall", "passes": false, "source": "lieder"}, {"delta_pp": 5.624110109159952, "metric": "stems.up.recall", "passes": true, "source": "lieder"}, {"delta_pp": 0.10834236186348933, "metric": "stems.not_applicable.recall", "passes": true, "source": "lieder"}, {"delta_pp": -6.1889250814332275, "metric": "ties.start.recall", "passes": false, "source": "lieder"}, {"delta_pp": -2.588996763754048, "metric": "ties.stop.recall", "passes": false, "source": "lieder"}, {"delta_pp": 0.0, "metric": "slur_sides.above.recall", "passes": true, "source": "lieder"}, {"delta_pp": -15.126050420168069, "metric": "slur_sides.below.recall", "passes": false, "source": "lieder"}, {"delta_pp": 16.806722689075627, "metric": "beam2.backward_hook.recall", "passes": true, "source": "lieder"}, {"delta_pp": -1.726121979286535, "metric": "slur_inventions_per_reference", "passes": true, "source": "lieder"}], "worst_delta_pp": -11.66829402647689}}, "ordering": {"best_delta_pp": 6.936748545572069, "by_source": {"lieder": {"advance_nontrivial": {"delta_pp": 0.15274649218149916, "support": 5853, "supported": true}, "beam1": {"delta_pp": -1.3093841628335712, "support": 8508, "supported": true}, "beam2": {"delta_pp": 0.8249293713834094, "support": 2588, "supported": true}, "beam3": {"delta_pp": 0.6718426875948591, "support": 222, "supported": true}, "beam4": {"delta_pp": 0.0, "support": 0, "supported": false}, "exact_beam_vector": {"delta_pp": -0.6817113305124578, "support": 8508, "supported": true}, "hooks": {"delta_pp": 0.8378623188405876, "support": 166, "supported": true}, "slur_sides": {"delta_pp": 6.936748545572069, "support": 255, "supported": true}, "slur_spans": {"delta_pp": 1.8492302852492482, "support": 869, "supported": true}, "stem_direction": {"delta_pp": 0.7307804735457446, "support": 13684, "supported": true}, "stem_macro": {"delta_pp": 0.3749357108886908, "support": 13684, "supported": true}, "ties": {"delta_pp": 1.084480148741085, "support": 659, "supported": true}}, "ossq": {"advance_nontrivial": {"delta_pp": 4.659558051729363, "support": 67583, "supported": true}, "beam1": {"delta_pp": 0.6046936411375436, "support": 57755, "supported": true}, "beam2": {"delta_pp": -0.9272518380687211, "support": 22050, "supported": true}, "beam3": {"delta_pp": -4.188460175670638, "support": 2686, "supported": true}, "beam4": {"delta_pp": 2.557543487162972, "support": 276, "supported": true}, "exact_beam_vector": {"delta_pp": -0.07098952471646935, "support": 57755, "supported": true}, "hooks": {"delta_pp": -4.718863287997865, "support": 1739, "supported": true}, "slur_sides": {"delta_pp": -1.5792887663711341, "support": 7142, "supported": true}, "slur_spans": {"delta_pp": 0.7921359294249086, "support": 12393, "supported": true}, "stem_direction": {"delta_pp": 1.084488641408432, "support": 78839, "supported": true}, "stem_macro": {"delta_pp": 0.7425360304042505, "support": 78839, "supported": true}, "ties": {"delta_pp": -0.0038166336214673358, "support": 6208, "supported": true}}, "pdmx": {"advance_nontrivial": {"delta_pp": 0.19323781899034387, "support": 20582, "supported": true}, "beam1": {"delta_pp": 0.5165222252845103, "support": 27438, "supported": true}, "beam2": {"delta_pp": 2.5633667337106925, "support": 10165, "supported": true}, "beam3": {"delta_pp": 1.928042685029685, "support": 1114, "supported": true}, "beam4": {"delta_pp": 3.5325356608263525, "support": 74, "supported": false}, "exact_beam_vector": {"delta_pp": 0.411837597492537, "support": 27438, "supported": true}, "hooks": {"delta_pp": 0.5782610507020003, "support": 858, "supported": true}, "slur_sides": {"delta_pp": 3.167646796282575, "support": 831, "supported": true}, "slur_spans": {"delta_pp": -0.4541427322494074, "support": 749, "supported": true}, "stem_direction": {"delta_pp": 1.738248893504446, "support": 40443, "supported": true}, "stem_macro": {"delta_pp": -2.4608629155785766, "support": 40443, "supported": true}, "ties": {"delta_pp": -1.6957395859129365, "support": 3091, "supported": true}}}, "eligible": false, "guardrails": [{"delta_pp": -1.2497601228171118, "metric": "stems.down.recall", "passes": false, "source": "ossq"}, {"delta_pp": 3.7038033969475914, "metric": "stems.up.recall", "passes": true, "source": "ossq"}, {"delta_pp": 0.0, "metric": "stems.not_applicable.recall", "passes": true, "source": "ossq"}, {"delta_pp": -3.5775713794289676, "metric": "ties.start.recall", "passes": false, "source": "ossq"}, {"delta_pp": 3.1368493622888627, "metric": "ties.stop.recall", "passes": true, "source": "ossq"}, {"delta_pp": -3.500000000000003, "metric": "ties.start_and_stop.recall", "passes": false, "source": "ossq"}, {"delta_pp": 6.825325550067351, "metric": "slur_sides.above.recall", "passes": true, "source": "ossq"}, {"delta_pp": -13.578869047619047, "metric": "slur_sides.below.recall", "passes": false, "source": "ossq"}, {"delta_pp": 8.461538461538465, "metric": "beam2.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -14.71941122355106, "metric": "beam2.backward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": 0.0, "metric": "beam3.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -0.692041522491349, "metric": "beam3.backward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -1.2749132574840636, "metric": "slur_inventions_per_reference", "passes": true, "source": "ossq"}, {"delta_pp": 3.4927947715219454, "metric": "stems.up.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 0.23420279206465278, "metric": "stems.down.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 0.17934002869440802, "metric": "stems.not_applicable.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 3.082706766917298, "metric": "ties.start.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 2.020958083832336, "metric": "ties.stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -12.705882352941178, "metric": "ties.start_and_stop.recall", "passes": false, "source": "pdmx"}, {"delta_pp": -13.245033112582782, "metric": "slur_sides.below.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 15.87901701323251, "metric": "slur_sides.above.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 19.85559566787004, "metric": "beam2.forward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -9.320388349514563, "metric": "beam2.backward_hook.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 1.2016021361815732, "metric": "slur_inventions_per_reference", "passes": false, "source": "pdmx"}, {"delta_pp": 0.0, "metric": "stems.down.recall", "passes": true, "source": "lieder"}, {"delta_pp": 1.186521120075934, "metric": "stems.up.recall", "passes": true, "source": "lieder"}, {"delta_pp": 0.10834236186348933, "metric": "stems.not_applicable.recall", "passes": true, "source": "lieder"}, {"delta_pp": -1.9543973941368087, "metric": "ties.start.recall", "passes": false, "source": "lieder"}, {"delta_pp": 6.148867313915862, "metric": "ties.stop.recall", "passes": true, "source": "lieder"}, {"delta_pp": 14.70588235294118, "metric": "slur_sides.above.recall", "passes": true, "source": "lieder"}, {"delta_pp": -1.680672268907557, "metric": "slur_sides.below.recall", "passes": false, "source": "lieder"}, {"delta_pp": -5.042016806722682, "metric": "beam2.backward_hook.recall", "passes": false, "source": "lieder"}, {"delta_pp": -0.9205983889528202, "metric": "slur_inventions_per_reference", "passes": true, "source": "lieder"}], "worst_delta_pp": -4.718863287997865}, "scope": "One-seed, fixed-pixel pilot internal transfer; no release or robust curriculum claim", "selected": null}.
+
+Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-transfer-pilot-20260928/experiment/report.json`. This is an internal pilot, not a release promotion; inspect directional regressions and inventions before further training.
+
+
+### 2026-09-28 — synthetic transfer pilot completed, neither candidate eligible
+
+All three 8,000-update arms and OSSQ/PDMX/Lieder internal evaluations completed. Unordered and curriculum both failed prespecified regression gates; select neither for confirmation. Some rare-beam/tie gains coexist with directional and slur-side losses. Summary reports are copied locally at `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-transfer-pilot-20260928/report.json`; full model/log archive download is retrying after a transient VPN route failure. Preserve the real-only control. This is one-seed internal evaluation, not a release conclusion.
+
+
+### Synthetic coverage-preserving low-dose completion — 2026-09-28T20:20:11.470046+00:00
+
+All three matched arms finished; transferred artifacts passed SHA-256 verification. Final one-seed internal comparison: {"contrasts": {"curriculum": {"best_delta_pp": 4.9231783470983554, "by_source": {"lieder": {"advance_nontrivial": {"delta_pp": 0.6079868868230087, "support": 5853, "supported": true}, "beam1": {"delta_pp": 0.2727196011897637, "support": 8508, "supported": true}, "beam2": {"delta_pp": 0.5075881072916677, "support": 2588, "supported": true}, "beam3": {"delta_pp": 2.9795844355929244, "support": 222, "supported": true}, "beam4": {"delta_pp": 0.0, "support": 0, "supported": false}, "exact_beam_vector": {"delta_pp": 0.5994358251057763, "support": 8508, "supported": true}, "hooks": {"delta_pp": 2.253251555091562, "support": 166, "supported": true}, "slur_sides": {"delta_pp": -8.201131104187475, "support": 255, "supported": true}, "slur_spans": {"delta_pp": 0.5437276694163606, "support": 869, "supported": true}, "stem_direction": {"delta_pp": -1.3154048523823403, "support": 13684, "supported": true}, "stem_macro": {"delta_pp": -0.48799958089971174, "support": 13684, "supported": true}, "ties": {"delta_pp": 0.7597925898723656, "support": 659, "supported": true}}, "ossq": {"advance_nontrivial": {"delta_pp": 3.276277742728595, "support": 67583, "supported": true}, "beam1": {"delta_pp": -0.1033015924492231, "support": 57755, "supported": true}, "beam2": {"delta_pp": 0.9762710362273275, "support": 22050, "supported": true}, "beam3": {"delta_pp": -2.279226106866694, "support": 2686, "supported": true}, "beam4": {"delta_pp": -7.912950373858784, "support": 276, "supported": true}, "exact_beam_vector": {"delta_pp": -0.005194355467053047, "support": 57755, "supported": true}, "hooks": {"delta_pp": -3.690555678030849, "support": 1739, "supported": true}, "slur_sides": {"delta_pp": 0.1252418611035533, "support": 7142, "supported": true}, "slur_spans": {"delta_pp": -0.21677789991727536, "support": 12393, "supported": true}, "stem_direction": {"delta_pp": 0.6950874567155818, "support": 78839, "supported": true}, "stem_macro": {"delta_pp": 0.4904287903143789, "support": 78839, "supported": true}, "ties": {"delta_pp": -0.6941312204985728, "support": 6208, "supported": true}}, "pdmx": {"advance_nontrivial": {"delta_pp": -1.0725976917658309, "support": 20582, "supported": true}, "beam1": {"delta_pp": -0.5252468359574824, "support": 27438, "supported": true}, "beam2": {"delta_pp": 2.410581296778891, "support": 10165, "supported": true}, "beam3": {"delta_pp": 2.8001712853608307, "support": 1114, "supported": true}, "beam4": {"delta_pp": 2.831797235023048, "support": 74, "supported": false}, "exact_beam_vector": {"delta_pp": 0.1312048983162062, "support": 27438, "supported": true}, "hooks": {"delta_pp": 4.9231783470983554, "support": 858, "supported": true}, "slur_sides": {"delta_pp": 0.08712234658952989, "support": 831, "supported": true}, "slur_spans": {"delta_pp": -2.1093546671494767, "support": 749, "supported": true}, "stem_direction": {"delta_pp": -0.2076997255396451, "support": 40443, "supported": true}, "stem_macro": {"delta_pp": 0.16832324924075381, "support": 40443, "supported": true}, "ties": {"delta_pp": -4.296053548347823, "support": 3091, "supported": true}}}, "eligible": false, "guardrails": [{"delta_pp": 4.314823288740543, "metric": "stems.up.recall", "passes": true, "source": "ossq"}, {"delta_pp": -0.007408504963701823, "metric": "stems.not_applicable.recall", "passes": true, "source": "ossq"}, {"delta_pp": -2.5307042794089463, "metric": "stems.down.recall", "passes": false, "source": "ossq"}, {"delta_pp": 3.783969728242176, "metric": "ties.start.recall", "passes": true, "source": "ossq"}, {"delta_pp": 0.5515339538090247, "metric": "ties.stop.recall", "passes": true, "source": "ossq"}, {"delta_pp": -17.75, "metric": "ties.start_and_stop.recall", "passes": false, "source": "ossq"}, {"delta_pp": -7.6784912438257695, "metric": "slur_sides.above.recall", "passes": false, "source": "ossq"}, {"delta_pp": 11.644345238095234, "metric": "slur_sides.below.recall", "passes": true, "source": "ossq"}, {"delta_pp": 12.307692307692303, "metric": "beam2.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -18.031278748850042, "metric": "beam2.backward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": 2.7649769585253448, "metric": "beam3.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": 3.114186851211076, "metric": "beam3.backward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": 1.3475348987331561, "metric": "slur_inventions_per_reference", "passes": false, "source": "ossq"}, {"delta_pp": 2.2777369581190254, "metric": "stems.down.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -3.1070873734397653, "metric": "stems.up.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 0.0717360114777632, "metric": "stems.not_applicable.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 2.0300751879699264, "metric": "ties.start.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 1.1227544910179632, "metric": "ties.stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -21.1764705882353, "metric": "ties.start_and_stop.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 9.60264900662252, "metric": "slur_sides.below.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -6.994328922495274, "metric": "slur_sides.above.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 4.693140794223827, "metric": "beam2.forward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -4.27184466019418, "metric": "beam2.backward_hook.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 3.7383177570093435, "metric": "slur_inventions_per_reference", "passes": false, "source": "pdmx"}, {"delta_pp": 5.9931506849315035, "metric": "stems.down.recall", "passes": true, "source": "lieder"}, {"delta_pp": -5.873279544375897, "metric": "stems.up.recall", "passes": false, "source": "lieder"}, {"delta_pp": 0.0, "metric": "stems.not_applicable.recall", "passes": true, "source": "lieder"}, {"delta_pp": 5.863192182410426, "metric": "ties.start.recall", "passes": true, "source": "lieder"}, {"delta_pp": 12.621359223300976, "metric": "ties.stop.recall", "passes": true, "source": "lieder"}, {"delta_pp": -22.79411764705882, "metric": "slur_sides.above.recall", "passes": false, "source": "lieder"}, {"delta_pp": 9.243697478991598, "metric": "slur_sides.below.recall", "passes": true, "source": "lieder"}, {"delta_pp": -21.84873949579832, "metric": "beam2.backward_hook.recall", "passes": false, "source": "lieder"}, {"delta_pp": -0.23014959723820505, "metric": "slur_inventions_per_reference", "passes": true, "source": "lieder"}], "worst_delta_pp": -8.201131104187475}, "unordered": {"best_delta_pp": 7.4431391650354675, "by_source": {"lieder": {"advance_nontrivial": {"delta_pp": 3.060580005614577, "support": 5853, "supported": true}, "beam1": {"delta_pp": -0.9915684138754988, "support": 8508, "supported": true}, "beam2": {"delta_pp": -1.5460206585845127, "support": 2588, "supported": true}, "beam3": {"delta_pp": 7.4431391650354675, "support": 222, "supported": true}, "beam4": {"delta_pp": 0.0, "support": 0, "supported": false}, "exact_beam_vector": {"delta_pp": -0.7052186177715081, "support": 8508, "supported": true}, "hooks": {"delta_pp": -1.2699192986768137, "support": 166, "supported": true}, "slur_sides": {"delta_pp": -5.199720973360611, "support": 255, "supported": true}, "slur_spans": {"delta_pp": -1.2857028725797859, "support": 869, "supported": true}, "stem_direction": {"delta_pp": 0.7453960830166695, "support": 13684, "supported": true}, "stem_macro": {"delta_pp": -0.10440096264198173, "support": 13684, "supported": true}, "ties": {"delta_pp": 5.459092145236033, "support": 659, "supported": true}}, "ossq": {"advance_nontrivial": {"delta_pp": 5.352300884682981, "support": 67583, "supported": true}, "beam1": {"delta_pp": 0.11225855029952658, "support": 57755, "supported": true}, "beam2": {"delta_pp": 0.13297374538180362, "support": 22050, "supported": true}, "beam3": {"delta_pp": 6.1693779713199, "support": 2686, "supported": true}, "beam4": {"delta_pp": 0.9019232057206783, "support": 276, "supported": true}, "exact_beam_vector": {"delta_pp": 0.0865725911176507, "support": 57755, "supported": true}, "hooks": {"delta_pp": 2.8725237507067125, "support": 1739, "supported": true}, "slur_sides": {"delta_pp": -3.3367679485421964, "support": 7142, "supported": true}, "slur_spans": {"delta_pp": -0.5437236252216926, "support": 12393, "supported": true}, "stem_direction": {"delta_pp": 0.37164347594463853, "support": 78839, "supported": true}, "stem_macro": {"delta_pp": 0.2819272071441059, "support": 78839, "supported": true}, "ties": {"delta_pp": 2.2296632453406517, "support": 6208, "supported": true}}, "pdmx": {"advance_nontrivial": {"delta_pp": -0.41580736035103927, "support": 20582, "supported": true}, "beam1": {"delta_pp": -0.4699701268911727, "support": 27438, "supported": true}, "beam2": {"delta_pp": 1.389564944885524, "support": 10165, "supported": true}, "beam3": {"delta_pp": 4.628248587864292, "support": 1114, "supported": true}, "beam4": {"delta_pp": 0.8972575687325124, "support": 74, "supported": false}, "exact_beam_vector": {"delta_pp": 0.06195786864932051, "support": 27438, "supported": true}, "hooks": {"delta_pp": 2.71183516562028, "support": 858, "supported": true}, "slur_sides": {"delta_pp": -0.18065318659808982, "support": 831, "supported": true}, "slur_spans": {"delta_pp": -5.191396686352823, "support": 749, "supported": true}, "stem_direction": {"delta_pp": 0.3288578987711066, "support": 40443, "supported": true}, "stem_macro": {"delta_pp": -1.6544614613749453, "support": 40443, "supported": true}, "ties": {"delta_pp": 1.753061148388435, "support": 3091, "supported": true}}}, "eligible": false, "guardrails": [{"delta_pp": 5.528787919571476, "metric": "stems.up.recall", "passes": true, "source": "ossq"}, {"delta_pp": -0.007408504963701823, "metric": "stems.not_applicable.recall", "passes": true, "source": "ossq"}, {"delta_pp": -4.2242371905584335, "metric": "stems.down.recall", "passes": false, "source": "ossq"}, {"delta_pp": 17.3718610251118, "metric": "ties.start.recall", "passes": true, "source": "ossq"}, {"delta_pp": 3.3092037228541815, "metric": "ties.stop.recall", "passes": true, "source": "ossq"}, {"delta_pp": -2.500000000000002, "metric": "ties.start_and_stop.recall", "passes": false, "source": "ossq"}, {"delta_pp": 1.0327795240233528, "metric": "slur_sides.above.recall", "passes": true, "source": "ossq"}, {"delta_pp": -8.891369047619047, "metric": "slur_sides.below.recall", "passes": false, "source": "ossq"}, {"delta_pp": 8.46153846153846, "metric": "beam2.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -9.567617295308184, "metric": "beam2.backward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": 48.38709677419355, "metric": "beam3.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -7.958477508650519, "metric": "beam3.backward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": -0.7907689824901156, "metric": "slur_inventions_per_reference", "passes": true, "source": "ossq"}, {"delta_pp": -5.460139603232916, "metric": "stems.down.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 7.082016392564416, "metric": "stems.up.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 0.0717360114777632, "metric": "stems.not_applicable.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 11.353383458646615, "metric": "ties.start.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 3.667664670658677, "metric": "ties.stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 1.4117647058823457, "metric": "ties.start_and_stop.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -3.9735099337748325, "metric": "slur_sides.below.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 2.8355387523629427, "metric": "slur_sides.above.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 1.4440433212996429, "metric": "beam2.forward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -14.36893203883496, "metric": "beam2.backward_hook.recall", "passes": false, "source": "pdmx"}, {"delta_pp": -1.201602136181576, "metric": "slur_inventions_per_reference", "passes": true, "source": "pdmx"}, {"delta_pp": -7.971841704718418, "metric": "stems.down.recall", "passes": false, "source": "lieder"}, {"delta_pp": 6.181775035595627, "metric": "stems.up.recall", "passes": true, "source": "lieder"}, {"delta_pp": 0.0, "metric": "stems.not_applicable.recall", "passes": true, "source": "lieder"}, {"delta_pp": 19.869706840390883, "metric": "ties.start.recall", "passes": true, "source": "lieder"}, {"delta_pp": 12.944983818770229, "metric": "ties.stop.recall", "passes": true, "source": "lieder"}, {"delta_pp": 3.676470588235292, "metric": "slur_sides.above.recall", "passes": true, "source": "lieder"}, {"delta_pp": -14.28571428571428, "metric": "slur_sides.below.recall", "passes": false, "source": "lieder"}, {"delta_pp": -23.529411764705877, "metric": "beam2.backward_hook.recall", "passes": false, "source": "lieder"}, {"delta_pp": -6.444188722669736, "metric": "slur_inventions_per_reference", "passes": true, "source": "lieder"}], "worst_delta_pp": -5.199720973360611}}, "ordering": {"best_delta_pp": 3.523170853768376, "by_source": {"lieder": {"advance_nontrivial": {"delta_pp": -2.4525931187915684, "support": 5853, "supported": true}, "beam1": {"delta_pp": 1.2642880150652624, "support": 8508, "supported": true}, "beam2": {"delta_pp": 2.0536087658761804, "support": 2588, "supported": true}, "beam3": {"delta_pp": -4.463554729442542, "support": 222, "supported": true}, "beam4": {"delta_pp": 0.0, "support": 0, "supported": false}, "exact_beam_vector": {"delta_pp": 1.3046544428772844, "support": 8508, "supported": true}, "hooks": {"delta_pp": 3.523170853768376, "support": 166, "supported": true}, "slur_sides": {"delta_pp": -3.001410130826865, "support": 255, "supported": true}, "slur_spans": {"delta_pp": 1.8294305419961465, "support": 869, "supported": true}, "stem_direction": {"delta_pp": -2.0608009353990098, "support": 13684, "supported": true}, "stem_macro": {"delta_pp": -0.38359861825773, "support": 13684, "supported": true}, "ties": {"delta_pp": -4.699299555363668, "support": 659, "supported": true}}, "ossq": {"advance_nontrivial": {"delta_pp": -2.076023141954386, "support": 67583, "supported": true}, "beam1": {"delta_pp": -0.21556014274874968, "support": 57755, "supported": true}, "beam2": {"delta_pp": 0.8432972908455239, "support": 22050, "supported": true}, "beam3": {"delta_pp": -8.448604078186595, "support": 2686, "supported": true}, "beam4": {"delta_pp": -8.814873579579462, "support": 276, "supported": true}, "exact_beam_vector": {"delta_pp": -0.09176694658470375, "support": 57755, "supported": true}, "hooks": {"delta_pp": -6.563079428737561, "support": 1739, "supported": true}, "slur_sides": {"delta_pp": 3.4620098096457497, "support": 7142, "supported": true}, "slur_spans": {"delta_pp": 0.32694572530441723, "support": 12393, "supported": true}, "stem_direction": {"delta_pp": 0.3234439807709433, "support": 78839, "supported": true}, "stem_macro": {"delta_pp": 0.208501583170273, "support": 78839, "supported": true}, "ties": {"delta_pp": -2.9237944658392245, "support": 6208, "supported": true}}, "pdmx": {"advance_nontrivial": {"delta_pp": -0.6567903314147916, "support": 20582, "supported": true}, "beam1": {"delta_pp": -0.05527670906630977, "support": 27438, "supported": true}, "beam2": {"delta_pp": 1.0210163518933668, "support": 10165, "supported": true}, "beam3": {"delta_pp": -1.8280773025034613, "support": 1114, "supported": true}, "beam4": {"delta_pp": 1.9345396662905356, "support": 74, "supported": false}, "exact_beam_vector": {"delta_pp": 0.06924702966688567, "support": 27438, "supported": true}, "hooks": {"delta_pp": 2.211343181478076, "support": 858, "supported": true}, "slur_sides": {"delta_pp": 0.2677755331876197, "support": 831, "supported": true}, "slur_spans": {"delta_pp": 3.082042019203346, "support": 749, "supported": true}, "stem_direction": {"delta_pp": -0.5365576243107517, "support": 40443, "supported": true}, "stem_macro": {"delta_pp": 1.8227847106156991, "support": 40443, "supported": true}, "ties": {"delta_pp": -6.0491146967362575, "support": 3091, "supported": true}}}, "eligible": false, "guardrails": [{"delta_pp": -1.2139646308309326, "metric": "stems.up.recall", "passes": false, "source": "ossq"}, {"delta_pp": 0.0, "metric": "stems.not_applicable.recall", "passes": true, "source": "ossq"}, {"delta_pp": 1.6935329111494868, "metric": "stems.down.recall", "passes": true, "source": "ossq"}, {"delta_pp": -13.587891296869625, "metric": "ties.start.recall", "passes": false, "source": "ossq"}, {"delta_pp": -2.757669769045157, "metric": "ties.stop.recall", "passes": false, "source": "ossq"}, {"delta_pp": -15.249999999999996, "metric": "ties.start_and_stop.recall", "passes": false, "source": "ossq"}, {"delta_pp": -8.711270767849122, "metric": "slur_sides.above.recall", "passes": false, "source": "ossq"}, {"delta_pp": 20.535714285714278, "metric": "slur_sides.below.recall", "passes": true, "source": "ossq"}, {"delta_pp": 3.8461538461538436, "metric": "beam2.forward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": -8.46366145354186, "metric": "beam2.backward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": -45.622119815668206, "metric": "beam3.forward_hook.recall", "passes": false, "source": "ossq"}, {"delta_pp": 11.072664359861594, "metric": "beam3.backward_hook.recall", "passes": true, "source": "ossq"}, {"delta_pp": 2.1383038812232718, "metric": "slur_inventions_per_reference", "passes": false, "source": "ossq"}, {"delta_pp": -10.189103766004182, "metric": "stems.up.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 7.737876561351942, "metric": "stems.down.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 0.0, "metric": "stems.not_applicable.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -9.323308270676689, "metric": "ties.start.recall", "passes": false, "source": "pdmx"}, {"delta_pp": -2.5449101796407136, "metric": "ties.stop.recall", "passes": false, "source": "pdmx"}, {"delta_pp": -22.58823529411765, "metric": "ties.start_and_stop.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 13.576158940397354, "metric": "slur_sides.below.recall", "passes": true, "source": "pdmx"}, {"delta_pp": -9.829867674858217, "metric": "slur_sides.above.recall", "passes": false, "source": "pdmx"}, {"delta_pp": 3.249097472924184, "metric": "beam2.forward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 10.09708737864078, "metric": "beam2.backward_hook.recall", "passes": true, "source": "pdmx"}, {"delta_pp": 4.939919893190919, "metric": "slur_inventions_per_reference", "passes": false, "source": "pdmx"}, {"delta_pp": 13.964992389649922, "metric": "stems.down.recall", "passes": true, "source": "lieder"}, {"delta_pp": -12.055054579971525, "metric": "stems.up.recall", "passes": false, "source": "lieder"}, {"delta_pp": 0.0, "metric": "stems.not_applicable.recall", "passes": true, "source": "lieder"}, {"delta_pp": -14.006514657980457, "metric": "ties.start.recall", "passes": false, "source": "lieder"}, {"delta_pp": -0.3236245954692518, "metric": "ties.stop.recall", "passes": true, "source": "lieder"}, {"delta_pp": -26.470588235294112, "metric": "slur_sides.above.recall", "passes": false, "source": "lieder"}, {"delta_pp": 23.529411764705877, "metric": "slur_sides.below.recall", "passes": true, "source": "lieder"}, {"delta_pp": 1.680672268907557, "metric": "beam2.backward_hook.recall", "passes": true, "source": "lieder"}, {"delta_pp": 6.214039125431531, "metric": "slur_inventions_per_reference", "passes": false, "source": "lieder"}], "worst_delta_pp": -8.814873579579462}, "scope": "One-seed coverage-preserving low-dose internal diagnostic; no release claim", "selected": null}.
+
+Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/synthetic-transfer-lowdose-20260928/experiment/report.json`. This is an internal pilot, not a release promotion; inspect directional regressions and inventions before further training.
+
+
+### 2026-09-28 — joint public-core + all-head run launched
+
+Owner explicitly chose the existing public core plus newly initialized heads trained jointly, rather than random initialization. New name: public-joint-core-heads-20260928. All encoder/decoder parameters and all 12 notation heads train from update one, including dynamics. Data: audited real-only 40,290-row internal training split; its held-out head-validation rows excluded. No synthetic examples: both the original mixture and the coverage-preserving 4.76% diagnostic failed gates (low-dose worst supported changes -5.20 pp unordered, -8.20 pp curriculum).
+
+Recipe and trainer committed locally as 4d34786; low-dose plan committed dd90d4d. Maximum 35 epochs, batch 8/accumulate 4, AdamW core LR 3e-5/head LR 1e-4, 10% warmup/cosine, existing recognition loss plus the structured CE sum/12, BF16 deterministic math attention. Initial sourcewise scoring precedes fitting; all three sources scored each epoch. Recognition safeguard stops after any source loses >3 pp rhythm-token accuracy against baseline for two consecutive epochs. Internal metrics are diagnostic; final autoregressive and accepted-stack comparison is still required.
+
+Preflight: the initial non-deterministic GPU run differed by up to 4.9e-7 after resume. Strict determinism exposed legacy 3-D NLL's unsupported deterministic kernel; the isolated joint runner now flattens CE with tested mask/smoothing/gradient parity. Continuous 16 updates versus 8+resume-to-16 is bit-identical. Encoder, decoder and every head have nonzero gradients and changed weights. Augmented fitting and three-source evaluation smoke also passed. Raw sidecar audit confirms positive dynamics in OSSQ, PDMX and Lieder.
+
+Full fitting is live in persistent instance tmux public_joint_20260928; watcher public_joint_watch_20260928. First atomic resumable checkpoint landed at update 200. At update 210, elapsed 153 s, peak allocated GPU 6.85 GB. ETA about 10–12 h including per-epoch evaluation; first epoch roughly 13 min away at that check. Save full model/optimizer/scheduler/RNG every 200 updates and epoch; retain every epoch's weights. Local public_joint_pull_20260928 waits for terminal state, copies archive, verifies SHA-256 and updates these docs; it does not promote a model. The instance jobs survive laptop closure; the local collector resumes only while this laptop environment is running.
+
+Local protocol, code, source snapshot, smoke verification, initial evaluation and label audit: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-joint-core-heads-20260928`. Full weights are still being trained; the collector's final full/ path is not yet a completed result. Dedicated protocol: `/home/jhlusko/workspace/homr/docs/JOINT_PUBLIC_CORE_HEADS_2026-09-28.md`.
+
+The first-transfer divergence gallery has 24 deterministic selected gain/loss examples: http://localhost:8765/synthetic-transfer-review-20260928/index.html . It holds recognition and other fields to the reference, and slur events to reference endpoints, to isolate stem/side changes. Labels use crop-local measures and beats. These selected examples are not representative performance estimates. Generator committed in 4d34786; review assets copied locally under the instance-results workspace.
+
+
+### 2026-09-28 — correct synthetic review stem display
+
+Owner noticed sq9137469_0044_0003_2 had a down prediction labeled but an up stem displayed. Archived predictions and generated MusicXML were correct; Verovio unified conflicting directions inside reference beam groups. Stem-only diagnostic panels now remove beam connections consistently in reference/control/candidate; the original crop retains its beams. Regenerated all 24 cases, visually checked the cited up/down/up comparison, and asserted measure-4 MusicXML directions plus absence of beam elements. Pitch labels now include accidentals; SVG URLs are content-versioned to prevent stale displays. This changes the local review only, not metrics, training or runtime. Gallery: http://localhost:8765/synthetic-transfer-review-20260928/index.html .
+
+
+### 2026-09-28 — compare engravers on conflicting beam/stem predictions
+
+Rendered the original beamed real-only control for sq9137469_0044_0003_2 with MuseScore 4.6.5. MuseScore makes the first beam group in measure 4 point down, including neighboring notes whose XML says up; Verovio had made that group point up. Thus MuseScore reveals the cited down note but still does not faithfully display every independent prediction. This is an engraving-policy conflict with mixed per-note stem directions under one beam. Keep the unbeamed diagnostic for raw-head review; use beamed rendering for score-output review. XML and MuseScore image are retained locally under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/synthetic-transfer-review-20260928/renderer-checks`. OSMD has documented XML-stem/autobeam controls but has not been tested on this case. No change to training, metrics or production renderer.
+
+
+### 2026-09-28 — joint loss/source and PDMX quality clarification
+
+Joint objective inherits six equally weighted recognition CE branches (rhythm label smoothing .1), note-presence consistency, and adds each of twelve notation CE losses at coefficient 1/12. No extra pitch/rhythm priority; duration-adherence and cross-staff losses are disabled. Source crop proportions are OSSQ 31,496 (78.17%), PDMX 5,701 (14.15%), Lieder 3,093 (7.68%), each once per epoch. Crop shares are not note/gradient shares. This inherited the audited head-diagnostic subset and is not a full-PDMX or intentionally balanced joint recipe.
+
+Owner recalled the historical PDMX source-quality filter. RUNLOG 27.31/27.78 and converter commit 1cedc3b confirm final empty/rest-only bar and <96 sounding-note exclusions, plus sidecar round-trip checks. Saved indexes remain under homr/datasets/pdmx/. Audited all 3,091 distinct source scores represented by the active 5,701 PDMX crops against retained local source MXL: all found, zero empty/rest-only final measures, zero scores below 96 sounding notes. Local audit and reproducible script: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-joint-core-heads-20260928/pdmx-quality-audit.json`. This tests source-score endings, not cropped-window endings. No live recipe/data changes were made while discussing alternatives.
+
+
+### 2026-09-28: exact joint PDMX source profile and title audit
+
+Audited the 3,091 distinct PDMX source scores behind the active joint run's 5,701 PDMX crops against local PDMX.csv and original MXL. Artifacts and reproducible audit scripts are local under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-joint-core-heads-20260928/`: `pdmx-profile.md`, `pdmx-profile-summary.json`, `pdmx-profile-scores.json`, `profile-joint-pdmx.py`, `pdmx-title-audit.md`, `pdmx-title-summary.json`, `pdmx-title-flagged-scores.json`, `pdmx-title-phrase-matches.json`, and `audit-pdmx-titles.py`.
+
+MIDI-coded source instrumentation is piano-heavy: acoustic grand piano 1,475 (47.7%), two piano-coded parts 348 (11.3%), piano plus choir synth pad 264 (8.5%). These are playback codes, not verified performer counts. Source part counts: one 2,078; two 1,013. Median source length 33 measures; p90 118; range 6–980. Measure counts include pickup and do not expand repeats. Crop-weighted mean source length 103.1 vs unique-score mean 56.6, reflecting greater exposure for longer scores.
+
+Title audit: one exact default-only source, “Create New Score” (36 bars, three crops). Five sources contain “Untitled”; they have alternate names or descriptive tune titles, so substring exclusion is not justified. There are 867 scores / 1,316 crops with no meaningful XML work/movement/title-credit field; 866 / 1,313 have named PDMX metadata. Placeholder in any field affects 72 / 163, mostly default internal “Title” despite named alternatives. Repeated normalized named CSV titles: 28 groups / 58 scores; this does not establish duplicates. Missing title is not demonstrated to predict low musical quality. No data exclusion or training change was made.
+
+Objective clarification: six legacy recognition CEs each coefficient 1, twelve notation CEs each 1/12, plus legacy consistency. Thus 12:1 per-head coefficient but 6:1 nominal CE group totals; no special pitch/rhythm priority. This normalization is not an empirically tuned priority policy. Recommend measuring shared-core gradient contributions and using pitch/rhythm/accidental validation gates before selecting revised weights.
+
+
+### 2026-09-28 — completed expanded PDMX source audit
+
+Checked every one of 216,554 PDMX sources passing license/validity, tracks 1–6 and complexity <=2 against locally available MusicXML, without using CSV bar count as a gate. All source files available; two XML parse failures. Require >=33 XML measures, no unpitched/percussion-clef/MIDI-channel-10 evidence anywhere in the score, >=96 sounding notes and no empty/rest-only part ending. 31,947 pass source checks; reserve 184 protected validation scores, leaving 31,763 training-source candidates: 1,547 retained current scores + 30,216 new. Track distribution: 1=21,147; 2=2,482; 3=1,411; 4=3,255; 5=2,699; 6=769. Thus 8,134 new 3–6-track ensembles; most other additions are newly admitted one-track scores beyond the old capped selection. Of the current 3,091, 1,540 fail the new length gate and four more fail percussion checks. CSV screening estimate was 101,750, but its inferred bars disagree substantially with XML measure counts.
+
+No old 10,000-source cap applied to the manifest. This is source eligibility, not final converted score/crop yield; parser/token/clef/window/render/sidecar checks remain. Active joint training and published pins unchanged. Title flags from metadata identify 46 candidates (42 Untitled phrase matches, 11 exact defaults, two missing titles; flags overlap); these are review flags, not exclusions. Pitched percussion remains by user confirmation.
+
+Local results: /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-joint-core-heads-20260928/pdmx-expanded-audit.md; accepted training-source manifest /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-joint-core-heads-20260928/pdmx-expanded-training-sources.json; title flags /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-joint-core-heads-20260928/pdmx-expanded-title-flags.json; all source checks /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-joint-core-heads-20260928/pdmx-expanded-source-checks.json. Audit and finalization scripts are retained alongside these files. Suggested next build should use a separate dated recipe, preserve protected validation IDs, and explicitly choose its size/sampling cap.
+
+
+### 2026-09-28 — first-page gallery for 46 PDMX title candidates
+
+Rendered all 46 flagged source MXL scores with MuseScore 4.6.5; generated first-page PNGs from PDFs with pdftoppm. Local viewer: http://localhost:8765/pdmx-title-review-20260928/index.html (existing persistent synthetic_review_20260928 tmux server). Artifacts, original MXL copies, full PDFs, cases, build/raster scripts and render verification are local at `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/pdmx-title-review-20260928/`. Viewer provides title-field context, filter by flag, keyboard navigation and source/PDF download; no exclusions applied. Verified all 46 asset triplets and HTTP 200; first page visually inspected.
+
+
+### 2026-09-28 — expanded PDMX v2 crop build launched
+
+User approved excluding all 46 reviewed title candidates and building/package preparation for R2. New frozen recipe has 31,901 source candidates: 31,717 train + 184 protected validation. No old 10,000-source cap. Existing v1 corpus/pin unchanged. Reproducible recipe and resumable builder committed in pdmx-omr-data as `67b05a5` (not pushed). Builder snapshots clean HOMR HEAD and records source CSV, recipe/exclusion, builder hashes and runtime versions; per-source input hashes and seeded conversion are checkpointed.
+
+End-to-end smoke passed: 12 source scores, 431 crops (421 train/10 valid), two compressed shards, independent decompression/crop-triplet counts and portable-path verification. Full job runs locally with four CPU workers in persistent tmux `pdmx_v2_build_20260928`; watcher `pdmx_v2_watch_20260928` updates local STATUS.md every 30 seconds and appends completion/failure to both planning docs. GPU training on the instance is untouched. Source rendering is followed automatically by split audit, corpus verification, score-preserving shards, SHA-256 checks, decompression verification, and R2-ready release/source lock generation. Upload is not performed by this job.
+
+Run and live status: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/STATUS.md`. Outputs: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/corpus/` and `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/distribution/`; new public prefix intended `pdmx-homr-v2`. At 2026-09-29T00:03:09.835833+00:00: 110 sources, 3594 crops, 0 failures. Early raw extrapolation 8.8 hours for rendering; initially balanced track order oversamples slower ensembles, so estimate should improve as sampling settles. Packaging time remains unmeasured at full scale.
+
+
+### 2026-09-28 — joint training curves through completed epoch 11
+
+Pulled the instance training log, progress and every initial/epoch evaluation available into local snapshot at `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-training-curves-20260928/snapshot/`. Local gallery: http://localhost:8765/joint-training-curves-20260928/index.html. PNG/SVG plots and raw CSVs retained alongside summary.json and plotting script. Snapshot epoch 11.81, update 14,880/44,100; remaining training/evaluation extrapolation 7.34 hours.
+
+Only aggregate recognition and notation losses were recorded during training (notation is weighted by /12 in the objective). Individual head CE histories cannot be reconstructed from aggregate logs. Plots show two training-loss components, per-source validation recognition losses, six recognition branch accuracy deltas, and notation family metrics. Slur slot event/side metrics combine the two slots. Unsupported Lieder beam level 4 is omitted, not scored as a failure.
+
+At epoch 11, recognition validation loss rose vs initial on every source: OSSQ 0.9583->0.9779, PDMX 0.9508->0.9886, Lieder 1.0119->1.0932. Rhythm/pitch/accidental accuracy deltas (pp): OSSQ -0.038/-0.023/-0.046; PDMX -0.146/-0.178/-0.160; Lieder -0.206/-0.182/-0.158. Thus training loss reduction does not imply recognition validation improvement. Many notation heads continue improving; dynamics macro F1 remains approximately 10–11% and mostly flat since epoch 1, deserving a separate collapse/imbalance/target audit. No inference about exact predicted class distribution was made without a confusion report.
+
+These are internal teacher-forced diagnostics with some core-seen score identities, not untouched autoregressive release evidence. Training was left running unchanged; no GPU diagnostic job launched.
+
+
+### 2026-09-28 — agreed text/dynamics plan and next training sequence
+
+Owner agreed to specialized dynamics recognition in the detector/fusion system. Plan documented locally at `/home/jhlusko/workspace/homr/docs/TEXT_LYRICS_DYNAMICS_PLAN_2026-09-28.md`; the original fusion design now points to this update. Three logical routes (lyrics e2, directions e4, dynamics initially e4 Dynamic) need only two physical passes while e4 is shared. Dynamics glyph recognition and staff/beat attachment have independent gates; the structured dynamics head is experimental and remains prohibited as an automatic service output. Third identity wiring is pending, and no model was promoted.
+
+Training interpretation and ordered follow-up: `/home/jhlusko/workspace/homr/docs/JOINT_TRAINING_NEXT_STEPS_2026-09-28.md`. Beams/stems are flattening, but PDMX ties and PDMX/Lieder slur spans still improve materially; recognition validation is worsening modestly and dynamics is flat. Keep current run unchanged as baseline. After v2 verification, freeze a fresh score-level experimental holdout, audit/log individual gradients/losses and dynamics behavior, run controlled loss ablations on fixed data, then test v2 with explicit source sampling/equal updates before another long candidate. Promotion requires full autoregressive source-specific recognition/notation comparison; the current loose catastrophe guard is not a release margin. No new GPU trials launched by this documentation task.
+
+
+Joint curve refresh now includes completed epoch 12 at the same local gallery. Latest snapshot epoch 12.29, approximately 7.23 hours remaining. PDMX rhythm/pitch teacher-forced accuracy deltas -0.182/-0.224 pp; Lieder -0.269/-0.198 pp. Lieder slur-span F1 fluctuated down from 83.10 to 81.38 between epochs 11/12, so the recent gains are not monotonic. Current v2 rendering snapshot: 600/31,901 sources, 21,704 crops, zero failures, raw render ETA 11.69 h before packaging; early interleaved track order oversamples slower ensembles. Documentation committed as cee0e62; a detached source pin at the original build commit is being retained for exact v2 resume identity after documentation changes.
+
+### 2026-09-29 UTC — joint training stopped; paired frozen comparison running
+
+Stopped by user request after epoch 27 (live training had reached epoch 27.74). Scoring uses the last fully evaluated checkpoint, epoch 27, against public-rareNum-20260927 plus the real-only 8,400-update frozen-core heads. Latest resumable state is preserved separately. Training is intentionally stopped, not successfully completed.
+
+Both arms are rescored on identical 3,909 internal validation crops: OSSQ 2,871, PDMX 609, Lieder 429. Float32, math SDPA, TF32 disabled. Teacher-forced head metrics precede four-shard eager autoregressive pitch/rhythm/accidental/symbol-error scoring. Dynamics excluded because the frozen dynamics head was untrained. This is diagnostic evaluation; some source identities were seen by the core, and differing training settings prevent attributing changes to freezing alone.
+
+Persistent instance tmux: `joint_frozen_score_20260929`. Local pull/checkpoint watcher: `joint_frozen_pull_20260929`. Estimated scoring 30–60 minutes, subject to measured decoding throughput.
+
+Results will be collected under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/joint-vs-frozen-20260929/`; the watcher appends final results here. Selected epoch-27 and resume weights are copied into the local joint run's `full/` directory with SHA-256 verification.
+
+### Joint-versus-frozen scoring complete (2026-09-29 UTC)
+
+Paired successful crops: 3909/3909; failed pairs: 0.
+Local decoded report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/joint-vs-frozen-20260929/decoded/comparison.md`.
+Local notation report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/joint-vs-frozen-20260929/teacher-forced/comparison.md`.
+- ossq: frozen symbol error 2.372%, joint 1.862%; delta -0.510 pp.
+- pdmx: frozen symbol error 2.865%, joint 3.222%; delta +0.358 pp.
+- lieder: frozen symbol error 3.542%, joint 3.728%; delta +0.186 pp.
+Internal held-out head crops, with some core-seen score identities; diagnostic evidence only. Dynamics excluded. Different training settings prevent a causal conclusion about freezing alone.
+
+Interpretation: joint epoch 27 substantially improves notation metrics, but PDMX symbol/rhythm/accidental errors worsen with paired score-bootstrap intervals above zero. OSSQ point improvement and Lieder deterioration have intervals crossing zero. Keep the existing public core as the recognition baseline; do not promote the joint checkpoint. Scoring and local collection are complete. The packaging failure was repaired without rerunning scoring.
+
+### 2026-09-29 — owner priorities and suggested promotion follow-up
+
+Owner values real OSSQ and Lieder more than synthetic PDMX and considers joint epoch 27 worth advancing. This supersedes the preceding blanket “do not promote” recommendation: PDMX deterioration is a diagnostic tradeoff, not an automatic veto. Epoch 27 is a promotion candidate; no production promotion or pin change has occurred. OSSQ symbol error improves 2.372% -> 1.862% (21.5% relative); Lieder rises 3.542% -> 3.728%. Both score-bootstrap delta intervals overlap zero. Notation gains are substantial.
+
+Suggested next steps, not completed work:
+1. Evaluate untouched real-score holdouts against the currently accepted full core-plus-heads stack. The completed comparison used the real-only 8,400-update frozen heads, not necessarily the strongest accepted stack.
+2. Use separate OSSQ and Lieder primary gates; treat PDMX as diagnostic. Prespecify an acceptable Lieder regression margin before inspecting new evaluation outcomes. No numerical margin has been agreed.
+3. Generate divergent side-by-side examples, prioritizing Lieder pitch/rhythm regressions and OSSQ improvements.
+4. Package epoch 27 as a local candidate pin with the existing model retained for rollback; promotion follows evaluation/review.
+
+Owner would prefer a longer training job while away. Full random initialization is a distinct experiment from the previously agreed public-core-plus-new-heads joint training. No random-initialized job is launched by this documentation update. The existing runner requires a checkpoint and pins the old training index; supporting a new initialization or corpus needs explicit implementation and smoke/resume checks. PDMX-v2 is still rendering (13,800/31,901 sources, approximately 9.5 hours remaining at 07:15 UTC, then packaging); no claim that v2 is ready.
+
+Suggested long-run recipe: explicit real-source sampling to prevent expanded PDMX from dominating; immutable score-level development/test splits before fitting; individual recognition/head-loss logging; resumable optimizer/RNG state; per-source checkpoints and evaluation. Use an optimizer-update budget, not an epoch count across changed data. If starting with the public core, test a lower core learning rate to preserve recognition while learning heads. If starting fully random, use an initialization-appropriate learning-rate/warmup schedule rather than copying the fine-tuning schedule; retain the public-initialized run as a control. A multi-day duration is plausible but not measured, and no completion ETA is promised before throughput/convergence observations.
+
+### Fresh music-recognition training failed
+Local status and metadata: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-20260929/STATUS.md`.
+
+### 2026-09-29 — fresh music model long run launched
+
+Owner explicitly selected training from random weights, then allowed ImageNet initialization. **ImageNet encoder + random music decoder and all notation heads** is now training separately from epoch-27 candidate evaluation. No HOMR checkpoint is loaded. Recipe/limits: `/home/jhlusko/workspace/homr/docs/RANDOM_CORE_HEADS_2026-09-29.md`; runner committed as `d55f5d9`, protocol `6ba6dcf`. The encoder switch preserves existing default behavior.
+
+Five-step continuous versus three-plus-resumed-to-five check passed with bitwise-identical weights; encoder, decoder and notation-head gradients observed. 160 epochs / 201,600 updates, batch 32, seed 20260929. Source sampling chosen for owner priorities: OSSQ 60%, Lieder 25%, PDMX 15%, uniform crops within source. Pinned old corpora remain fixed; unfinished expanded PDMX-v2 is not inserted. AdamW peak LR 3e-4, 5,000 warmup updates, cosine decay; existing recognition objective plus notation sum/12 retained. Per-recognition-component and per-notation-head losses/support recorded. Dynamics remains experimental, prohibited as automatic production output.
+
+Training tmux `random_core_heads_20260929`; independent instance watcher `random_core_heads_watch_20260929`; local metadata/finish collector `random_core_heads_pull_20260929`. Remote training survives laptop disconnect/closure; local collection waits for laptop connectivity. Atomic resume state every 200 updates and every epoch, all epoch weights retained. Initial validation precedes training. Provisional duration several days; refine from actual throughput. No guarantee that fixed budget reaches convergence.
+
+Local live status/results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-20260929/STATUS.md`. Metadata collected every five minutes while connected; final latest resume/epoch copied on completion. Source/environment snapshots preserved. Previously suggested epoch-27 promotion evaluation/review steps remain pending; no deployment or production pins changed.
+
+Launcher note: environment inventory initially failed because the preserved environment has no pip module; replaced inventory with importlib.metadata without installing/rebuilding anything, then restarted. The local collector records the resolved launcher failure; no training checkpoint was overwritten. ImageNet smoke checks passed exact five-update resume.
+
+
+### PDMX v2 build terminal status — 2026-09-29T12:25:53.333273+00:00
+
+# PDMX v2 build status
+
+Updated: 2026-09-29T12:25:53.333273+00:00
+
+Status: FAILED
+Sources: 31,901 / 31,901
+Crops: 567,479
+Render ETA: 0.00 hours
+
+Build tmux: `pdmx_v2_build_20260928`; watcher: `pdmx_v2_watch_20260928`.
+Run: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928`
+
+Excludes all 46 reviewed candidates; up to six tracks, >=33 XML measures, no unpitched percussion. 31,717 training and 184 protected-validation source candidates. No 10,000-source cap.
+
+Packaging and independent shard checks run automatically after rendering. R2-ready distribution under `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/distribution`; upload is not part of this job.
+
+### 2026-09-29 — PDMX-v2 rendered; 128 incomplete sidecars excluded for packaging
+
+All 31,901 selected sources rendered, yielding 567,479 crop rows with zero source failures. The first package audit found 128 rows missing only their notation sidecar, across 35 scores. Images and tokens are present. The build stopped rather than silently distributing incomplete crop triplets. User had previously approved excluding skipped windows; the continuation excludes exactly these 128 rows and records each one with its missing path, leaving 567,351 complete rows. Protected score membership stays fixed. Original builder and render identity are unchanged; separate packaging continuation script committed as `c2f2ed4`. Corpus validation, shard creation and independent decompression checks run in persistent tmux `pdmx_v2_package_20260929`, with watcher `pdmx_v2_package_watch_20260929`. Status: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/STATUS.md`. ETA after audit/shard throughput is measured; no upload or pin change.
+
+### 2026-09-29 — fresh music-model loss curves
+
+Live local page: http://localhost:8765/random-training-curves-20260929/index.html . Generated from the locally collected instance `train.log` and source-wise validation JSON; artifact: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/random-training-curves-20260929/`. Tracked plotting script commit `d16ea55`. The local metadata pull and curves refresh run in persistent tmux; browser page refreshes every five minutes while laptop is running. Panels include aggregate training and validation recognition losses, six recognition branch losses, all 12 notation-head losses, rare-head support handling, and a close view of recent validation. CSV/SVG/PNG retained.
+
+At completed epoch 11, recognition validation loss is OSSQ 1.1224, Lieder 1.4064, PDMX 1.4706, each still declining from epoch 8 (1.1673, 1.4851, 1.6248). These are teacher-forced internal validation diagnostics; per-batch head losses exclude zero-supervision batches and are noisy for rare beam/slur slots. No promotion claim from these curves.
+
+### PDMX v2 package terminal status — 2026-09-29T18:26:42.735828+00:00
+
+# PDMX v2 package status
+
+Updated: 2026-09-29T18:26:42.735828+00:00
+Status: FAILED
+Rendered sources: 31,901 / 31,901
+Rendered windows: 567,479; 128 missing sidecars across 35 scores are excluded from the final indexes.
+Completed shards: 118; packaging ETA: roughly 0.2 hours from shard throughput; excludes final verification.
+
+Session: `pdmx_v2_package_20260929`; watcher: `pdmx_v2_package_watch_20260929`. Distribution: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/distribution`. R2-ready only; no upload.
+
+### PDMX v2 shard verification terminal status — 2026-09-29T18:49:12.456490+00:00
+
+# PDMX v2 package status
+
+Updated: 2026-09-29T18:49:12.456490+00:00
+Status: COMPLETE
+Complete crop triplets: 567,351; 128 missing sidecars excluded with a recorded inventory.
+Verified shards: 118 / 118; verification ETA: 0.0 minutes at measured throughput.
+
+Package: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/distribution`. R2-ready only; no upload or public pin change.
+
+### 2026-09-29 — PDMX-v2 package complete
+
+All 31,901 selected sources rendered. The continuation excluded exactly 128 rows missing notation sidecars (35 scores), documented each path, and kept 567,351 complete crop triplets. Train: 565,522 crops from 31,342 scores; protected validation: 1,829 crops from 184 scores. All 118 score-preserving zstd shards (19.07 GB) passed SHA-256 and decompressed file-count checks. The initial verifier SIGPIPE was due to closing the decompressor before draining tar trailing zeros; fixed in `pdmx-omr-data` commit `0218d25`, then the existing shards were independently checked without recompression. Final local artifacts: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/distribution`; verification record `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/distribution/verification.json`; status `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/STATUS.md`. R2-ready only: no upload or public pin change. The new corpus is not inserted into the running fresh-music-model training.
+
+### 2026-09-29 — PDMX-v2 upload authorized and running
+
+Owner explicitly requested upload. R2 `archives` bucket access checked by reading the existing v1 manifest; a v2 verification-object canary passed S3 HEAD SHA metadata and public GET SHA. Resumable, two-worker upload runs in local tmux `pdmx_v2_upload_20260929`; monitor `pdmx_v2_upload_watch_20260929`, followed by independent public metadata/shard-range verification in `pdmx_v2_public_verify_20260929`. Prefix `pdmx-homr-v2/` is separate from v1. Local status: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/UPLOAD_STATUS.md`. Credentials are read from `OurTextScores/.env` and are not copied into artifacts or logs.
+
+Shard-count explanation: v1 has seven **training** shards plus one validation shard (41,635 training windows from 6,376 scores); v2 has 117+1 (565,522 training windows from 31,342 scores). V2 has 13.58x the training windows and 2.76x the windows per converted score. The packager's explicit v2 target is 280 MiB uncompressed versus approximately 500 MiB for the v1 shards (measured first-shard tar sizes 318 MB vs 559 MB). Its total compressed payload is 19.07 GB versus 1.94 GB in v1. No shard explosion or missing-data bug is indicated by these counts; the 128 incomplete sidecars were separately excluded and documented. The protected v2 validation slice is smaller (184 scores, 1,829 crops) than v1 (632 scores, 3,422 crops) because the new source filters change eligibility, so the two validation sets are not directly interchangeable.
+
+### PDMX v2 upload terminal status — 2026-09-29T19:25:38.538167+00:00
+
+# PDMX v2 upload status
+
+Updated: 2026-09-29T19:25:38.538167+00:00
+Status: COMPLETE
+Uploaded or verified objects: 131 / 131; bytes: 19.15 / 19.15 GB; ETA: 0.0 minutes at measured throughput.
+
+Session: `pdmx_v2_upload_20260929`. Destination: `archives/pdmx-homr-v2/`. V1 remains under its original prefix. Package: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/distribution`.
+
+### 2026-09-29 — PDMX-v2 public upload verified
+
+Uploaded all 131 package objects (19.15 GB) to `archives/pdmx-homr-v2/` from the laptop; one preflight verification object was already present, the remainder uploaded in a persistent two-worker tmux session. Every object HEAD matched expected size and SHA-256 metadata. Independent public GET matched local SHA-256 for release.json, manifest.json, verification.json, index_valid.txt and SHA256SUMS; public range reads matched the first 1,024 bytes of one training and the validation shard. Public release: https://pub-d31b33903cd04fec8cc87ee0667c1981.r2.dev/pdmx-homr-v2/release.json . Local evidence: `/home/jhlusko/workspace/homr-artifacts/pdmx-homr-v2-20260928/PUBLIC_VERIFY.json`. The public v1 manifest remains readable. The v2 consumer pin/lockfile and production model are unchanged.
+
+### 2026-09-29 — Fresh-music run switched from PDMX-v1 to v2 at epoch 17
+
+Owner retained the existing model/optimizer/scheduler progress and kept the source draw mix at OSSQ 60%, Lieder 25%, PDMX 15%. V1 stopped at an exact epoch boundary, update 21,420, with checkpoint SHA-256 `62a167a96b9eba1484ab356cf3ed0405870ee19cccec83f6b45f1fbf8ef36aff`. Local durable copy: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-20260929/full/resume.pt`. The new combined training index has 600,111 complete rows, SHA-256 `e94b63898f7175913a759a381675291e88ad0ca016dd9880afa69418e8b525c1`; 40,290 source-weighted draws per epoch preserve the original 201,600-update schedule despite the larger corpus. All 118 v2 shards were fetched directly on the instance and SHA-verified; all 600,111 indexed triplets passed the training loader's existence check. A one-update migration smoke test reached update 21,421 and saved valid optimizer/scheduler state. Full run and remote watcher are in separate tmux sessions `random_core_v2_full_20260929` and `random_core_v2_watch_20260929`; local collector `random_core_v2_pull_20260929` copies metadata to `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-pdmx-v2-20260929/`. Details: `homr/docs/RANDOM_CORE_HEADS_2026-09-29.md`; runner commit `9e36fa7`. No production pin changed.
+
+The published v2 release initially listed shard URLs without their `shards/` prefix. The URL fields and mirrored lockfile were corrected and re-uploaded; a fresh public GET matched all three changed metadata files and the corrected shard URL returned HTTP 206 for a range request. Shard bytes were unchanged. Packaging source fix: `pdmx-omr-data` commit `214fe96`.
+
+### 2026-09-29 — Lieder augmentation size cap continuation
+
+The v2 run advanced to update 22,000 and was intentionally superseded at an atomic checkpoint. Investigation of CPU stalls found Lieder crops up to 44.9 MP; 1,537/3,093 Lieder train crops exceed 2× their final model canvas. Augmentation happens before the existing resize. On two measured examples, a Lieder-only 2×-canvas pre-resize cut augmentation time from 1.94 to 0.09 seconds and 18.87 to 0.10 seconds; unaugmented final-canvas mean absolute differences were 2.95 and 4.49/255. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-pdmx-v2-20260929/pre_resize_benchmark.json`. This is a training-image change, so a separate continuation runner (`homr` commit `5c2154e`) migrates the same model/optimizer/schedule/RNG from the immutable update-22,000 checkpoint. Its one-update smoke test passed at 22,001. Full capped run and watcher are in remote tmux `random_core_v2_cap_full_20260929` and `random_core_v2_cap_watch_20260929`; local metadata collector `random_core_v2_cap_pull_20260929`. Local result path: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-pdmx-v2-capped-20260929/`. Initial source-wise validation and training are running; compare real-source validation against the uncapped source checkpoint before accepting the cap. The 60/25/15 source mix and PDMX-v2 crop sampler are unchanged. No production pin changed.
+
+### 2026-09-30 — epoch-39 results, token audit, and audited continuation
+
+The capped fresh-music run stopped at 06:53 UTC, epoch 39.53 / live update 49,810, on `KeyError: accent_staccatissimo_staccato`. Latest saved model/AdamW/scheduler/RNG state is update 49,800; its local and remote SHA-256 match (`5594f2e086879cceca596b6ab03df4fb8acd2c0c86aa086d0def1004141862cf`). Local checkpoint: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-pdmx-v2-capped-20260929/full/resume.pt`.
+
+A full training-parser/vocabulary audit of 600,111 rows finished in 13.3 seconds. Exactly six PDMX crops are incompatible, two each for `accent_arpeggiate_fermata_staccato`, `staccato_tenuto_trill`, and `accent_staccatissimo_staccato`; OSSQ/Lieder have no unsupported rows. The proposed index has 600,105 rows and SHA-256 `ab1c9f8073c207a1110f013ae27dd3fea0d473092778689369acb5d655dba77f`. Local audit/exclusion inventory and verified filtered index: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260929/random-core-heads-pdmx-v2-capped-20260929/token-audit-20260930/`. Published corpus labels are intact.
+
+Owner asked to continue. The new `random-core-heads-pdmx-v2-audited-20260930` phase launched at 19:12 UTC from an immutable copy of update 49,800, after a one-update smoke saved update 49,801 / batch offset 661 / scheduler step 49,802. All 317 optimizer states and the original recipe were retained. Source shares remain OSSQ 60%, Lieder 25%, PDMX 15%; the update budget and loss weights are unchanged. Filtering changes the remaining crop draws and is recorded as a separate phase. Reproducible audit, migration guard, first-phase evaluation fix, and curve generator committed in `homr` as `f8dde29`.
+
+Remote persistent sessions: `random_core_v2_audited_full_20260930` and `random_core_v2_audited_watch_20260930`; local collector: `random_core_v2_audited_pull_20260930`. Local results, launch script, smoke check, and status: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260930/random-core-heads-pdmx-v2-audited-20260930/`. Estimated remaining budget is 25–32 hours from prior recent/whole-phase throughput; initial validation precedes resumed fitting. Epoch 40 is expected roughly 10–20 minutes after initial validation.
+
+At completed epoch 39, recognition validation losses are OSSQ 1.0485, Lieder 1.3271, PDMX-v1 holdout 1.2673 (epoch 18: 1.0850 / 1.3568 / 1.3634). Teacher-forced rhythm/pitch accuracy is OSSQ 98.83% / 99.54%, Lieder 98.07% / 98.40%, PDMX 97.49% / 96.62%. Recent OSSQ gains flatten; Lieder is noisy with its lowest capped-phase loss at epoch 25; OSSQ's minimum is epoch 37 and PDMX's epoch 36. Dynamics macro F1 remains weak: 12.4% OSSQ, 21.7% Lieder, 13.6% PDMX. Recognition and notation validation are internal teacher-forced diagnostics.
+
+Suggested next steps: hold the continuation's recipe fixed; shortlist epochs 25/37/39 for full autoregressive comparison against the strongest accepted stack and the public-initialized joint epoch-27 candidate; prioritize real-source pitch/rhythm/accidental errors and decoded notation regressions/inventions. Pause at a saved epoch boundary for scoring if the 24-GB GPU cannot fit both jobs. Promotion remains a separate decision after that evidence.
+
+Loss-curve review updated at http://localhost:8765/random-training-curves-20260929/index.html with phase boundaries, readable head names, source-specific best epochs, validation notation F1 curves/CSV, actual stopped/running state and data timestamps. Stopped runs no longer show a live completion ETA. Local chart artifacts: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/random-training-curves-20260929/`.
+
+### 2026-09-30 — audited continuation passed epoch 40
+
+All initial validations and the first complete epoch passed. The 19:26 UTC local snapshot is update 50,750 / epoch 40.28, with the remote watcher reporting running. Epoch-40 recognition loss: OSSQ 1.0364, Lieder 1.3528, PDMX-v1 holdout 1.2430; rhythm/pitch accuracy: 98.99% / 99.62%, 98.09% / 98.22%, 97.73% / 96.82%. OSSQ remains near its best internal loss; Lieder remains noisy and has not surpassed epoch 25. The next step is still matched full-decoding comparison before selecting a candidate.
+
+The curve page now follows all four phases and includes epoch 40, readable head names, notation-validation F1/CSV and source-specific best epochs. ETA calculation was committed separately as `2491226`: it uses intervals between completed epochs, including validation, rather than the optimistic first updates after restart. Point estimate is 24.4 hours remaining; allow roughly 24–30 hours for variation and interruptions. Next epoch's evaluation is expected about ten minutes after the 19:26 snapshot. Metadata collector and page refresher are active in local persistent tmux; remote training/watcher continue independently of the laptop. Local status: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260930/random-core-heads-pdmx-v2-audited-20260930/STATUS.md`.
+
+### 2026-09-30 — Review of six audited PDMX articulation exclusions
+
+Generated a local review at http://localhost:8765/excluded-pdmx-articulations-20260930/.
+The standalone artifact is `../homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/excluded-pdmx-articulations-20260930/index.html`;
+its `cases.json` records crop-local measure/beat/pitch labels, unsupported combinations and token hashes.
+Reproducible generator: `training/transformer/review_excluded_articulations.py` (`--audit`, `--corpus`, `--output`).
+All six original JPG/token/sidecar triplets are included and were verified to serve byte-for-byte over HTTP.
+The individual articulation marks are supported; three whole-combination classes are missing
+(two crops each): accent/arpeggio/fermata/staccato, staccato/tenuto/trill, and accent/staccatissimo/staccato.
+The token writer pools marks across simultaneous notes per staff; the pitch carrying a combined
+label does not necessarily carry every mark in the engraving. No label remapping or vocabulary
+change was made. Cases 2 and 3 have identical tokens. Only six training-index rows are excluded;
+the published corpus and other crops from the source scores remain intact.
+
+Live SSH recovered after a transient “No route to host.” The collected 19:53 UTC snapshot
+was update 54,070, epoch 42.91, with epoch 42 completely evaluated. The remaining estimate
+was 21.9 hours using two completed epoch intervals including validation (allow roughly 22–26 hours;
+interruptions add time), implying completion around 2026-10-01 18:00 UTC. Persistent training,
+watcher, collector and curve refresher remain in use.
+
+### 2026-10-01 — Autoregressive decoding of random-start epochs 73 and 80
+
+Owner requested both decoding benchmarks. The audited ImageNet/random music-model training
+was paused at its intact resumable checkpoint: epoch 81, update 102,060, batch offset 0,
+SHA-256 `f2cfffbddd3780472a402e901dbd9b5475f1f1c36eaf9ec8cf8adaa9f76a9a29`.
+Training stays paused for scoring/review; no automatic restart.
+Persistent remote runner: `random_decode_73_80_20261001`; remote watcher:
+`random_decode_73_80_watch_20261001`; local collector: `random_decode_73_80_pull_20261001`.
+Both candidates use the existing eager greedy float32/math-SDPA benchmark with four shards,
+2,871 OSSQ + 429 Lieder + 609 PDMX internal validation crops (3,909 per candidate).
+Frozen public-core + real-only-head predictions are reused after checkpoint/index/protocol/shard
+identity verification, and the existing aggregator verifies per-crop pixel/reference/sidecar pairing.
+This baseline is the earlier frozen benchmark, not a verified strongest accepted runtime stack.
+No post-decode policies are applied. Internal validation includes some core-seen score identities;
+these are diagnostic comparisons, not untouched full-page release evidence.
+At 03:02 UTC, epoch 73 had decoded 999/3,909 crops, epoch 80 queued; GPU 99% utilized.
+Initial throughput estimate: approximately 20 minutes remaining, allow 20–30 minutes.
+Local artifact/result destination (includes runner, watcher, collector scripts):
+`../homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20261001/random-core-decode-epochs73-80/`.
+The collector polls completion and downloads/expands the full result archive, including predictions,
+provenance, logs and each epoch's `comparison.json`/`comparison.md`.
+
+### 2026-10-01 — Epoch-73/80 decoding complete and collected
+
+Both models completed 3,909/3,909 matched successful crop pairs; no failures. All predictions,
+reports, provenance, logs and pause details were pulled locally. Artifacts:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20261001/random-core-decode-epochs73-80/`.
+Symbol edit error (lower better), frozen baseline / epoch 73 / epoch 80:
+OSSQ 2.372% / 2.681% / 2.538%; Lieder 3.542% / 5.784% / 5.738%;
+PDMX 2.865% / 8.702% / 8.493%.
+Baseline is public-rareNum-20260927 with the 8,400-update real-only frozen-core heads,
+not a verified strongest accepted stack and not the deployed Modal model.
+Epoch 80 improves overall symbol error versus 73 but still loses to this baseline; OSSQ
+pitch error rises 0.401% -> 0.613%, accidental error 0.291% -> 0.578%, with paired
+score-bootstrap intervals above zero. Lieder symbol/pitch/accidental regressions also have
+intervals above zero. OSSQ overall symbol/rhythm intervals overlap zero. Diagnostics are
+internal crop-level greedy raw decoding, with some core-seen score identities; no release claim.
+Recommendation: do not promote either candidate or automatically resume the remaining 79
+training epochs. First inspect divergent decoded cases and length/failure patterns to establish
+why strong teacher-forced validation does not carry through to complete decoding; compare the
+public-initialized epoch-27 candidate on these same stored crops as a useful additional reference.
+Training remains paused at epoch 81 / update 102,060 with optimizer/scheduler/RNG preserved.
+No benchmark tasks remain running and no production pin changed.
+
+### 2026-10-01 — Pre-destruction salvage running
+
+Owner authorized a complete preservation pass. Source inventory: 29,149 non-archive files,
+65.82 GB logical size. Reused 18.31 GB of existing local artifacts; approximately 45.86 GB
+requires transfer, plus a 4.9-GB supplemental archive with earlier core checkpoints/baseline
+context/corpus source code. All retained epoch weights are included rather than keeping only
+shortlisted epochs. Local destination: `/home/jhlusko/workspace/homr-artifacts/instance-salvage-20261001/`.
+The epoch-81/update-102,060 resume checkpoint is already SHA-256 verified (see `RESUME_VERIFIED.json`).
+Four transfer streams and supplementary transfer run in persistent local tmux, with a completion
+watcher that verifies SHA-256 and appends final status to this log and the release sequence.
+At approximately 03:48 UTC, aggregate observed throughput implies roughly 4–5 hours to finish.
+Earlier 15–30-minute estimate was too optimistic. Instance must not be destroyed until
+`SAFE_TO_DESTROY.md` is written. No destructive instance action was taken.
+
+### 2026-10-01T04:01:02.939288+00:00 — Prioritized GPU salvage complete
+
+
+
+Verified 29,024 selected files by SHA-256, plus code/environment records.
+Latest full resume checkpoint is epoch 81 / update 102,060. Epochs 44, 73, 80 and 81 are retained, as are previously local models, all selected predictions/reports/logs/indices/audits and the instance code snapshot/diff.
+
+At the owner's request, 125 missing intermediate model/optimizer files (44.58 GB) were intentionally omitted; see `intentionally-not-pulled.json`. Older core-training optimizer states and redundant supplementary context archives were also omitted. Published corpora and rebuildable environments/tools can be downloaded again. This is a prioritized salvage, not a full disk backup.
+
+The GPU instance can now be destroyed under that agreed scope. No destruction was performed by the agent.
+
+Archive: `/home/jhlusko/workspace/homr-artifacts/instance-salvage-20261001/`.
+
+### 2026-10-01 — Current local follow-up sequence
+
+Prioritized salvage is complete, not the originally proposed full intermediate-checkpoint archive. Safe-to-destroy verification and omissions are recorded locally in `/home/jhlusko/workspace/homr-artifacts/instance-salvage-20261001/`. Latest resume is epoch 81 / update 102,060; epoch 80 is last fully validated. Destruction has not been confirmed.
+
+The next authorized planning recommendation is (1) compare cached frozen/public-joint-27/random-73/random-80 predictions with strict per-crop pairing, (2) audit real-source decoding error clusters, sequence lengths and preprocessing/configuration differences, (3) generate a focused MuseScore/original-crop review gallery with measure/beat labels, then (4) choose a bounded experiment or runtime qualification based on evidence. Steps 1–3 need no GPU. Neither random-start checkpoint is promoted; no automatic remaining-79-epoch resume. Full rationale, source-specific metrics and local paths: `/home/jhlusko/workspace/homr/docs/POST_GPU_NEXT_STEPS_2026-10-01.md`. No training/decoding job is currently running; no running-job ETA applies.
+
+### 2026-10-01 — local four-model decoding audit and visual review completed
+
+Paired frozen public-rareNum + real-only heads, public-initialized joint 2026-09-29 epoch27, and ImageNet/random-music epochs73/80 on all 3,909 identical crops. Hash/protocol pairing passes; all 62,544 stored recognition edit distances recompute exactly. Public27 beats random73/80 in recognition and end-to-end stems/beams on every source; keep it as the next qualification candidate, with no promotion. OSSQ has only eight score identities; internal/core-seen crops are not a release gate. Lieder/PDMX random degradation persists outside the worst 5% of crops. PDMX invalid-pitch note symbols increase to149 at random80 versus32 frozen/15 public27; this motivates bounded decoder constraints and EOS/sequence-limit logging, not an unbounded training resume.
+
+Local outputs: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/cached-decoding-audit-20261001/{comparison.md,error-audit.md,comparison.json,crop-audit.jsonl,score-audit.jsonl,review/index.html}`. Gallery: http://localhost:8765/cached-decoding-audit-20261001/review/ — 17 cases, 85 MuseScore panels, original pixel hashes verified, crop-local measure/beat labels, explicit reconstruction/engraving warnings. No per-crop decisions required. Reproducible scripts: `homr/training/transformer/{audit_cached_joint_decoding.py,review_cached_joint_decoding.py}`. No GPU/new inference, pin change or deployment. Random remains paused81; no running-job ETA. Recommended next: qualify public27 as a complete stack on untouched real-score/full-page inputs; retain existing accepted stack pending that evidence. For random, perform a small decoder-consistency ablation before another rental/training run.
+
+Reproducible audit/gallery scripts committed locally as `dc1cb9c`; not pushed. Gallery also exposes raw encoded-symbol JSON per panel. Verification checked renderer pitch/stem/beam mutation detection and gallery/report/asset availability.
+
+### 2026-10-01 — local 22-score pilot watcher
+
+Pilot complete: 44/44 decodes. ossq symbol delta -15.254pp; lieder symbol delta -0.550pp. Local results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/pilot/comparison.md`; status `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/WATCH_STATUS.json`. Published validation was previously used for model selection; no promotion or untouched/full-page pass claimed. Lieder margin authorized: +0.25pp.
+
+### 2026-10-01 — local training-held-out joint qualification started
+
+Owner accepted Lieder symbol regression margin **+0.25pp**. Prepared 4,211 real-source crops (OSSQ3,911/9 scores; Lieder300/13) with zero score overlap against checked public-core/joint training indexes. Published validation previously used for model selection; historical old-core/v7 membership not fully proven; no untouched-test claim. Downloaded and hash-verified published OSSQ-v2 validation shard for restored stem GT.
+
+Pilot succeeded44/44. Lieder symbol oldcore+v7 2.018% vs joint27 1.468%; OSSQ17.373% vs2.119%, dominated by one sixteenth-versus-triplet failure, not representative. Full 8,422-decode run now local, two CPU threads, tmux `joint_full_holdout_20261001`, watcher `joint_full_holdout_watch_20261001`. Initial ETA6–8h (~23:00 UTC Oct1–01:00 UTC Oct2). Laptop/WSL must remain awake. No paid GPU, remote instance action, training, pin or deployment change. Both arms float32/math-SDPA eager, raw crop outputs without runtime policies; local Torch2.14cpu differs from historical2.6cu124.
+
+Local status/results `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/FULL_WATCH_STATUS.json` and `holdout/comparison.{md,json}` on completion. Watcher records final status in both planning docs. Details, hashes, pilot, reproduction and remaining full-page/export/calibration gates: `/home/jhlusko/workspace/homr/docs/JOINT_HOLDOUT_QUALIFICATION_2026-10-01.md`. Runner committed locally `f452d9a`, not pushed. Next gate is matched eager/ONNX parity and full-page runtime qualification; no promotion from this run alone.
+
+
+### 2026-10-01 — text-fusion routing smoke completed
+
+{
+  "pages": 2,
+  "physical_passes": 4,
+  "seconds": [
+    112.7707644670154,
+    64.3164878259995
+  ],
+  "candidates": {
+    "lyrics": 36,
+    "non-lyric-text": 1153,
+    "dynamics": 499
+  },
+  "review": "http://localhost:8765/text-fusion-calibration-20261001/review/"
+}
+
+Two calibration-only pages chosen by minimum pixel SHA per corpus before inference, restricted to labelled originals <=8 megapixels. Full original bytes and pinned checkpoints verified; two physical passes supply three logical routes. Raw scores remain uncalibrated. No test-set predictions, calibration fitting, flag enablement or deployment.
+
+Local report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/text-fusion-calibration-20261001/SMOKE_REPORT.md`; data audit: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/text-fusion-calibration-20261001/audit.json`.
+
+
+### 2026-10-01 — text-fusion preparation and real-checkpoint preview complete
+
+Routing/calibration tooling committed locally in OurTextScores as `bee8a18` (not pushed). Preparation retained **1,236 pages / 224 scores**: calibration803/133 scores, test433/91 scores, zero score overlap. OSSQ299 pages, Lieder937. Positive boxes: Lyrics11,071, Dynamic6,153, DirectionText986; evidence preserved and duplicates merged. Input problems explicitly include364 missing page images and85 oversized originals deferred above30MP. No detector-training-disjoint claim yet; exact released e2/e4 training IDs are still unverified.
+
+Actual production-detector smoke completed2/2 calibration pages, four physical calls total, using exact pinned weights/original pixels. CPU page times112.771s (OSSQ) and64.316s (Lieder), detector-only, excluding model load and core/HTTP/OCR/attachment. Three logical routes share the e4 call; no Dynamic duplicate owner. Admissible candidates: Lyrics36, directions1,153, dynamics499. Preview: http://localhost:8765/text-fusion-calibration-20261001/review/ — original-page overlays with known positives beside raw, uncalibrated candidates; no per-case user decisions requested. Browser check passed: two cases, four original images, no page errors. Results locally in `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/text-fusion-calibration-20261001/`; see `audit.json`, `input-problems.json`, `smoke/{identity.json,detections.jsonl}`, `SMOKE_REPORT.md`, `review/index.html`. Completion watcher finished; no fusion job remains running.
+
+**New prerequisite before broad calibration:** provider `detector_runtime/detector_inference.py` defaults to foreground-component area4, while current HOMR `training/ocr/detector_inference.py` defaults to200. The smoke yields1,688 admissible boxes;1,022 bounding boxes are no larger than10x10. This is a real postprocessing-protocol divergence, not evidence for accepting noisy raw scores or blindly setting200. Next measure a component-area sweep with masks computed once, reporting known-positive recall separately for lyrics/directions/dynamics and false positives only where absence is verified. Then freeze the chosen protocol, verify exact detector-training exclusions, adjudicate unknown overlaps/regions, fit calibration and evaluate the unused test partition. C1 read/verse/note attachment and final full-path latency still gate automatic output. Fusion flags remain disabled, immutable lyrics-only calibration unchanged; no model promotion/deploy.
+
+81 focused Python tests and eight Scanner contract tests pass; backend build passes. Local `.env` includes the two public dynamics pin expectations equal to e4; no enabled flags/provider-revision change. Reference plan: `/home/jhlusko/workspace/homr/docs/TEXT_LYRICS_DYNAMICS_PLAN_2026-09-28.md`.
+
+
+### 2026-10-01 — full local crop comparison watcher
+
+Comparison failed_or_incomplete: 3501/8422 decodes, 0 failures. . Results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/holdout/comparison.md`; watcher `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/FULL_WATCH_STATUS.json`. Published validation previously used for model selection; no promotion or untouched/full-page pass claimed. Lieder margin authorized: +0.25pp.
+
+
+### 2026-10-01 — owner-requested single-thread comparison resume
+
+At20:15 UTC, stopped the decoder and resumed its saved3,501 successful accepted-oldcore/v7 crops using **one CPU thread**; candidate public_joint27 had not started. Torch intra-op/interop, OpenCV and BLAS/OpenMP are limited to1. Both remaining arms run in tmux `joint_full_holdout_20261001`; watcher restarted in `joint_full_holdout_watch_20261001`. Pre-change results/identities are archived under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/thread-change-20261001/`. `execution-history.json` records the3501 two-thread crops versus subsequent single-thread decodes; the final comparison report will include this resource provenance. Inputs/models/scorer are unchanged; no completed results lost. The watcher's interruption/failure entry was generated by the requested stop, not a decoding failure; the run is resumed. ETA is recalculated from recent single-thread samples, with pre-change pilot fallbacks until sufficient new samples exist. Laptop/WSL must remain awake.
+
+### 2026-10-01 — full local crop comparison watcher
+
+Comparison complete: 8422/8422 decodes, 0 failures. ossq symbol delta -1.455pp; lieder symbol delta -0.418pp. Results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/holdout/comparison.md`; watcher `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-qualification-20261001/FULL_WATCH_STATUS.json`. Published validation previously used for model selection; no promotion or untouched/full-page pass claimed. Lieder margin authorized: +0.25pp.
+
+### 2026-10-03 — epoch-27 ONNX cache/context investigation
+
+The October-2 isolated export passed graph checks but initially matched eager recognition on only 21/22 pilot crops and complete serialized notation on 12/22. The failing Lieder crop (IMSLP89797) changed dotted-half to quarter at step 130. Same-encoder and manual-attention controls did not remove it. Functional original-graph page smoke completed on Lieder IMSLP152191 (148.7 CPU seconds) and OSSQ sq10414906 (124.8 seconds), producing well-formed nonempty XML without automatic dynamics; these were not accuracy or production GPU/HTTP gates. Original receipts remain under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-runtime-qualification-20261002/`.
+
+Found a continuation-context mismatch: eager sends zero new encoder tokens after step zero; ONNX sends one to avoid a historical reshape error. The current attention implementation appends new context K/V to the cache. Empty context with the unmodified graph fails at the cross-attention head split (`{1,0,512}` to `{1,0,-1,64}`), confirming that a runtime slice change alone is unsafe.
+
+New reproducible diagnostic `training/onnx/audit_joint_context_cache.py` creates an isolated graph: make the eight-head dimension explicit in 16 cross-attention K/V split reshapes and set `allowzero=1`; locally monkeypatch continuation context to empty. The original failing crop now matches all recognition tokens, with cross-attention cache fixed at 1,280 tokens through step 153. Full 22-crop pilot then passes **all strict gates**: encoder closeness 22/22, recognition 22/22, complete serialized notation 22/22, cached eager identity 22/22 and all 12 head projection checks. No numerical tolerance or notation gate relaxed.
+
+One-thread job completed in persistent tmux `joint_context_parity_20261003`; no remaining ETA. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-context-full-parity-20261003/`. Initial failing empty-context evidence: sibling `joint-context-cache-audit-20261003/`; successful failing-crop isolation: `joint-context-cache-repair-20261003/`. Private release sequence and local next-steps docs updated; obsolete running/two-thread statements corrected.
+
+Next: integrate a graph-capability-aware exporter/runtime correction, test greedy/margin/fork paths and repeat full-page smoke. Published graphs, shipping caches, accepted pins and production code remain unchanged. Original full-page smoke does not qualify the corrected graph. New-score accuracy, GPU/HTTP latency, detector-fusion calibration and C1 lyrics remain open.
+
+### 2026-10-03 — integrated empty-context exporter/runtime correction
+
+Added `training/onnx/decoder_context.py`: correct the legacy-exported cross-attention K/V head-split shapes, permit literal zero dimensions and record graph capability `homr.decoder.empty_continuation_context=1`. Unexpected head-split layouts fail closed. `convert_decoder` applies it to new exports; `ScoreDecoder` reads the capability and uses empty continuation context in greedy, margin and prefix loops. Existing unmarked graphs retain the previous one-token path. No shipping graph or provider pin changed.
+
+Eight focused tests pass: actual zero-length ONNX execution, unchanged nonempty reshape outputs, legacy fallback and existing structured-head loading/attachment. Fresh isolated exports and the actual runtime (no monkeypatch) pass every strict parity gate on all 22 fixed pilot crops and all 12 head projection checks. New `training/onnx/qualify_decoder_paths.py` verifies exact greedy/margin equality and forced-prefix replay, exercises an altered-rhythm fork, and asserts a constant 1,280-token encoder cache through 616 steps.
+
+Corrected full-page smoke passes on Lieder IMSLP152191 (116.189 seconds, 4 parts / 92 measures / 512 notes) and OSSQ sq10414906 (108.287 seconds, 4 parts / 51 measures / 331 notes). Both produce well-formed nonempty XML, with no automatic dynamics. Lieder XML SHA `43fbdcfdb0b0921385c9bb9fcd28664a01e26b6ceb82934158058ad5eccef4f3`; OSSQ SHA `c2e8ab1f2cc197622531737c031416a7f65eb4ba8e5439d7179180986c30e08b`. Different local load prevents a controlled speedup claim. This is not ground-truth full-page accuracy, schema validation or production GPU/HTTP latency qualification.
+
+All computation used one CPU thread. Persistent tmux export/parity and follow-up jobs completed; `FOLLOWUP_EXIT=0`, no remaining ETA. Evidence is local: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/joint-integrated-runtime-20261003/`. Fifteen actual source files were copied and SHA-verified against export/page/path identities in `source-snapshot/`; logs are archived alongside results. These snapshots include pre-existing dirty pipeline code, which the new correction commit does not absorb. `qualify_joint_pages.py` now records source hashes in its page identity receipts. Release sequence and local next-steps docs updated.
+
+Next: audit genuinely new full-page GT score identities and evaluate complete accepted/candidate pipelines; continue detector-fusion calibration and C1 lyrics independently. Final GPU/HTTP timing, E3 regeneration, pins and public model claims remain gated. No deployment, promotion or new training.
+### 2026-10-03 — full-page reference audit and matched Lorelei diagnostic
+
+Completed the reference audit and a paired original-page comparison, using one CPU thread and persistent tmux. Both jobs finished successfully; no remaining ETA. Matched isolated float32 exports compare accepted September 18 core + September 24 v7 heads with public-joint-core-heads-20260928 epoch 27 under identical policies. Pitch event edit error improves 1.955% → 1.397%; rhythm/combined event edits worsen 3.599% → 4.370%. Both take about 118 CPU seconds and find three staves. Accidental projection changes are deletion edits only, not accidental substitutions. These are ordered MusicXML event diagnostics, not crop token SER or the +0.25pp Lieder promotion gate.
+
+Reference readiness: 330 Lieder scores / 1,926 page entries; 42 scores have no recovered index exposure, but only four complete locally available certified pages pass other checks, all from Lorelei (IMSLP323995). RUNLOG IV.9 explicitly records prior bar-count evaluation, so verified untouched count is zero. OSSQ has 122 canonical references / 2,986 scan pages but no aligned scanned-system metadata; synthetic-engraving metadata cannot substitute. Do not promote from this one-page result.
+
+Local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/full-page-reference-audit-20261003-final/` and `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/full-page-lorelei-20261003/`. The latter retains original PDF, rendered pages, checkpoint/export/page/runtime identities, both XML outputs and cached symbols, comparison and edit-audit reports, source snapshots, logs and reproduction script. Detailed write-up: `/home/jhlusko/workspace/homr/docs/FULL_PAGE_DIAGNOSTIC_2026-10-03.md`. Three focused reference/scoring tests pass.
+
+Next: bounded cached-symbol/XML-only ablations of shared 12/8 whole-bar rests (four output quarters versus six in GT) and measure-12 fractional durations (4/5 versus 3/4), before attributing them to training. Candidate raw meter is 2/8, accepted 12/8; both final XML meters are corrected to 12/8, so retain raw as well as repaired evidence. Additional candidate rhythm errors remain. Then certify new full-page references and OSSQ scan alignment; independently continue detector-fusion calibration and C1 lyrics. No GPU training, deployment, promotion or provider-pin change.
+### 2026-10-03 — cached XML ablations and canonical label roundtrip complete
+
+Replayed both Lorelei stacks from cached symbols with exact original XML equality. Late tuplet/beam/tie/slur-crossing ablations, separately or together, leave ordered pitch/rhythm/event errors unchanged: accepted 14 event edits / 7 pitch, candidate 17 / 5. A diagnostic sole-whole-rest rewrite using predicted meter removes three rhythm errors from each arm (11 versus 14), leaving the candidate disadvantage intact. It is not a promoted runtime policy and can mis-handle incomplete measures. Disabling rejection of contradictory stated meter exposes candidate raw 2/8 rather than corrected 12/8; note metrics remain unchanged because meter/onsets are not scored.
+
+Canonical first-page reference → current labels → XML reproduces all five shared vocal timing errors: six-quarter whole-measure rests fall back to rest_1/four quarters; explicit 2:3 eighth-note duplets round their reciprocal duration to note_5, which emits 4/5 quarter rather than 3/4. These are duplets, not dotted glyphs. Piano preserves unordered event inventory but shifts sustained bass D2 order in measures 7/11, causing four ordered edits; do not interpret those as missing/wrong notes or subtract them from model scores. Whole 73-measure reference parsing separately raises Backup duration is too long 22 -24; both bounded page parts parse successfully. Current-parser evidence does not establish the historical builder used for every published pin.
+
+The rest_0 probe also exposes coordinated duration/XML issues: zero kern returns a positive whole-note fraction, so no measure-rest marker is emitted; the otherwise-zero-duration branch uses a meter numerator rather than XML duration units. Do not fix one branch or blanket-rewrite rests without meter-change/polyphonic/partial-bar tests.
+
+Evidence is local under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/full-page-xml-ablation-20261003/` and sibling `full-page-label-roundtrip-20261003/`, including per-variant XML, parsed labels, source snapshots/hashes, reports and logs. Write-up: `/home/jhlusko/workspace/homr/docs/PAGE_TIMING_LABEL_AUDIT_2026-10-03.md`. One CPU thread; persistent tmux ablation completed EXIT=0; six focused tests pass. All jobs complete, no remaining ETA.
+
+Next: quantify timing-label limitations across real-source canonical references/frozen labels and recover archived parser provenance; make narrowly tested future-build corrections with new corpus versions as needed; strengthen onset/meter/voice-aware page scoring. New full-page reference certification/OSSQ scan alignment and text-fusion/C1 remain independent release work. Original model metrics, checkpoints, published pins and production remain unchanged. No training or GPU required for the next audit.
+### 2026-10-03 — requested OSSQ/Lieder timing-label quantification complete
+
+No PDMX data was read. One-thread census reads all 122 OSSQ / 330 Lieder canonical references without failures and all 39,137 / 3,867 frozen files selected by archived published train/validation indexes. The published-score reference subsets are 85 OSSQ / 212 Lieder scores: 356 / 132 whole-measure-rest duration losses (15 / 18 affected scores), including 246 / 41 six-quarter rests; 2,031 / 46 consistent-source reciprocal-tuplet rounding losses (13 / 8 affected scores). Either category affects 21/85 / 22/212 scores. Their union is 0.233% / 0.065% of printed timed events, so these specific issues alone are unlikely to explain broad recognition degradation. These are whole canonical score events, not assumed scanned-crop coverage or model error counts.
+
+Frozen-label exposures differ from canonical-event denominators: 15 / 3 sole rest_1 flags under explicit 12/8 headers occur in four / two score identities. Crop boundaries can make them ambiguous. Neither indexed corpus contains rest_0. Rare note_5 and other integer-reciprocal spellings can be legitimate tuplets; do not globally rewrite them. Local OSSQ-v1 core tokens were read with hashes; the locked OSSQ-v2 build receipt records zero token-file changes. Lieder uses local v8 files selected by the PD212 indexes. Current source and both recovered OSSQ build commits have identical relevant parser/vocabulary function ASTs; current Lieder vendor pin also matches, but does not by itself prove the original v8 invocation.
+
+Additional complete-reference label/XML roundtrip attempts all 452 scores in 809.8 seconds, one CPU thread, advance export disabled and no late repairs. Published-score coverage: OSSQ 75/85 succeed (ten detachedLegato export failures), Lieder 212/212 succeed. Inventory-preserved measures have event-order changes in 106 / 145 physical staff measures across 22 / 48 scores, and onset changes in 141 / 2,735 measures across 30 / 160 scores (470 / 15,855 moved-onset events). These conditional fixed-staff/measure counts are not voice-aware equivalence or model recognition error rates. All larger-collection parser/export failures are retained in the coverage report; no silent filtering or score correction.
+
+Local write-up: `/home/jhlusko/workspace/homr/docs/REAL_TIMING_LABEL_CENSUS_2026-10-03.md`. Artifacts under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/real-timing-label-census-20261003/` and sibling `real-timing-label-roundtrip-20261003/`: source/reference/index/file hashes, located issues, frozen label exposures, score outcomes, reports, logs, historical parser files and verified source snapshots. Both persistent tmux jobs finish EXIT=0; eleven focused tests pass. No compute remains, no remaining ETA.
+
+Next: a bounded ground-truth rhythmic-advance A/B to distinguish legacy grouping loss from sidecar-recoverable timing, followed by reviewed real-source duration/ratio fixes for future corpus versions. The A/B would not qualify predicted model advance by itself. Retain original model metrics and published corpus pins; no new GPU training, deployment or production change. Text-fusion/C1 and genuinely new full-page references/OSSQ alignment remain separate release tasks.
+
+### 2026-10-03 — reference advance A/B and regression probes complete
+
+Matched OSSQ/Lieder reference-label exports reduce moved-onset events 470 → 412 / 15,855 → 5,252 on common inventory-preserved measures (12.3% / 66.9%). Coverage 75/85 OSSQ, 212/212 Lieder; all successful controls exactly replay previous XML/metrics/timing, with ten OSSQ failures retained. No newly lost correct inventories. Lieder has 39 worse exact-count measures; of 23 retained examples, 19 are closer by minimum absolute onset distance and four farther. A temporary grace-cursor probe removes all onset errors in the two scores containing those four examples; the chord-cursor hypothesis does not change them. Parser max(duration,1) advances grace notes by one tick and corrupts sidecars. Separate reproducible mixed-duration probe shows advance changing XML divisions 6 → 2 and rounding a triplet duration to zero. No production source, model pin or published corpus changed.
+
+Local write-up: `/home/jhlusko/workspace/homr/docs/REFERENCE_ADVANCE_ABLATION_2026-10-03.md`. All evidence, tested source snapshots, reference hashes, 297 outcomes and selected XMLs are under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/real-reference-advance-ablation-20261003/`. One-thread persistent tmux A/B completed in about 438 seconds, EXIT=0; watcher finished, nine focused tests pass. No compute remains, no remaining ETA. Next: narrowly tested printed-duration division allocation and future-build grace cursor corrections, then repeat reference qualification before testing predicted advance. This diagnostic does not qualify a model for promotion; text-fusion/C1 and genuinely new page references remain separate release work.
+
+### 2026-10-03 — timing fixes implemented; real-source qualification running
+
+Implemented two bounded corrections: grace notes preserve the label parser cursor; XML division selection includes every printed note/rest duration in addition to consumed group advance, without changing meter inference. Seventy focused tests pass, including grace sequence/chord and mixed-duration triplet regressions. No published corpus, model pin or production deployment changed.
+
+Five-arm qualification replays both archived controls exactly, compares precision-only enabled output, and compares both fixes with advance disabled/enabled across all 297 indexed OSSQ/Lieder references. It runs on one CPU thread in persistent tmux `real_timing_fixes_20261003`, with completion watcher `real_timing_fixes_watch_20261003`. Local results/source snapshots: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/real-timing-fixes-20261003-v2/`. Check `watch-status.json`, `run.log`, `scores.jsonl`, and eventually `EXIT`/`report.json`. Initial XML-versus-MXL driver failure is retained in sibling `real-timing-fixes-20261003/`; corrected launch is working. At 17/297, estimate 25–35 minutes remaining; large OSSQ scores run first, so this is uncertain. Qualification is pending: inspect coverage, inventory losses, common-measure onset regressions and precision-only versus combined changes before calling either correction qualified. Existing reference-sidecar improvements do not qualify model-predicted advance or authorize rebuilding published pins.
+
+### 2026-10-03 — timing correction qualification and predicted-advance diagnostic complete
+
+Five-arm OSSQ/Lieder reference qualification completes in 1,332.8 seconds on one CPU thread, persistent tmux/watcher EXIT=0. All 297 references attempted; 75/85 OSSQ and 212/212 Lieder succeed in every arm, with ten unchanged detachedLegato failures. Archived disabled/enabled controls replay exact XML and metrics. On common eligible measures, old versus corrected advance moved events improve 412 → 354 OSSQ and 5,248 → 2,169 Lieder, with zero worse exact-count measures. Whole-score ordered event edits change 8,330 → 8,370 and 14,051 → 13,578. Do not call this a clean qualification: three Lieder inventory regressions expose note_5 duplet rounding previously hidden by XML truncation; a fourth drops one co-onset duplicate rest. OSSQ sq9396439 loses eight emitted grace notes when corrected zero-time graces collide with voltaStart groups; the renderer processes the ending marker and ignores those notes. Located inspection/source receipts retain all changes, including already lossy measures.
+
+Cached predicted-advance A/B also completes EXIT=0, with exact original-page/cached-hash replay. On the previously bar-count evaluated Lorelei diagnostic page, accepted stack eligible moved-onsets 0 → 1; joint epoch-27 candidate 0 → 0. Event/pitch/rhythm/accidental edits remain unchanged. Keep predicted advance disabled; reference-derived improvements are not head promotion evidence. Seventy focused tests passed for the implemented corrections; no published labels, model/provider pins or production changed.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/TIMING_FIX_QUALIFICATION_2026-10-03.md`. Local artifact parent `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/`: `real-timing-fixes-20261003-v2/`, `cached-page-advance-20261003/`, `timing-fix-event-inspection-20261003-v2/`. Reports, all 297 records, source/reference/cache hashes, XMLs, snapshots and completion receipts are local. All jobs finished; no remaining ETA.
+
+Next: separate ending-marker metadata from note chords and preserve grace notes at ending boundaries, then rerun qualification; resolve duplicate-rest/voice preservation and future-build reciprocal/tuplet representation explicitly before rebuilding published corpora or training. Retain exact-duration allocation rather than intentional truncation. Broader predicted-advance testing needs OSSQ/Lieder coverage and exposure records; text-fusion/C1 and genuinely new full-page references remain independent release work.
+
+### 2026-10-03 — grace/ending-marker preservation qualified on OSSQ/Lieder
+
+The label merger emits voltaStart/voltaStop/voltaDiscontinue as standalone structural symbols, preventing an ending marker from hiding notes in its chord or taking their advance target. Eighty-two focused tests pass, including end-to-end cases for all three ending types and target ownership. Two-score preflight restores twelve Beethoven sq9396439 grace notes and reduces event edits 40 → 28. Full 297-reference qualification completes in 1,057.5 seconds on one CPU thread, persistent tmux/watcher EXIT=0. Both prior corrected advance-off/on controls reproduce exact XML hashes, metrics and timing; all ten detachedLegato failures replay unchanged. Coverage remains 75/85 OSSQ and 212/212 Lieder.
+
+Across OSSQ, nineteen grace notes are restored in sq8561633 (3), sq8806134 (4), sq9396439 (12). Aggregate event/pitch/rhythm/accidental edits all improve by nineteen: event 8,370 → 8,351, pitch 2,199 → 2,180, rhythm 6,211 → 6,192, accidental 918 → 899. Three canonical measure inventories recover. Lieder metrics are unchanged. No new failure, correct-inventory loss, common-onset regression or per-score regression in any edit metric. This qualifies the narrow ending-marker correction versus the previous corrected-label controls, not the combined representation changes or predicted advance. Duplet rounding and one duplicate-rest inventory regression remain unresolved. Published corpora and model/provider pins remain unchanged; predicted advance stays disabled.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/GRACE_ENDING_FIX_2026-10-03.md`. Local artifacts under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/grace-ending-qualification-20261003/` and sibling `grace-ending-preflight-20261003/`: reports, all outcomes, source/reference hashes, original merger, tested snapshots, selected XMLs, launch/log/EXIT/watcher receipts. All jobs complete, no remaining ETA.
+
+Next: explicitly preserve simultaneous duplicate rests as separate voice/backup events and qualify that correction; resolve exact future-build tuplet/ratio representation before publishing new corpus versions. Broader predicted-advance OSSQ/Lieder tests and text-fusion/C1/new untouched-page references remain separate release work. No GPU needed for the next preservation audit.
+
+### 2026-10-03 — simultaneous-rest preservation qualified
+
+The exporter preserves co-onset duplicate rests using explicit backups and separate voices. Full 297-reference qualification finishes in 17.8 minutes on one CPU thread; exact prior controls and all ten OSSQ failures replay. Coverage remains 75/85 OSSQ and 212/212 Lieder. Restored rests: OSSQ 3 across 3 scores; Lieder 117 across 29 scores. Event edits improve 8,351 → 8,348 and 13,578 → 13,461; rhythm improves by the same amounts, pitch/accidental unchanged. Correct inventories recover in 3 OSSQ and 108 Lieder measures. No new failures, correct-inventory losses, common-onset or per-score edit regressions.
+
+Cached accepted/candidate Lorelei outputs remain unchanged; this previously evaluated page has no affected predicted groups and is not a generalization gate. Seventy-seven focused tests and three subtests pass. Both persistent jobs/watchers complete EXIT=0; remaining ETA zero.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/SIMULTANEOUS_REST_FIX_2026-10-03.md`. Local artifacts under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/simultaneous-rest-qualification-20261003/`, sibling `simultaneous-rest-preflight-20261003/` and `cached-page-rests-20261003/`, including reports, controls, XML, source/hash and completion receipts. These are reference roundtrip diagnostics, not recognition rates.
+
+Next: exact future-build tuplet/ratio and whole-measure-rest representation audit against OSSQ/Lieder canonical XML. The three duplet inventory regressions remain; duplicate-rest blocker is resolved. No blanket rhythm-token rewrite, corpus publication, model/provider pin change or deployment. Predicted advance remains disabled; broader model checks, text-fusion/C1 and untouched-page references remain separate work. No GPU needed for the next audit.
+
+### 2026-10-04 — exact timing representation audit and isolated prototype
+
+Indexed canonical OSSQ/Lieder issues re-located with source hashes: OSSQ 2,031 tuplet losses and 356 whole-rest losses; Lieder 46 and 132. Existing tokens match duration for 1,871/42 tuplets and 246/41 full rests, but no tuplet alternative preserves written base, dots and ratio together. All full-rest alternatives are six-quarter dotted-whole aliases that lose full-measure-rest identity. Six located duplet notes corroborate the three remaining inventory regressions. No blanket note_5 or rest_1 rewrite.
+
+An isolated versioned exact-timing sidecar codec preserves rational elapsed duration, written type/dots, full-rest status, time-modification and tuplet elements. Selected-field JSON/reconstruction checks pass all 2,565 located events; six tests pass. It is not consumed by current training/runtime and is not a complete XML exporter or model gate. Full source notes are retained. One CPU thread, persistent tmux/watchers, EXIT=0; runtime 8.7 seconds, all jobs finished.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/EXACT_TIMING_REPRESENTATION_2026-10-04.md`. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/exact-timing-representation-20261004-v3/`. Original token-only analysis and failed whitespace-sensitive v2 probe are retained separately. Next: define and integrate the versioned label contract through parser/merger/crop serialization, retaining tuplet ownership/visibility and checkpoint compatibility; then model-prediction migration, full OSSQ/Lieder qualification and new corpus versions. No GPU needed for the label contract work. Predicted advance remains off; existing corpus/model/provider pins unchanged.
+
+### 2026-10-04 — exact timing dataset integration qualified with explicit gaps
+
+Current HOMR MusicXML parsing attaches exact reference timing outside legacy token identity/duration. Staff merging, crop selection and the shared notation writer/reader preserve it in token-hash-guarded `.timing.json` files, using serialized symbol order. Label schema v2 retains tuplet notation-container ownership and visibility. Existing vocabulary, legacy token/notation targets, runtime export and checkpoint shapes are unchanged; training losses do not consume the new metadata.
+
+Full 297-reference check completes in 733.0 seconds on one CPU thread, persistent tmux/watchers EXIT=0. Both prior XML/metrics/timing controls replay exactly for 75 OSSQ and 212 Lieder scores; all ten OSSQ detachedLegato export failures reproduce unchanged. Selected windows verify OSSQ 1,235 / 16,381 timed symbols, Lieder 1,137 / 27,426. Two OSSQ windows are explicit unsupported legacy-token gaps: sq12772795 merged part 1 index 214 (note_72), sq8928855 part 1 index 20 (note_19). Lieder has no selected-window gap. This qualifies additive metadata for tested serializable windows, not a full image/corpus rebuild or model improvement.
+
+The updated v2 contract additionally reconstructs all 2,565 located canonical problem events, including tuplet container ownership/visibility, in 9.1 seconds. Forty-eight focused tests and three subtests pass. Three-score Lieder preflight verifies 18 windows / 499 timed symbols. All jobs complete; remaining ETA zero.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/EXACT_TIMING_DATASET_INTEGRATION_2026-10-04.md`. Local artifacts under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/exact-timing-pipeline-qualification-20261004-v2/`, sibling `exact-timing-pipeline-preflight-20261004/` and `exact-timing-representation-20261004-v4/`, with tested snapshots, source/reference/control hashes, label windows, gaps and completion receipts. Initial failed checker run is retained separately.
+
+Next: derive model targets for exact elapsed duration and written notation, including rare/unrepresentable legacy rhythms, and define explicit checkpoint/runtime migration. Reference sidecars must not be injected into production decoding. Then train/qualify on OSSQ/Lieder and publish new corpus versions. Public OSSQ/Lieder vendored snapshots remain unchanged; future builds must explicitly update that pin and retain timing files in packaging. No published corpus/model/provider pin or deployment changes. Predicted advance remains disabled. Target-design work can proceed locally without GPU.
+
+### 2026-10-04 — exact timing targets, source quantization and additive checkpoint prototype
+
+Implemented four experimental output-only heads: elapsed note/rest duration, written type/dots, cumulative sounding ratio and full-measure-rest flag. These are independent of advance-to-next-onset and printed rareNum labels. Targets mask BOS/EOS/padding/grace/missing/unseen values; rest identity is supervised only on rests. Existing forward/recognition/notation objectives and runtime remain unchanged.
+
+Train-only canonical inventory covers 76/9 OSSQ train/valid scores (928,090/97,914 events) and 199/13 Lieder (256,383/18,269). Strict raw ticks yield 52/21/18/2 classes. Bounded floor/ceil normalization of explicit ratio durations yields 51/21/22/2, classifying all 446 OSSQ conflicts as source tick quantization, including nested 9:4 tuplets stored as 53/480 rather than 1/9 quarter. It masks 29 unresolved Lieder elapsed/ratio targets (IMSLP622105 3, IMSLP624193 21, IMSLP632172 5). Whole-source frequencies are not actual training-crop support.
+
+Mixed training classes cover all Lieder validation values; OSSQ retains 15 unseen elapsed, one written and 23 ratio targets, explicitly masked/reported without adding validation classes. The normalized policy requires source divisions, absent from current v2 sidecars; sequence target building refuses that missing provenance. Next dataset step: a versioned source-grid field and requalification, not a training launch from old sidecars.
+
+An explicitly untrained separate addon binds the accepted Sept18 core checksum and the exact target contract; 512 feature dimensions from accepted v7 ONNX, 49,248 parameters. Saved weights reload/shape-check, base file remains checksum-identical, and inference loading refuses untrained heads. Twenty focused tests pass, including core/logit/RNG invariance in a small fixture, wrong-base/class-order guards, head-only gradients, source masking and decoder alignment. No real decoder or training gate ran.
+
+Loss weights must be explicit; the new heads do not silently change recognition + notation/12. Suggested sequence: source-grid metadata and crop support; opt-in frozen-core head warm-up with resumable auxiliary optimizer; per-group shared-core gradient measurement before selecting joint weights; OSSQ/Lieder prediction-only XML qualification, including nested bracket treatment. Retain agreed Lieder +0.25 pp symbol-error ceiling and separate pitch/rhythm/accidental and OSSQ reporting. No GPU needed for the next metadata/trainer wiring work.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/EXACT_TIMING_MODEL_TARGETS_2026-10-04.md`. Local evidence under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/timing-target-inventory-20261004/`, sibling `timing-target-inventory-quantized-20261004/` and `timing-addon-init-20261004/`, with class manifests, source/split hashes, located source examples, initialized addon and tested snapshots. Inventories finish in 74.5/142.9 seconds on one CPU thread with persistent tmux/watchers, EXIT=0. All jobs finished; ETA zero. No published corpus/model/provider pin, deployment or website advantage claim changed; predicted advance remains off.
+
+### 2026-10-04 — source-grid timing labels and normalized targets qualified
+
+Label schema v3 adds original source_divisions and source_duration_ticks as rational strings, requiring their positive ratio to equal raw elapsed_quarters. Attachment validates every record before mutation. Older v2 sidecars remain readable, including nested tuplet ownership/visibility; missing grids are not guessed, so normalized targets still refuse old sidecars without that provenance. XML reconstruction compares semantic fields separately from the new output XML grid; original payloads retain their own source grid.
+
+Full 297-reference qualification finishes in 1,111.2 seconds (18.5 minutes), one CPU thread in persistent tmux with a watcher. Both legacy XML/metrics/timing controls reproduce exactly for 75 OSSQ and 212 Lieder scores; all ten known OSSQ export failures reproduce unchanged. Selected serialized target windows: OSSQ 1,235 / 16,381 timed symbols; Lieder 1,137 / 27,426. All 2,372 token files are byte-identical to retained v2 windows. All 43,807 timing records preserve every prior semantic field, and 347 null records retain alignment.
+
+Frozen train-only normalized targets pass BOS/EOS/padding masking and one decoder shift. OSSQ window support is elapsed 16,370, written 15,749, ratio 15,738, rest flag 3,019; Lieder 27,426 / 26,291 / 26,291 / 3,434. Twenty-nine selected OSSQ target occurrences normalize as bounded source rounding; raw metadata is preserved. Eleven unseen elapsed and eleven unseen ratio targets in validation sq7354505 remain masked/reported. This selected-window support is not actual image-crop frequency or the full canonical inventory; the 29 unresolved Lieder source events remain unaudited because these windows select none of them. Two unsupported OSSQ legacy windows remain gaps: sq12772795 merged part 1 index 214 (note_72), sq8928855 merged part 1 index 20 (note_19).
+
+All 2,565 located issue events pass selected-field JSON/XML reconstruction at a different exact tick grid (2,387 OSSQ / 178 Lieder), 12.6 seconds. Ninety-four related tests pass. Tested code snapshots, original-reference/control hashes, frozen target manifest and final verification receipt are retained. A launcher substitution put extra CLI arguments in the scoring completion receipt; the follow-up guard refused it before running. Original launcher/receipt retained, zero receipt repaired against the completed scoring report, final follow-up EXIT=0. Scoring itself was successful; no results were overwritten.
+
+Write-up: /home/jhlusko/workspace/homr/docs/EXACT_TIMING_SOURCE_GRID_2026-10-04.md. Local evidence: /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/exact-timing-source-grid-qualification-20261004/ and siblings exact-timing-source-grid-preflight-20261004/ and exact-timing-representation-source-grid-20261004/. All jobs complete; remaining ETA zero.
+
+Next: inspect the 29 unresolved Lieder events against source notation/images, establish actual training-crop support, and freeze raw-source plus bounded notation-duration scoring views before fitting. Then wire opt-in resumable frozen-core training of the four additional heads; shared-core gradient measurements must inform joint weights. Keep pitch/rhythm/accidental gates, the agreed Lieder +0.25 pp symbol-error ceiling, and separate OSSQ reporting. Existing runtime/recognition targets, accepted weights and public pins remain unchanged; predicted advance remains off. Future public corpus builds must explicitly vendor the qualified HOMR commit and retain timing files. No GPU needed for the immediate source/crop audit and trainer wiring.
+
+### 2026-10-04 — native rest stretch audit and full actual Lieder crop support
+
+All 29 previously unresolved conflicts are rests, with raw MusicXML duration × explicit native staff stretch exactly equal to written duration. IMSLP622105 has three (stretch 3/2), IMSLP624193 21 (vocal 2/3; lower piano staff 3/2), IMSLP632172 five (2/3). Native part/staff/physical-measure/rest inventories, written types/dots and hidden time-signature resets are checked. Separate native tuplets or mismatched mappings refuse the explanation. All frozen MusicXML files name MuseScore 4.5.2; its exact exporter source is retained with a checksum. Its note-duration stretch correction versus raw rest ticks is consistent with this source mismatch. This is an inference from source code/native arithmetic, not a rebuilt exporter reproduction or a qualified multi-staff timeline repair.
+
+The three affected-score audit replays all 60 indexed crops byte-identically. Fourteen distinct conflicts reach training, only in IMSLP624193: six each in sys19-v1 and sys20-v1, two in sys25-v0. The other 15 fall outside accepted boundaries. Original scans of all three crops agree with written undotted rests. Keep elapsed/ratio targets masked and retain written/rest-identity supervision; do not add dots/tuplets or exclude entire scores to fit XML arithmetic.
+
+Full actual Lieder replay: 212 scores / 3,867 crops, 358.6 seconds, one CPU thread, persistent tmux/watchers EXIT=0. Token and original image hashes plus certified source ranges are retained. 3,700 replays are byte-identical (3,409 train / 291 valid). Full aggregation corrects the interim no-differences summary: 167 change serialization (158 train / 9 valid), classified as 47 group-boundary-only, 95 ordering changes with the same note/rest identity inventory, 25 other changes with note/rest order unchanged. No identity inventory changes, but musical equivalence is not established; successive grace notes can be merged/reordered. Changed crops stay separate from metadata-only migration eligibility.
+
+The identical training subset contains 128,120 timed crop occurrences, with elapsed 128,106 / written 126,986 / ratio 126,972 / rest-flag 10,139 supervised targets. Identical validation: 10,607 occurrences, targets 10,607 / 10,544 / 10,544 / 688. The 14 elapsed/ratio conflicts are masked in training; no frozen mixed-source target class is unseen. Identical Lieder train supports 23 elapsed classes / 15 written / six ratios / two flags and covers all values in identical Lieder validation. Detailed unsupported mixed classes are retained; do not prune before measuring OSSQ actual crop support. These are actual crop occurrences, not unique score events.
+
+Write-up: /home/jhlusko/workspace/homr/docs/LIEDER_REST_STRETCH_AND_CROP_SUPPORT_2026-10-04.md. Evidence: /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lieder-rest-stretch-audit-20261004/ and lieder-real-crop-timing-support-20261004/. Static source/scan evidence viewer at http://localhost:8765/, with native printed measure/beat positions; all 29 cases selectable, no per-case approvals requested. Server is bound to localhost in persistent tmux. Twenty-eight focused tests pass, including source mapping/reset/refusal guards and prior codec/target/checkpoint tests. All audits finished, ETA zero; only the idle review server remains.
+
+Next local priority: controlled parser/merger/serializer comparison for the 167 changed crops, especially sequential grace notes, before public corpus migration. Recover certified OSSQ crop-to-source metadata (inspected sq8482283 lacks local scanned systemwise metadata), then measure actual crop support. Define explicit raw-source/bounded-quantization scoring views and native staff-time policy before fitting; blindly changing 29 rest durations would not qualify other-staff timing or backups. Then opt-in resumable frozen-core timing-head training on qualified labels. Target contract/classes, runtime, accepted weights and public corpus/model/provider pins remain unchanged; predicted advance stays off. No GPU needed for the immediate audit and trainer wiring.
+
+
+### 2026-10-04 — grace serialization repaired and qualified on OSSQ/Lieder
+
+Controlled old-cursor ablation reproduces all 167 changed Lieder crops byte-for-byte, isolating the earlier grace-cursor correction as the cause. Fixed two exposed regressions: consecutive zero-duration graces were merged/reordered as a chord, and principal-chord arpeggios leaked into grace groups. Source grace order/chord membership now passes across 85 OSSQ / 212 Lieder references, 6,728 / 1,156 visible pitched grace notes and 46 explicit grace chords, with zero mismatches.
+
+Final actual crop replay: 3,867 Lieder crops, 3,770 byte-identical (3,473 train / 297 valid), 97 remaining differences (94 / 3). Seventy regain parity; no new differences among previously identical crops. All note/rest identity inventories, original image hashes, certified boundaries and splits remain unchanged. Remaining categories: 45 group-boundary-only, 37 note-order changes with the same inventory, 15 same-order/other-field changes. Twenty-one crops change slur attribution, one accent/tenuto attribution, three control inventories; counts overlap. Their ordinary onset/export/numerator semantics remain unqualified, so keep them outside metadata-only migration. Fourteen native-stretch elapsed/ratio masks remain; no unseen mixed-source timing classes.
+
+47 focused tests and three subtests pass. Full replay 386.4s; source check 301.3s, sequential one-CPU-thread persistent tmux/watchers. All five final receipts EXIT=0; all jobs complete, ETA zero. No published corpus/model/provider pin or runtime inference change. Next: independently qualify the 97 ordinary-onset/slur/numerator differences; recover certified OSSQ crop alignment/support; explicit stretch scoring policy; resumable frozen-core exact-timing head trainer.
+
+Write-up: /home/jhlusko/workspace/homr/docs/GRACE_SERIALIZATION_AUDIT_2026-10-04.md. Final evidence: /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lieder-grace-and-arpeggio-qualification-20261004/. Ablation: sibling lieder-grace-cursor-ablation-20261004/ (167 crops/71 scores, 22.4s), with pre-arpeggio-scope source snapshots. Failed intermediate diagnostic receipts are retained; final source clock handling accounts for valid voice backups. Existing original-scan viewer stays at http://localhost:8765/; no per-case decisions requested.
+
+
+### 2026-10-04 — remaining Lieder onset groups qualified; source-anchor prototype succeeds
+
+Independently traced all 97 changed real Lieder crops to rational MusicXML onsets. Current grouping mixes/splits no source onset; frozen labels mix onsets in 18 crops and split source simultaneities in 95. All original/corrected crop strings replay exactly, all three export arms retain every source event in its correct measure without duplication. This qualifies grouping, not complete XML/model promotion.
+
+Paired legacy-only export: incorrect within-measure onsets 2,072 → 286; 94 crops improve, two unchanged, one worsens (IMSLP592442-sys5-v2, 25 → 29). Event transitions: 1,792 repaired, 280 remain, six newly wrong, all in that crop’s physical measure21. Those comparisons use literal raw source ticks, not a normalized staff-stretch view or model SER.
+
+Default serializer hoisting regresses the existing combined tie/slur field: per-note endpoint mismatches 820 → 866 (one crop improves, 18 worsen, 78 unchanged). Audit-only per-note annotation preservation reduces these to zero across all97, with timing unchanged. Literal phrase-slur mismatches are separately 790 frozen /795 corrected /514 prototype; the prototype’s remaining514 are420 tie-only aliases,28 added tie endpoint types,66 lost phrase endpoint multiplicities. No true-phrase fidelity, concurrent pairing or predicted-head/model advantage claim.
+
+The removed numerator2 in IMSLP618722-sys4-v1 is a real 4/4→2/4 change (source physical measures10–11 vs12). Initial common time has no separate numerator, so the single-numerator/modal-duration heuristic discards the later genuine meter. Added9 in IMSLP434340-sys18-v2 and3 in IMSLP580410-sys6-v1 agree with source9/8 and3/4. Dataset cleanup and runtime meter heuristics both need a qualified change; restoring a token alone is insufficient.
+
+No default parser/serializer/exporter, published corpus/model/provider pin, training job or deployment changed. Keep the97 outside metadata-only migration. Next: versioned opt-in source-anchor dataset policy; common-time/meter-change guard qualification; the one rhythmic-progression regression; certified OSSQ crop alignment/support; resumable frozen-core timing-head trainer on qualified labels. No GPU needed for immediate work.
+
+Write-up: /home/jhlusko/workspace/homr/docs/ORDINARY_ONSET_CROP_AUDIT_2026-10-04.md. Final evidence: /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lieder-onset-anchor-contract-20261004/. Earlier event transitions: sibling lieder-ordinary-onset-final-20261004/paired-event-transitions.json. Reproducible CLI: training/onnx/audit_crop_onsets.py --anchor-prototype. Final run32.8s, one CPU thread, persistent tmux/watchers; audit/tests EXIT=0;31 tests and3 subtests pass. All jobs complete; ETA zero.
+
+
+### 2026-10-04 — opt-in note anchors implemented; meter qualification restarted
+
+Versioned `note-anchors-v2` bundles retain per-note articulation/combined tie-slur labels, hash-bound policy manifests, notation and timing sidecars. Unmarked/default labels remain legacy; vocabulary IDs unchanged. Initial97-crop bundles round-trip7,031 symbols/6,058 timed symbols and export with zero combined endpoint errors without source sidecars. Remaining286 onset errors and514 literal phrase differences are explicit representation limits, not model results.31 focused tests pass.
+
+The first meter candidate failed the real crop because its earlier common-time signature is omitted. Its full replay matched the prior replay exactly. It was stopped (EXIT130) and archived. Revised guard protects both repeated declarations and a first declaration after sounded material; constant incompatible opening meters still retain the old check. Revised full Lieder/paired297-reference OSSQ-Lieder qualification runs on one CPU thread in persistent tmux `label-policy-meter-20261004-v2`, with watcher `label-policy-meter-watch-20261004-v2`; runtime promotion remains pending the results.
+
+The single timing regression is traced: source part3 measure21 of IMSLP592442 has overlapping staff notes where the next onset gap is shorter than every note in its current group. Legacy minimum-duration advancement overshoots; own-duration heads alone cannot encode the shorter gap. No source timing is injected into inference and predicted advance stays off.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md`. Revised local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/label-policy-meter-qualification-20261004-v2/`; archived first pass and onset trace in sibling `label-policy-meter-qualification-20261004/`. Next: complete meter gate, structured tie/phrase qualification, certified OSSQ crop alignment, then resumable frozen-core timing-head training. No publish/deploy/training/pin changes.
+
+
+2026-10-04 follow-up: revised full Lieder replay finished189.2s. 3867 total,3757 frozen-identical,110 changed. Meter-only comparison restores14 numerator tokens across8 scores; source meters agree and non-numerator strings, image hashes and timing support are unchanged.13 additionally affected previously unchanged crops join the existing97 outside metadata-only migration.113 focused compatibility tests pass; paired297-score runtime export checks still running.
+
+
+### 2026-10-04 — versioned note anchors and meter guard qualified
+
+Opt-in `note-anchors-v2` bundles preserve per-note articulation/combined tie-slur fields and carry hash-bound policy manifests plus notation/timing sidecars. Existing/default/unmarked labels remain `legacy-staff-hoist-v1`; vocabulary IDs and channel order are unchanged. All110 changed Lieder crops round-trip7,653 symbols/6,573 timed symbols, with zero combined endpoint errors and no missing/duplicated/misplaced events in legacy export without source sidecars. Remaining286 onset errors and578 literal phrase differences (481 tie-only aliases,30 added tie endpoint types,67 lost phrase multiplicities) are explicit representation limits, not model recognition scores or complete structured-slur fidelity.
+
+Revised meter guard protects repeated declarations and a first declaration after notes/rests have begun, including crops omitting their inherited opening signature. Full3,867-crop replay restores14 numerator tokens across8 scores; all match source meters and all non-numerator strings/image hashes/timing support remain unchanged. Of these14,13 are newly affected:3,757 frozen-identical crops and110 changed crops. Keep all110 outside metadata-only migration; retain the14 native-stretch timing masks.
+
+Runtime check on the actual14 crops repairs all14 exported meters, with byte-identical non-time XML and identical event/onset audits. Broad paired runtime guard check on85 OSSQ/212 Lieder finishes in13.1 minutes with exact unchanged outputs and the same10 known OSSQ detachedLegato failures; no new failures or regressions. Coverage75/85 OSSQ,212/212 Lieder. Whole-score controls do not substitute for the affected-crop check.113 focused compatibility tests, new-file Ruff and Black checks pass. Persistent qualification/watchers/finalizer completed successfully; no heavy job remains, ETA zero.
+
+The one prior timing regression is explained: source part3 physical measure21 of IMSLP592442 contains interleaved staff notes whose next onset gap is shorter than the minimum member duration. Legacy advancement overshoots. Preserve correct grouping; own-duration heads alone cannot encode the missing gap. Predicted advance remains off and source timing is not injected into inference.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md`. All final evidence is local under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/label-policy-meter-qualification-20261004-v2/`: anchor-bundles-final/report.json, crop-meter-gate-release.json, crop-runtime-meter-gate-release.json, runtime-meter-gate.json, full-lieder/report.json, onset-progression-final.json, tests-final.log, finalize.EXIT and qualified-final-source snapshots/receipt. First failed candidate remains archived in sibling label-policy-meter-qualification-20261004 with interruption EXIT130; it is not a passed gate.
+
+Next: independently qualify separate ties/phrase slurs and articulation ownership in structured export; recover certified OSSQ crop alignment/support; then wire resumable frozen-core timing-head training using qualified labels. No GPU, corpus/model/provider pin change, upload, push or deployment in this work.
+
+Implementation: local HOMR commit61a0ba7, Version note-anchor labels and preserve mid-crop meter changes.14 scoped files; unrelated working edits remain untouched. No push. Final qualification/watchers/finalizer complete, all receipts0; ETA zero.
+
+
+## Current release priorities — 2026-10-04
+
+This order supersedes the historical status table and earlier running-job entries below. The accepted September18 core plus September24 v7 heads remains the local comparison/rollback stack; it is not asserted to equal the deployed provider pin. Public-joint-core-heads-20260928 epoch27 is the leading qualification candidate: the completed paired real-source crop comparison improves symbol error by1.455pp on OSSQ and0.418pp on Lieder. Corrected ONNX/runtime parity passes, but functional page smoke and crop scores do not establish full-page accuracy or promotion. One matched Lieder page improves pitch while worsening rhythm.
+
+1. **Finish the current label/export checks locally.** Independently measure separate tied/sounding-tie elements, phrase-slur endpoints and span pairing, and articulation ownership against source XML. Preserve note/timing controls and report crop-boundary spans and unsupported source notation explicitly. The110 changed Lieder crops remain outside metadata-only migration. This bounded correctness work must not turn into an unconditional requirement to train new timing heads before release.
+2. **Certify full-page evaluation inputs and compare complete stacks.** Audit score identities against training/model-selection history; recover trustworthy OSSQ scan-to-source alignment and page boundaries. Compare accepted and epoch27 stacks under identical detector/decoder/post-decode policies, with pitch/rhythm/accidentals, onsets/meter/voices, failed pages and source-specific results. Keep the authorized Lieder symbol-error ceiling of+0.25pp and report OSSQ separately. D1 still needs OSSQ real-page verification and provider identity/pin integration. Revisit ordinary-group beam substitution separately; the rest-spanning hybrid remains rejected.
+3. **Continue text fusion independently of model selection.** Freeze detector postprocessing after the component-area/recall sweep; verify training exclusions and partially labelled region handling; fit fusion calibration and evaluate its held-out partition. Lyrics use e2, directions use e4, and review-only dynamics share e4 physical inference. C1 must establish acceptable transcription, verse ordering and note attachment. Checkbox/fusion remain disabled pending those gates.
+4. **Choose and qualify the release stack.** Select epoch27 only if complete-stack evidence passes; retain the accepted stack if it does not. Measure the final production GPU/HTTP/OCR/attachment path, including cold overhead and failure handling, against the280s per-page timeout. The earlier warm22-page benchmark does not qualify the changed final path. Prepare candidate manifests, immutable pins and rollback; activation remains a separate release decision.
+5. **Package and present the final release.** Regenerate E3 examples against the selected models, update the OurTextScores/ots-homr page with supported public-reproducible advantages and limitations, publish reproducibility instructions and qualified corpus updates as needed, then complete appropriate repository consolidation and release review.
+
+**Separate improvement lane:** finish certified timing-label support, raw/normalized/native-staff scoring policy and an opt-in resumable frozen-core trainer before renting GPU for the four additional timing heads. They need not block a release whose existing stack passes. Any later joint loss weighting must use measured shared-core gradients and preserve pitch/rhythm/accidental gates. Random/ImageNet-start training remains paused because its decoded recognition underperformed; no automatic resume or new multi-day run is scheduled.
+
+All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
+
+2026-10-04: owner asked to record the high-level priorities and continue. Starting step1 structured ties/slurs/articulation qualification on actual changed Lieder crop labels, source metadata used only in diagnostic oracle arms, never as model predictions.
+
+
+### 2026-10-04 — bounded structured-export audit complete; release priorities retained
+
+Five source-oracle arms on110 real Lieder crops retain all6,811 source events and exact non-span XML. Structured ties match both source `<tied>` and `<tie>` fields exactly; phrase endpoints still have578 mismatched notes under current export because the combined legacy field wins. Diagnostic structured phrase ownership reduces that to6; source voice identity repairs13 additional agreed spans, and suppressing unmatched-stop fallback repairs the final6. All391 interior spans agreed by independent voice/part source views match in the strict diagnostic arm.51 other interior span exposures and6 endpoint mismatches remain unqualified; differing source scope does not prove bad source notation.
+
+Articulations:36 raw XML differences partition into27 glyph-alias-only,4 arpeggio-propagation-only,1 mixed,4 visible single-stroke tremolos omitted from later notation blocks. Source tremolo type/strokes need preservation before a parser fix; the generic legacy token would misrender them. Oracle identity/full6 slots are not the currently predicted within-staff voice/two-slot capability. No default inference/export policy changed and no model advantage is claimed.
+
+120 focused tests and new-file Ruff/Black pass. Final audit22.0s, one CPU thread, persistent tmux/watchers, EXIT0; all jobs complete, ETA zero. Local write-up: `/home/jhlusko/workspace/homr/docs/STRUCTURED_CROP_EXPORT_QUALIFICATION_2026-10-04.md`. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/structured-note-ownership-20261004-v3/` (report, summary, tests, logs, source snapshots and receipt). Earlier candidate analyses/source locations stay in sibling first-pass/v2 directories.
+
+Next bounded label work: native adjudication of source span scope, explicit opt-in ownership/identity/field-availability contract, detailed tremolo labels. Independently proceed with full-page reference identity/OSSQ scan certification and text-fusion calibration. Full-page accuracy → final-stack choice → production latency → pins/package/examples remains the release sequence. New timing-head training and comprehensive notation redesign are not unconditional release prerequisites. No GPU/new training, corpus upload, pin change, push or deployment.
+
+2026-10-04: local commit4b58078 records release priorities, source-oracle auditor, tests and write-up. Master public-release roadmap updated to point to the accepted current order. No push, runtime policy activation or pin change. All audit/watchers complete;120 tests pass; ETA zero.
+
+
+### 2026-10-04 — native slur evidence and export contract
+
+Archived all six unresolved phrase endpoints with source/native hashes and verbatim native anchors. Exact-measure/pitch evidence supports retaining all six, including multiple stops and cross-voice spans; complete native event/span mapping is still uncertified. Do not replace extraction with a voice-only pairing rule. Proposed opt-in contract requires explicit producer/field availability, separate tie/phrase ownership, span identity independent of voice, non-stealing boundary stops, detailed tremolo type/strokes and predicted-output qualification. Default inference unchanged.
+
+Ten focused tests and new-file Ruff/Black pass. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/native-slur-evidence-20261004/evidence.json`. Contract and full-page input checklist: `/home/jhlusko/workspace/homr/docs/STRUCTURED_EXPORT_CONTRACT_2026-10-04.md`.
+
+Full-page inputs remain the gating work: zero verified untouched Lieder pages; OSSQ122 scores/2,986 scan pages have no certified scanned-system metadata. Next certify a small identity-selected OSSQ page/reference mapping before broad paired inference; distinguish diagnostic/model-selection from independent testing. Text-fusion calibration proceeds independently. No running job, ETA zero; broad-run ETA requires a frozen eligible manifest and one-thread pilot. No training, upload, pin change, push or deployment.
+
+
+
+### 2026-10-04 — two OSSQ opening pages certified; paired diagnostic starting
+
+Beethoven sq8071278 page1 maps to physical measures1–36 (systems8/10/9/9); Grieg sq9631717 page1 maps to1–28 (7/9/6/6). Agent visual edition/boundary/part review and all-four-part source-layout checks pass; original/source hashes and a17-score selection pool are frozen before recognition. Both scores were already evaluated in RUNLOG27.81, so this is diagnostic evidence, not untouched testing. Corpus-wide scanned-system metadata remains absent.
+
+Accepted September18/v7 versus public-joint-core-heads-20260928 epoch27 uses prior float32 exports and identical Lorelei diagnostic policies, without text/OCR, reference injection or D1 rule activation. Four sequential one-thread page decodes start in persistent tmux with a completion watcher; initial ETA20–40 minutes, revised after first result. Failures remain failures; completed arms are resumable with input/code identity guards. Nine focused tests and new-file Ruff/Black pass.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/OSSQ_OPENING_PAGE_DIAGNOSTIC_2026-10-04.md`. Certification: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-page-certification-20261004/`. Run/status: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/` (`progress.json`, `EXIT`, per-score comparison, completion-report.md when finished). No promotion, training, upload, push or deploy.
+
+<!-- ossq-opening-pair-20261004-status-begin -->
+OSSQ paired diagnostic: prepared; four sequential decodes pending, estimated20–40 minutes. Completion watcher updates this block.
+<!-- ossq-opening-pair-20261004-status-end -->
+
+
+
+OSSQ paired diagnostic launched2026-10-05 03:24UTC: tmux `ossq_pair_20261004` and completion watcher `ossq_pair_watch_20261004`, CPU7 affinity, one thread; tooling commit345782e local/not pushed. Inputs/code/graphs verified, source snapshot saved, first accepted Beethoven worker actively processing. Initial ETA20–40 minutes.
+
+
+### OSSQ opening-page paired diagnostic completion
+
+OSSQ paired diagnostic completed 2026-10-05T03:31:13.289459+00:00: 4/4 successful arms, 2/2 fully paired pages; EXIT0. ETA zero.
+
+Report: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/completion-report.md`. Diagnostic only; no promotion.
+
+
+### 2026-10-04 — OSSQ paired page diagnostic complete
+
+Four decodes succeeded,2/2 paired pages, EXIT0,6m46s sequential one-thread wall time; tmux and completion watcher finished, ETA zero. Epoch27 improves Beethoven pitch3→1/383 and rhythm21→18/455; accidental totals remain1/383 but change from an insertion to a substitution. Grieg is identical: pitch2/372, rhythm/event46/380, accidental2/372. Both scores were historically evaluated; diagnostic only, not untouched testing, crop SER or final-policy promotion.
+
+Shared errors are concrete:18 Beethoven full-bar rests export4 quarters instead of3;44 Grieg paired-tremolo half glyphs have source elapsed1 quarter/2:1 time modification but export2; both stacks collapse simultaneous D4 voices in Grieg measures9–10. Original metrics remain intact. Earlier Lorelei epoch27 pitch improves7→5 but rhythm worsens14→17. These three pages modestly favor epoch27 on OSSQ without settling promotion.
+
+All evidence local: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-opening-page-pair-20261004/` (`summary.json`, `completion-report.md`, per-score `comparison.json`/`edit-audit.json`, Grieg `source-duration-audit.json`, environment/source snapshots). Write-up: `/home/jhlusko/workspace/homr/docs/OSSQ_OPENING_PAGE_DIAGNOSTIC_2026-10-04.md`. Ten focused tests pass. Next bounded cached-label/export checks for these timing/voice cases, broader reviewed real-page coverage and final-policy verification; text fusion independent. No push, promotion, upload, deployment or training.
+
+
+
+### 2026-10-04 — cached timing audit locates a runtime cleanup defect
+
+Exact four-arm cached XML replay and8/8 source-part round-trips complete. Late repair/meter ablations leave original timing scores unchanged. Beethoven source labels preserve elapsed timing, but encode whole-bar rests as dotted-half tokens; models choose ordinary whole-rest tokens. A predicted-meter sole-rest hypothesis repairs18 durations (accepted rhythm21→3; epoch27 18→0), but incomplete-bar safety remains unqualified.
+
+Grieg's44 paired-tremolo duration errors reproduce in current source-label round-trip: written half/generic tremolo loses elapsed1-quarter, 2:1 ratio and one-stroke details. This is not failed learning of the legacy half-note target. More of the same training cannot restore missing distinctions.
+
+Instrumented Grieg repeats match original XML/cache hashes for both models and prove both recognize two D4 unisons in measures9–10; pitch deduplication deletes one in each. Disabling only that cleanup in cached replay yields pitch2→0/372, accidental2→0/372, rhythm/event46→44/380, with no extra pitched events elsewhere on this page. Source labels preserve multiplicity; distinct XML voice ownership and broad duplicate-noise safety remain unqualified. Defaults and original evaluation scores unchanged.
+
+17 focused tests pass; new-tool Ruff/Black pass. All one-thread tmux jobs finished, EXIT0/TRACE_EXIT0, ETA zero. Write-up: `/home/jhlusko/workspace/homr/docs/OSSQ_CACHED_TIMING_AUDIT_2026-10-04.md`. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-cached-timing-audit-20261004/` (cached/label reports, cleanup traces, cleanup-ablation-final, executed source snapshots, logs).
+
+Next quantify cached pitch-dedup ablation against real OSSQ/Lieder crops; broaden rest positive/incomplete-bar checks; continue reviewed full-page/final-policy coverage and independent text-fusion calibration. No new GPU/training, model promotion, pin change, upload, push or deployment.
+
+
+## 2026-10-04 — paired real-source pitch-dedup audit
+
+### 2026-10-04 — real-source cached cleanup ablation complete
+
+All4,211 paired OSSQ/Lieder crops (9/13 score identities), all33,688 stored recognition metrics and paired input hashes pass. Disabling only pitch dedup improves symbol errors OSSQ accepted4,185→4,174 / joint27 2,773→2,758 and Lieder380→340 /327→287. Of74 changed crop/model pairs,60 improve,7 regress,7 tie. Preserved collisions include unwanted repetitions, rests and malformed note/rest fields, so defaults remain unchanged.
+
+Other cleanup still increases standalone-crop errors relative to raw predictions; production cleans concatenated voices, so isolate these stages before inferring a full-page fix. Next: stage-wise cached cleanup audit and full-voice/page positive/negative controls, then continue final-policy page qualification and independent text fusion. No additional training is needed for this investigation.
+
+Details: `/home/jhlusko/workspace/homr/docs/CACHED_PITCH_DEDUP_AUDIT_2026-10-04.md`. Local reports/cases/hashes: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/cached-pitch-dedup-20261004/`. Seven tests and Ruff/Black pass. Complete, ETA0; no running job, promotion, default change, push, upload or deployment.
+
+
+## 2026-10-04 — isolated cached and complete-voice cleanup stages
+
+### 2026-10-04 — cleanup stages isolated; context guard is next
+
+Completed all4,211 OSSQ/Lieder cached pairs and14 Grieg complete-voice XML ablations. Raw33,688 metrics replay; standard/no-pitch controls match the previous audit. Tuplet removal explains the remaining standalone-crop damage: disabling it reduces OSSQ symbol errors by107 accepted/178 joint27 and Lieder7/1. Both tuplets and pitch dedup disabled recover raw aggregate scores. Lower-staff/header ablations do not improve measured recognition here; header/meter export is not covered by those metrics.
+
+The tuplet heuristic damages23 otherwise exact crop/model pairs, but fully repairs9 accepted OSSQ crops. It uses local median measure duration without explicit meter/context; switching it off globally is not qualified. The complete Grieg trace shows no measured tuplet-only benefit, while unison preservation still repairs both pitch errors in each model. These are diagnostics on existing validation/evaluated scores, not new untouched gates.
+
+Next: opt-in predicted-context tuplet safeguards plus successful-repair negative controls, unison/noise and complete-voice/page qualification; continue broader final-policy page and independent text-fusion work. Defaults remain unchanged; no new training is needed for these runtime checks.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/CACHED_CLEANUP_STAGES_2026-10-04.md`. Local crop/page reports: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/{cached-cleanup-stages-20261004,page-cleanup-stages-20261004}/`. Eleven tests and Ruff/Black pass. One-thread tmux job/watcher complete, ETA0; no promotion, push, upload or deployment.
+
+
+## 2026-10-04 — predicted-context tuplet guard, diagnostic rejection
+
+### 2026-10-04 — first predicted-context tuplet guard tested, not accepted
+
+Implemented a diagnostic-only exact-fill guard using predicted meter or strongly supported local bar length, with crop-boundary and staff/chord ambiguity safeguards. All4,211 paired real-source caches and10 Grieg complete-voice XML variants complete; raw33,688 metrics and prior controls replay. It protects23/23 otherwise-perfect predictions but retains0/9 complete successful-repair controls (one partial), so do not activate it. Eight negative controls lack predicted meter; context/boundary safeguards are too restrictive for standalone crops.
+
+Guard-only symbol errors: OSSQ accepted4,185→4,070, joint27 2,773→2,595; Lieder380→373 and327→326. These aggregate improvements do not override the failed negative controls or OSSQ pitch regressions. Grieg guard-only scores are unchanged; its combined unison-preserving arm reproduces the prior two-note recovery.
+
+Next recover predicted meter/staff/voice and true measure-boundary context on complete-voice controls rather than weaken safeguards to fit known crops. Keep unison/noise qualification independent, and continue complete-stack page qualification and text fusion; this optional guard is not a new mandatory release blocker. No new training needed.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/GUARDED_TUPLET_EXPERIMENT_2026-10-04.md`. Local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/` and `page-guarded-tuplet-20261004/` alongside it. Twenty-two focused tests and Ruff/Black pass. One-thread/core tmux job/watcher complete, ETA0; defaults unchanged, no promotion, push, upload or deployment.
+
+
+## 2026-10-04 — nine-case tuplet review gallery
+
+### 2026-10-04 — nine-case tuplet review available locally
+
+Review: http://localhost:8765/ (persistent `tuplet-review-server` tmux session, loopback only). All nine successful-repair negative controls show original hash-verified OSSQ crops beside reference labels, raw accepted-stack predictions, current cleanup and rejected guard. Crop-relative measure labels describe triplet-to-ordinary-note changes. Case8 clearly shows16 raw rhythm errors,0 after current cleanup,8 remaining under the guard; case9 is the sole explicit predicted2/2 example.
+
+“Eight have no predicted meter” means no time-signature declaration was emitted in these standalone crop decodes; it does not establish absent printed or inherited full-page meter. Reconstructed display meters are explicitly identified as XML-export context. MuseScore4.6.5 outputs were audited for visible notes AND rests, timing, onset and staff;20/36 panels have changes (including inserted rests), flagged on the page. Original scans and stored labels remain authoritative. This gallery requires no individual voting and is not a new promotion gate.
+
+Local site, all images/XML and provenance: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/review/`. Generator: `homr/training/transformer/review_guarded_tuplets.py`; guarded renderer reuse verifies inputs, binary and exact reconstructed XML. Nine cards/81 unique linked assets return HTTP200. Rendering/watcher complete, ETA0; the serving tmux remains active. No inference/default change, promotion, push, upload or deployment.
+
+
+### 2026-10-05 — complete-voice context recovered
+
+All 32 selected witnesses were replayed with available neighboring same-page systems. Current cleanup preserves 22/23 correct raw predictions and repairs 8/9 false-tuplet controls; the rejected guard achieves 23/23 and 7/9 respectively. These note/rest metrics exclude repeated key-signature headers and are diagnostic, not full-page release scores. All nine repair controls have earlier-page predicted meter evidence; three have same-page declarations (one in the target itself). Cross-page meter is not currently carried by HOMR. The review at http://localhost:8765/ includes recovered context and original full-page scan links.
+
+See `homr/docs/TUPLET_VOICE_CONTEXT_2026-10-05.md`. Canonical local results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/voice-context-20261005-v2/`. Independent native OSSQ measure-boundary certification remains open. Keep current inference defaults; next qualify identical complete stacks with certified page inputs, and test any meter-local cleanup against both control groups.
+
+
+Actual page repeat: 102.6s, two candidate-reranking calls; second-system part 2 corrects all 16 note_24 errors before voice cleanup. Staff/cleanup captures and XML match the original observation exactly. 21 focused tests and Black/Ruff pass; all 89 review assets return HTTP200. No inference defaults changed.
+
+### 2026-10-05 — parallel real-page and text-fusion work completed
+
+Four additional original music pages are independently reviewed for edition/part/system/measure boundaries: Haydn sq9146376, Glazunov sq7358579, Chaminade IMSLP154086 and Franz IMSLP89797. All8/8 matched accepted/epoch27 decodes succeeded in12m49s; tmux jobs and watchers complete, ETA0. Haydn rhythm edits improve5→3 while accidentals worsen3→4; Glazunov and Chaminade tie; Franz event edits worsen8→9. These remain diagnostic pages with recorded historical/validation exposure, not new untouched tests or token-SER promotion gates. Strict timing scoring finds shared missing inherited6/4 on Franz; epoch27 handles its later return to6/4 better. Keep the candidate/rollback decision open.
+
+The six-page calibration-only text audit reproduces e4 direction failure:0/22 OSSQ and0/2 Lieder known direction matches at IoU≥0.5. Exact checkpoint/class order matches the pinned Aug30 seven-class model; its selected loss targets Lyrics/Dynamic. This is distinct from the later DirectionText model and is not channel mislabelling. No eligible replacement pin was found. The historical “directions use e4” route is not a qualified capability: keep it disabled pending a capable detector. Dynamics can remain review-only on e4; lyrics use e2.
+
+Conservative next filtering pilot: Lyrics area200 / Dynamic area50, with area4 controls, on broader calibration-only inputs. This is a proposal, not a frozen production threshold. Area200 loses weak dynamic overlap coverage; partial annotations do not authorize treating unmatched boxes as negatives. Detector source-order training indexes were not recovered, so training independence remains unknown. C1 now has26,662 native lyric targets across124 calibration scores, preserving verse and source note/onset ownership; scan linkage and transcription/attachment accuracy are still uncertified. Held-out test annotations were not used to fit these diagnostics.
+
+Next priorities: (1) test predicted previous-page meter context with meter-change/strict-onset controls and continue complete final-policy stack qualification; (2) resolve direction-detector capability before three-route fusion calibration, while separately extending conservative lyrics/dynamics calibration; (3) certify native-lyric-to-scan linkage, then quantify transcription, verse ordering and note attachment against independent references. No new training, pin/default change, upload, push or deployment.
+
+Reports: `homr/docs/REAL_PAGE_EXTENSION_2026-10-05.md` and `homr/docs/TEXT_FUSION_QUALIFICATION_2026-10-05.md`. All evidence is local under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/`: `real-page-selection-20261005/`, `real-page-pair-20261005/`, `text-fusion-sweep-expanded-20261005/`, `c1-source-lyrics-20261005/`. Page track18 tests, text track56 tests pass; Black/Ruff pass. No compute remains; the loopback review server remains available.
+
+
+## 2026-10-05 — predicted previous-page meter and C1 page linkage
+
+The independently reviewed preceding Sonntag page was decoded by both stacks in90s, one CPU thread, persistent tmux with completed exit0 watcher. Guarded predicted-meter carryover and disabling stated-numerator rejection produce **no improvement** on its affected second page: accepted event/strict/meter edits remain8/26/51; joint epoch27 remains9/27/42. Accepted prior meter is wrong4/4; candidate vocal prior6/4 is correct, but its current cached output already declares4/4, so guarded carry does not replace it. Accepted carry adds incorrect4/4 where XML previously had no meter. Keep defaults unchanged. Next audit raw per-system meter predictions versus same-page repairs, then continue final-policy complete-stack verification; current diagnostics still omit stem/slur-side arbitration and OCR/provider latency. Report: `homr/docs/PREDICTED_PAGE_METER_2026-10-05.md`; canonical local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/franz-meter-carry-20261005-v3/`.
+
+Direction pin naming is now resolved: **B4 DirectionText epoch4** is a five-class-plus-background candidate, distinct from **Aug30 seven-class dynamics epoch4**. B4's already-recorded single held-out test rejected it: OSSQ221/421 direction matches but788 predictions exceeds367 cap, and Lieder8/11 falls below11/11 floor. The intended split amendment was conditional on that gate; B4 cannot be renamed/swapped into the eight-channel provider. No qualified replacement direction detector is available. Continue lyrics e2 and review-only dynamics Aug30 e4 calibration independently; direction fusion stays disabled pending a capable independently qualified model.
+
+C1 has a hash-bound calibration-only page/system linkage pilot: two original scans, seven independently certified systems,128 native lyric entries and eight reviewed visible phrase/verse anchors. Native verse numbers do **not** reliably follow scan vertical order (Chaminade English is above French despite native verse2/1). Page/system ownership is certified; per-note pixel attachment is not. Literal/native transcription also needs normalization/adjudication before exact-match scoring. Report: `homr/docs/TEXT_FUSION_C1_LINKAGE_2026-10-05.md`; evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-page-linkage-20261005/linked/`.
+
+Next priorities: (1) meter provenance audit and final-policy OSSQ/Lieder stack qualification; (2) a calibration-only lyric OCR/verse-order/attachment pilot on the two linked pages with independently adjudicated transcription; (3) conservative lyric/dynamics component filtering while keeping direction capability unresolved. No pin/default change, training, push, deployment or model promotion. Eleven meter/context/certification tests and six C1 tests pass; scoped formatting checks pass. All experiment jobs complete, ETA0.
+
+
+## 2026-10-05 — raw meter provenance and calibration lyric OCR
+
+All four Sonntag page/model traces reproduce saved XML and decoded symbols exactly, in217s total with one CPU thread and completed tmux watcher. Incorrect meter declarations are already present in raw decoding; cross-staff repairs and voice cleanup preserve their values/order. Joint epoch27 recognizes p001's printed initial6/4, then incorrectly declares4/4 on later piano systems; on p002 it declares initial4/4 despite inherited6/4. Do not weaken the exporter guard based on this witness. Next meter hypothesis must retain genuine changes, printed-correct-signature and pickup/mixed-meter controls. Report: `homr/docs/METER_PROVENANCE_2026-10-05.md`; local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/franz-meter-provenance-20261005-v2/`.
+
+The two linked calibration scans completed unprompted full-page RapidOCR in26.24s, one CPU thread, fixed local model hashes, no source lyric prompt/download. Chaminade41 and Franz108 regions include plausible bilingual lyrics, titles and notation false positives; counts are not lyric accuracy. Inspection page: http://localhost:8765/c1-ocr/ (click text for original crop). Source ownership is displayed separately; no guessed note alignment. This is standalone OCR, not the pinned-e2 fusion route or production latency qualification. Report: `homr/docs/C1_OCR_PILOT_2026-10-05.md`; local predictions: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-raw-ocr-20261005/`.
+
+Next priorities: (1) complete identical final-policy OSSQ/Lieder stack verification, with the scoped meter investigation kept separate; (2) freeze scan-visible lyric row regions and literal transcription independently of OCR, then quantify pinned-e2 region selection/OCR and native verse mapping; certify note pixel anchors before attachment scoring; (3) continue conservative lyrics/dynamics calibration, with direction fusion blocked by the failed B4 gate. All compute/watchers finished, ETA0. Eleven focused meter/context/certification tests pass, scoped Ruff/Black and review JavaScript/HTTP checks pass. No inference default, pin, training, promotion or deployment change.
+
+
+## 2026-10-05 — matched notation-policy pages and C1 scan-row scoring
+
+All8/8 real-page policy arms succeeded in9m47s, one CPU thread with completed tmux watcher. Recognition and strict timing/meter metrics reproduce the earlier four-page baseline exactly. On unique shared source/prediction timing/pitch anchors, OSSQ stems: accepted18→12 errors/543 after reviewed policy, joint6→6/543. Lieder: legacy stem policy accepted128→130/652, joint6→6/652. These conditional results favor joint stems, while not qualifying universal policy or promotion. OSSQ slur-start errors: accepted14→7/88, joint12→13/88. Joint Glazunov includes11 exported starts without explicit side and one start-count mismatch, not12 wrong-side predictions; the OSSQ rule adds one Haydn wrong side. Next audit preserved core endpoints versus structured slots/export before filling unknown sides. Candidate use of the v7-calibrated0.8 cutoff remains provisional. Report: `homr/docs/PAGE_NOTATION_POLICY_2026-10-05.md`; local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/page-notation-policy-20261005/`.
+
+C1 now has12 manually checked scan-row transcriptions/rectangles on the two calibration pages, committed for reproducibility. Review was not blinded to prior OCR; no source text prompts or text-selected alignment. Conditional normalized character edits: full-page OCR5/408 (1.23%), pinned-e2 direct crops270/408 at area4 and269/408 at area200; OCR line detection inside the same boxes57/408 and56/408. Tightly cropped input clips syllables and mixes verse rows; area filtering does not resolve it. This is not lyric precision, syllable/note attachment, a held-out score or production-path latency. Compare original row crops and outputs at http://localhost:8765/c1-rows-final/. Report: `homr/docs/C1_LYRIC_ROW_QUALIFICATION_2026-10-05.md`; local refs/scores: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-lyric-row-reference-20261005/`; model/region evidence in sibling `c1-e2-region-ocr-20261005/` and `c1-e2-nested-ocr-20261005/`.
+
+Next priorities: (1) audit unknown slur sides/core-structured endpoint compatibility and retain joint raw-side controls; (2) test full-page OCR line preservation plus independent semantic lyric selection rather than tight crop recognition, on broader frozen calibration data, then qualify verse ordering and note attachment with independently certified note pixels; (3) complete final selected-stack provider identity and production GPU/HTTP/OCR latency/failure gates, while keeping meter improvements separate. Direction fusion remains blocked by B4's failed gate. Keep current defaults, pins and disabled lyric checkbox; no training, promotion, upload, push or deployment. All compute/watchers complete, ETA0. Sixteen focused tests and scoped Ruff/Black pass; final gallery plus12 original row crops return HTTP200.
+
+
+
+### 2026-10-05 — cached slur ownership and intact OCR selection completed
+
+Eight exact XML replays trace all155 unspecified starts to preserved core endpoints with no matching structured start slot. Legacy tokens conflate ties and phrases; source evidence includes75 tie-only and7 simultaneous tie/phrase starts. No blanket fallback/deletion is justified. See `homr/docs/SLUR_EVENT_OWNERSHIP_2026-10-05.md`.
+
+Intact full-page OCR selected by pinned Lyrics-box overlap gives10–11/408 character edits at predeclared10% coverage, versus56/408 for nested detector crops and5/408 for full-page OCR. Higher coverage loses more fragments. Calibration only, not semantic precision/attachment or release qualification. Review: http://localhost:8765/c1-intact-lines/. See `homr/docs/C1_INTACT_LINE_SELECTION_2026-10-05.md`.
+
+Next priorities: independent tie/phrase span ownership with simultaneous-event controls; broader frozen semantic lyric calibration and missed-fragment audit; then verse/note attachment and final provider/production latency qualification. Defaults/pins remain unchanged; direction fusion still blocked. All current jobs complete, ETA0; no new training or deployment.
+
+
+
+### 2026-10-05 — complete-span and lyric-fragment audits completed
+
+Conditional complete-span counts now distinguish sounding ties, engraved ties and phrase slurs, with simultaneous-event, tie-chain and boundary tests. Joint improves supported Glazunov ties26→30/30 and Franz11→14/24; phrase matches improve on three pages, unchanged Haydn. Both stacks still have extra phrase spans. Next identify exact tie-alias phrase pairs with simultaneous true-phrase controls before any exporter change. See `homr/docs/NOTATION_SPAN_AUDIT_2026-10-05.md`.
+
+Pinned-e2 area200/10% selection retains70/75 existing lyric-row OCR fragments but also12 visually confirmed non-lyric regions; drops5 lyric fragments. Raising overlap loses more lyrics and leaves titles/credits. Seventeen original-scan examples: http://localhost:8765/c1-selection/. Next broaden frozen calibration and test system/voice geometry while preserving OCR context; verse/note attachment remains separate. See `homr/docs/C1_LYRIC_SELECTION_AUDIT_2026-10-05.md`.
+
+All current audit compute complete, ETA0;13 focused tests pass. Current defaults/pins and disabled fusion remain unchanged. Final provider identity and production latency/failure qualification still follow selected-stack acceptance; no training/deployment scheduled.
+
+
+
+### 2026-10-05 — tie-alias and staff-gap experiments completed
+
+Exact predicted tie/phrase duplicates include38 accepted and44 joint source-tie-only spans. Joint also has one source-correct Franz phrase duplicated by an erroneous predicted tie, so unconditional deduplication would lose a correct phrase. Start-only suppression remains unsafe for longer phrases beginning on tied notes. Next recover both endpoint confidences before an opt-in cached suppression experiment, with simultaneous/true-phrase/boundary controls. See `homr/docs/TIE_PHRASE_ALIAS_AUDIT_2026-10-05.md`.
+
+Scan-only staff-gap filtering removes all12 reviewed non-lyric regions; same-row recovery restores all5 dropped lyric fragments. On these two calibration pages:75/75 existing lyric-row OCR regions,0 outside,5/408 character edits (same as full-page OCR). This rule was designed after reviewing calibration and does not certify voice ownership, held-out precision/recall or attachment. Review: http://localhost:8765/c1-geometry/. Next freeze broader layouts and use identified runtime system/staff geometry rather than promote the raster prototype. See `homr/docs/C1_STAFF_GEOMETRY_2026-10-05.md`.
+
+Seventeen focused tests pass; all current compute complete, ETA0. Defaults, model pins, disabled fusion and checkbox unchanged. Provider/production latency qualification follows selected-stack acceptance; no new training/deployment scheduled.
+
+
+
+### 2026-10-05 — alias-confidence controls and broader lyric packet prepared
+
+All8 cached arms replay exactly with both endpoint provenance. Conservative NONE-event/owned-tie confidence diagnostic at0.90 removes21/44 joint source-tie-only duplicates while preserving the known Franz phrase;0.80 removes30 but loses it. Accepted at0.90 removes4/38. No universal calibration or XML/runtime edit. Next opt-in cached owned-span export experiment with independent phrase/multiplicity/boundary controls. See `homr/docs/ALIAS_CONFIDENCE_DIAGNOSTIC_2026-10-05.md`.
+
+Eight additional lyric calibration scores frozen by native metadata/hash, two each single/multiple verse and opening/continuation. No OCR, predictions or held-out selection. Review http://localhost:8765/c1-layouts/. Manual edition/page/row/verse certification and fixed OCR/e2/geometry scoring remain next; this does not yet qualify new layouts or attachment. See `homr/docs/C1_LAYOUT_EXPANSION_2026-10-05.md`.
+
+Twenty focused tests pass. All current jobs complete, ETA0; persistent review server remains. Defaults, pins, disabled fusion/checkbox unchanged; no training or deployment. Final provider/production latency work remains after selected-stack acceptance.
+### 2026-10-05 — isolated alias export and expanded layout review
+
+The cached confidence-gated XML experiment removed only structurally owned duplicate phrase spans: 3 Franz candidate, 15 `sq7358579` candidate and 3 `sq9146376` candidate spans. Tie and non-slur invariants passed; no runtime/default output changed. See `docs/ALIAS_XML_EXPERIMENT_2026-10-05.md`.
+
+Eight additional lyric layout pages are frozen and visually suitable for calibration review. Identity and boundary certification remain pending. Review `http://localhost:8765/c1-layouts/`; next run the existing OCR/geometry diagnostics and certify visible rows by layout stratum. Fusion remains disabled.
+### 2026-10-05 — expanded lyric OCR and geometry failure controls
+
+The eight frozen layouts completed full-page OCR (594 regions, 54s) and pinned-e2 OCR (8m02s). The raster staff-gap diagnostic failed its minimum two-staff-group precondition on three pages, so no lyric score or production filter was produced. See `docs/C1_EXPANDED_SCORING_2026-10-05.md`.
+### 2026-10-05 — expanded OCR review gallery
+
+The eight expanded calibration pages now have an unscored scan/OCR gallery at `http://localhost:8765/c1-layout-ocr/`. It preserves title, bilingual, continuation and geometry-failure cases. Next choose independently certified visible-row references.
+The expanded lyric packet now has a crop review aid at `http://localhost:8765/c1-layout-crops/`, with full-page fallback when staff morphology fails. It is manual review only.
+The eight expanded pages now have a page-level identity/full-page/layout checklist. Visible row transcription and note-pixel attachment remain pending.
+The expanded lyric-row transcription worksheet is available at `http://localhost:8765/c1-row-worksheet/`; OCR remains a review prompt, not a reference.
+Native lyric ground truth is now the primary evaluation source for the expanded pages. Ordered source-text coverage is complete; manual scan rows are optional visual checks.
+The native-ground-truth C1 scorer now restricts source lyrics to each selected page's physical measure window. It is coverage-only; verse assignment and note attachment remain pending.
+C1 interface audit: native attachment targets exist, but the current service emits no predicted lyric-to-note attachment object. Do not score a proxy; add the output contract before the attachment gate.
+The off-by-default `LyricAttachment` contract is implemented and tested in OTS-HOMR. It validates target identity, verse, note ordinal/onset and confidence; no producer or runtime output is enabled.
+The off-by-default nearest-x lyric attachment baseline is implemented and tested in OTS-HOMR. It requires explicit vocal staff/note geometry and remains disabled.
+The existing rendered-source benchmark is the current attachment floor: 26,503/26,998 syllables (98.2%), 98.7% for one-note syllables and 93.0% for melismas, with 2,584 systems scored and 327 skipped. The exact scope and next staged evaluation are documented in `docs/C1_ATTACHMENT_BASELINE_2026-10-05.md`; no new GPU run is required.
