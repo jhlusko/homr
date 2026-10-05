@@ -8,4 +8,6 @@ The next scoring pass should run full-page OCR, pinned-e2 regions, and the staff
 
 I completed a page-level identity/full-page/layout review for all eight pages. The checklist is in the local artifact `c1-layout-expansion-20261005/visual-certification.json`; every page is marked identity and complete-page checked, while row transcription and note-pixel attachment remain explicitly pending.
 
+The transcription worksheet is at http://localhost:8765/c1-row-worksheet/. It lists OCR candidates by vertical position beside the original scan. OCR is only a prompt for review; any reference row must be transcribed from the scan.
+
 This packet does not yet qualify lyric precision, verse ordering, note attachment, or production fusion. Keep the lyrics checkbox and fusion disabled.
