@@ -1,5 +1,7 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The expanded packet now also has a crop review aid at http://localhost:8765/c1-layout-crops/. It preserves full-page fallback on staff-detection failures and does not score or label crops.
+
 ### 2026-10-05 — expanded OCR review gallery available
 
 The eight additional pages now have a scan/OCR inspection gallery at http://localhost:8765/c1-layout-ocr/. It is intentionally unscored and includes no guessed lyric attachment. Use it to choose independently certified visible-row references while preserving the geometry-failure pages.
