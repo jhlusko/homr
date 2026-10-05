@@ -14,6 +14,16 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — cleanup stages isolated; context guard is next
+
+Completed all4,211 OSSQ/Lieder cached pairs and14 Grieg complete-voice XML ablations. Raw33,688 metrics replay; standard/no-pitch controls match the previous audit. Tuplet removal explains the remaining standalone-crop damage: disabling it reduces OSSQ symbol errors by107 accepted/178 joint27 and Lieder7/1. Both tuplets and pitch dedup disabled recover raw aggregate scores. Lower-staff/header ablations do not improve measured recognition here; header/meter export is not covered by those metrics.
+
+The tuplet heuristic damages23 otherwise exact crop/model pairs, but fully repairs9 accepted OSSQ crops. It uses local median measure duration without explicit meter/context; switching it off globally is not qualified. The complete Grieg trace shows no measured tuplet-only benefit, while unison preservation still repairs both pitch errors in each model. These are diagnostics on existing validation/evaluated scores, not new untouched gates.
+
+Next: opt-in predicted-context tuplet safeguards plus successful-repair negative controls, unison/noise and complete-voice/page qualification; continue broader final-policy page and independent text-fusion work. Defaults remain unchanged; no new training is needed for these runtime checks.
+
+Write-up: `/home/jhlusko/workspace/homr/docs/CACHED_CLEANUP_STAGES_2026-10-04.md`. Local crop/page reports: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/{cached-cleanup-stages-20261004,page-cleanup-stages-20261004}/`. Eleven tests and Ruff/Black pass. One-thread tmux job/watcher complete, ETA0; no promotion, push, upload or deployment.
+
 ### 2026-10-04 — real-source cached cleanup ablation complete
 
 All4,211 paired OSSQ/Lieder crops (9/13 score identities), all33,688 stored recognition metrics and paired input hashes pass. Disabling only pitch dedup improves symbol errors OSSQ accepted4,185→4,174 / joint27 2,773→2,758 and Lieder380→340 /327→287. Of74 changed crop/model pairs,60 improve,7 regress,7 tie. Preserved collisions include unwanted repetitions, rests and malformed note/rest fields, so defaults remain unchanged.
