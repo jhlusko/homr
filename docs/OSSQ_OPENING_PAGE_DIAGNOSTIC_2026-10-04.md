@@ -48,3 +48,6 @@ Per-score `edit-audit.json` separates substitutions/insertions/deletions and rec
 Read beside the earlier Lieder Lorelei page: epoch27 improves pitch7→5 errors, but worsens rhythm14→17. The two OSSQ pages favor epoch27 modestly; these three diagnostic pages do not establish broad generalization or settle promotion.
 
 **Next:** use the cached predictions for bounded full-bar-rest, paired-tremolo and same-pitch multi-voice export/label checks; distinguish recognized written glyphs from elapsed timing and avoid reference injection in inference. Extend paired page coverage with independently reviewed mappings and truthful training/selection provenance, then test final D1/text/provider policies. Keep the crop Lieder+0.25pp gate separate. Text-fusion calibration continues independently. No new training or unconditional notation redesign is required to release a stack that passes its declared gates.
+
+
+Follow-up complete: `/home/jhlusko/workspace/homr/docs/OSSQ_CACHED_TIMING_AUDIT_2026-10-04.md`. Instrumented exact-output repeats prove the Grieg D4 losses occur in runtime pitch deduplication after both models recognize the two notes. Tremolo duration errors reproduce in current label round-trip; Beethoven rest timing/glyph semantics differ. Original scores above remain unchanged; counterfactual export/cleanup results are separate diagnostics.

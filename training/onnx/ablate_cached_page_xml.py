@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 from training.onnx.qualify_joint_export import setup, sha, write
 from training.onnx.score_full_page_musicxml import compare, staff_events
-from training.onnx.audit_full_page_references import read_mxl
+from training.onnx.score_paired_page_diagnostic import read_reference
 
 
 def full_measure_rest_hypothesis(root):
@@ -81,7 +81,7 @@ def main():
     page = original_report['page']
     if sha(page['reference']) != page['reference_sha256']:
         raise ValueError('Reference changed')
-    reference = staff_events(read_mxl(page['reference']), page['start_measure'], page['end_measure'])
+    reference = staff_events(read_reference(page['reference']), page['start_measure'], page['end_measure'])
     code_root = Path(__file__).resolve().parents[2]
     source_files = [str(Path(__file__).resolve().relative_to(code_root)),
         'homr/music_xml_generator.py', 'homr/transformer/vocabulary.py',

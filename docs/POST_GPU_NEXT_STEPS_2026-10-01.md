@@ -14,6 +14,18 @@ This order supersedes the historical status table and earlier running-job entrie
 
 All prior qualification jobs are complete. Immediate steps1–3 are local work and do not require a GPU rental. A full-page evaluation manifest and calibration subset must be frozen before giving trustworthy broad-run ETAs. See `homr/docs/LABEL_POLICY_METER_QUALIFICATION_2026-10-04.md` and the dated runtime/text-fusion reports below for completed evidence. No deployment, pin promotion, corpus upload or training is authorized by recording this order.
 
+### 2026-10-04 — cached timing audit locates a runtime cleanup defect
+
+Exact four-arm cached XML replay and8/8 source-part round-trips complete. Late repair/meter ablations leave original timing scores unchanged. Beethoven source labels preserve elapsed timing, but encode whole-bar rests as dotted-half tokens; models choose ordinary whole-rest tokens. A predicted-meter sole-rest hypothesis repairs18 durations (accepted rhythm21→3; epoch27 18→0), but incomplete-bar safety remains unqualified.
+
+Grieg's44 paired-tremolo duration errors reproduce in current source-label round-trip: written half/generic tremolo loses elapsed1-quarter, 2:1 ratio and one-stroke details. This is not failed learning of the legacy half-note target. More of the same training cannot restore missing distinctions.
+
+Instrumented Grieg repeats match original XML/cache hashes for both models and prove both recognize two D4 unisons in measures9–10; pitch deduplication deletes one in each. Disabling only that cleanup in cached replay yields pitch2→0/372, accidental2→0/372, rhythm/event46→44/380, with no extra pitched events elsewhere on this page. Source labels preserve multiplicity; distinct XML voice ownership and broad duplicate-noise safety remain unqualified. Defaults and original evaluation scores unchanged.
+
+17 focused tests pass; new-tool Ruff/Black pass. All one-thread tmux jobs finished, EXIT0/TRACE_EXIT0, ETA zero. Write-up: `/home/jhlusko/workspace/homr/docs/OSSQ_CACHED_TIMING_AUDIT_2026-10-04.md`. Evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-cached-timing-audit-20261004/` (cached/label reports, cleanup traces, cleanup-ablation-final, executed source snapshots, logs).
+
+Next quantify cached pitch-dedup ablation against real OSSQ/Lieder crops; broaden rest positive/incomplete-bar checks; continue reviewed full-page/final-policy coverage and independent text-fusion calibration. No new GPU/training, model promotion, pin change, upload, push or deployment.
+
 ### 2026-10-04 — OSSQ paired page diagnostic complete
 
 Four decodes succeeded,2/2 paired pages, EXIT0,6m46s sequential one-thread wall time; tmux and completion watcher finished, ETA zero. Epoch27 improves Beethoven pitch3→1/383 and rhythm21→18/455; accidental totals remain1/383 but change from an insertion to a substitution. Grieg is identical: pitch2/372, rhythm/event46/380, accidental2/372. Both scores were historically evaluated; diagnostic only, not untouched testing, crop SER or final-policy promotion.

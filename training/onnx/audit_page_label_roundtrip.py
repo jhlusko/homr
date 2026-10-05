@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from training.onnx.audit_full_page_references import read_mxl
+from training.onnx.score_paired_page_diagnostic import read_reference
 from training.onnx.qualify_joint_export import setup, sha, write
 from training.onnx.score_full_page_musicxml import compare, project, staff_events
 
@@ -21,6 +21,8 @@ def main():
     parser.add_argument('--run', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
+    if (args.out / 'report.json').exists():
+        raise ValueError('Refusing to overwrite completed label diagnostic')
     args.out.mkdir(parents=True, exist_ok=True)
     setup()
     os.environ['HOMR_STRUCTURED_EXPORT'] = 'beam,stem,tie,slur'
@@ -33,7 +35,7 @@ def main():
         raise ValueError('Reference changed')
     if page['start_measure'] != 0:
         raise ValueError('This bounded diagnostic requires a first page to inherit attributes correctly')
-    root = read_mxl(page['reference'])
+    root = read_reference(page['reference'])
     results = []
     for index, part in enumerate(root.findall('part')):
         reference = copy.deepcopy(root)
