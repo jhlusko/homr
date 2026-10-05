@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — alias-confidence controls and broader lyric packet prepared
+
+All8 cached arms replay exactly with both endpoint provenance. Conservative NONE-event/owned-tie confidence diagnostic at0.90 removes21/44 joint source-tie-only duplicates while preserving the known Franz phrase;0.80 removes30 but loses it. Accepted at0.90 removes4/38. No universal calibration or XML/runtime edit. Next opt-in cached owned-span export experiment with independent phrase/multiplicity/boundary controls. See `homr/docs/ALIAS_CONFIDENCE_DIAGNOSTIC_2026-10-05.md`.
+
+Eight additional lyric calibration scores frozen by native metadata/hash, two each single/multiple verse and opening/continuation. No OCR, predictions or held-out selection. Review http://localhost:8765/c1-layouts/. Manual edition/page/row/verse certification and fixed OCR/e2/geometry scoring remain next; this does not yet qualify new layouts or attachment. See `homr/docs/C1_LAYOUT_EXPANSION_2026-10-05.md`.
+
+Twenty focused tests pass. All current jobs complete, ETA0; persistent review server remains. Defaults, pins, disabled fusion/checkbox unchanged; no training or deployment. Final provider/production latency work remains after selected-stack acceptance.
+
 ### 2026-10-05 — tie-alias and staff-gap experiments completed
 
 Exact predicted tie/phrase duplicates include38 accepted and44 joint source-tie-only spans. Joint also has one source-correct Franz phrase duplicated by an erroneous predicted tie, so unconditional deduplication would lose a correct phrase. Start-only suppression remains unsafe for longer phrases beginning on tied notes. Next recover both endpoint confidences before an opt-in cached suppression experiment, with simultaneous/true-phrase/boundary controls. See `homr/docs/TIE_PHRASE_ALIAS_AUDIT_2026-10-05.md`.

@@ -24,6 +24,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--all-endpoints", action="store_true")
     args = parser.parse_args()
     if args.out.exists():
         raise ValueError("Output must be new")
@@ -154,6 +155,10 @@ def main():
                     "cached_sha256": sha(path),
                     "xml_sha256": sha(xml),
                     "policy": policy,
+                    **({"all_endpoints": [
+                        {"anchor": key, "unique": len(values) == 1, **value}
+                        for key, values in predicted.items() for value in values
+                    ]} if args.all_endpoints else {}),
                 }
             )
     write(
