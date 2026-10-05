@@ -2,6 +2,21 @@
 
 ## Current local follow-up — 2026-10-01
 
+### 2026-10-04 — remaining Lieder onset groups qualified; source-anchor prototype succeeds
+
+Independently traced all 97 changed real Lieder crops to rational MusicXML onsets. Current grouping mixes/splits no source onset; frozen labels mix onsets in 18 crops and split source simultaneities in 95. All original/corrected crop strings replay exactly, all three export arms retain every source event in its correct measure without duplication. This qualifies grouping, not complete XML/model promotion.
+
+Paired legacy-only export: incorrect within-measure onsets 2,072 → 286; 94 crops improve, two unchanged, one worsens (IMSLP592442-sys5-v2, 25 → 29). Event transitions: 1,792 repaired, 280 remain, six newly wrong, all in that crop’s physical measure21. Those comparisons use literal raw source ticks, not a normalized staff-stretch view or model SER.
+
+Default serializer hoisting regresses the existing combined tie/slur field: per-note endpoint mismatches 820 → 866 (one crop improves, 18 worsen, 78 unchanged). Audit-only per-note annotation preservation reduces these to zero across all97, with timing unchanged. Literal phrase-slur mismatches are separately 790 frozen /795 corrected /514 prototype; the prototype’s remaining514 are420 tie-only aliases,28 added tie endpoint types,66 lost phrase endpoint multiplicities. No true-phrase fidelity, concurrent pairing or predicted-head/model advantage claim.
+
+The removed numerator2 in IMSLP618722-sys4-v1 is a real 4/4→2/4 change (source physical measures10–11 vs12). Initial common time has no separate numerator, so the single-numerator/modal-duration heuristic discards the later genuine meter. Added9 in IMSLP434340-sys18-v2 and3 in IMSLP580410-sys6-v1 agree with source9/8 and3/4. Dataset cleanup and runtime meter heuristics both need a qualified change; restoring a token alone is insufficient.
+
+No default parser/serializer/exporter, published corpus/model/provider pin, training job or deployment changed. Keep the97 outside metadata-only migration. Next: versioned opt-in source-anchor dataset policy; common-time/meter-change guard qualification; the one rhythmic-progression regression; certified OSSQ crop alignment/support; resumable frozen-core timing-head trainer on qualified labels. No GPU needed for immediate work.
+
+Write-up: /home/jhlusko/workspace/homr/docs/ORDINARY_ONSET_CROP_AUDIT_2026-10-04.md. Final evidence: /home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lieder-onset-anchor-contract-20261004/. Earlier event transitions: sibling lieder-ordinary-onset-final-20261004/paired-event-transitions.json. Reproducible CLI: training/onnx/audit_crop_onsets.py --anchor-prototype. Final run32.8s, one CPU thread, persistent tmux/watchers; audit/tests EXIT=0;31 tests and3 subtests pass. All jobs complete; ETA zero.
+
+
 ### 2026-10-04 — grace serialization repaired and qualified on OSSQ/Lieder
 
 Controlled old-cursor ablation reproduces all 167 changed Lieder crops byte-for-byte, isolating the earlier grace-cursor correction as the cause. Fixed two exposed regressions: consecutive zero-duration graces were merged/reordered as a chord, and principal-chord arpeggios leaked into grace groups. Source grace order/chord membership now passes across 85 OSSQ / 212 Lieder references, 6,728 / 1,156 visible pitched grace notes and 46 explicit grace chords, with zero mismatches.

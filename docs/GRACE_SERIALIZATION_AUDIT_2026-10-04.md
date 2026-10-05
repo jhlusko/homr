@@ -1,5 +1,7 @@
 # Grace serialization audit — 2026-10-04
 
+Follow-up: [Ordinary onset and annotation audit](ORDINARY_ONSET_CROP_AUDIT_2026-10-04.md) qualifies all 97 onset groups and records paired export limitations plus the successful annotation-anchor prototype. The migration gate remains.
+
 The 167 changed indexed Lieder crops originate in the zero-duration grace-cursor correction (`7ef93bc`), rather than the exact-timing metadata. A controlled ablation restores the old grace cursor under otherwise current sequence-repair code, before arpeggio scoping and reproduces all 167 published token files exactly. This isolates the cause; it is not a full replay of the historical environment.
 
 ## Regression and repair
