@@ -1,5 +1,7 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The C1 interface audit found that native attachment targets exist, but the current service emits no predicted lyric-to-note attachment object. Implement that off-by-default output contract before measuring verse/note attachment; do not score a proxy.
+
 The native-ground-truth C1 text scorer now restricts source lyrics to each selected page's physical measure window. It is a coverage diagnostic only; verse assignment and note attachment remain to be wired against native targets.
 
 Native lyric ground truth is now the primary evaluation source for the expanded pages. The ordered source-text coverage diagnostic is complete; manual scan rows are optional visual checks, not a prerequisite. See `homr/docs/C1_NATIVE_GROUND_TRUTH_SCORING_2026-10-05.md`.
