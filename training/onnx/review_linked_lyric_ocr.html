@@ -1,0 +1,66 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Calibration lyric OCR pilot</title>
+<style>body{font:16px system-ui;
+margin:24px;
+background:#fafafa;
+color:#222}button{padding:8px;
+margin:4px}main{display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px}canvas{width:100%;
+background:white}aside{max-height:80vh;
+overflow:auto}li{cursor:pointer;
+padding:5px}li:hover{background:#def}pre{white-space:pre-wrap;
+font:14px system-ui}</style>
+<h1>Lyric OCR pilot — original scans</h1>
+<p>Calibration pages only. OCR receives only the scan. Click OCR text to inspect its image crop. All detected page text is shown, including titles and false positives. Source entries below retain native ownership;
+ no OCR-to-note pairing or accuracy score is claimed.</p>
+<nav>
+</nav>
+<h2 id="title">
+</h2>
+<main>
+<section>
+<canvas id="crop">
+</canvas>
+<img id="scan" style="width:100%">
+</section>
+<aside>
+<ol id="lines">
+</ol>
+<h3>Native lyric targets — separate reference</h3>
+<p id="verse">
+</p>
+<pre id="native">
+</pre>
+</aside>
+</main>
+<script>const data=PAYLOAD;
+let active,im=new Image();
+const el=id=>document.getElementById(id);
+
+function show(i){active=data[i];
+el('title').textContent=active.page.score;
+el('scan').src=active.image;
+im.src=active.image;
+el('verse').textContent='Printed top-to-bottom source verse order: '+active.page.review.source_verse_order_top_to_bottom.join(', ');
+el('lines').replaceChildren();
+active.ocr.forEach((r,j)=>{let li=document.createElement('li');
+li.textContent=r.text+' ('+r.confidence.toFixed(2)+')';
+li.onclick=()=>crop(j);
+el('lines').append(li)});
+el('native').textContent=active.targets.map(r=>JSON.stringify(r)).join(String.fromCharCode(10));
+im.onload=()=>crop(0)}
+function crop(i){let r=active.ocr[i];
+if(!r)return;
+let xs=r.box.map(p=>p[0]),ys=r.box.map(p=>p[1]),x=Math.max(0,Math.min(...xs)-15),y=Math.max(0,Math.min(...ys)-15),w=Math.min(im.width-x,Math.max(...xs)-x+15),h=Math.min(im.height-y,Math.max(...ys)-y+15);
+let c=el('crop');
+c.width=w;
+c.height=h;
+c.getContext('2d').drawImage(im,x,y,w,h,0,0,w,h)}
+data.forEach((r,i)=>{let b=document.createElement('button');
+b.textContent=r.page.score;
+b.onclick=()=>show(i);
+document.querySelector('nav').append(b)});
+show(0);
+</script>
