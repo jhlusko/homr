@@ -61,7 +61,8 @@ def score_pair(page, directory):
         "attempted_arms": 2,
         "scorer_sha256": sha(__file__),
         "limitations": (
-            "Previously evaluated diagnostic page; not untouched test or crop token SER. "
+            "Diagnostic page with recorded exposure provenance; "
+            "not untouched test or crop token SER. "
             "Ordered fixed-staff event edits omit onset/barline/notation/lyrics gates. "
             "Float32 local CPU path excludes text/OCR/provider overhead."
         ),

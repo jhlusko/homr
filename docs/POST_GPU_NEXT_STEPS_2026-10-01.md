@@ -1,5 +1,18 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+### 2026-10-05 — parallel real-page and text-fusion work completed
+
+Four additional original music pages are independently reviewed for edition/part/system/measure boundaries: Haydn sq9146376, Glazunov sq7358579, Chaminade IMSLP154086 and Franz IMSLP89797. All 8/8 matched accepted/epoch27 decodes succeeded in 12m49s; tmux jobs and watchers complete, ETA 0. Haydn rhythm edits improve 5→3 while accidentals worsen 3→4; Glazunov and Chaminade tie; Franz event edits worsen 8→9. These remain diagnostic pages with recorded historical/validation exposure, not new untouched tests or token-SER promotion gates. Strict timing scoring finds shared missing inherited 6/4 on Franz; epoch27 handles its later return to 6/4 better. Keep the candidate/rollback decision open.
+
+The six-page calibration-only text audit reproduces e4 direction failure: 0/22 OSSQ and 0/2 Lieder known direction matches at IoU≥0.5. Exact checkpoint/class order matches the pinned Aug30 seven-class model; its selected loss targets Lyrics/Dynamic. This is distinct from the later DirectionText model and is not channel mislabelling. No eligible replacement pin was found. The historical “directions use e4” route is not a qualified capability: keep it disabled pending a capable detector. Dynamics can remain review-only on e4; lyrics use e2.
+
+Conservative next filtering pilot: Lyrics area 200 / Dynamic area 50, with area 4 controls, on broader calibration-only inputs. This is a proposal, not a frozen production threshold. Area200 loses weak dynamic overlap coverage; partial annotations do not authorize treating unmatched boxes as negatives. Detector source-order training indexes were not recovered, so training independence remains unknown. C1 now has 26,662 native lyric targets across 124 calibration scores, preserving verse and source note/onset ownership; scan linkage and transcription/attachment accuracy are still uncertified. Held-out test annotations were not used to fit these diagnostics.
+
+Next priorities: (1) test predicted previous-page meter context with meter-change/strict-onset controls and continue complete final-policy stack qualification; (2) resolve direction-detector capability before three-route fusion calibration, while separately extending conservative lyrics/dynamics calibration; (3) certify native-lyric-to-scan linkage, then quantify transcription, verse ordering and note attachment against independent references. No new training, pin/default change, upload, push or deployment.
+
+Reports: `homr/docs/REAL_PAGE_EXTENSION_2026-10-05.md` and `homr/docs/TEXT_FUSION_QUALIFICATION_2026-10-05.md`. All evidence is local under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/`: `real-page-selection-20261005/`, `real-page-pair-20261005/`, `text-fusion-sweep-expanded-20261005/`, `c1-source-lyrics-20261005/`. Page track 18 tests, text track 56 tests pass; Black/Ruff pass. No compute remains; the loopback review server remains available.
+
+
 ### 2026-10-05 — complete-voice context recovered
 
 All 32 selected witnesses were replayed with available neighboring same-page systems. Current cleanup preserves 22/23 correct raw predictions and repairs 8/9 false-tuplet controls; the rejected guard achieves 23/23 and 7/9 respectively. These note/rest metrics exclude repeated key-signature headers and are diagnostic, not full-page release scores. All nine repair controls have earlier-page predicted meter evidence; three have same-page declarations (one in the target itself). Cross-page meter is not currently carried by HOMR. The review at http://localhost:8765/ includes recovered context and original full-page scan links.

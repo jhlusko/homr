@@ -23,6 +23,10 @@ def run(pages_path, models_path, out):
         "training/onnx/qualify_joint_pages.py",
         "training/onnx/qualify_joint_export.py",
         "homr/main.py",
+        "homr/staff_parsing.py",
+        "homr/cross_staff_rerank.py",
+        "homr/transformer/vocabulary.py",
+        "training/onnx/score_full_page_musicxml.py",
         "homr/music_xml_generator.py",
         "homr/transformer/configs.py",
         "homr/transformer/decoder_inference.py",
@@ -137,7 +141,10 @@ def run(pages_path, models_path, out):
         "paired_successful_pages": sum(r["successful_arms"] == 2 for r in reports),
         "pages": reports,
         "run_identity": identity,
-        "scope": "Previously evaluated OSSQ diagnostic pages; not final release accuracy/latency",
+        "scope": (
+            "Real-source diagnostic pages with manifest exposure provenance; "
+            "not final release accuracy/latency"
+        ),
     }
     write(out / "summary.json", summary)
     write(
