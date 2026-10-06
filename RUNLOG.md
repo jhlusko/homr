@@ -16120,3 +16120,28 @@ Next archived actual-crop mapping/public-v2 manifest recovery; retain evaluation
 scores outside training. Timing trainer preparation can use qualified Lieder data.
 Eleven page-certification tests/lint pass; one CPU thread, jobsdone ETA0.
 Write-up `docs/OSSQ_CROP_ALIGNMENT_INVENTORY_2026-10-05.md`.
+
+### 2026-10-05 — Public-v2 OSSQ historical mappings recovered, qualification pending
+
+User permits all CPU threads; ran eight-worker recovery. Recovered manifest and
+public indexes match pinned six shard entries and 35,226/3,911 train/valid rows,
+76/9 scores without overlap. Existing local valid shard SHA-256 matches public
+pin; all 11,733 indexed members present. Frozen source archive downloaded and
+SHA-256 verified; it has no generated metadata. August backup has source and
+detector metadata for all 85 indexed scores, scanned-system metadata for84.
+
+Historical mappings cover34,510 train and all3,911 valid crops;716 missing
+train mappings belong to sq10675759. Archived pixels present35,222 train and
+3,911 valid. Full public-valid pixel comparison:3,761 equal /150 different.
+Train public pixels unmeasured. Packaged image suffix hashes source path, not
+pixels. Metadata internally retains synthetic pagination after copying to scan
+filenames; only14,458 train /1,711 valid match both coordinate systems. Do not
+interpret those candidate joins as certified physical measure ownership.
+
+Evidence and receipts are local under
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-mapping-recovery-20261005/`.
+Tool `training.onnx.recover_ossq_archive_mapping`; one new audit test passes,
+eleven existing certification tests pass; scoped lint/diff checks pass.
+No corpus/model/runtime pin changed. All jobs complete, ETA0. Next qualify
+source ownership and investigate150 pixel differences; recover/exclude716
+unmapped train windows. Full write-up in the OSSQ crop inventory document.
