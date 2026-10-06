@@ -1,5 +1,12 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The count-mismatch audit matches 65/70 original vocal notes correctly but produces
+four wrong matches when decoded notes are removed in controlled perturbations.
+Geometry-only mutual nearest association is therefore not qualified. See
+`docs/C1_NOTEHEAD_ASSOCIATION_2026-10-05.md`. Next inspect the wrong pairs and add
+source-independent pitch/sequence evidence, then qualify automatic system/verse
+routing. Thirteen focused tests pass; all jobs complete, ETA 0. Fusion stays disabled.
+
 The missing-separator calibration hypothesis now splits `nemÁb` into `nem | Áb`,
 giving 3/3 correct note owners and 2/3 literal texts for the reviewed three-syllable
 region. It changes only that region across 743 cached OCR regions on ten calibration
