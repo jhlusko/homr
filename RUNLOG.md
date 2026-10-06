@@ -16171,3 +16171,30 @@ Details `docs/OSSQ_BORODIN_RECOVERY_2026-10-06.md`. Release sequence updated.
 Next context-bearing review of13 Borodin +150 valid pixel differences, then
 physical scan/source ownership qualification before timing replay. All jobs
 complete, ETA0. Candidate provenance is recovered; not certified scan ownership.
+
+### 2026-10-06 — OSSQ pixel review ready, source accidental disagreements flagged
+
+Built all163 differences (150 validation /13 Borodin train) across67 quartet
+systems: August/public-v2 side-by-side, part names/dimensions, scanned full pages,
+archived systems, canonical MuseScore source previews including every PDF page.
+Numerical source labels restart across movements; unique musical matching resolves
+60 windows, exact neighbour context resolves four repeats, leaving3 unresolved.
+All64 source renders successful. Unresolved original-versus-segment alterations:
+Haydn sq10414906:0008:0001 B-flat/natural in parts1,3; Borodin
+sq10675759:0027:0003 G-sharp/natural in cello; d’Indy sq7354505:0047:0001
+C-natural/sharp in violinII. Six changed crops belong to these systems. Correct
+engraved values not adjudicated; neither source automatically overrides the other.
+Earlier whole-score signature did not include alter, and published label replay
+checked segment-derived token consistency. Those passes do not clear this issue.
+
+Inspected nine representative comparisons: same passages, some existing clipping
+in both builds; not an all163 verdict. Viewer
+http://localhost:8765/ossq-pixel-review-20261006/ explicitly flags the three source
+disagreements. All518 image links HTTP200/nonempty. Four focused source-window
+tests pass, scoped lint/diff checks pass. Build used persistent tmux; now complete,
+ETA0. Persistent review server remains. No public corpus/model/runtime changes.
+Final frozen viewer under
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-pixel-review-20261006-v3/`.
+Details `docs/OSSQ_PIXEL_REVIEW_2026-10-06.md`; release sequence updated.
+Next overall crop review and scan adjudication of3 source disagreements, then
+physical source/scan qualification and timing replay; no per-case votes required.
