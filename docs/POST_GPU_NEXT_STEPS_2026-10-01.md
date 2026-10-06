@@ -1,5 +1,14 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Decoded chord uncertainty is now localized diagnostically: v6 retains all earlier
+attachments and reaches 311/480 exact native lyric targets (64.8%, evaluation-only
+verse mapping). Three added Bizet attachments match native lyric-note identities;
+one has correct text. Chord notes stay unresolved; the chord-dense last system
+still has no accepted associations. Next audit native-referenced literal-text and
+nearest-head errors before deciding further model/runtime changes. See
+`docs/C1_EXPANDED_NATIVE_ATTACHMENTS_2026-10-05.md`. All jobs finished, ETA 0;
+fusion remains disabled.
+
 Equal-x ambiguity localization now preserves every earlier attachment and recovers
 310/480 exact native lyric targets (64.6%, evaluation-only verse mapping).
 The two Franz opening systems are usable outside ambiguous heads; tied heads stay

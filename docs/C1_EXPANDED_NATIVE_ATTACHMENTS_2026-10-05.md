@@ -1,5 +1,9 @@
 # Expanded native lyric attachment diagnostic — 2026-10-05
 
+Latest canonical result is v6: **311/480 (64.8%)**, with evaluation-only verse
+mapping. The v4 baseline and v5 follow-up below remain historical evidence.
+See the chord-localization follow-up at the end for remaining limitations.
+
 The eight expanded calibration pages recover 300 of 480 native lyric targets
 (62.5%) with literal text at the exact exported note's measure, onset, written pitch,
 alteration and duration, under an evaluation-only page-global verse permutation.
@@ -127,3 +131,32 @@ Local result:
 The v4 result below is preserved. Next inspect and localize Bizet chord uncertainty,
 then review remaining native-referenced attachment/text discrepancies. All jobs
 finished, ETA 0; runtime fusion remains disabled.
+
+## Localized decoded chord uncertainty
+
+Canonical v6 intersects forced sequence matches across all within-chord decoded
+orders and all exact-x head orders, capped at 64 combined permutations. Chord
+members themselves are never accepted. All heads and decoded attention points
+remain in geometric competition; there is no retry after removing uncertain
+notes, and native labels never enter prediction.
+
+Every v5 attachment survives. À une Fleur rises from 7/33 to 8/33 exact targets:
+three additional attachments all match exact native lyric-note identities, but
+only one has correct literal text. The other seven pages are unchanged. Total
+recovery is **311/480 (64.8%)**, 392 attachments, 377 exact native lyric-note
+matches. Native verse IDs remain unpredicted; the reported recovery uses the same
+evaluation-only page-global mapping. This is calibration, not a promotion gate.
+
+Its second vocal system retains nine of eleven note associations, with two chord
+notes unresolved. The fourth retains none of thirteen: ten decoded chord notes
+are explicitly withheld and the remaining three are not invariant/geometrically
+accepted. Thus whole-system rejection is replaced by local uncertainty, but the
+chord-dense system remains unrecovered. Next audit literal text and unresolved
+nearest-head cases against native targets; do not assume more permissive chord
+matching or another detector will fix them.
+
+Local report:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-expanded-attachment-score-v6-20261005/report.json`.
+Twenty-one focused association/native-scoring/export-trace tests pass, including
+chord order reversal, tied heads, repeated-note ambiguity and enumeration limits.
+All jobs finished, ETA 0; runtime fusion remains disabled.

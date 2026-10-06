@@ -4,6 +4,7 @@ import pytest
 
 from training.onnx.lyric_notehead_association import (
     associate_x,
+    forced_pairs_outside_chords,
     forced_pairs_with_x_ties,
     forced_sequence_pairs,
     pitch_staff_position,
@@ -27,6 +28,27 @@ def test_tied_order_enumeration_fails_closed_at_limit():
         forced_pairs_with_x_ties([1], [1] * 5, [10] * 5)
     with pytest.raises(ValueError, match="ordered"):
         forced_pairs_with_x_ties([1], [1, 2], [20, 10])
+
+
+def test_chord_members_unresolved_but_surrounding_notes_preserved():
+    assert forced_pairs_outside_chords([1, 8, 6, 2], [1, 6, 8, 2], [10, 20, 21, 30], [[1, 2]]) == [
+        (0, 0),
+        (3, 3),
+    ]
+    assert forced_pairs_outside_chords([1, 8, 6, 2], [1, 6, 8, 2], [10, 20, 20, 30], [[1, 2]]) == [
+        (0, 0),
+        (3, 3),
+    ]
+
+
+def test_chord_order_dependent_repeated_notes_are_not_certified():
+    assert forced_pairs_outside_chords([1, 2, 1], [2, 1], [10, 20], [[0, 1]]) == []
+    with pytest.raises(ValueError, match="enumeration limit"):
+        forced_pairs_outside_chords(
+            list(range(5)), list(range(5)), list(range(5)), [list(range(5))]
+        )
+    with pytest.raises(ValueError, match="disjoint"):
+        forced_pairs_outside_chords([1, 2, 3], [1, 2, 3], [10, 20, 30], [[0, 1], [1, 2]])
 
 
 def match(a, b):

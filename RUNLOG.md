@@ -15948,3 +15948,16 @@ without native lyric-note identity. No production qualification claimed.
 Result: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-expanded-attachment-score-v5-20261005/report.json`.
 Next inspect/localize the two Bizet decoded vocal-chord systems, then remaining
 native-referenced text/attachment errors. Runtime fusion off. All jobs done, ETA 0.
+## 2026-10-05 — Localize decoded Bizet chord uncertainty
+
+Diagnostic association intersects forced pairs over all decoded chord orders and
+exact-x head orders, with a combined maximum of 64 permutations. Chord members
+are always withheld; all heads and attention points remain in geometry competition.
+Native labels enter evaluation only. v6 preserves every v5 attachment; À une Fleur
+gains three attachments with exact native lyric-note identities, one correct literal
+target. Seven other pages unchanged. Recovery 311/480 (64.8%, oracle page-global
+verse mapping), 392 attachments, 377 exact native lyric-note matches. Second vocal
+system retains nine of eleven associations; chord-dense fourth retains none of
+thirteen (ten are chord notes). Literal-text and unresolved nearest-head audit next.
+Local result `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-expanded-attachment-score-v6-20261005/report.json`.
+Twenty-one focused tests and scoped lint pass. All jobs done, ETA 0; fusion off.

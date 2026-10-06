@@ -111,11 +111,53 @@ def forced_sequence_pairs(decoded_positions, detected_positions):
     return forced
 
 
-def reject_sequence_ambiguity(result, decoded_positions, detected_positions, *, detected_x=None):
+def forced_pairs_outside_chords(decoded_positions, detected_positions, detected_x, chord_groups):
+    """Keep only non-chord matches invariant to all decoded chord orders."""
+    groups = []
+    chord_indices = set()
+    starts = {group[0]: group for group in chord_groups}
+    index = 0
+    while index < len(decoded_positions):
+        group = starts.get(index, [index])
+        if group != list(range(index, index + len(group))):
+            raise ValueError("Chord indices must be contiguous")
+        groups.append(group)
+        if len(group) > 1:
+            chord_indices.update(group)
+        index += len(group)
+    if sorted(i for group in chord_groups for i in group) != sorted(chord_indices):
+        raise ValueError("Chord groups must be disjoint and contain at least two notes")
+    count = math.prod(math.factorial(len(group)) for group in groups)
+    if count > 64:
+        raise ValueError("Chord ordering exceeds conservative enumeration limit")
+    common = None
+    for choices in product(*(permutations(group) for group in groups)):
+        order = [i for choice in choices for i in choice]
+        pairs = {
+            (order[i], j)
+            for i, j in forced_pairs_with_x_ties(
+                [decoded_positions[k] for k in order],
+                detected_positions,
+                detected_x,
+                limit=64 // count,
+            )
+            if order[i] not in chord_indices
+        }
+        common = pairs if common is None else common & pairs
+    return sorted(common or [])
+
+
+def reject_sequence_ambiguity(
+    result, decoded_positions, detected_positions, *, detected_x=None, chord_groups=None
+):
     forced = set(
-        forced_sequence_pairs(decoded_positions, detected_positions)
-        if detected_x is None
-        else forced_pairs_with_x_ties(decoded_positions, detected_positions, detected_x)
+        forced_pairs_outside_chords(decoded_positions, detected_positions, detected_x, chord_groups)
+        if chord_groups
+        else (
+            forced_sequence_pairs(decoded_positions, detected_positions)
+            if detected_x is None
+            else forced_pairs_with_x_ties(decoded_positions, detected_positions, detected_x)
+        )
     )
     rejected = [(i, j) for i, j in result["pairs"] if (i, j) not in forced]
     return {

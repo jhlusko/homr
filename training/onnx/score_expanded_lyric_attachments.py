@@ -89,11 +89,16 @@ def predict(folder, selected, positioned, *, trace_export=False):
             if any(i not in export_indices for i, _ in indexed):
                 raise ValueError("No unique final-token to exported-note provenance")
             token_indices = [row["token_index"] for _, row in indexed]
-            if any(
-                token["rhythm"] == "chord"
-                for token in voices[0][min(token_indices) : max(token_indices) + 1]
-            ):
-                raise ValueError("Decoded vocal chord ownership is unsupported")
+            chord_groups = []
+            for i in range(1, len(token_indices)):
+                if any(
+                    token["rhythm"] == "chord"
+                    for token in voices[0][token_indices[i - 1] + 1 : token_indices[i]]
+                ):
+                    if chord_groups and chord_groups[-1][-1] == i - 1:
+                        chord_groups[-1].append(i)
+                    else:
+                        chord_groups.append([i - 1, i])
             if any(row["page_coordinate"] is None for _, row in indexed):
                 raise ValueError("Missing final-note page coordinate")
             heads = interpolate_notehead_positions(transform)
@@ -119,6 +124,7 @@ def predict(folder, selected, positioned, *, trace_export=False):
                 decoded_positions,
                 detected_positions,
                 detected_x=head_xs,
+                chord_groups=chord_groups,
             )
             association[call] = {
                 "head_xs": head_xs,
@@ -128,6 +134,7 @@ def predict(folder, selected, positioned, *, trace_export=False):
                 status="ok",
                 associated=len(matched["pairs"]),
                 unresolved_final=len(matched["unresolved_decoded"]),
+                unresolved_chord_notes=sum(len(group) for group in chord_groups),
             )
         except (ValueError, TypeError) as error:
             status.update(status="unresolved", reason=str(error))
