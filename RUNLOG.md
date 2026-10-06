@@ -16097,3 +16097,7 @@ false attachment and abstention separately. Review page:
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-semantic-controls-20261005/`.
 Write-up: `docs/C1_SEMANTIC_ROLE_CONTROLS_2026-10-05.md`. No model, pin, runtime
 fusion or production change. One-thread diagnostic complete, ETA0.
+User review confirms all six displayed controls are direction text: `legato`,
+`ben legato e cantando`, `tempo.`, `a tempo.`, `Revenez au 1er mouv!`, and
+`tremolando.`. This confirms the in-row false-attachment case, but is positive
+direction evidence only; a matched true-lyric set is still needed for precision.
