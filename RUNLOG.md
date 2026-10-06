@@ -16275,3 +16275,27 @@ signatures/failures. See `docs/OSSQ_TRAINING_TIMING_SUPPORT_2026-10-06.md`.
 Next recover explicit source duration metadata for uniquely paired omitted
 segment durations, then prepare resumable frozen-core timing heads. No GPU,
 publication/deployment/pin changes.
+
+
+## 2026-10-06 — Canonical OSSQ full-measure rest timing recovery
+
+Recovered295 omitted source-grounded rest durations in102 crops; qualified
+unchanged Borodin subset expands238→529 crops with12522 timed events,399
+triplets,1139 rests(322 full-measure). All prior238 crops retained.96 absent
+timing payloads are exactly note_16G grace notes, correctly masked; zero unseen
+classes/conflicts.187 strict refusals remain(107 musical windows,47 token-byte
+differences,20 ambiguous transfers,13 historical pixel differences). No public
+token/notation changes. Rest-only crops lacked sidecars entirely; opt-in recovery
+now handles them through verified source mapping, never non-rest guesses.
+Seventeen tests pass;529 bundle reloads/hash checks verified. Persistent tmux
+job ossq-rest-timing completed exit0. Final packet:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-rest-duration-recovery-20261006-v2/`.
+Control/logs:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-rest-duration-recovery-20261006-control/`.
+Unsuffixed packet is an incomplete first attempt. Combined with unchanged
+Lieder train:140628 elapsed,139186 written,139172 ratio,11278 rest targets.
+Prior OSSQ subsets are replaced, not added; no validation leakage or class
+expansion. See docs/OSSQ_REST_DURATION_RECOVERY_2026-10-06.md.
+Next prepare resumable frozen-core timing-head features/training and benchmark
+local extraction before estimating a full run. No GPU training, publication,
+deployment or corpus/model pin changes.

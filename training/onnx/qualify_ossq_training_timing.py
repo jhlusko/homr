@@ -9,6 +9,8 @@ from fractions import Fraction
 from pathlib import Path
 
 from training.architecture.transformer.exact_timing_targets import HEADS, timing_values
+from training.omr_datasets.exact_timing_labels import extract_exact_timing
+from training.omr_datasets.exact_timing_sidecar import FILE_SCHEMA
 from training.omr_datasets.notation_sidecar import attach_sidecar
 from training.onnx.bind_ossq_repaired_timing import part_timings, semantic_key, timing_map
 from training.onnx.build_ossq_pixel_review import measure_signature
@@ -43,10 +45,86 @@ def combine_support(lieder, group, classes):
     return combined, unsupported
 
 
+def restore_timing_map(source, segment):
+    """Fill only omitted whole-measure-rest timing, using paired source notes."""
+    source_divisions, segment_divisions = None, None
+    mapping, restored = {}, []
+    for measure_index, (truth, crop) in enumerate(
+        zip(source.findall("measure"), segment.findall("measure"), strict=True)
+    ):
+        if measure_signature(truth) != measure_signature(crop):
+            raise ValueError("Restoration changes musical anchors")
+        source_divisions = truth.findtext("attributes/divisions", source_divisions)
+        segment_divisions = crop.findtext("attributes/divisions", segment_divisions)
+        true_notes = [n for n in truth.findall("note") if n.get("print-object") != "no"]
+        crop_notes = [n for n in crop.findall("note") if n.get("print-object") != "no"]
+        for note_index, (a, b) in enumerate(zip(true_notes, crop_notes, strict=True)):
+            if a.find("grace") is not None:
+                canonical, key = None, None
+            else:
+                canonical = extract_exact_timing(a, source_divisions)
+                if b.find("duration") is None:
+                    if (
+                        b.find("rest") is None
+                        or b.find("rest").get("measure") != "yes"
+                        or not canonical["full_measure_rest"]
+                    ):
+                        raise ValueError("Omitted duration is not a paired full-measure rest")
+                    key = None
+                    restored.append(
+                        dict(
+                            measure=measure_index,
+                            note=note_index,
+                            reason="omitted full-measure rest duration",
+                            canonical=canonical,
+                        )
+                    )
+                else:
+                    # Never infer a grid for explicit segment duration ticks.
+                    archived = extract_exact_timing(b, segment_divisions)
+                    if semantic_key(archived) != semantic_key(canonical):
+                        raise ValueError(
+                            "Canonical and segment timing differ beyond grid rescaling"
+                        )
+                    key = semantic_key(archived)
+            if key in mapping and mapping[key] != canonical:
+                raise ValueError(
+                    "Ambiguous timing transfer, including missing-duration/grace pairing"
+                )
+            mapping[key] = canonical
+    return mapping, restored
+
+
+def replay_payload(replay, allow_missing_rests):
+    path = Path(str(replay) + ".timing.json")
+    if path.exists():
+        payload = json.loads(path.read_text())
+        if payload["tokenSha256"] != sha(replay):
+            raise ValueError("Replay timing hash mismatch")
+        return payload
+    symbols = [s for s in read_tokens(replay) if s.rhythm.startswith(("note", "rest"))]
+    if (
+        not allow_missing_rests
+        or not symbols
+        or any(not s.rhythm.startswith("rest_") for s in symbols)
+    ):
+        raise ValueError("Missing replay timing sidecar for non-rest crop")
+    # The writer intentionally omitted this file when all durations were absent.
+    # Actual labels are supplied only by the separately verified source map.
+    return dict(
+        schemaVersion=FILE_SCHEMA,
+        tokenSha256=sha(replay),
+        symbols=[
+            dict(identity=[s.rhythm, s.pitch, s.lift, s.position], timing=None) for s in symbols
+        ],
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("recovery", "target-manifest", "lieder-support", "out"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--restore-missing-rests", action="store_true")
     args = parser.parse_args()
     manifest = json.loads(args.target_manifest.read_text())
     lieder = json.loads(args.lieder_support.read_text())
@@ -106,26 +184,34 @@ def main():
                     segment = ET.parse(segment_path).getroot()
                     bounds = resolve_indexed_window(signatures, segment)
                     canonical = preview_window(root, *bounds)
-                    maps = [
-                        timing_map(part_timings(a), part_timings(b))
-                        for a, b in zip(
-                            canonical.findall("part"), segment.findall("part"), strict=True
-                        )
-                    ]
-                    cache[segment_path] = (bounds, maps)
+                    pairs = list(
+                        zip(canonical.findall("part"), segment.findall("part"), strict=True)
+                    )
+                    if args.restore_missing_rests:
+                        results = [restore_timing_map(a, b) for a, b in pairs]
+                        maps = [result[0] for result in results]
+                        restorations = [result[1] for result in results]
+                    else:
+                        maps = [timing_map(part_timings(a), part_timings(b)) for a, b in pairs]
+                        restorations = [[] for _ in pairs]
+                    cache[segment_path] = (bounds, maps, restorations)
                 except (ValueError, TypeError, KeyError) as error:
                     cache[segment_path] = str(error)
             if isinstance(cache[segment_path], str):
                 raise ValueError(cache[segment_path])
-            bounds, maps = cache[segment_path]
+            bounds, maps, restorations = cache[segment_path]
             replay = args.recovery / "borodin-token-replay" / label.name
             if sha(label) != sha(replay):
                 raise ValueError("Public/replayed token bytes differ")
             payload_path = Path(str(replay) + ".timing.json")
-            payload = json.loads(payload_path.read_text())
-            if payload["tokenSha256"] != sha(replay):
-                raise ValueError("Replay timing hash mismatch")
+            payload = replay_payload(replay, args.restore_missing_rests)
             for row in payload["symbols"]:
+                if (
+                    row["timing"] is None
+                    and maps[case["part"] - 1].get(None) is not None
+                    and not row["identity"][0].startswith("rest_")
+                ):
+                    raise ValueError("Missing-duration transfer targets a non-rest token")
                 row["timing"] = maps[case["part"] - 1][semantic_key(row["timing"])]
             target = bundles / label.name
             shutil.copyfile(label, target)
@@ -166,12 +252,13 @@ def main():
                 segment=str(segment_path),
                 segment_sha256=sha(segment_path),
                 token_sha256=sha(label),
-                replay_timing_sha256=sha(payload_path),
+                replay_timing_sha256=sha(payload_path) if payload_path.exists() else None,
                 timing_sha256=sha(timing_path),
                 notation_sha256=sha(notation),
                 image=str(image),
                 image_sha256=sha(image),
                 historical_image=str(old_image),
+                restored_source_notes=restorations[case["part"] - 1],
             )
         )
     combined, unsupported = combine_support(lieder, group, manifest["classes"])
@@ -195,6 +282,7 @@ def main():
         train_index_sha256=sha(args.recovery / "index_train.txt"),
         valid_index_sha256=sha(args.recovery / "index_valid.txt"),
         code_sha256=sha(Path(__file__)),
+        restore_missing_rests=args.restore_missing_rests,
         limitation="One OSSQ score; unique canonical label windows and identical historical/public pixels. "
         "Historical scan alignment remains distinct from independent boundary certification. "
         "No repaired tranche added to these counts; Lieder changed crops excluded; classes frozen.",
