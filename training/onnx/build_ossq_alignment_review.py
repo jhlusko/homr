@@ -18,9 +18,9 @@ def main():
     for index, page in enumerate(selection):
         folder = args.selection.parent / page["score"]
         scan = args.out / f"{index:02}-{page['score']}-scan.png"
-        preview = args.out / f"{index:02}-{page['score']}-source.png"
+        preview = args.out / f"{index:02}-{page['score']}-source-full.png"
         shutil.copyfile(page["image"], scan)
-        shutil.copyfile(folder / "preview.png", preview)
+        shutil.copyfile(folder / "source-full.png", preview)
         counts = [s["end_measure"] - s["start_measure"] for s in page["systems"]]
         systems = ", ".join(str(x) for x in counts)
         cards.append(
