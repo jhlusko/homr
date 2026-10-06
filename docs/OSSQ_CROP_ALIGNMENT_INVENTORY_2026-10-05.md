@@ -102,3 +102,21 @@ All recovery jobs finished. One audit regression test verifies full pixel
 comparison (including deliberate mismatch) and that candidates never become
 certified; the eleven existing page-certification tests also pass. Scoped
 lint passes. No corpus, model or runtime pin changed.
+
+The missing score is **Borodin, String Quartet No. 2 (`sq10675759`)**.
+August log `align_systems_lmxe_scanned_2026-08-16-10:28:13.log` records
+`sq10675759: 179 vs. 178`: 179 symbolic segments versus 178 eligible scan systems.
+The old alignment code skips the entire score on this count mismatch, explaining
+the absent scanned-system metadata. The public-v2 rebuild subsequently includes
+716 training crops (179 × four parts). This was an alignment-count exclusion,
+not a musical-quality decision; the exact subsequent recovery of the missing
+scan system has not been verified.
+
+**2026-10-06 follow-up:** traced and reconstructed this recovery. All 20 public
+page-14 crops exactly match August crops with system numbering shifted by one;
+all 716 labels replay with identical timed pitch/rhythm/accidental columns.
+703 crop PNGs match after renumbering; 13 differ. Candidate mappings are
+recovered, but physical scan ownership remains a separate qualification gate.
+The 150 validation differences are real decoded-pixel differences, including
+124 dimension changes. Full evidence and limitations:
+`docs/OSSQ_BORODIN_RECOVERY_2026-10-06.md`.

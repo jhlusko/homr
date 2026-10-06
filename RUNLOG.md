@@ -16145,3 +16145,29 @@ eleven existing certification tests pass; scoped lint/diff checks pass.
 No corpus/model/runtime pin changed. All jobs complete, ETA0. Next qualify
 source ownership and investigate150 pixel differences; recover/exclude716
 unmapped train windows. Full write-up in the OSSQ crop inventory document.
+
+### 2026-10-06 — Borodin mapping recovery and decoded pixel audit
+
+Borodin sq10675759 August exclusion:179 symbolic /178 eligible scan systems.
+Public-v2 restores page14 system numbering: public2–6 match backup1–5, all20
+crops byte-identical. Blank-top detector box confidence0.299797 is below0.30;
+fixed ignore index1 then removed real music. Rebuilt confidence drift is inferred,
+not measured: raw rebuilt detections remain unavailable. Verified public shard0,
+extracted716 crops, reconstructed179 historical source-window candidates.
+Whole-source visible-note signatures match allfour parts (16,816 notes total).
+Label replay succeeds716/716: timed pitch/rhythm/accidental tokens identical;
+664 full files identical,52 differ only in restored barline type. After page14
+renumbering703 PNGs identical /13 different; no archived pixels missing.
+
+Decoded audit of150 validation PNG differences:0 encoding-only,124 dimensions
+changed /26 same dimensions. Largest width delta10px; height delta2px. One
+largest-size-change visual control shows same passage, not an all-case verdict.
+Full pixel input hashes checked by reproducible audit tool;2 audit tests pass,
+scoped lint/diff checks pass. No public corpus/model/runtime pins changed.
+
+Local evidence:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-mapping-recovery-20261005/`.
+Details `docs/OSSQ_BORODIN_RECOVERY_2026-10-06.md`. Release sequence updated.
+Next context-bearing review of13 Borodin +150 valid pixel differences, then
+physical scan/source ownership qualification before timing replay. All jobs
+complete, ETA0. Candidate provenance is recovered; not certified scan ownership.
