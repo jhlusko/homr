@@ -1,5 +1,12 @@
 # Fixed lyric recovery validation — 2026-10-05
 
+Post-validation context follow-up now recovers32/42 Chaminade targets; corrected
+four-page coverage gives50→82/145, or83 with row recovery. Source-free part/prefix
+identification and missing physical routing boundaries are diagnostic only; the
+original runtime still drops the final piano staff. Eight prior calibration pages
+retain identical predictions with the refined selector. See
+`docs/C1_VOCAL_PAGE_CONTEXT_2026-10-05.md` for evidence and runtime priorities.
+
 **Completed:** frozen baseline 50/133 (37.6%), candidate 51/133 (38.3%): one exact
 target gained, none lost. All baseline attachments survive. Attachments increase
 61 to 64; outputs without exact native lyric-note identity stay at one. All four

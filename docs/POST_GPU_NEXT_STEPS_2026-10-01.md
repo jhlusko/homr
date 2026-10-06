@@ -1,5 +1,14 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Vocal/page context diagnostic recovers32/42 Chaminade lyrics; equal corrected
+reference coverage improves50→82/145, or83 with row recovery. Original eight-page
+predictions are unchanged with refined recurring-row selection. Runtime still
+drops a final piano grandstaff to fit a periodic layout and omits vocal intro
+measure context. Next repair system grouping/voice identity and absent-vocal
+measure export, then paired real Lieder/OSSQ qualification before lyric wiring.
+See `docs/C1_VOCAL_PAGE_CONTEXT_2026-10-05.md`. Twenty-two tests/lint pass;
+jobs done, ETA0; semantic/verse gates remain and fusion stays off.
+
 Reserved fixed-rule validation completed: 50→51/133 exact frozen-window targets,
 one gain, zero losses, no added outputs without native lyric-note identity. It
 exposes a larger context issue: Chaminade's vocal part is second after a piano-only

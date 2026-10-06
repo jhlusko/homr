@@ -16037,3 +16037,23 @@ complete-page native boundary certification. Inline a tempo stillpasses geometry
 Local comparison `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-fixed-rule-validation-20261005/comparison.json`;
 part diagnostic sibling `chaminade-part-identity-audit.json`. Nine focused tests/lint
 pass. Jobs/watchersdone, ETA0; fusionoff. Not formal test or full-page release gate.
+## 2026-10-05 — Source-free vocal/prefix context and complete staff boundaries
+
+Diagnostic selects text-supported five-line voice (Chaminade secondpart) and
+infers+2measure piano introduction from traced note ownership in preceding grandstaff.
+Missing/gapped/non-piano prefix evidence fails closed. Original XML unchanged.
+Segmentation-only replay44.0s retains8 physical staffs versus6 decoded; log explicitly
+trims last1 preparedstaff in periodic layout (a grandstaff/two physical piano staffs).
+Missing staffs become routing-only boundaries, no invented decoded notes/voices.
+Part/prefix alone21 exact targets; complete boundary context32/42 Chaminade targets.
+Native page coverage manually corrected1–5→1–8/30→42targets, unblinded calibration;
+equal-reference comparison50→82/145, or83 with row recovery. Original133-target
+validation remains preserved. Initial unique-only selector abstained on Tanzlied's
+isolated pedal-star OCR 米; recurring row support resolves that competitor without
+word/language filtering. All8 old calibration prediction/unresolved lists unchanged.
+Next runtime grouping/voice identity repair for piano-only introductions, preserve
+missing-vocal measure context on export, then paired real Lieder/OSSQ qualification.
+Runtime still loses dropped piano music; diagnostic metadata is not a runtime fix.
+Local comparison `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-fixed-rule-validation-20261005/complete-context-comparison.json`;
+regression `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-vocal-context-regression-audit-v2-20261005/report.json`.
+Twenty-two focused tests/lint pass. All jobs done, ETA0; fusionoff.

@@ -6,7 +6,9 @@ import math
 from pathlib import Path
 from statistics import median
 
+from training.onnx.lyric_complete_staff_context import complete_routing_transforms
 from training.onnx.lyric_row_routing import lines_at, physical_staffs, route_rows
+from training.onnx.lyric_vocal_context import select_vocal_voice
 from training.onnx.qualify_joint_export import sha, write
 
 
@@ -14,10 +16,12 @@ def box_key(row):
     return tuple(tuple(point) for point in row["box"])
 
 
-def vocal_calls_from_final(final):
+def vocal_calls_from_final(final, voice=0):
     """Untraced final notes cannot establish staff ownership."""
     return {
-        r["staff_call"] for r in final if r["voice_index"] == 0 and r.get("staff_call") is not None
+        r["staff_call"]
+        for r in final
+        if r["voice_index"] == voice and r.get("staff_call") is not None
     }
 
 
@@ -114,6 +118,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ["pages", "selected", "all-ocr", "decode", "out"]:
         parser.add_argument(f"--{name}", type=Path, required=True)
+    parser.add_argument("--vocal-context", action="store_true")
+    parser.add_argument("--physical-context", type=Path)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
     pages = json.loads(args.pages.read_text())
@@ -131,7 +137,26 @@ def main():
             r["image_sha256"] != page["image_sha256"] for r in [selected, full, identity["page"]]
         ):
             raise ValueError("Page image hashes differ")
-        calls = vocal_calls_from_final(final)
+        if args.physical_context:
+            raw_folder = args.physical_context / f"page-{index}"
+            route_path = raw_folder / "routing.json"
+            if json.loads(route_path.read_text())["page"]["image_sha256"] != page["image_sha256"]:
+                raise ValueError("Physical boundary context image differs")
+            raw_path = raw_folder / "staff-transforms.json"
+            transforms, _ = complete_routing_transforms(
+                transforms, json.loads(raw_path.read_text())
+            )
+            paths.extend([route_path, raw_path])
+        voice = (
+            select_vocal_voice(
+                final,
+                transforms,
+                route_rows(selected["all_page_text"], transforms, recover_row_neighbors=True),
+            )["voice_index"]
+            if args.vocal_context
+            else 0
+        )
+        calls = vocal_calls_from_final(final, voice)
         rows, evidence = recover(
             selected["all_page_text"], full["all_page_text"], transforms, calls
         )

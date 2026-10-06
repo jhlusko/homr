@@ -10,6 +10,7 @@ from pathlib import Path
 from homr.transformer.vocabulary import EncodedSymbol
 from training.onnx.audit_full_page_references import read_mxl
 from training.onnx.link_lyric_anchor_sequences import source_notes
+from training.onnx.lyric_complete_staff_context import complete_routing_transforms
 from training.onnx.lyric_notehead_association import (
     associate_x,
     pitch_staff_position,
@@ -18,6 +19,7 @@ from training.onnx.lyric_notehead_association import (
 )
 from training.onnx.lyric_row_routing import route_rows
 from training.onnx.lyric_staff_pitch_geometry import interpolate_notehead_positions
+from training.onnx.lyric_vocal_context import leading_measure_context, select_vocal_voice
 from training.onnx.native_lyric_attachment_scoring import score_native_outputs
 from training.onnx.qualify_joint_export import sha, write
 from training.onnx.trace_cached_lyric_export import trace_cached_export
@@ -35,16 +37,29 @@ def note_events(part):
     return events
 
 
-def predict(folder, selected, positioned, *, trace_export=False):
+def predict(
+    folder, selected, positioned, *, trace_export=False, vocal_context=False, raw_staffs=None
+):
     """No native inputs. First runtime voice is an explicit diagnostic assumption."""
     transforms = json.loads((folder / "staff-transforms.json").read_text())
     voices = json.loads((folder / "decoded-staves.json").read_text())
-    final = [
-        r
-        for r in json.loads((folder / "final-note-anchors.json").read_text())
-        if r["voice_index"] == 0
+    all_final = json.loads((folder / "final-note-anchors.json").read_text())
+    rows = selected["all_page_text"]
+    routing_transforms, boundary_context = (
+        complete_routing_transforms(transforms, raw_staffs)
+        if raw_staffs is not None
+        else (transforms, None)
+    )
+    routing = route_rows(rows, routing_transforms, recover_row_neighbors=True)
+    context = (
+        select_vocal_voice(all_final, transforms, routing) if vocal_context else {"voice_index": 0}
+    )
+    voice = context["voice_index"]
+    final = [r for r in all_final if r["voice_index"] == voice]
+    exported_by_part = [
+        note_events(part) for part in ET.parse(folder / "page.musicxml").getroot().findall("part")
     ]
-    exported = note_events(ET.parse(folder / "page.musicxml").getroot().findall("part")[0])
+    exported = exported_by_part[voice]
     # Check the complete pitched-note sequence before linking by index.
     xml_equal = len(final) == len(exported) and all(
         r["pitch"] == e["pitch"]
@@ -58,20 +73,28 @@ def predict(folder, selected, positioned, *, trace_export=False):
         export_trace = trace_cached_export(folder)
         origins = {}
         for record in export_trace["records"]:
-            if record["part_index"] == 0 and record["origin"] is not None:
+            if record["part_index"] == voice and record["origin"] is not None:
                 origins.setdefault(tuple(record["origin"]), []).append(record["exported_index"])
         export_indices = {
-            i: origins[(0, row["token_index"])][0]
+            i: origins[(voice, row["token_index"])][0]
             for i, row in enumerate(final)
-            if len(origins.get((0, row["token_index"]), [])) == 1
+            if len(origins.get((voice, row["token_index"]), [])) == 1
         }
-    rows = selected["all_page_text"]
-    routing = route_rows(rows, transforms, recover_row_neighbors=True)
+    if vocal_context:
+        if export_trace is None:
+            raise ValueError("Vocal context requires exact export tracing")
+        context.update(
+            leading_measure_context(voice, all_final, transforms, export_trace, exported_by_part)
+        )
+        exported = [
+            {**event, "physical_measure": event["physical_measure"] + context["measure_offset"]}
+            for event in exported
+        ]
     positions_by_box = {tuple(tuple(p) for p in row["box"]): row for row in positioned["rows"]}
     predictions, unresolved, systems, attachment_trace = [], [], [], []
     clef = None
     clefs_at = {}
-    for index, token in enumerate(voices[0]):
+    for index, token in enumerate(voices[voice]):
         if token["rhythm"].startswith("clef_"):
             clef = token["rhythm"]
         clefs_at[index] = clef
@@ -93,7 +116,7 @@ def predict(folder, selected, positioned, *, trace_export=False):
             for i in range(1, len(token_indices)):
                 if any(
                     token["rhythm"] == "chord"
-                    for token in voices[0][token_indices[i - 1] + 1 : token_indices[i]]
+                    for token in voices[voice][token_indices[i - 1] + 1 : token_indices[i]]
                 ):
                     if chord_groups and chord_groups[-1][-1] == i - 1:
                         chord_groups[-1].append(i)
@@ -206,7 +229,13 @@ def predict(folder, selected, positioned, *, trace_export=False):
         "systems": systems,
         "final_xml_pitch_duration_sequence_exact": xml_equal,
         "export_trace": export_trace,
-        "vocal_voice_assumption": "First runtime voice; not general instrument identification",
+        "vocal_voice_assumption": (
+            "Unique text-supported five-line voice; semantic role unverified"
+            if vocal_context
+            else "First runtime voice; not general instrument identification"
+        ),
+        "vocal_context": context,
+        "complete_staff_boundary_context": boundary_context,
         "selection": selected.get("selection", "all_cached_page_text_control"),
         "native_input_used": False,
         "attachment_trace": attachment_trace,
@@ -221,6 +250,8 @@ def main():
     parser.add_argument("--positions", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--trace-export", action="store_true")
+    parser.add_argument("--vocal-context", action="store_true")
+    parser.add_argument("--physical-context", type=Path)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
     root = Path(__file__).resolve().parents[3]
@@ -249,7 +280,23 @@ def main():
             or positioned["page"]["image_sha256"] != page["image_sha256"]
         ):
             raise ValueError("OCR/evaluation images differ")
-        prediction = predict(folder, selected, positioned, trace_export=args.trace_export)
+        raw_staffs = None
+        if args.physical_context:
+            raw_folder = args.physical_context / f"page-{index}"
+            route_path = raw_folder / "routing.json"
+            if json.loads(route_path.read_text())["page"]["image_sha256"] != page["image_sha256"]:
+                raise ValueError("Physical boundary context image differs")
+            raw_path = raw_folder / "staff-transforms.json"
+            raw_staffs = json.loads(raw_path.read_text())
+            hashes.update({str(p): sha(p) for p in [route_path, raw_path]})
+        prediction = predict(
+            folder,
+            selected,
+            positioned,
+            trace_export=args.trace_export,
+            vocal_context=args.vocal_context,
+            raw_staffs=raw_staffs,
+        )
         write(args.out / f"{page['score']}-predictions.json", prediction)
         source = root / page["source"]["source"]
         if sha(source) != page["source"]["source_sha256"]:
@@ -302,6 +349,8 @@ def main():
         Path(__file__).with_name("lyric_staff_pitch_geometry.py"),
         Path(__file__).with_name("lyric_row_routing.py"),
         Path(__file__).with_name("trace_cached_lyric_export.py"),
+        Path(__file__).with_name("lyric_vocal_context.py"),
+        Path(__file__).with_name("lyric_complete_staff_context.py"),
     ]
     report = {
         "pages": results,
