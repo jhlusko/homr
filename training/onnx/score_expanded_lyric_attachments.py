@@ -97,8 +97,6 @@ def predict(folder, selected, positioned, *, trace_export=False):
             if any(row["page_coordinate"] is None for _, row in indexed):
                 raise ValueError("Missing final-note page coordinate")
             heads = interpolate_notehead_positions(transform)
-            if any(a["center"][0] >= b["center"][0] for a, b in zip(heads, heads[1:])):
-                raise ValueError("Chord/equal-x head order is unsupported")
             decoded_positions = [
                 pitch_staff_position(row["pitch"], clefs_at[row["token_index"]] or "unknown")
                 for _, row in indexed
@@ -120,6 +118,7 @@ def predict(folder, selected, positioned, *, trace_export=False):
                 ),
                 decoded_positions,
                 detected_positions,
+                detected_x=head_xs,
             )
             association[call] = {
                 "head_xs": head_xs,

@@ -1,5 +1,14 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Equal-x ambiguity localization now preserves every earlier attachment and recovers
+310/480 exact native lyric targets (64.6%, evaluation-only verse mapping).
+The two Franz opening systems are usable outside ambiguous heads; tied heads stay
+unresolved and compete for syllables. Two additional attachments lack an exact
+native lyric-note identity. Canonical v5 evidence and limitations are in
+`docs/C1_EXPANDED_NATIVE_ATTACHMENTS_2026-10-05.md`. Next inspect/localize the two
+Bizet vocal-chord systems, then remaining native-referenced text/attachment errors.
+All jobs finished, ETA 0; runtime fusion stays disabled.
+
 Expanded native-output attachment scoring is complete: 300/480 exact joint targets
 (62.5%, evaluation-only page-global verse permutation). Eight decodes finish in
 433.9s and exact cached XML replay restores triplet/chord export provenance.

@@ -15935,3 +15935,16 @@ Verified eight image/source hashes and existing native page/system measure windo
 Initial Bizet scores were blocked by cached-token versus XML order/duration differences. Traced actual cached post-decode/export calls with token metadata outside musical identity: all eight replay XML files exactly. Rose d'Amour's six triplet durations and À une Fleur's reordered chords now retain export ownership without native injection or a new decode. Equal-x head ambiguity still blocks one system on each dense Franz opening; vocal chords block two À une Fleur systems. Unresolved candidate syllables: 66 physical-row, 34 unsupported/nonvocal, 34 nearest heads without accepted decoded notes. These include non-lyric candidate text and are not certified detector misses.
 
 Canonical local result `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-expanded-attachment-score-v4-20261005/report.json`; inputs/decode/watcher paths and limitations in `docs/C1_EXPANDED_NATIVE_ATTACHMENTS_2026-10-05.md`. Earlier partial/v1/v2/v3 evidence preserved. Thirty focused tests and scoped lint pass. Updated release priorities: localize extra/equal-x-head uncertainty in Franz, then Bizet chord ownership and native-referenced text/nearest-note error review. All compute/watchers complete, ETA 0. Runtime producer/fusion remains disabled.
+## 2026-10-05 — Localize equal-x head uncertainty in expanded lyrics
+
+Diagnostic matching now intersects forced sequence pairs across every ordering
+of exact-x head groups (maximum 64 orders, otherwise fail closed). Tied heads
+remain unresolved and compete for syllables; no reference labels enter matching.
+Cached v5 rescoring preserves every v4 attachment, with six pages unchanged.
+Jagdlied rises 44 to 46 exact targets; Schlummerlied 49 to 57: total 310/480
+(64.6%, evaluation-only verse permutation). 389 attachments, 374 on native lyric
+note identities; 19 additions include 10 literal targets and two attachments
+without native lyric-note identity. No production qualification claimed.
+Result: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-expanded-attachment-score-v5-20261005/report.json`.
+Next inspect/localize the two Bizet decoded vocal-chord systems, then remaining
+native-referenced text/attachment errors. Runtime fusion off. All jobs done, ETA 0.

@@ -2,6 +2,43 @@
 
 import math
 import re
+from itertools import permutations, product
+
+
+def forced_pairs_with_x_ties(decoded_positions, detected_positions, detected_x, *, limit=64):
+    """Intersect forced matches across every ordering of exact-x groups.
+
+    Tied heads themselves stay unresolved, even if their pitches differ.
+    Bound enumeration and fail closed rather than select an arbitrary order.
+    """
+    if len(detected_positions) != len(detected_x):
+        raise ValueError("Head positions and coordinates differ in length")
+    if any(not math.isfinite(x) for x in detected_x) or any(
+        a > b for a, b in zip(detected_x, detected_x[1:])
+    ):
+        raise ValueError("Head coordinates must be finite and ordered")
+    groups = []
+    for index, x in enumerate(detected_x):
+        if groups and detected_x[groups[-1][0]] == x:
+            groups[-1].append(index)
+        else:
+            groups.append([index])
+    count = math.prod(math.factorial(len(group)) for group in groups)
+    if count > limit:
+        raise ValueError("Equal-x ordering exceeds conservative enumeration limit")
+    tied = {index for group in groups if len(group) > 1 for index in group}
+    common = None
+    for choices in product(*(permutations(group) for group in groups)):
+        order = [index for choice in choices for index in choice]
+        pairs = {
+            (i, order[j])
+            for i, j in forced_sequence_pairs(
+                decoded_positions, [detected_positions[index] for index in order]
+            )
+            if order[j] not in tied
+        }
+        common = pairs if common is None else common & pairs
+    return sorted(common or [])
 
 
 def pitch_staff_position(pitch, clef):
@@ -74,8 +111,12 @@ def forced_sequence_pairs(decoded_positions, detected_positions):
     return forced
 
 
-def reject_sequence_ambiguity(result, decoded_positions, detected_positions):
-    forced = set(forced_sequence_pairs(decoded_positions, detected_positions))
+def reject_sequence_ambiguity(result, decoded_positions, detected_positions, *, detected_x=None):
+    forced = set(
+        forced_sequence_pairs(decoded_positions, detected_positions)
+        if detected_x is None
+        else forced_pairs_with_x_ties(decoded_positions, detected_positions, detected_x)
+    )
     rejected = [(i, j) for i, j in result["pairs"] if (i, j) not in forced]
     return {
         **result,

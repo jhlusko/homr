@@ -4,11 +4,29 @@ import pytest
 
 from training.onnx.lyric_notehead_association import (
     associate_x,
+    forced_pairs_with_x_ties,
     forced_sequence_pairs,
     pitch_staff_position,
     reject_pitch_conflicts,
     reject_sequence_ambiguity,
 )
+
+
+def test_extra_tied_heads_do_not_block_later_invariant_matches():
+    assert forced_pairs_with_x_ties([2, 3], [8, 6, 2, 3], [10, 10, 20, 30]) == [(0, 2), (1, 3)]
+
+
+def test_tied_heads_and_order_dependent_later_matches_stay_unresolved():
+    assert forced_pairs_with_x_ties([8, 6, 2], [8, 6, 2], [10, 10, 20]) == [(2, 2)]
+    assert forced_pairs_with_x_ties([1, 2], [2, 1, 2], [10, 10, 20]) == []
+    assert forced_pairs_with_x_ties([2], [2, 2, 2], [10, 10, 20]) == []
+
+
+def test_tied_order_enumeration_fails_closed_at_limit():
+    with pytest.raises(ValueError, match="enumeration limit"):
+        forced_pairs_with_x_ties([1], [1] * 5, [10] * 5)
+    with pytest.raises(ValueError, match="ordered"):
+        forced_pairs_with_x_ties([1], [1, 2], [20, 10])
 
 
 def match(a, b):

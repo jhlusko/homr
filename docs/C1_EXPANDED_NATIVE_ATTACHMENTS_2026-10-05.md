@@ -105,3 +105,25 @@ instead of dropping entire otherwise usable systems where safe. Review remaining
 literal-text/nearest-note discrepancies against these native targets before any
 detector/model changes. Keep semantic controls such as `a tempo` and native verse
 grouping explicit. All compute and watcher jobs finished, ETA 0; fusion stays off.
+## Localized equal-x ambiguity follow-up
+
+Canonical v5 preserves every v4 attachment and increases exact joint recovery
+to **310/480 (64.6%)**: Jagdlied 46/81 and Schlummerlied 57/90; the other six
+pages are unchanged. It emits 389 attachments, 374 on exact native lyric-note
+identities. The 19 additions include 10 exact literal targets, 17 native-note
+matches and two without native lyric-note identity. This is diagnostic evidence,
+not a promotion gate or a detector false-positive measurement.
+
+The two Franz opening systems now retain reliable later matches. All permutations
+of each exact-x head group are checked, and only forced sequence pairs common to
+every ordering survive. Tied heads themselves remain unresolved and remain in
+the full nearest-syllable competition; no syllable jumps past a removed head.
+Enumeration fails closed above 64 orders. No reference pitch/text enters matching.
+The two decoded Bizet vocal-chord systems remain unsupported. Evaluation-only
+verse mapping and all earlier native identity limitations still apply.
+
+Local result:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-expanded-attachment-score-v5-20261005/report.json`.
+The v4 result below is preserved. Next inspect and localize Bizet chord uncertainty,
+then review remaining native-referenced attachment/text discrepancies. All jobs
+finished, ETA 0; runtime fusion remains disabled.
