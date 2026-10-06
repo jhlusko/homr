@@ -1,5 +1,11 @@
 # Native lyric error decomposition — 2026-10-05
 
+Follow-up traces all 100 missing attachments: 41 association abstentions, 30 with
+candidates only in other physical rows and 29 without routed syllables. A broad
+all-OCR diagnostic exposes rejected lyric fragments and gains 25 exact targets,
+but also ten outputs without native lyric-note identity. Next constrained row-based
+recovery; see `docs/C1_MISSING_ATTACHMENT_TRACE_2026-10-05.md`.
+
 The frozen v6 result remains **311/480 exact targets (64.8%)**. An evaluation-only
 audit now partitions all 169 unrecovered targets, without shifting notes, changing
 predictions or feeding reference text into inference.

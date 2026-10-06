@@ -15974,3 +15974,18 @@ normalization equates 31 but erases meaningful distinctions such as we're/were.
 Local report `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-native-lyric-error-audit-v2-20261005/report.json`.
 Next trace missing outputs, then classify text differences from pixel/head evidence.
 Four new focused tests and scoped lint pass; jobs complete, ETA 0; fusion off.
+## 2026-10-05 — Trace missing attachments and test all-OCR control
+
+Added source-free per-syllable trace and head-to-final-note diagnostics; all eight
+baseline predictions and unresolved lists remain exactly unchanged. Native audit
+traces 100 missing outputs: 41 no accepted notehead association, 30 only other
+physical-row candidates, 29 no routed syllable selecting the accepted head.
+All 27 missing Lang/Tanzlied targets have accepted head matches. Detector selection
+excludes actual cached lyric fragments. All-OCR control improves exact literal
+recovery 311 to 336/480 (70.0%), 392 to 434 attachments; outputs without native
+lyric-note identity rise 15 to 25. No independent semantic/pixel ownership claims.
+Next constrained recovery in established lyric rows with direction controls, then
+association abstentions; do not remove the detector gate wholesale. Evidence:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-missing-attachment-trace-20261005/report.json` and
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-all-ocr-attachment-control-20261005/report.json`.
+Three new tests; 22 scoped tests and lint pass. Jobs complete, ETA 0; fusion off.

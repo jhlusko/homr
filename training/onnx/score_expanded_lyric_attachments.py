@@ -68,7 +68,7 @@ def predict(folder, selected, positioned, *, trace_export=False):
     rows = selected["all_page_text"]
     routing = route_rows(rows, transforms, recover_row_neighbors=True)
     positions_by_box = {tuple(tuple(p) for p in row["box"]): row for row in positioned["rows"]}
-    predictions, unresolved, systems = [], [], []
+    predictions, unresolved, systems, attachment_trace = [], [], [], []
     clef = None
     clefs_at = {}
     for index, token in enumerate(voices[0]):
@@ -135,6 +135,9 @@ def predict(folder, selected, positioned, *, trace_export=False):
                 associated=len(matched["pairs"]),
                 unresolved_final=len(matched["unresolved_decoded"]),
                 unresolved_chord_notes=sum(len(group) for group in chord_groups),
+                head_to_final_note={str(j): indexed[i][0] for i, j in matched["pairs"]},
+                head_xs=head_xs,
+                final_note_indices=[i for i, _ in indexed],
             )
         except (ValueError, TypeError) as error:
             status.update(status="unresolved", reason=str(error))
@@ -154,24 +157,38 @@ def predict(folder, selected, positioned, *, trace_export=False):
                 "syllable_index": syllable_index,
                 "text": syllable["text"],
             }
+            trace = {**record, "center": syllable["center"], "box": row["box"]}
+            attachment_trace.append(trace)
             routed = row_routes.get(index)
             if routed is None or "physical_row_order" not in routed:
+                trace["outcome"] = "unresolved_physical_row"
                 unresolved.append({**record, "reason": "unresolved_physical_row"})
                 continue
+            trace.update(
+                staff_call=routed["staff_call"],
+                physical_row_order=routed["physical_row_order"],
+            )
             geometry = association.get(routed["staff_call"])
             if geometry is None or not geometry["head_xs"]:
+                trace["outcome"] = "unsupported_or_nonvocal_staff"
                 unresolved.append({**record, "reason": "unsupported_or_nonvocal_staff"})
                 continue
             candidates = sorted(
                 (abs(syllable["center"][0] - x), j) for j, x in enumerate(geometry["head_xs"])
             )
             if len(candidates) > 1 and abs(candidates[0][0] - candidates[1][0]) < 1e-9:
+                trace["outcome"] = "ambiguous_nearest_head"
                 unresolved.append({**record, "reason": "ambiguous_nearest_head"})
                 continue
+            trace.update(
+                nearest_head_index=candidates[0][1], nearest_head_distance=candidates[0][0]
+            )
             note_index = geometry["head_to_note"].get(candidates[0][1])
             if note_index is None:
+                trace["outcome"] = "nearest_head_has_no_accepted_decoded_note"
                 unresolved.append({**record, "reason": "nearest_head_has_no_accepted_decoded_note"})
                 continue
+            trace.update(outcome="attached", final_note_index=note_index)
             predictions.append(
                 {
                     **record,
@@ -190,8 +207,9 @@ def predict(folder, selected, positioned, *, trace_export=False):
         "final_xml_pitch_duration_sequence_exact": xml_equal,
         "export_trace": export_trace,
         "vocal_voice_assumption": "First runtime voice; not general instrument identification",
-        "selection": selected["selection"],
+        "selection": selected.get("selection", "all_cached_page_text_control"),
         "native_input_used": False,
+        "attachment_trace": attachment_trace,
     }
 
 

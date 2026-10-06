@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Missing-attachment tracing identifies 41 notehead association abstentions, 30 heads
+with candidates only in another physical row and 29 heads without routed syllables.
+Detector selection excludes real cached lyric fragments. All-OCR control improves
+311 to 336/480 exact targets, but adds ten outputs without native lyric-note identity.
+Next test constrained recovery within established lyric rows, retaining direction
+controls and measuring regressions; then inspect association abstentions. See
+`docs/C1_MISSING_ATTACHMENT_TRACE_2026-10-05.md`. Jobs done, ETA 0; fusion off.
+
 Native error decomposition is complete: 100 targets lack attachments at identities
 present in decoded XML, 60 have different text at the exact note/oracle verse,
 five lack exact decoded identities, four are ambiguous native references. The
