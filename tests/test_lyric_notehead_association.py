@@ -1,9 +1,13 @@
+from itertools import combinations, product
+
 import pytest
 
 from training.onnx.lyric_notehead_association import (
     associate_x,
+    forced_sequence_pairs,
     pitch_staff_position,
     reject_pitch_conflicts,
+    reject_sequence_ambiguity,
 )
 
 
@@ -52,3 +56,35 @@ def test_repeated_pitch_does_not_certify_note_identity():
     result = reject_pitch_conflicts(match([100], [102]), [6], [6])
     assert result["pairs"] == [(0, 0)]
     # A repeated pitch passes: this guard is not a general ownership certificate.
+
+
+def test_missing_repeated_note_and_attention_shift_can_pass_wrong_owner():
+    # Original heads are x=0 and x=100, both C5. First decode disappears;
+    # the remaining second note's attention moves left to x=20.
+    result = reject_pitch_conflicts(match([20], [0, 100]), [6], [6, 6])
+    assert result["pairs"] == [(0, 0)]  # The correct identity was detected index 1.
+    guarded = reject_sequence_ambiguity(result, [6], [6, 6])
+    assert guarded["pairs"] == []
+
+
+def test_sequence_requires_identity_shared_by_all_optimal_alignments():
+    assert forced_sequence_pairs([4, 6, 6, 7], [4, 6, 6, 6, 7]) == [(0, 0), (3, 4)]
+    assert forced_sequence_pairs([6, 6], [6, 6]) == [(0, 0), (1, 1)]
+    assert forced_sequence_pairs([4, 6, 7], [4, 7]) == [(0, 0), (2, 1)]
+    assert forced_sequence_pairs([], [4]) == []
+
+
+def test_sequence_guard_matches_exhaustive_alignment_intersection():
+    sequences = [sequence for length in range(4) for sequence in product((4, 6), repeat=length)]
+    for left in sequences:
+        for right in sequences:
+            alignments = []
+            for length in range(min(len(left), len(right)) + 1):
+                for indices_left in combinations(range(len(left)), length):
+                    for indices_right in combinations(range(len(right)), length):
+                        pairs = set(zip(indices_left, indices_right))
+                        if all(left[i] == right[j] for i, j in pairs):
+                            alignments.append(pairs)
+            best = max(map(len, alignments))
+            expected = set.intersection(*(a for a in alignments if len(a) == best))
+            assert set(forced_sequence_pairs(left, right)) == expected

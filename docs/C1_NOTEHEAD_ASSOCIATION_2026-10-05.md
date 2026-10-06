@@ -1,5 +1,12 @@
 # C1 notehead association mismatch audit — 2026-10-05
 
+Latest expansion: all eight scans have usable segmentation staff grids, with
+255/290 selected OCR regions routed and 35 explicit unresolved. Repeated-pitch
+stress controls expose 29 wrong pitch-guard matches; an opt-in ordered-sequence
+guard reduces them to two but lowers original coverage to 59/70. Remaining errors
+involve segmentation pitch uncertainty. See
+`docs/C1_EXPANDED_ROUTING_LIMITS_2026-10-05.md`; these diagnostics remain unqualified.
+
 ## Follow-up: predicted pitch guard and physical row routing
 
 The four wrong matches all shift a C5 to a neighboring D5 or B4 in Chaminade.

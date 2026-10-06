@@ -34,6 +34,58 @@ def reject_pitch_conflicts(result, decoded_positions, detected_positions):
     }
 
 
+def forced_sequence_pairs(decoded_positions, detected_positions):
+    """Pairs present in every maximum ordered equal-pitch alignment.
+
+    No coordinates or native labels enter this sequence check. Insertions,
+    deletions and repeated pitches can create multiple optimal alignments;
+    only pairs common to all are returned. Caller must establish monophonic
+    chronological order: equal-x chords/grandstaffs are not supported.
+    """
+    n, m = len(decoded_positions), len(detected_positions)
+    prefix = [[0] * (m + 1) for _ in range(n + 1)]
+    suffix = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n):
+        for j in range(m):
+            prefix[i + 1][j + 1] = max(
+                prefix[i][j + 1],
+                prefix[i + 1][j],
+                prefix[i][j] + int(decoded_positions[i] == detected_positions[j]),
+            )
+    for i in range(n - 1, -1, -1):
+        for j in range(m - 1, -1, -1):
+            suffix[i][j] = max(
+                suffix[i + 1][j],
+                suffix[i][j + 1],
+                suffix[i + 1][j + 1] + int(decoded_positions[i] == detected_positions[j]),
+            )
+    best = prefix[n][m]
+    forced = []
+    for i in range(n):
+        possible = [
+            j
+            for j in range(m)
+            if decoded_positions[i] == detected_positions[j]
+            and prefix[i][j] + 1 + suffix[i + 1][j + 1] == best
+        ]
+        can_skip = any(prefix[i][j] + suffix[i + 1][j] == best for j in range(m + 1))
+        if len(possible) == 1 and not can_skip:
+            forced.append((i, possible[0]))
+    return forced
+
+
+def reject_sequence_ambiguity(result, decoded_positions, detected_positions):
+    forced = set(forced_sequence_pairs(decoded_positions, detected_positions))
+    rejected = [(i, j) for i, j in result["pairs"] if (i, j) not in forced]
+    return {
+        **result,
+        "pairs": [(i, j) for i, j in result["pairs"] if (i, j) in forced],
+        "sequence_rejected": rejected,
+        "unresolved_decoded": sorted([*result["unresolved_decoded"], *(i for i, _ in rejected)]),
+        "unresolved_detected": sorted([*result["unresolved_detected"], *(j for _, j in rejected)]),
+    }
+
+
 def associate_x(decoded, detected, *, max_distance, ambiguity_margin):
     """Return mutual nearest pairs with explicit unresolved notes.
 

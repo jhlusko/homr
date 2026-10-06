@@ -8,6 +8,7 @@ from training.onnx.lyric_notehead_association import (
     associate_x,
     pitch_staff_position,
     reject_pitch_conflicts,
+    reject_sequence_ambiguity,
 )
 from training.onnx.qualify_joint_export import sha, write
 
@@ -20,7 +21,10 @@ def main():
         "--geometry", type=Path, help="Optional replay with segmented staff positions"
     )
     parser.add_argument("--pitch-gate", action="store_true")
+    parser.add_argument("--sequence-gate", action="store_true")
     args = parser.parse_args()
+    if args.sequence_gate and not args.pitch_gate:
+        raise ValueError("Sequence gate requires pitch gate")
     linkage_path = args.anchors / "source-linkage.json"
     pages = json.loads(linkage_path.read_text())["pages"]
     totals = {}
@@ -114,6 +118,15 @@ def main():
                                 for i, _ in detections
                             ],
                         )
+                        if args.sequence_gate:
+                            result = reject_sequence_ambiguity(
+                                result,
+                                [decoded_positions[i] for i, _ in notes],
+                                [
+                                    detected_positions[i] if i >= 0 else detected_positions[removed]
+                                    for i, _ in detections
+                                ],
+                            )
                     correct = sum(notes[i][0] == detections[j][0] for i, j in result["pairs"])
                     for i, j in result["pairs"]:
                         if notes[i][0] != detections[j][0]:
@@ -167,6 +180,7 @@ def main():
         ),
         "source_used_by_matcher": False,
         "pitch_gate": args.pitch_gate,
+        "sequence_gate": args.sequence_gate,
         "reference": (
             "Existing count-exact strictly monotonic vocal notehead linkage; pixel ownership is not independently certified"
         ),

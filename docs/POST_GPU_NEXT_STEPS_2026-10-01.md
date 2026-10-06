@@ -1,5 +1,14 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Expanded segmentation geometry succeeds on all eight scans (98.7s, one thread):
+255/290 selected OCR regions route, 35 remain unresolved. Repeated-pitch stress
+errors fall from 29 to two with a sequence guard, but original coverage falls to
+59/70 and segmentation pitch errors still defeat it. Four real piano count
+mismatches are explicitly unscored. Next inspect staff-position uncertainty and
+unresolved lyric rows, then expanded native-linked attachment scoring. See
+`docs/C1_EXPANDED_ROUTING_LIMITS_2026-10-05.md`. Twenty-one tests pass; all jobs
+complete, ETA 0; runtime integration/fusion remains gated.
+
 The predicted-pitch guard rejects all four mismatch-control errors but also three
 correct Franz pairs: original coverage becomes 62/70, zero wrong in these controls.
 Staff-gap routing assigns 75 preselected OCR regions and passes seven reviewed
