@@ -16257,3 +16257,21 @@ unchanged OSSQ training crops with tuplets/rests and combine actual crop support
 with Lieder before resumable timing-head preparation. Details in
 `docs/OSSQ_REPAIRED_TIMING_2026-10-06.md`. Final local evidence:
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-repaired-timing-packet-20261006-v2/report.json`.
+
+
+## 2026-10-06 — Unchanged OSSQ training timing support
+
+Audited all716 locally available Borodin public crops.238 unchanged crops
+qualify:5348 timed events,126 triplets,186 rests(20 full-measure), zero unseen
+classes/conflicts.478 rejected, primarily absent segment durations; full reasons
+recorded. Combined unchanged-train Lieder+OSSQ support:133454 elapsed,132314
+written,132300 ratio,10325 rest targets;23/51,15/21,6/22,2/2 classes supported.
+No validation leakage/class expansion or repaired-packet double count.
+Eleven focused tests pass; all238 bundles reloaded with hashes/index verified.
+Final evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-unchanged-training-timing-20261006-v2/`.
+Earlier unsuffixed artifact is incomplete after a missing-divisions exception;
+final tool records refusals, removes rejected partial bundles, and caches source
+signatures/failures. See `docs/OSSQ_TRAINING_TIMING_SUPPORT_2026-10-06.md`.
+Next recover explicit source duration metadata for uniquely paired omitted
+segment durations, then prepare resumable frozen-core timing heads. No GPU,
+publication/deployment/pin changes.
