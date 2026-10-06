@@ -16198,3 +16198,23 @@ Final frozen viewer under
 Details `docs/OSSQ_PIXEL_REVIEW_2026-10-06.md`; release sequence updated.
 Next overall crop review and scan adjudication of3 source disagreements, then
 physical source/scan qualification and timing replay; no per-case votes required.
+
+### 2026-10-06 — User accepts OSSQ pixel differences; six accidental values checked
+
+User: “They are nearly identical and I can't imagine the extra pixel will make
+a difference.” Bound all163 pixel comparisons to explicit approval receipt;
+no further per-crop pixel review required. Separate Codex high-resolution scan
+inspection supports original XML values: Haydn three B-flats from key signature,
+Borodin tied G-sharp from preceding system, d’Indy two C-naturals (explicit
+natural + tie). Original and cleaned sources agree; generated segments differ.
+After-cleaning roundtrip stage implicated, exact faulty stage not isolated.
+Haydn token key signature missing; other cases need cross-boundary tie context.
+Six notes adjudicated; not exhaustive corpus truth. Public pins unchanged.
+
+Recovery directory has `source-accidental-adjudication-receipt.json` (source,
+cleaned-source and five scan-context image hashes), `accidental-scan-context/`.
+Viewer has `user-pixel-review-receipt.json`, preserved previous HTML and updated
+`review-followup-receipt.json`. Distinguishes user approval from Codex inspection.
+Release sequence and pixel-review doc updated. Next bounded local corrected
+system replay with key/tie and sidecar consistency checks, then timing support.
+Inspection complete, ETA0; persistent review server remains.
