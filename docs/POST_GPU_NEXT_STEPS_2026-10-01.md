@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Expanded native-output attachment scoring is complete: 300/480 exact joint targets
+(62.5%, evaluation-only page-global verse permutation). Eight decodes finish in
+433.9s and exact cached XML replay restores triplet/chord export provenance.
+Next localized extra/equal-x-head ambiguity on the dense Franz openings, then Bizet
+vocal chord systems and remaining literal-text/nearest-note errors. See
+`docs/C1_EXPANDED_NATIVE_ATTACHMENTS_2026-10-05.md`. Thirty focused tests pass;
+all jobs/watchers finished, ETA 0. This diagnostic does not qualify fusion.
+
 Interpolated staff pitch restores 65/70 correct original matches and eliminates
 the two remaining repeated-pitch stress errors; same-row seed recovery routes
 265/290 expanded regions but includes an `a tempo` direction control. Review

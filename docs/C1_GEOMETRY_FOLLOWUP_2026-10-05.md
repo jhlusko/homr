@@ -1,5 +1,11 @@
 # Lyric geometry follow-up — 2026-10-05
 
+Expanded native-output scoring is now complete: 300/480 exact joint lyric targets
+under an evaluation-only page-global verse permutation. Eight scans decode in
+433.9s and cached export replay reproduces all eight XML files exactly. Dense
+Franz extra-head and Bizet chord ambiguities are the next priorities. See
+`docs/C1_EXPANDED_NATIVE_ATTACHMENTS_2026-10-05.md`; fusion remains disabled.
+
 The targeted geometry diagnostic restores 65/70 correct vocal note associations
 (five unresolved) and eliminates the two remaining errors in the 336 synthetic
 repeated-pitch controls. Same-row neighbor recovery routes ten additional expanded
