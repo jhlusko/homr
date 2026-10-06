@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Interpolated staff pitch restores 65/70 correct original matches and eliminates
+the two remaining repeated-pitch stress errors; same-row seed recovery routes
+265/290 expanded regions but includes an `a tempo` direction control. Review
+http://localhost:8765/c1-geometry-followup/ and
+`docs/C1_GEOMETRY_FOLLOWUP_2026-10-05.md`. Next expanded native measure/timing-linked
+attachment scoring with semantic-role errors and unresolved cases explicit.
+Twenty-four tests pass; all jobs complete, ETA 0. Producer/fusion remains disabled.
+
 Expanded segmentation geometry succeeds on all eight scans (98.7s, one thread):
 255/290 selected OCR regions route, 35 remain unresolved. Repeated-pitch stress
 errors fall from 29 to two with a sequence guard, but original coverage falls to

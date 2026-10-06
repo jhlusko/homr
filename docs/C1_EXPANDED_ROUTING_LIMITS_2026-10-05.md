@@ -1,5 +1,11 @@
 # Expanded lyric routing and repeated-pitch limits — 2026-10-05
 
+Follow-up: interpolated whole-staff pitch geometry restores 65/70 correct original
+associations and removes the two remaining stress-control errors. Same-row seed
+recovery raises expanded routing to 265/290 but also routes `a tempo`, so semantic
+role is still unqualified. See `docs/C1_GEOMETRY_FOLLOWUP_2026-10-05.md` and
+http://localhost:8765/c1-geometry-followup/. Original failed probes are preserved below.
+
 Segmentation staff geometry works on all eight additional calibration scans,
 including the three that failed the earlier horizontal staff-line heuristic.
 The physical-gap router assigns 255 of 290 preselected intact OCR regions; 35

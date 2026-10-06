@@ -26,3 +26,15 @@ def test_staff_intrusion_and_unbounded_last_staff_stay_unresolved():
     result = route_rows([row(30, 65), row(190, 210)], transforms())
     assert result["routed"] == []
     assert len(result["unresolved"]) == 2
+
+
+def test_neighbor_recovery_does_not_cross_staff_lines_or_chain():
+    result = route_rows(
+        [row(42, 60), row(48, 65), row(35, 60), row(130, 150)],
+        transforms(),
+        recover_row_neighbors=True,
+    )
+    assert {r["index"] for r in result["routed"]} == {0, 1}
+    assert next(r for r in result["routed"] if r["index"] == 0)["seed_indices"] == [1]
+    assert {r["index"] for r in result["unresolved"]} == {2, 3}
+    assert route_rows([row(42, 60)], transforms(), recover_row_neighbors=True)["routed"] == []

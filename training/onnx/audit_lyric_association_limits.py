@@ -11,6 +11,7 @@ from training.onnx.lyric_notehead_association import (
     reject_pitch_conflicts,
     reject_sequence_ambiguity,
 )
+from training.onnx.lyric_staff_pitch_geometry import interpolate_notehead_positions
 from training.onnx.qualify_joint_export import sha, write
 
 
@@ -21,6 +22,7 @@ def main():
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--offsets", type=int, nargs="+", default=[20, 40, 80, 120])
     parser.add_argument("--sequence-gate", action="store_true")
+    parser.add_argument("--interpolated-positions", action="store_true")
     args = parser.parse_args()
     pages = json.loads(args.linkage.read_text())["pages"]
     hashes = {str(args.linkage): sha(args.linkage)}
@@ -78,6 +80,8 @@ def main():
                 continue
             transform = next(t for t in transforms if t["staff_call"] == system["staff_call"])
             heads = sorted(transform["detected_notehead_positions"], key=lambda h: h["center"][0])
+            if args.interpolated_positions:
+                heads = interpolate_notehead_positions(transform)
             if not system["exact_written_pitch_duration_sequence"] or len(heads) != len(links):
                 raise ValueError("Reference mapping is not count exact")
             if args.sequence_gate and (
@@ -150,6 +154,7 @@ def main():
         ),
         "production_qualified": False,
         "sequence_gate": args.sequence_gate,
+        "interpolated_positions": args.interpolated_positions,
         "attention_offset_magnitudes_page_pixels": args.offsets,
         "source_used_by_matcher": False,
         "inventory": inventory,
@@ -159,7 +164,12 @@ def main():
         "input_sha256": hashes,
         "code_sha256": {
             str(path): sha(path)
-            for path in (Path(__file__), Path(__file__).with_name("lyric_notehead_association.py"))
+            for path in (
+                Path(__file__),
+                Path(__file__).with_name("lyric_notehead_association.py"),
+                Path(__file__).with_name("lyric_staff_pitch_geometry.py"),
+                Path(__file__).with_name("lyric_row_routing.py"),
+            )
         },
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)

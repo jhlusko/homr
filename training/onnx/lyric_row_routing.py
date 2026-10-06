@@ -37,7 +37,7 @@ def lines_at(staff, x):
     return grid[0][1] if x == grid[0][0] else None
 
 
-def route_rows(rows, transforms):
+def route_rows(rows, transforms, *, recover_row_neighbors=False):
     """Assign intact preselected OCR rows to gaps, then physical row order.
 
     Input selection remains an independent lyric-role diagnostic. This cannot
@@ -77,6 +77,48 @@ def route_rows(rows, transforms):
                 "native_verse": None,
             }
         )
+    if recover_row_neighbors:
+        # Only strict-pass rows may seed recovery, never another recovered row.
+        seeds = list(routed)
+        remaining = []
+        for item in unresolved:
+            row = rows[item["index"]]
+            xs, ys = zip(*row["box"])
+            if not all(math.isfinite(v) for v in [*xs, *ys]):
+                remaining.append(item)
+                continue
+            x, low, high = (min(xs) + max(xs)) / 2, min(ys), max(ys)
+            eligible = []
+            for staff_index, (staff, following) in enumerate(zip(staffs, staffs[1:])):
+                lines, next_lines = lines_at(staff, x), lines_at(following, x)
+                if lines is None or next_lines is None or low <= lines[-1] or high >= next_lines[0]:
+                    continue
+                neighbors = [
+                    seed
+                    for seed in seeds
+                    if seed["physical_staff_index"] == staff_index
+                    and min(high, seed["bounds_y"][1]) - max(low, seed["bounds_y"][0])
+                    >= min(high - low, seed["bounds_y"][1] - seed["bounds_y"][0]) / 2
+                ]
+                if neighbors:
+                    eligible.append((staff_index, staff, neighbors))
+            if len(eligible) != 1:
+                remaining.append(item)
+                continue
+            staff_index, staff, neighbors = eligible[0]
+            routed.append(
+                {
+                    "index": item["index"],
+                    "staff_call": staff["staff_call"],
+                    "staff_group": staff["staff_group"],
+                    "physical_staff_index": staff_index,
+                    "bounds_y": [low, high],
+                    "native_verse": None,
+                    "recovery": "strict_same_row_neighbor_inside_unpadded_staff_gap",
+                    "seed_indices": [seed["index"] for seed in neighbors],
+                }
+            )
+        unresolved = remaining
     for staff_index in {row["physical_staff_index"] for row in routed}:
         groups = []
         for row in sorted(

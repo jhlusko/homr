@@ -10,6 +10,7 @@ from training.onnx.lyric_notehead_association import (
     reject_pitch_conflicts,
     reject_sequence_ambiguity,
 )
+from training.onnx.lyric_staff_pitch_geometry import interpolate_notehead_positions
 from training.onnx.qualify_joint_export import sha, write
 
 
@@ -22,9 +23,12 @@ def main():
     )
     parser.add_argument("--pitch-gate", action="store_true")
     parser.add_argument("--sequence-gate", action="store_true")
+    parser.add_argument("--interpolated-positions", action="store_true")
     args = parser.parse_args()
     if args.sequence_gate and not args.pitch_gate:
         raise ValueError("Sequence gate requires pitch gate")
+    if args.interpolated_positions and not args.pitch_gate:
+        raise ValueError("Interpolated positions require pitch gate")
     linkage_path = args.anchors / "source-linkage.json"
     pages = json.loads(linkage_path.read_text())["pages"]
     totals = {}
@@ -66,6 +70,8 @@ def main():
                 positioned_heads = sorted(
                     transform["detected_notehead_positions"], key=lambda h: h["center"][0]
                 )
+                if args.interpolated_positions:
+                    positioned_heads = interpolate_notehead_positions(transform)
                 if [
                     h["center"][0] * transform["original_to_processed_ratio"][0]
                     for h in positioned_heads
@@ -181,6 +187,7 @@ def main():
         "source_used_by_matcher": False,
         "pitch_gate": args.pitch_gate,
         "sequence_gate": args.sequence_gate,
+        "interpolated_positions": args.interpolated_positions,
         "reference": (
             "Existing count-exact strictly monotonic vocal notehead linkage; pixel ownership is not independently certified"
         ),
@@ -192,7 +199,12 @@ def main():
         "input_sha256": hashes,
         "code_sha256": {
             str(p): sha(p)
-            for p in [Path(__file__), Path(__file__).with_name("lyric_notehead_association.py")]
+            for p in [
+                Path(__file__),
+                Path(__file__).with_name("lyric_notehead_association.py"),
+                Path(__file__).with_name("lyric_staff_pitch_geometry.py"),
+                Path(__file__).with_name("lyric_row_routing.py"),
+            ]
         },
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
