@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The C1 anchor pilot maps all 454 first-pass attention coordinates across two calibration
+scans. Six lyric-bearing vocal systems (70 notes) have count-exact written-pitch/duration
+source sequences; three reviewed single-syllable smoke attachments pass with fixed
+system/verse routing. Review http://localhost:8765/c1-note-anchors/; see
+`docs/C1_NOTE_ANCHOR_PILOT_2026-10-05.md`. Next locate individual syllables inside grouped
+OCR boxes and preserve anchor provenance through final cleanup/export, then qualify
+automatic system/verse routing. These diagnostics do not pass the C1 release gate.
+
 C1's diagnostic contract now includes physical measure, and its evaluator checks text and
 ownership independently with detector-miss/unresolved/duplicate controls (14 tests pass).
 Next certify a small note-anchor pilot: attention-derived staff-crop coordinates exist, but

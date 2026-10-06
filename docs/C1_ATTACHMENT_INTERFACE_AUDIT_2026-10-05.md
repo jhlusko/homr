@@ -49,3 +49,10 @@ The policy's `staff_top`/`staff_bottom` currently mean the eligible **lyric-row 
 band**, not the five staff lines; callers must supply the below-staff region deliberately.
 Multi-verse assignment must be certified separately, including bilingual pages where native
 verse order differs from vertical order. Do not infer verse IDs from row height alone.
+
+The note-anchor pilot now captures exact transforms and maps 454/454 first-pass attention
+coordinates across the two linked scans. Six vocal systems (70 notes) have exact written-
+pitch/duration sequence linkage proposals. Three selected single-syllable smoke controls
+pass with fixed system/verse routing; grouped OCR boxes and final-output anchor provenance
+remain open. See `docs/C1_NOTE_ANCHOR_PILOT_2026-10-05.md` and
+http://localhost:8765/c1-note-anchors/. All pilot jobs are complete.
