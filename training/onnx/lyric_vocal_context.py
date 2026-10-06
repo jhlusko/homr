@@ -118,8 +118,14 @@ def leading_measure_context(voice, final, transforms, trace, exported_by_part):
         )
     if seen_calls != preceding or not votes or len({v["measure_offset"] for v in votes}) != 1:
         raise ValueError("Leading piano measure context is incomplete or inconsistent")
+    prefix_length = votes[0]["measure_offset"]
+    vocal_events = exported_by_part[voice]
+    existing_prefix = min(event["physical_measure"] for event in vocal_events) - 1
+    if existing_prefix not in (0, prefix_length):
+        raise ValueError("Existing vocal introduction conflicts with piano context")
     return {
-        "measure_offset": votes[0]["measure_offset"],
+        "measure_offset": prefix_length - existing_prefix,
+        "existing_vocal_prefix_measures": existing_prefix,
         "leading_systems": len(preceding),
         "prefix_votes": votes,
     }

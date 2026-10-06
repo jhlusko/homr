@@ -1,5 +1,16 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Runtime piano-introduction repair retains all8 Chaminade physical staffs and
+exports both parts through measure8. All28 vocal notes retain event identity,
+with two-bar page context;69 piano notes restored. Four-page lyric scoring82/145
+now uses runtime XML directly, without diagnostic measure offsets or missing-staff
+routing boundaries. Other three Lieder outputs are XML-identical to baseline.
+OSSQ quartet output also XML-identical; all five runs finished in217.4s, one thread,
+75 tests/lint pass, ETA0. See
+`docs/C1_RUNTIME_INTRODUCTION_2026-10-05.md`. Next semantic lyric-role controls,
+broader untouched pages and remaining head-association abstentions before wiring.
+Fusion stays off; this is calibration, not model promotion.
+
 Vocal/page context diagnostic recovers32/42 Chaminade lyrics; equal corrected
 reference coverage improves50→82/145, or83 with row recovery. Original eight-page
 predictions are unchanged with refined recurring-row selection. Runtime still

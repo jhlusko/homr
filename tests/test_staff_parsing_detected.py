@@ -2,7 +2,8 @@ import unittest
 
 from homr.brace_dot_detection import DetectedStaffs
 from homr.model import MultiStaff, Staff, StaffPoint
-from homr.staff_parsing import _plan_systems
+from homr.staff_parsing import _introduction_rests, _piano_introduction_plan, _plan_systems
+from homr.transformer.vocabulary import EncodedSymbol
 
 
 def _staff(
@@ -32,6 +33,79 @@ def _detected(staffs: list[Staff], per_system: int = 4) -> DetectedStaffs:
 
 
 class TestPlanSystemsUsesDetection(unittest.TestCase):
+    def test_stated_intro_meter_does_not_copy_peer_rhythm_errors(self) -> None:
+        symbols = [
+            EncodedSymbol("timeSignatureBeats_4"),
+            EncodedSymbol("timeSignature/4"),
+            EncodedSymbol("note_1", "C4"),
+            EncodedSymbol("barline"),
+            EncodedSymbol("note_2", "C4"),
+            EncodedSymbol("barline"),
+        ]
+        rests = _introduction_rests(symbols)
+        assert rests is not None
+        self.assertEqual(sum(s.rhythm == "rest_1" for s in rests), 2)
+        symbols.insert(4, EncodedSymbol("timeSignatureBeats_3"))
+        self.assertIsNone(_introduction_rests(symbols))
+
+    def test_intro_rests_preserve_two_complete_four_four_measures(self) -> None:
+        symbols = [EncodedSymbol("timeSignature/4")]
+        for _ in range(2):
+            symbols.extend([EncodedSymbol("note_1", "C4"), EncodedSymbol("barline")])
+        rests = _introduction_rests(symbols)
+        assert rests is not None
+        self.assertEqual(
+            [s.rhythm for s in rests],
+            ["timeSignatureBeats_4", "timeSignature/4", "rest_1", "barline", "rest_1", "barline"],
+        )
+        self.assertFalse(any(s.rhythm.startswith("note_") for s in rests))
+        from homr.music_xml_generator import XmlGeneratorArguments, generate_xml
+
+        xml = generate_xml(
+            XmlGeneratorArguments(),
+            [
+                [
+                    *rests,
+                    EncodedSymbol("clef_G2"),
+                    EncodedSymbol("note_4", "D4"),
+                    EncodedSymbol("barline"),
+                ]
+            ],
+            "",
+        )
+        measures = xml.findall("./part/measure")
+        self.assertEqual(len(measures), 3)
+        self.assertIsNotNone(measures[0].find("note/rest"))
+        self.assertIsNotNone(measures[1].find("note/rest"))
+        self.assertEqual(measures[2].findtext("note/pitch/step"), "D")
+
+    def test_intro_pickup_and_incomplete_measures_are_unresolved(self) -> None:
+        for rhythms in (
+            ["note_4", "barline", "note_1", "barline"],
+            ["note_1", "barline", "note_1"],
+        ):
+            symbols = [EncodedSymbol("timeSignature/4"), *[EncodedSymbol(r) for r in rhythms]]
+            self.assertIsNone(_introduction_rests(symbols))
+
+    def test_piano_introduction_keeps_final_piano_and_voice_identity(self) -> None:
+        staffs = [_staff(i) for i in range(5)]
+        for index in (0, 2, 4):
+            staffs[index].is_grandstaff = True
+        rows = [MultiStaff(staffs[:1], []), MultiStaff(staffs[1:3], []), MultiStaff(staffs[3:], [])]
+        plan = _piano_introduction_plan(rows)
+        self.assertIsNotNone(plan)
+        assert plan is not None
+        self.assertEqual(plan.slots, [(1,), (0, 1), (0, 1)])
+        self.assertIsNone(plan.staff_for_voice(0, 0))
+        self.assertIs(plan.staff_for_voice(2, 1), staffs[4])
+        self.assertEqual(sum(len(row.staffs) for row in plan.systems), 5)
+
+    def test_flat_alternation_does_not_certify_piano_introduction(self) -> None:
+        staffs = [_staff(i) for i in range(5)]
+        for index in (0, 2, 4):
+            staffs[index].is_grandstaff = True
+        self.assertIsNone(_piano_introduction_plan([MultiStaff([s], []) for s in staffs]))
+
     def test_one_fused_row_does_not_count_as_uniform(self) -> None:
         """The `p2`/`p4` shape: every staff merged into a single row.
 

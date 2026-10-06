@@ -16057,3 +16057,27 @@ Runtime still loses dropped piano music; diagnostic metadata is not a runtime fi
 Local comparison `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-fixed-rule-validation-20261005/complete-context-comparison.json`;
 regression `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-vocal-context-regression-audit-v2-20261005/report.json`.
 Twenty-two focused tests/lint pass. All jobs done, ETA0; fusionoff.
+
+## 2026-10-05 — Runtime piano introduction and vocal measure context retained
+
+Narrow bracket-supported fallback preserves piano-only introduction before two
+or more complete solo/piano rows, after geometry declines and before periodic
+trimming. Chaminade retains all8 physical staffs; both parts reach measure8.
+All28 vocal pitch/alter/duration/onset identities survive with correct +2 page
+numbering; piano102→171 notes,69 restored decoded notes (not accuracy-certified).
+Silent introductory bars use closed peer measures and explicit decoded meter;
+legacy numerator-free streams require equal durations. Changing/incomplete context
+abstains. Preliminary replay that retained music but abstained on silent bars is
+preserved. Diagnostic helper avoids double-counting already exported intro measures.
+Four-page lyric score82/145 works directly from runtime XML without diagnostic
+offsets or extra boundary-only staffs. Chaminade32/42,34 outputs all at native lyric
+note identities. All four exact exporter replays pass. Native reference coverage
+remains manually recertified/unblinded calibration, not semantic/verse/pixel truth.
+All five runtime comparisons succeed: three other Lieder pages and OSSQ Glazunov
+sq7358579:0002 XML-identical to original candidate baselines. Total217.4s, sequential
+one CPU thread in persistent tmux;75 focused tests/lint pass. Jobs complete, ETA0.
+Local evidence `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-runtime-introduction-paired-v2-20261005/`;
+write-up `/home/jhlusko/workspace/homr/docs/C1_RUNTIME_INTRODUCTION_2026-10-05.md`.
+Next in-row direction semantic controls, broader untouched scans, remaining
+notehead-association abstentions before lyric wiring. Fusionoff; published model/
+provider pins, training and production unchanged.

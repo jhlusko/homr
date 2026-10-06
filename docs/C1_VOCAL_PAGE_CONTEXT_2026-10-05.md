@@ -1,5 +1,13 @@
 # Vocal part and complete-page context diagnostic — 2026-10-05
 
+Runtime follow-up now retains the final piano grandstaff and exports the two-bar
+vocal introduction. Both parts reach measure8; all28 vocal event identities are
+preserved with corrected page numbering, and69 piano notes are restored.
+The same32/42 lyric targets now score directly against runtime XML, without the
+diagnostic offset or extra routing-only staff boundaries. See
+`docs/C1_RUNTIME_INTRODUCTION_2026-10-05.md` for the paired regression checks.
+The diagnostic results below remain preserved with their original scope.
+
 Chaminade's complete page now recovers **32/42 exact native lyric targets**, versus
 zero under the first-voice assumption. Across the four follow-up pages, the same
 corrected reference coverage gives **50/145 → 82/145 (56.6%)**; bounded row

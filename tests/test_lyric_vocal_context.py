@@ -39,6 +39,21 @@ def test_vocal_voice_can_follow_a_piano_voice_without_native_labels():
     assert not selected["semantic_lyric_role_certified"]
 
 
+def test_runtime_intro_measures_are_not_added_twice():
+    transforms, final, trace, events = fixture()
+    events[1][0]["physical_measure"] = 3
+    context = leading_measure_context(1, final, transforms, trace, events)
+    assert context["measure_offset"] == 0
+    assert context["existing_vocal_prefix_measures"] == 2
+
+
+def test_partial_runtime_intro_context_is_rejected():
+    transforms, final, trace, events = fixture()
+    events[1][0]["physical_measure"] = 2
+    with pytest.raises(ValueError, match="conflicts"):
+        leading_measure_context(1, final, transforms, trace, events)
+
+
 def test_ambiguous_text_supported_single_staff_voices_fail_closed():
     transforms, final, _, _ = fixture()
     transforms[0] = transform(0, 0)

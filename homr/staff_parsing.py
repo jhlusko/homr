@@ -1,5 +1,6 @@
 import math
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import TYPE_CHECKING
 
 import cv2
@@ -243,6 +244,81 @@ def _group_by_geometry(
     return SystemPlan(systems, slots)
 
 
+def _piano_introduction_plan(staffs: list[MultiStaff]) -> SystemPlan | None:
+    """Retain a bracketed piano introduction before repeated solo/piano rows.
+
+    Require two complete, already connected rows as evidence of the later layout.
+    A flattened grand/solo alternating sequence alone cannot distinguish an intro
+    from a score whose grandstaff is consistently the first part.
+    """
+    if len(staffs) < 3 or len(staffs[0].staffs) != 1:
+        return None
+    if not staffs[0].staffs[0].is_grandstaff:
+        return None
+    for row in staffs[1:]:
+        if len(row.staffs) != 2:
+            return None
+        if [staff.is_grandstaff for staff in row.staffs] != [False, True]:
+            return None
+    ordered = _flatten_staffs(staffs)
+    if any(first.max_y >= second.min_y for first, second in zip(ordered, ordered[1:])):
+        return None
+    return SystemPlan(staffs, [(1,), *[(0, 1) for _ in staffs[1:]]])
+
+
+def _introduction_rests(symbols: list[EncodedSymbol]) -> list[EncodedSymbol] | None:
+    """Recover silent introductory bars from closed peer measures and meter.
+
+    Use a single explicitly decoded numerator when available; legacy streams
+    require equal measure durations. Changing meter and incomplete bars abstain.
+    """
+    from homr.music_xml_generator import group_into_chords
+
+    denominators = {s.rhythm for s in symbols if s.rhythm.startswith("timeSignature/")}
+    if len(denominators) != 1:
+        return None
+    durations = []
+    duration = Fraction(0)
+    for chord in group_into_chords(symbols):
+        if chord.is_barline():
+            if duration <= 0:
+                return None
+            durations.append(duration)
+            duration = Fraction(0)
+        else:
+            duration += chord.get_render_duration()
+    if duration or len(durations) < 2:
+        return None
+    denominator_token = next(iter(denominators))
+    denominator = int(denominator_token.split("/")[1])
+    stated = {s.rhythm for s in symbols if s.rhythm.startswith("timeSignatureBeats_")}
+    if stated:
+        if len(stated) != 1:
+            return None
+        beats = Fraction(int(next(iter(stated)).split("_")[1]))
+        measure_duration = beats / denominator
+    else:
+        if len(set(durations)) != 1:
+            return None
+        measure_duration = durations[0]
+        beats = measure_duration * denominator
+    if beats.denominator != 1 or not 1 <= beats <= 24:
+        return None
+    remainder = measure_duration
+    rest_rhythms = []
+    for denominator in (1, 2, 4, 8, 16, 32, 64):
+        while remainder >= Fraction(1, denominator):
+            rest_rhythms.append(f"rest_{denominator}")
+            remainder -= Fraction(1, denominator)
+    if remainder:
+        return None
+    result = [EncodedSymbol(f"timeSignatureBeats_{int(beats)}"), EncodedSymbol(denominator_token)]
+    for _ in durations:
+        result.extend(EncodedSymbol(rhythm) for rhythm in rest_rhythms)
+        result.append(EncodedSymbol("barline"))
+    return result
+
+
 def _plan_systems(staffs: list[MultiStaff], detected: DetectedStaffs | None = None) -> SystemPlan:
     """
     If every system already has the same number of *more than one* staff, trust that
@@ -286,6 +362,10 @@ def _plan_systems(staffs: list[MultiStaff], detected: DetectedStaffs | None = No
     geometric = _group_by_geometry(flat_staffs, staffs, detected)
     if geometric is not None:
         return geometric
+    introduction = _piano_introduction_plan(staffs)
+    if introduction is not None:
+        eprint("Retaining piano-only introduction; solo voice enters in the next system")
+        return introduction
     core = _find_periodic_core(flat_staffs)
     if core is not None:
         period, front_trim, back_trim = core
@@ -793,6 +873,14 @@ def parse_staffs(
     voices = []
     for voice in range(number_of_voices):
         result_for_voice = []
+        # The narrow, bracket-supported piano-introduction plan has one silent
+        # solo system. Other missing-staff plans do not establish actual silence.
+        if selected_staff < 0 and voice == 0 and _piano_introduction_plan(staffs) == plan:
+            prefix = _introduction_rests(decoded.get((1, 0), []))
+            if prefix is not None:
+                result_for_voice.extend([*prefix, EncodedSymbol("newline")])
+            else:
+                eprint("Piano introduction measure context unresolved; no rests inferred")
         for staff_index, system in enumerate(systems_for_voice(voice)):
             if selected_staff >= 0 and staff_index != selected_staff:
                 continue
