@@ -2,6 +2,7 @@
 
 import html
 import json
+import shutil
 from pathlib import Path
 
 
@@ -9,9 +10,14 @@ def main():
     parser = __import__("argparse").ArgumentParser()
     parser.add_argument("--inventory", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--crops", type=Path, required=True)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
     cases = json.loads(args.inventory.read_text())
+    for case in cases:
+        source = args.crops / case["crop"]
+        target = args.out / case["crop"]
+        shutil.copyfile(source, target)
     cards = []
     for case in cases:
         cards.append(
@@ -20,7 +26,7 @@ def main():
             + "</h2><p>"
             + html.escape(case["scope"])
             + "</p><div class='pair'><figure><figcaption>Original scan crop</figcaption>"
-            + f"<img src='../c1-semantic-controls-20261005/{html.escape(case['crop'])}'></figure>"
+            + f"<img src='{html.escape(case['crop'])}'></figure>"
             + "<figure><figcaption>Role interpretation</figcaption>"
             + "<p class='decision'>Review visually: lyric, direction, or ambiguous."
             + " The current geometry-only route does not decide this.</p></figure></div></article>"
