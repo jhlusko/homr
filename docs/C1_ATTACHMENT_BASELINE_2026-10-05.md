@@ -11,8 +11,10 @@ syllable to the nearest note horizontally within the voice staff. The result is:
 | syllables held across notes (melisma) | 93.0% |
 | within one note either side | 99.3% |
 
-It scored 2,584 systems and skipped 327 systems. The skipped cases are a coverage limitation
-(mostly systems with multiple lyric lines or no verse-1 syllables), not attachment errors.
+It scored 2,584 systems and skipped 327 systems. The skipped cases are a coverage limitation;
+the historical expanded-run entry does not provide their reason breakdown. Multiple wrapped
+lyric lines were included in this expanded run. Do not reuse the earlier single-line run's
+skip reasons to describe these 327 systems.
 The earlier single-line subset was 3,079 / 3,113 syllables (98.9%). These measurements are
 recorded in `RUNLOG.md` sections 27.52 and 27.57.
 
