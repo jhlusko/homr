@@ -1,5 +1,14 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+C1 now has CTC-positioned syllables with 149/149 cached texts/parent boxes unchanged.
+On 17 reviewed syllables, detected-notehead anchors give 17 correct ownerships versus 14
+from attention; literal text is correct 15/17. Final provenance survives 414/414 decoded
+notes and all 70 vocal XML anchors agree with native timing/pitch/duration. See
+`docs/C1_SYLLABLE_POSITIONS_2026-10-05.md`; review http://localhost:8765/c1-syllables/.
+Next test missing syllable separators, then mismatch-safe notehead association and
+automatic system/verse routing on broader frozen calibration inputs. These results
+use fixed reviewed routing and do not qualify production C1/fusion.
+
 The C1 anchor pilot maps all 454 first-pass attention coordinates across two calibration
 scans. Six lyric-bearing vocal systems (70 notes) have count-exact written-pitch/duration
 source sequences; three reviewed single-syllable smoke attachments pass with fixed

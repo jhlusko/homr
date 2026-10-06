@@ -33,7 +33,7 @@ def main():
 
     runner.setup = lambda: None
     original_size = np.array(cv2.imread(page["image"]).shape[:2][::-1])
-    transforms, anchors = [], []
+    transforms, anchors, final_anchors = [], [], []
     active = {}
     original_prepare = parsing.prepare_staff_image
     original_crop = parsing.crop_image_and_return_new_top
@@ -107,9 +107,13 @@ def main():
             except (ValueError, TypeError) as error:
                 row["geometry_skip"] = str(error)
             anchors.append(row)
+            # Diagnostic-only metadata follows copy.copy/deepcopy repairs without
+            # participating in token identity or influencing inference.
+            symbol._lyric_anchor_provenance = dict(row)
 
     original_plain = parsing.parse_staff_image
     original_greedy = parsing.parse_staff_image_greedy_with_margins
+    original_final = parsing.parse_staffs
 
     def capture_plain(*pos, **kw):
         result = original_plain(*pos, **kw)
@@ -121,18 +125,58 @@ def main():
         save_symbols(pos[1], result[0])
         return result
 
+    def capture_final(*pos, **kw):
+        result = original_final(*pos, **kw)
+        for voice_index, symbols in enumerate(result):
+            system_index = 0
+            for token_index, symbol in enumerate(symbols):
+                if symbol.rhythm == "newline":
+                    system_index += 1
+                if not symbol.rhythm.startswith("note_"):
+                    continue
+                origin = getattr(symbol, "_lyric_anchor_provenance", None)
+                row = dict(
+                    voice_index=voice_index,
+                    system_index=system_index,
+                    token_index=token_index,
+                    rhythm=symbol.rhythm,
+                    pitch=symbol.pitch,
+                    position=symbol.position,
+                    page_coordinate=None,
+                    first_pass_origin=origin,
+                )
+                if origin is None:
+                    row["geometry_skip"] = "No retained first-pass provenance"
+                else:
+                    transform = next(
+                        t for t in transforms if t["staff_call"] == origin["staff_call"]
+                    )
+                    row["staff_call"] = origin["staff_call"]
+                    row["rhythm_changed"] = symbol.rhythm != origin["rhythm"]
+                    row["pitch_changed"] = symbol.pitch != origin["pitch"]
+                    try:
+                        coordinate = np.asarray(symbol.coordinates, dtype=float).reshape(-1)
+                        row["canvas_coordinate"] = coordinate.tolist()
+                        row["page_coordinate"] = canvas_to_page(coordinate, transform)
+                    except (ValueError, TypeError) as error:
+                        row["geometry_skip"] = str(error)
+                final_anchors.append(row)
+        return result
+
     parsing.prepare_staff_image = capture_prepare
     parsing.crop_image_and_return_new_top = capture_crop
     parsing.dewarp_staff_image = capture_dewarp
     parsing.center_image_on_canvas = capture_center
     parsing.parse_staff_image = capture_plain
     parsing.parse_staff_image_greedy_with_margins = capture_greedy
+    parsing.parse_staffs = capture_final
     try:
         runner.process(page, json.loads(args.models.read_text()), args.arm, args.out)
     finally:
         args.out.mkdir(parents=True, exist_ok=True)
         write(args.out / "staff-transforms.json", transforms)
         write(args.out / "note-anchors.json", anchors)
+        write(args.out / "final-note-anchors.json", final_anchors)
         write(
             args.out / "anchor-receipt.json",
             dict(
@@ -142,9 +186,11 @@ def main():
                 geometry_sha256=sha(Path(__file__).with_name("lyric_anchor_geometry.py")),
                 anchors=len(anchors),
                 mapped=sum(row["page_coordinate"] is not None for row in anchors),
+                final_notes=len(final_anchors),
+                final_mapped=sum(row["page_coordinate"] is not None for row in final_anchors),
                 source_geometry_injected=False,
                 source_ownership_certified=False,
-                scope="First-pass attention overlays; not selected-final-note ownership or attachment accuracy",
+                scope="Diagnostic first-pass and final-decoded anchor provenance; native ownership and final XML linkage require independent checks",
             ),
         )
 
