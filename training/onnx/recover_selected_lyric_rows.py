@@ -14,6 +14,13 @@ def box_key(row):
     return tuple(tuple(point) for point in row["box"])
 
 
+def vocal_calls_from_final(final):
+    """Untraced final notes cannot establish staff ownership."""
+    return {
+        r["staff_call"] for r in final if r["voice_index"] == 0 and r.get("staff_call") is not None
+    }
+
+
 def recover(selected, all_rows, transforms, vocal_calls):
     """Use frozen selected rows as seeds, never native labels or recovered seeds.
 
@@ -124,7 +131,7 @@ def main():
             r["image_sha256"] != page["image_sha256"] for r in [selected, full, identity["page"]]
         ):
             raise ValueError("Page image hashes differ")
-        calls = {r["staff_call"] for r in final if r["voice_index"] == 0}
+        calls = vocal_calls_from_final(final)
         rows, evidence = recover(
             selected["all_page_text"], full["all_page_text"], transforms, calls
         )

@@ -1,5 +1,10 @@
 # Constrained lyric-row recovery diagnostic — 2026-10-05
 
+Reserved fixed-rule validation subsequently gains only one exact target (50→51
+of133 frozen-window targets), with none lost. It exposes first-voice and omitted
+piano-introduction measure-context assumptions plus incomplete native page windows.
+Those prerequisites now take priority; see `docs/C1_FIXED_RULE_VALIDATION_2026-10-05.md`.
+
 The bounded diagnostic recovers **331/480 exact native lyric targets (69.0%)**,
 20 above the frozen 311/480 baseline. Every baseline attachment is preserved.
 Twenty-one detector-rejected OCR boxes add 21 attachments; all 21 have exact native

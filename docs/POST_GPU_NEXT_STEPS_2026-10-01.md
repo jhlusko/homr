@@ -1,5 +1,16 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Reserved fixed-rule validation completed: 50→51/133 exact frozen-window targets,
+one gain, zero losses, no added outputs without native lyric-note identity. It
+exposes a larger context issue: Chaminade's vocal part is second after a piano-only
+introduction; the first-voice assumption scores piano and loses lyric ownership.
+An evaluation-only +2-measure check reaches all30 frozen vocal targets in part2;
+the scored output remains unchanged. Stored page windows also appear to omit the
+last visible vocal system. Next source-free vocal part/staff identification and
+complete-page meter/boundary context certification, before wider lyric recovery.
+See `docs/C1_FIXED_RULE_VALIDATION_2026-10-05.md`. All jobs/watchers done, ETA0;
+fusion off; inline-direction semantic gate remains unresolved.
+
 Fixed-rule validation is running on four previously unused calibration scores,
 133 native targets; this is not the formal test split or verified training
 independence. Baseline/candidate use identical decoding and frozen gates. OCR and

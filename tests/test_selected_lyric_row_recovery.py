@@ -1,6 +1,6 @@
 import pytest
 
-from training.onnx.recover_selected_lyric_rows import recover
+from training.onnx.recover_selected_lyric_rows import recover, vocal_calls_from_final
 
 
 def row(text, left=100, right=140, top=60, bottom=80):
@@ -58,3 +58,14 @@ def test_inline_direction_still_passes_geometry_without_semantic_role():
     rows, evidence = recover([seed], [seed, direction], transforms(), {0})
     assert rows == [seed, direction]
     assert evidence["accepted"][0]["text"] == "a tempo"
+
+
+def test_missing_final_provenance_never_invents_staff_ownership():
+    assert vocal_calls_from_final(
+        [
+            {"voice_index": 0},
+            {"voice_index": 0, "staff_call": None},
+            {"voice_index": 0, "staff_call": 3},
+            {"voice_index": 1, "staff_call": 4},
+        ]
+    ) == {3}

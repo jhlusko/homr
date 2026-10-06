@@ -16019,3 +16019,21 @@ This is reserved calibration validation, not a formal test or verified training-
 independent result. Local root `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-fixed-rule-validation-20261005/`;
 watcher produces comparison.json with exact target gains/losses and paired audits.
 Eight focused tests/lint pass. Fusion off.
+## 2026-10-05 — Fixed-rule validation finishes; part/context assumptions exposed
+
+Four reserved calibration scans complete: detector250.7s, decode172.1s; paired
+baseline50/133→candidate51/133 frozen-window targets, one gained exact target,
+zero losses. All baseline attachments survive; outputswithout native lyric-note
+identity unchangedat1. Four exact exporter replays. Missing final staff-call
+provenance cannot seed row recovery; fixed guard, no threshold retuning. Finishing
+source, prior failure receipts and partial recovered output retained.
+Chaminadevoice0 is piano grandstaff, vocalpart1 (secondexportedpart) begins after
+two-bar instrumental introduction. Strictfirstvoice scoring0/30; separate native
+part2/+2measure diagnostic reachesall30 targets. Frozen comparison unchanged.
+Storednativepagewindows list2systems/measures1–5, but originalhaspianointro plus
+two vocalsystems; lastsystem appears throughmeasure8/42targets, needs recertifying.
+Next source-free vocal staff/part identification, introduction measure context and
+complete-page native boundary certification. Inline a tempo stillpasses geometry.
+Local comparison `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-fixed-rule-validation-20261005/comparison.json`;
+part diagnostic sibling `chaminade-part-identity-audit.json`. Nine focused tests/lint
+pass. Jobs/watchersdone, ETA0; fusionoff. Not formal test or full-page release gate.
