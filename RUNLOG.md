@@ -16081,3 +16081,19 @@ write-up `/home/jhlusko/workspace/homr/docs/C1_RUNTIME_INTRODUCTION_2026-10-05.m
 Next in-row direction semantic controls, broader untouched scans, remaining
 notehead-association abstentions before lyric wiring. Fusionoff; published model/
 provider pins, training and production unchanged.
+
+## 2026-10-05 — In-row direction control confirms semantic gate
+
+Real scan `IMSLP83318` contains a selected OCR row `a tempo.` in the same lyric
+band as vocal text. Geometry routes it to the vocal staff and the attachment
+diagnostic incorrectly attaches its two words to decoded notes. A separate piano
+`tempo.` row is correctly rejected as non-vocal. Other controls include outside-row
+`ben legato e cantando`, `Revenez au 1er mouv!` and `tremolando.`. The bounded
+same-row recovery rule rejects distant controls but cannot solve in-row role.
+No word whitelist or native text was used. Automatic lyric attachment remains
+disabled for ambiguous rows; positive gates must report lyric recall, direction
+false attachment and abstention separately. Review page:
+`http://localhost:8765/c1-semantic-role-review-20261005/`; local artifact root
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-semantic-controls-20261005/`.
+Write-up: `docs/C1_SEMANTIC_ROLE_CONTROLS_2026-10-05.md`. No model, pin, runtime
+fusion or production change. One-thread diagnostic complete, ETA0.
