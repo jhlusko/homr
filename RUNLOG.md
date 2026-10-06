@@ -15961,3 +15961,16 @@ system retains nine of eleven associations; chord-dense fourth retains none of
 thirteen (ten are chord notes). Literal-text and unresolved nearest-head audit next.
 Local result `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-expanded-attachment-score-v6-20261005/report.json`.
 Twenty-one focused tests and scoped lint pass. All jobs done, ETA 0; fusion off.
+## 2026-10-05 — Partition frozen native lyric errors
+
+Added evaluation-only audit, checking all frozen scoring input hashes and retaining
+strict native note timing/pitch/alteration/duration identity. Exact matches reserved
+before mismatch allocation; duplicate capacity capped, oracle verse mapping remains
+evaluation-only. All 480 targets partition: 311 exact, 100 missing attachments at
+decoded identities, 60 different texts at exact note/oracle verse, five absent
+decoded identities, four ambiguous native targets. These are not certified detector
+misses or OCR error causes. Seven differences are NFC/outer-whitespace only; broad
+normalization equates 31 but erases meaningful distinctions such as we're/were.
+Local report `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-native-lyric-error-audit-v2-20261005/report.json`.
+Next trace missing outputs, then classify text differences from pixel/head evidence.
+Four new focused tests and scoped lint pass; jobs complete, ETA 0; fusion off.

@@ -3,6 +3,10 @@
 Latest canonical result is v6: **311/480 (64.8%)**, with evaluation-only verse
 mapping. The v4 baseline and v5 follow-up below remain historical evidence.
 See the chord-localization follow-up at the end for remaining limitations.
+The subsequent frozen error audit partitions the 169 misses into 100 absent
+attachments at decoded identities, 60 text differences, five absent decoded
+identities and four ambiguous native targets. See
+`docs/C1_NATIVE_LYRIC_ERROR_AUDIT_2026-10-05.md` for caveats and priorities.
 
 The eight expanded calibration pages recover 300 of 480 native lyric targets
 (62.5%) with literal text at the exact exported note's measure, onset, written pitch,

@@ -1,5 +1,15 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Native error decomposition is complete: 100 targets lack attachments at identities
+present in decoded XML, 60 have different text at the exact note/oracle verse,
+five lack exact decoded identities, four are ambiguous native references. The
+311/480 literal score is unchanged. Seven text differences are NFC/outer-whitespace
+only; broad punctuation normalization would erase meaningful differences.
+Next trace missing outputs, especially Jagdlied and the sparse-unresolved-candidate
+Lang/Franz pages, then separate recognition versus shifted-syllable causes among
+the text differences. See `docs/C1_NATIVE_LYRIC_ERROR_AUDIT_2026-10-05.md`.
+All jobs complete, ETA 0; fusion off.
+
 Decoded chord uncertainty is now localized diagnostically: v6 retains all earlier
 attachments and reaches 311/480 exact native lyric targets (64.8%, evaluation-only
 verse mapping). Three added Bizet attachments match native lyric-note identities;
