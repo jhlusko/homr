@@ -1,5 +1,15 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The missing-separator calibration hypothesis now splits `nemÁb` into `nem | Áb`,
+giving 3/3 correct note owners and 2/3 literal texts for the reviewed three-syllable
+region. It changes only that region across 743 cached OCR regions on ten calibration
+scans; the eight-page expansion reproduces 594/594 texts/boxes. This is stability
+evidence, not independent accuracy qualification. See
+`docs/C1_SYLLABLE_POSITIONS_2026-10-05.md`, http://localhost:8765/c1-syllables/ and
+http://localhost:8765/c1-gap-controls/. All jobs complete, ETA 0. Next develop
+mismatch-safe notehead association and automatic system/verse routing, and qualify
+gap proposals against broader native-linked cases before any runtime integration.
+
 C1 now has CTC-positioned syllables with 149/149 cached texts/parent boxes unchanged.
 On 17 reviewed syllables, detected-notehead anchors give 17 correct ownerships versus 14
 from attention; literal text is correct 15/17. Final provenance survives 414/414 decoded

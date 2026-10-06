@@ -61,10 +61,44 @@ XML anchors uniquely agree with native staff, physical measure, onset, pitch
 anchor keys are missing. This verifies the two selected pages; it does not prove
 coverage for every fork/repair, polyphonic note ownership or pixel localization.
 
+## Missing-separator calibration follow-up
+
+An opt-in spacing hypothesis splits a token only when each resulting fragment has
+at least two characters and the gap exceeds 2.5 times the token's median positive
+CTC character-center spacing. It preserves every recognized character. Threshold
+2.5 was selected on the `nemÁb` calibration example; it is not a frozen production
+rule or an independent test result.
+
+The Franz row changes `mei | nemÁb` to `mei | nem | Áb`. Its reviewed native targets
+are `mei | nem | Ab`: all three note owners are correct with fixed system/verse
+routing and count-exact noteheads; literal text is correct for two of three.
+The OCR accent is deliberately retained. The other 148 rows on the initial pages
+are unchanged.
+
+The same OCR graphs replayed the eight previously frozen expanded calibration
+pages in 69.8 seconds, using one OpenCV thread and one ONNX thread per pool.
+All 594 parent texts/boxes reproduce exactly; the same spatial rule makes no
+additional proposals. Across ten calibration scans, only one of 743 regions
+changes. Unchanged regions are stability controls, not 742 independently certified
+negative examples, and no recall/false-positive rate is inferred from these counts.
+
+The repaired example is at http://localhost:8765/c1-syllables/; sixteen unchanged
+word/phrase controls are at http://localhost:8765/c1-gap-controls/. The controls
+include non-lyric text and are selected for inspecting long character sequences.
+Five syllable-position tests pass. All compute is complete, ETA 0.
+
+Local evidence: sibling directories under the artifact workspace named
+`c1-missing-separators-20261005-final/`, `c1-gap-expanded-positions-20261005/`, and
+`c1-gap-expanded-proposals-20261005/`. The first contains the native witness score;
+the latter two contain the expanded OCR receipt, changed-region report and controls.
+The driver is `training/onnx/pilot_missing_lyric_separators.py`.
+
 ## Remaining work
 
-1. Test fused syllables with missing separators, such as Franz `nemÁb`, using
-   character geometry and scan evidence. Spaces/hyphens alone cannot resolve them.
+1. Qualify the spatial-gap hypothesis against broader native-linked missing-
+   separator and ordinary-word controls. Small gaps, short fragments and OCR
+   character errors remain unresolved; the successful single witness is not a
+   general syllable-segmentation gate.
 2. Qualify association between decoded notes and segmented noteheads on count
    mismatches, chords, recognition errors and missed/extra noteheads. The current
    count-exact monophonic mapping must not be generalized by index.
