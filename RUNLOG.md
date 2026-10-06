@@ -16101,3 +16101,22 @@ User review confirms all six displayed controls are direction text: `legato`,
 `ben legato e cantando`, `tempo.`, `a tempo.`, `Revenez au 1er mouv!`, and
 `tremolando.`. This confirms the in-row false-attachment case, but is positive
 direction evidence only; a matched true-lyric set is still needed for precision.
+
+## 2026-10-05 — User-reviewed pages bound to artifacts; actual OSSQ crop gap measured
+
+User accepts all four alignment pages; Chaminade scan systems3,3,2,3 confirmed.
+MuseScore reflow is not scan-system evidence; full rendering/table retained.
+Final review binds exact HTML/PDF/full PNG artifacts, source/image hashes and user
+confirmation; original unbound receipt retained. CLI now requires reviewer and
+confirmation, refuses overwrite, and reads actual compressed-reference part count.
+Certified packet `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-page-extension-20261005/certified-bound-artifacts/`.
+Local legacy portable crop inventory34,510train/3,911valid across84scores. Index
+and labels match; all indexed images/labels exist. Neither reviewed OSSQ score
+appears in this corpus. All84 nonempty CSVs; zero scanned-system metadata folders.
+Synthetic/unaligned metadata and CSV presence do not certify crop/source joins.
+This does not establish public-v2 timing-training support. Report sibling
+`local-crop-alignment-inventory-v2.json`, with per-score source hashes and indexes.
+Next archived actual-crop mapping/public-v2 manifest recovery; retain evaluation
+scores outside training. Timing trainer preparation can use qualified Lieder data.
+Eleven page-certification tests/lint pass; one CPU thread, jobsdone ETA0.
+Write-up `docs/OSSQ_CROP_ALIGNMENT_INVENTORY_2026-10-05.md`.
