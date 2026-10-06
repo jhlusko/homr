@@ -16299,3 +16299,23 @@ expansion. See docs/OSSQ_REST_DURATION_RECOVERY_2026-10-06.md.
 Next prepare resumable frozen-core timing-head features/training and benchmark
 local extraction before estimating a full run. No GPU training, publication,
 deployment or corpus/model pin changes.
+
+
+## 2026-10-06 — Resumable frozen-core cached timing probe
+
+Prepared3938 train/299 valid score-disjoint real crops(529/8 OSSQ,3409/291
+Lieder). Accepted September18 core frozen; four independent timing projections
+with equal per-head CE weights and equal-source sampling/objective averages.
+Hash-bound teacher-forced cache aligns hidden[t] to reference[t+1]; masked
+controls/graces unchanged. Every optimizer update atomically checkpoints
+AdamW/epoch/next batch/running head support/history. Bit-exact resume/epoch
+extension/cache-tamper tests pass; twenty total focused tests. Real16-crop smoke
+interrupted after one update, resumed to two epochs; inference correctly refuses
+probe-trained bundles. Benchmark means0.764s Lieder/0.644s OSSQ per crop.
+Full feature extraction plus six epochs launched in persistent tmux
+`timing-probe-full` with15-second watcher. Initial cache ETA45–70min, liveETA
+in status.json; training timing not yet measured. Final scope stays a common-class
+representation probe, not free-decoding/release qualification.
+Local run: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/timing-probe-20261006/`.
+See docs/CACHED_TIMING_PROBE_2026-10-06.md for checkpoints, resume commands,
+monitoring and next gates. No environment rebuild/install or pin/deployment changes.
