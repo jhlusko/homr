@@ -82,6 +82,12 @@ def main():
             detected_noteheads=[
                 list(symbol.center) for symbol in staff.symbols if type(symbol).__name__ == "Note"
             ],
+            detected_notehead_positions=[
+                dict(center=list(symbol.center), staff_position=int(symbol.position))
+                for symbol in staff.symbols
+                if type(symbol).__name__ == "Note"
+            ],
+            staff_grid=[dict(x=float(point.x), y=list(point.y)) for point in staff.grid],
         )
         result = original_prepare(debug, index, staff, image, regions)
         transforms.append(json.loads(json.dumps(active)))

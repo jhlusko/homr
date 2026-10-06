@@ -4,7 +4,11 @@ import argparse
 import json
 from pathlib import Path
 
-from training.onnx.lyric_notehead_association import associate_x
+from training.onnx.lyric_notehead_association import (
+    associate_x,
+    pitch_staff_position,
+    reject_pitch_conflicts,
+)
 from training.onnx.qualify_joint_export import sha, write
 
 
@@ -12,6 +16,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--anchors", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--geometry", type=Path, help="Optional replay with segmented staff positions"
+    )
+    parser.add_argument("--pitch-gate", action="store_true")
     args = parser.parse_args()
     linkage_path = args.anchors / "source-linkage.json"
     pages = json.loads(linkage_path.read_text())["pages"]
@@ -20,9 +28,24 @@ def main():
     errors = []
     hashes = {str(linkage_path): sha(linkage_path)}
     for page_index, page in enumerate(pages):
-        transform_path = args.anchors / f"page-{page_index}/staff-transforms.json"
+        geometry = args.geometry or args.anchors
+        transform_path = geometry / f"page-{page_index}/staff-transforms.json"
         hashes[str(transform_path)] = sha(transform_path)
         transforms = json.loads(transform_path.read_text())
+        if args.geometry:
+            original_notes = args.anchors / f"page-{page_index}/note-anchors.json"
+            replay_notes = geometry / f"page-{page_index}/note-anchors.json"
+            for path in (original_notes, replay_notes):
+                hashes[str(path)] = sha(path)
+            if json.loads(original_notes.read_text()) != json.loads(replay_notes.read_text()):
+                raise ValueError("Replay predictions differ from the frozen calibration linkage")
+        if args.pitch_gate:
+            decoded_path = geometry / f"page-{page_index}/decoded-staves.json"
+            hashes[str(decoded_path)] = sha(decoded_path)
+            vocal = json.loads(decoded_path.read_text())[0]
+            clefs = [row["rhythm"] for row in vocal if row["rhythm"].startswith("clef_")]
+            if len(clefs) != 1:
+                raise ValueError("Diagnostic supports a single predicted vocal clef only")
         for system in page["systems"]:
             links = system["proposed_links"]
             if not links:
@@ -33,6 +56,21 @@ def main():
                 for h in transform["detected_noteheads"]
             )
             decoded = [link["prediction"]["page_coordinate"][0] for link in links]
+            if args.pitch_gate:
+                if any(len(point["y"]) != 5 for point in transform["staff_grid"]):
+                    raise ValueError("Grandstaff pitch mapping is not qualified")
+                positioned_heads = sorted(
+                    transform["detected_notehead_positions"], key=lambda h: h["center"][0]
+                )
+                if [
+                    h["center"][0] * transform["original_to_processed_ratio"][0]
+                    for h in positioned_heads
+                ] != heads:
+                    raise ValueError("Segmented position identities differ from head coordinates")
+                decoded_positions = [
+                    pitch_staff_position(link["prediction"]["pitch"], clefs[0]) for link in links
+                ]
+                detected_positions = [h["staff_position"] for h in positioned_heads]
             if not system["exact_written_pitch_duration_sequence"] or len(heads) != len(decoded):
                 raise ValueError("Calibration reference mapping is not count exact")
             # Sensitivity sweep in original page pixels; no production default selected.
@@ -67,6 +105,15 @@ def main():
                         max_distance=distance,
                         ambiguity_margin=5,
                     )
+                    if args.pitch_gate:
+                        result = reject_pitch_conflicts(
+                            result,
+                            [decoded_positions[i] for i, _ in notes],
+                            [
+                                detected_positions[i] if i >= 0 else detected_positions[removed]
+                                for i, _ in detections
+                            ],
+                        )
                     correct = sum(notes[i][0] == detections[j][0] for i, j in result["pairs"])
                     for i, j in result["pairs"]:
                         if notes[i][0] != detections[j][0]:
@@ -119,6 +166,7 @@ def main():
             "Two selected calibration pages; simulated omissions/duplicates are robustness controls, not held-out accuracy"
         ),
         "source_used_by_matcher": False,
+        "pitch_gate": args.pitch_gate,
         "reference": (
             "Existing count-exact strictly monotonic vocal notehead linkage; pixel ownership is not independently certified"
         ),

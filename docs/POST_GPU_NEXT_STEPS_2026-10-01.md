@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+The predicted-pitch guard rejects all four mismatch-control errors but also three
+correct Franz pairs: original coverage becomes 62/70, zero wrong in these controls.
+Staff-gap routing assigns 75 preselected OCR regions and passes seven reviewed
+staff checks; native verse identity remains unresolved. See
+`docs/C1_NOTEHEAD_ASSOCIATION_2026-10-05.md`. Next repeated-pitch/real mismatch
+qualification and expanded physical routing. Eighteen tests pass, replay preserves
+XML/caches, all jobs complete (ETA 0). Fusion remains disabled.
+
 The count-mismatch audit matches 65/70 original vocal notes correctly but produces
 four wrong matches when decoded notes are removed in controlled perturbations.
 Geometry-only mutual nearest association is therefore not qualified. See

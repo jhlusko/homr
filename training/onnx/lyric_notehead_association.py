@@ -1,6 +1,37 @@
 """Conservative diagnostic association; no count equality or native labels required."""
 
 import math
+import re
+
+
+def pitch_staff_position(pitch, clef):
+    """Diatonic half-line units: bottom staff line is 1; unknown clefs fail closed."""
+    note = re.fullmatch(r"([A-G])(?:[#b]*)(-?\d+)", pitch)
+    sign = re.fullmatch(r"clef_([GFC])([1-5])", clef)
+    if note is None or sign is None:
+        raise ValueError("Unsupported pitch or clef")
+    steps = "CDEFGAB"
+    reference = {"G": ("G", 4), "F": ("F", 3), "C": ("C", 4)}
+    step, octave = reference[sign[1]]
+    bottom = 7 * octave + steps.index(step) - 2 * (int(sign[2]) - 1)
+    return 7 * int(note[2]) + steps.index(note[1]) - bottom + 1
+
+
+def reject_pitch_conflicts(result, decoded_positions, detected_positions):
+    """Reject conflicting pairs without rematching to another nearby head."""
+    pairs = []
+    rejected = []
+    for i, j in result["pairs"]:
+        if decoded_positions[i] == detected_positions[j]:
+            pairs.append((i, j))
+        else:
+            rejected.append((i, j))
+    return {
+        "pairs": pairs,
+        "pitch_conflicts": rejected,
+        "unresolved_decoded": sorted([*result["unresolved_decoded"], *(i for i, _ in rejected)]),
+        "unresolved_detected": sorted([*result["unresolved_detected"], *(j for _, j in rejected)]),
+    }
 
 
 def associate_x(decoded, detected, *, max_distance, ambiguity_margin):
