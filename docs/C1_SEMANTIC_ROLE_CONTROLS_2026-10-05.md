@@ -30,6 +30,13 @@ engineering decision. The evidence is sufficient to keep automatic lyric
 attachment disabled for rows whose semantic role is uncertain. A word whitelist
 would be brittle, language-dependent and unnecessary for the safe gate.
 
+Human review confirms that all six displayed controls are direction text:
+`legato`, `ben legato e cantando`, `tempo.`, `a tempo.`, `Revenez au 1er mouv!`,
+and `tremolando.`. This confirms the important in-row failure, but it is a
+positive direction sample rather than a complete precision estimate: the page
+does not contain a matched set of true lyric rows and cannot establish that all
+future routed rows are directions.
+
 Current measured results remain unchanged: corrected runtime context scores
 82/145 exact native lyric targets across the four calibration pages; the Bizet
 `a tempo.` control is one of the unresolved semantic cases, and the existing
