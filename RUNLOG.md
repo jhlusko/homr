@@ -16242,3 +16242,18 @@ Details `docs/OSSQ_ACCIDENTAL_REPLAY_2026-10-06.md`; release sequence updated.
 Next bind source-window/overlay evidence into local timing qualification and
 measure class support separately by corpus/split before resumable timing heads.
 This repairs bounded cases; does not claim all OSSQ labels are certified.
+
+
+## 2026-10-06 — Repaired OSSQ timing packet
+
+Bound canonical timing to the 12 locally corrected crops after unique all-part
+source-window and hash checks. Restored original divisions/ticks and two dropped
+tuplet display attributes; corrected token and notation bytes preserved.
+Train: 4 crops, 88 timed events; valid: 8 crops, 121 events. Zero unseen frozen
+classes or duration conflicts. Elapsed/written/ratio support: 88/121 each;
+rest-head support: 0/19. No training tuplets/rests in this bounded tranche.
+Nine focused tests pass. No GPU jobs/publication/pin changes. Next certify
+unchanged OSSQ training crops with tuplets/rests and combine actual crop support
+with Lieder before resumable timing-head preparation. Details in
+`docs/OSSQ_REPAIRED_TIMING_2026-10-06.md`. Final local evidence:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-repaired-timing-packet-20261006-v2/report.json`.
