@@ -42,6 +42,8 @@ def main():
     parser.add_argument("--ocr", type=Path, required=True)
     parser.add_argument("--regions", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--areas", type=int, nargs="+", default=[4, 200])
+    parser.add_argument("--coverages", type=float, nargs="+", default=[0.1, 0.25, 0.5])
     args = parser.parse_args()
     if args.out.exists():
         raise ValueError("Output must be new")
@@ -50,8 +52,8 @@ def main():
         raise ValueError("Calibration only")
     args.out.mkdir(parents=True)
     summary = []
-    for area in (4, 200):
-        for threshold in (0.1, 0.25, 0.5):
+    for area in args.areas:
+        for threshold in args.coverages:
             directory = args.out / f"area{area}-coverage{threshold:g}"
             directory.mkdir()
             for page in pages:

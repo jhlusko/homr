@@ -50,3 +50,11 @@ def test_cached_text_identity_checked_and_metadata_allowed():
     )
     with pytest.raises(ValueError, match="differ"):
         recover([seed], [row("changed")], transforms(), {0})
+
+
+def test_inline_direction_still_passes_geometry_without_semantic_role():
+    seed = row("word")
+    direction = row("a tempo", 180, 200)
+    rows, evidence = recover([seed], [seed, direction], transforms(), {0})
+    assert rows == [seed, direction]
+    assert evidence["accepted"][0]["text"] == "a tempo"

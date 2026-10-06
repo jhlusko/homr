@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Fixed-rule validation is running on four previously unused calibration scores,
+133 native targets; this is not the formal test split or verified training
+independence. Baseline/candidate use identical decoding and frozen gates. OCR and
+positions completed; detector resumed after fixing provider imports. Persistent
+tmux runner/watcher, one thread, initial remaining ETA 8–10 minutes. An inline
+`a tempo` control passes geometry, so semantic lyric-role qualification still gates
+activation. See `docs/C1_FIXED_RULE_VALIDATION_2026-10-05.md`.
+
 Bounded established-row recovery candidate reaches 331/480 exact lyric targets
 (69.0%, +20). All baseline attachments survive; 21 additions all have exact native
 lyric-note identities. A horizontal extension bound rejects distant `legato` but

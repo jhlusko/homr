@@ -16003,3 +16003,19 @@ Local selection `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/ins
 score `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-established-row-score-v2-20261005/report.json`.
 Next held-out/in-row direction controls, then 41 association abstentions. Three
 new tests; six focused tests and lint pass. Jobs complete, ETA 0; fusion off.
+## 2026-10-05 — Start fixed-rule reserved calibration validation
+
+Frozen four unused scores by pixel hash/layout/native boundary-safe windows:
+IMSLP154059, IMSLP24047, IMSLP476183, IMSLP556523, 133 lyric targets. Excluded
+all ten previous diagnostic scores and reserved154086/89797. Native labels never
+enter selection/recovery; gates frozen, no retuning. Persistent one-thread tmux
+c1-fixed-validation and c1-fixed-validation-watch; OCR50.4s, positions30.5s complete.
+Initial detector startup lacked provider import path; corrected and resumed prior
+successful stages, retaining failure/progress/source receipts. Remaining ETA8–10m.
+Inline a tempo synthetic control passes geometry, proving semantic-role limitation.
+Two formal test manifest rows including annotations were inadvertently printed
+during inventory; neither selected or used to fit gates, no test inference/scoring.
+This is reserved calibration validation, not a formal test or verified training-
+independent result. Local root `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-fixed-rule-validation-20261005/`;
+watcher produces comparison.json with exact target gains/losses and paired audits.
+Eight focused tests/lint pass. Fusion off.
