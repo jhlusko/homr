@@ -15989,3 +15989,17 @@ association abstentions; do not remove the detector gate wholesale. Evidence:
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-missing-attachment-trace-20261005/report.json` and
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-all-ocr-attachment-control-20261005/report.json`.
 Three new tests; 22 scoped tests and lint pass. Jobs complete, ETA 0; fusion off.
+## 2026-10-05 — Constrained detector-rejected lyric fragment recovery
+
+Diagnostic source-free recovery uses existing selected physical-row seeds only,
+unique row overlap with all seed members, unpadded staff-gap containment, alphabetic
+content and bounded horizontal extension (four median seed heights, uncalibrated).
+No chaining/new rows or baseline routing changes. Unbounded rule recovers 335/480
+but admits distant legato; bounded candidate recovers 331/480 (69.0%, +20), keeping
+every baseline attachment. Twenty-one additions all match native lyric-note
+identities, 20 exact texts; unmatched-native-note outputs unchanged at 15. Bound
+rejects direction control but loses valid edge fragments; no semantic qualification.
+Local selection `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-established-row-selection-v3-20261005/`;
+score `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-established-row-score-v2-20261005/report.json`.
+Next held-out/in-row direction controls, then 41 association abstentions. Three
+new tests; six focused tests and lint pass. Jobs complete, ETA 0; fusion off.

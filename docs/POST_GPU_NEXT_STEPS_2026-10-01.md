@@ -1,5 +1,13 @@
 # Local follow-up after the 2026-09-29 random-start experiment
 
+Bounded established-row recovery candidate reaches 331/480 exact lyric targets
+(69.0%, +20). All baseline attachments survive; 21 additions all have exact native
+lyric-note identities. A horizontal extension bound rejects distant `legato` but
+forgoes some valid edge fragments. No semantic classifier or held-out qualification
+is claimed. Next held-out scans plus in-row direction controls, then the 41
+association abstentions. See `docs/C1_ESTABLISHED_ROW_RECOVERY_2026-10-05.md`.
+All jobs finished, ETA 0; fusion off.
+
 Missing-attachment tracing identifies 41 notehead association abstentions, 30 heads
 with candidates only in another physical row and 29 heads without routed syllables.
 Detector selection excludes real cached lyric fragments. All-OCR control improves

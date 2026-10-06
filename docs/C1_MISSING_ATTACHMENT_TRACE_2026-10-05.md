@@ -1,5 +1,10 @@
 # Missing lyric attachment trace — 2026-10-05
 
+Constrained follow-up now gains 20 exact targets (331/480) while preserving every
+baseline attachment and adding no outputs without native lyric-note identity.
+The bounded row rule rejects distant directions but needs held-out/in-row controls;
+see `docs/C1_ESTABLISHED_ROW_RECOVERY_2026-10-05.md`.
+
 All 100 missing attachments at exact decoded native identities now have cached
 traces. Instrumentation leaves every baseline prediction and unresolved candidate
 unchanged across eight pages; literal recovery stays **311/480 (64.8%)**.
