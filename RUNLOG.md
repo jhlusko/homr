@@ -16218,3 +16218,27 @@ Viewer has `user-pixel-review-receipt.json`, preserved previous HTML and updated
 Release sequence and pixel-review doc updated. Next bounded local corrected
 system replay with key/tie and sidecar consistency checks, then timing support.
 Inspection complete, ETA0; persistent review server remains.
+
+### 2026-10-06 — Bounded OSSQ source accidental/key replay qualified locally
+
+Replayed12 crops (allfour parts in three adjudicated systems). Exactly six
+pitch-lift fields corrected; missing one-flat key token inserted for four Haydn
+staff labels. Timed rhythm/pitch position/event counts unchanged; public
+articulation/slur/position fields preserved. All209 notation records copied
+byte-identically, retaining stem/tie/beam/etc targets. Read/attach/decoder checks
+pass for all12.88 annotated train symbols,121 validation; no score/split moves.
+After corrections allthree segments match unique all-part original musical
+windows including alter: physical78–81,902–912,1028–1034. Original public
+labels still hash-identical. No public corpus/model/provider/runtime changes.
+
+Final completion/source-window receipts:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/ossq-accidental-replay-20261006-v3/`.
+Tool `training.onnx.replay_ossq_accidental_repairs` refuses changed evidence,
+baseline music mismatch, new rhythm/pitch/event counts, unreviewed parts and
+chord edits requiring sidecar reorder audit. Earlier partial runs retained as
+diagnostics; v3 is completed packet. Two new repair tests plusfour source-window
+tests pass; scoped lint/diff checks pass. All jobs complete, ETA0; no GPU needed.
+Details `docs/OSSQ_ACCIDENTAL_REPLAY_2026-10-06.md`; release sequence updated.
+Next bind source-window/overlay evidence into local timing qualification and
+measure class support separately by corpus/split before resumable timing heads.
+This repairs bounded cases; does not claim all OSSQ labels are certified.
