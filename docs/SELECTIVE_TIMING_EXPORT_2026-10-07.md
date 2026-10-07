@@ -1,5 +1,13 @@
 # Selective timing export probe — 2026-10-07
 
+> **2026-10-07 semantic correction:** the validation ratio-2:1 examples previously
+> called “duplets” are tremolo-associated (all 135 targets), including unmarked
+> members of tremolo-bearing chords. These results do not qualify ordinary duplets.
+> The piano part does have a 4/4 declaration; its vocal peer supplies independent
+> bar-length evidence. A legacy paired-tremolo rule outperforms the head policy on
+> the inspected complete page. See [the staff-lane investigation](STAFF_LANE_TREMOLO_TIMING_2026-10-07.md).
+
+
 The source-free crop serialization probe completed all 299 cached validation crops.
 It added seven correct full-measure-rest flags across five Lieder crops, with zero
 flag regressions. No duplet proposals passed the conservative context gates;

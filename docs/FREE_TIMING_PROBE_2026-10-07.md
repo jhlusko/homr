@@ -1,5 +1,13 @@
 # Image-only timing probe qualification — 2026-10-07
 
+> **2026-10-07 semantic correction:** the validation ratio-2:1 examples previously
+> called “duplets” are tremolo-associated (all 135 targets), including unmarked
+> members of tremolo-bearing chords. These results do not qualify ordinary duplets.
+> The piano part does have a 4/4 declaration; its vocal peer supplies independent
+> bar-length evidence. A legacy paired-tremolo rule outperforms the head policy on
+> the inspected complete page. See [the staff-lane investigation](STAFF_LANE_TREMOLO_TIMING_2026-10-07.md).
+
+
 The complete299-crop free-decoding benchmark finished06:09UTC:291 Lieder and eight
 OSSQ validation crops. Epoch4 and epoch6 timing projections read the same frozen
 September core predictions. This is a raw crop research probe, not the accepted

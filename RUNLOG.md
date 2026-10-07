@@ -16448,3 +16448,31 @@ predictions, but mixed piano staff and missing-meter guards reject every change.
 Keep timing research-only; do not broadly weaken guards. Full-rest metadata gains
 are established on these pages and do not imply recognition gains. C1 semantic
 routing remains an independent release blocker.
+
+## 2026-10-07 — Ratio 2:1 is tremolo timing here; legacy export rule wins
+
+Audited all135 validation ratio2:1 targets:133 Der Zwerg and2 IMSLP557088, all in
+co-onset groups carrying tremolo. Earlier “duplet” interpretation was wrong;
+ordinary duplets remain unqualified. Native source and MusicXML specification
+confirm two-note tremolos use written half notes with halved consumed duration,
+time-modification2:1, and no tuplet brackets.
+
+Recovered prediction-only context: decoded piano DOES declare4/4; vocal other bars
+provide independent four-quarter witnesses. Strict all-head agreement still abstains.
+Elapsed-advisory head policy, restricted to paired tremolo lanes, changes16 notes
+in2 bars: rhythm123->107/477, strict onset155->138/477. Legacy paired-tremolo rule,
+without timing-head decisions, changes103 notes in13 bars: rhythm123->20/477,
+strict onset155->34/477. Pitch3/465 and accidental1/465 unchanged. No native bar
+regresses under either policy; untouched bar events/locations identical. Targeted
+XML voice normalization explicitly recorded (2 head-policy notes,7 rule notes).
+
+Found generic exporter bracket leakage across staves. Research-only renderer
+preserves untargeted bracket marks and suppresses newly introduced tuplets for
+paired tremolos; shipping runtime unchanged. Failed initial candidate retained.
+Timing gains are demonstrated on an already-inspected single page; no promotion.
+
+Details, executed sources and final local artifact paths:
+`docs/STAFF_LANE_TREMOLO_TIMING_2026-10-07.md`. Corrected interpretation at the top
+of cached/free/selective timing docs. Next priority is broader positive/negative
+OSSQ/Lieder qualification of paired-tremolo export handling, then a flagged runtime
+patch. Genuine duplets need their own examples. C1 semantic routing remains separate.
