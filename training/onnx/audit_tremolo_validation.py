@@ -78,6 +78,8 @@ def main():
         proposals = json.loads((directory / "prediction-only-proposals.json").read_text())
         if proposals["source_sha256"] != completion["policy_sha256"]:
             raise ValueError("Mixed policy versions")
+        if proposals.get("peer_span_sha256") != completion.get("peer_span_sha256"):
+            raise ValueError("Mixed peer context versions")
         roots = {}
         for arm in ("control", "selective"):
             path = directory / (arm + ".musicxml")
@@ -148,6 +150,8 @@ def main():
             successful=sum(r["status"] == "ok" for r in cases),
             source_sha256=sha(__file__),
             completion_sha256=sha(args.run / "completion.json"),
+            adaptive_replay=(args.run / "selection-receipt.json").exists()
+            and "source_run" in json.loads((args.run / "selection-receipt.json").read_text()),
             limitation="Fixed research rule, new scores disjoint from policy development; recognition/model exposure tracked, not untouched test. Ground truth only scores frozen exports. Cached controls are reported separately. Failures remain visible.",
         ),
     )

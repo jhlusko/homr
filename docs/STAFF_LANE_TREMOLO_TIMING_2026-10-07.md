@@ -1,7 +1,11 @@
 # Staff-lane timing investigation — 2026-10-07
 
-Latest broader qualification: all 13 pages completed with zero edits; safe
-abstention only, no new positive repair evidence. See
+Latest context experiment: 93 timing edits on four additional selected scores,
+zero native-measure regressions; seven cached and one single-note controls unchanged.
+See [TREMOLO_PEER_CONTEXT_2026-10-07.md](TREMOLO_PEER_CONTEXT_2026-10-07.md).
+
+Original fixed-policy broader qualification: all 13 pages completed with zero
+edits; safe abstention only. Follow-up context gains are linked above. See
 [TREMOLO_SCORE_VALIDATION_2026-10-07.md](TREMOLO_SCORE_VALIDATION_2026-10-07.md).
 
 The apparent “duplet” gains in this timing probe are **two-note tremolo timing**.

@@ -1,5 +1,9 @@
 # Broader paired-tremolo validation — 2026-10-07
 
+Follow-up: prediction-only context repairs now show gains on four scores. See
+[TREMOLO_PEER_CONTEXT_2026-10-07.md](TREMOLO_PEER_CONTEXT_2026-10-07.md).
+This original fixed-policy zero-edit batch remains preserved below.
+
 The frozen research rule completed all 13 selected pages: six new scores and seven
 cached controls. Every page made zero edits; no native measure regressed, and all
 reported event, pitch, rhythm and accidental scores stayed identical. This tests

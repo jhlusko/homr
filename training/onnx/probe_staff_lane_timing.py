@@ -17,13 +17,27 @@ from training.onnx.qualify_free_timing_probe import legacy_timing, serialize
 from training.onnx.qualify_joint_export import sha, write
 
 
-def context_meter(voices, part_index, bar_index):
+def context_meter(voices, part_index, bar_index, allow_repeated=False):
     target = voices[part_index]
     denominators = [s.rhythm.split("/")[1] for s in target if s.rhythm.startswith("timeSignature/")]
     numerators = [
         int(s.rhythm.split("_")[-1]) for s in target if s.rhythm.startswith("timeSignatureBeats_")
     ]
-    if len(denominators) != 1 or len(numerators) != 1:
+    if allow_repeated:
+        tokens = [
+            s.rhythm
+            for s in target
+            if s.rhythm.startswith(("timeSignature/", "timeSignatureBeats_"))
+        ]
+        if (
+            len(tokens) < 2
+            or len(tokens) % 2
+            or not tokens[0].startswith("timeSignatureBeats_")
+            or not tokens[1].startswith("timeSignature/")
+            or any(tokens[i : i + 2] != tokens[:2] for i in range(0, len(tokens), 2))
+        ):
+            return None, dict(reason="missing-partial-or-changing-target-meter")
+    elif len(denominators) != 1 or len(numerators) != 1:
         return None, dict(reason="missing-or-changing-target-meter")
     declared = Fraction(numerators[0] * 4, int(denominators[0]))
     count = len(bars(target))
@@ -254,7 +268,21 @@ def main():
         action="store_true",
         help="Diagnostic comparator: use legacy paired tremolo semantics without timing predictions",
     )
+    parser.add_argument(
+        "--peer-span-context",
+        action="store_true",
+        help="Research only: independent predicted spans when meter declarations are absent",
+    )
+    parser.add_argument(
+        "--repeat-meter-context",
+        action="store_true",
+        help="Research only: identical complete repeated meter declarations are constant",
+    )
     args = parser.parse_args()
+    if args.repeat_meter_context and not args.legacy_tremolo_rule:
+        raise ValueError("Repeated meter context requires legacy tremolo comparator")
+    if args.peer_span_context and not args.legacy_tremolo_rule:
+        raise ValueError("Peer spans require the legacy paired-tremolo comparator")
     if args.legacy_tremolo_rule and not args.tremolo_only:
         raise ValueError("Legacy tremolo rule requires --tremolo-only")
     args.out.mkdir(parents=True, exist_ok=False)
@@ -278,7 +306,11 @@ def main():
     edits, diagnostics = [], []
     for pi, voice in enumerate(voices):
         for bi, groups in enumerate(bars(voice)):
-            meter, context = context_meter(voices, pi, bi)
+            meter, context = context_meter(voices, pi, bi, args.repeat_meter_context)
+            if meter is None and args.peer_span_context:
+                from training.onnx.tremolo_peer_span import peer_span
+
+                meter, context = peer_span(voices, pi, bi, control_timeline, safe_bar)
             if meter is None:
                 diagnostics.append(dict(part=pi, bar=bi, context=context))
                 continue
@@ -305,6 +337,13 @@ def main():
             elapsed_advisory=args.elapsed_advisory,
             tremolo_only=args.tremolo_only,
             legacy_tremolo_rule=args.legacy_tremolo_rule,
+            peer_span_context=args.peer_span_context,
+            repeat_meter_context=args.repeat_meter_context,
+            peer_span_sha256=(
+                sha(Path(__file__).with_name("tremolo_peer_span.py"))
+                if args.peer_span_context
+                else None
+            ),
             reference_opened=False,
             source_sha256=sha(__file__),
         ),
@@ -375,6 +414,13 @@ def main():
             elapsed_advisory=args.elapsed_advisory,
             tremolo_only=args.tremolo_only,
             legacy_tremolo_rule=args.legacy_tremolo_rule,
+            peer_span_context=args.peer_span_context,
+            repeat_meter_context=args.repeat_meter_context,
+            peer_span_sha256=(
+                sha(Path(__file__).with_name("tremolo_peer_span.py"))
+                if args.peer_span_context
+                else None
+            ),
             provisional=edits,
             diagnostics=diagnostics,
             reference_opened=False,
@@ -403,6 +449,13 @@ def main():
             elapsed_advisory=args.elapsed_advisory,
             tremolo_only=args.tremolo_only,
             legacy_tremolo_rule=args.legacy_tremolo_rule,
+            peer_span_context=args.peer_span_context,
+            repeat_meter_context=args.repeat_meter_context,
+            peer_span_sha256=(
+                sha(Path(__file__).with_name("tremolo_peer_span.py"))
+                if args.peer_span_context
+                else None
+            ),
             metrics={
                 a: dict(
                     recognition=compare(reference, staff_events(r)),

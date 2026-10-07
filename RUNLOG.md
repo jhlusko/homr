@@ -16493,3 +16493,24 @@ counts, original meter preserved and full timeline/negative guards. Runtime unch
 Added reproducible selection/runner/auditor and context diagnostic scripts; cached
 window certification checks aligned contiguous exact native systems. Details in
 `docs/TREMOLO_SCORE_VALIDATION_2026-10-07.md`. Local results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-score-validation-20261007/`.
+
+
+## 2026-10-07 — Prediction-only peer spans and constant repeated meter context
+
+Two separately frozen13-page adaptive replays complete; no failures. Peer spans
+unblock49 note edits in9 Lieder measures; exact complete repeated-meter handling
+adds44 OSSQ edits in11 measures. Final93 edits on4 scores; no native-measure
+regressions;7 cached controls and single-note OSSQ negative unchanged. Lieder
+rhythm154/1388→105/1388, strict416→370; OSSQ67/835→23/835 for rhythm/strict.
+Pitch, accidental, meter and voice assignments unchanged. Missing-header context
+uses predicted aligned peers only, excludes candidate, requires clean complete
+timelines≥3 votes≥75% agreement, no conflicting peers and candidate confirmation.
+Repeated2/2 was incorrectly rejected as changing before; partial/true-changing
+declarations remain guarded. Runtime unchanged; adaptive cohort not untouched.
+
+Added peer-span module, separate replay runner with frozen dependency snapshots,
+and meter-repeat opt-in. Focused24 tests pass and Ruff clean. See
+`docs/TREMOLO_PEER_CONTEXT_2026-10-07.md`; local final results:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-peer-span-validation-20261007-v2/`. Next: freeze and qualify
+additional controls, then default-off runtime extraction/parity, separate from
+timing-head promotion and C1 semantic routing. All jobs finished.
