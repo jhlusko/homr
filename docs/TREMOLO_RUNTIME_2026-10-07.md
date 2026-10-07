@@ -1,5 +1,9 @@
 # Guarded paired-tremolo runtime export — 2026-10-07
 
+Fresh image-first follow-up now passes both flag states on Lieder and OSSQ,
+with exact output parity and no native-measure regressions. See
+[TREMOLO_FRESH_SMOKE_2026-10-07.md](TREMOLO_FRESH_SMOKE_2026-10-07.md).
+
 The qualified paired-tremolo timing rule is now available in the HOMR exporter
 behind a **default-off flag**. It reproduces the frozen research candidates exactly
 on all 17 unique cached pages, while the disabled path reproduces every accepted

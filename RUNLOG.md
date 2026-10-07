@@ -16537,3 +16537,21 @@ Details `docs/TREMOLO_RUNTIME_2026-10-07.md`. Local controlaudit:
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-runtime-parity-20261007-v2/report.json`. Source snapshots retained.
 Next: fresh image-first OSSQ/Lieder on/off smoke withacceptedpins, measurelatency,
 then localreleasecandidate revision/flagdecision. No production change/deploy.
+
+
+## 2026-10-07 — Fresh original-image paired-tremolo pipeline smoke
+
+Four independent accepted-stack CPU runs complete: IMSLP634835p004 andsq9631717,
+each flagoff/on. All four XML outputs exactly match frozen controls/candidates;
+no native-measure regressions. Lieder rhythm30→10/357, OSSQ46→2/380; pitch and
+accidentals unchanged. Pipeline61.52→62.22s and124.87→126.19s; export0.053→1.686s
+and0.016→1.348s. Four concurrent one-thread workers, titleOCR/textdetectorsoff;
+not full provider latency or independent accuracy estimate. Runtime138af38 unchanged.
+
+Added reproducible `training/onnx/smoke_tremolo_pages.py`, snapshots and allpins/flags
+in local candidate receipt. Recommend local candidate opt-in, keep defaultoff.
+No newmodelpin, production/provider change or deploy. Source policies remain
+corpus-specific; testedlocalworktree has other uncommitted work hashed inidentities.
+Docs `docs/TREMOLO_FRESH_SMOKE_2026-10-07.md`; local artifacts:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-fresh-smoke-20261007/`. Alljobsdone, Ruffpasses. Next localservice/provider
+flag configuration/smoke, then C1 semanticqualification andsettled E3 examples.
