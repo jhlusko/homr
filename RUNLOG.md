@@ -16319,3 +16319,18 @@ representation probe, not free-decoding/release qualification.
 Local run: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/timing-probe-20261006/`.
 See docs/CACHED_TIMING_PROBE_2026-10-06.md for checkpoints, resume commands,
 monitoring and next gates. No environment rebuild/install or pin/deployment changes.
+
+### 2026-10-07 — Live timing curves and broader lyric controls
+
+Implemented live per-head/source/class timing dashboard and deterministic broader
+C1 semantic gallery. Eight distinct new-to-C1 Lieder calibration scores; scan-only
+full-page OCR and evaluation-only references, no formal test input. Codex inspected
+42 regions:26 lyrics,15 directions,one credit; not user adjudication or classifier
+performance. All84 original-pixel text/context assets served. Five focused tests,
+Black/Ruff and dashboard JS checks passed. Frozen-core extraction remains active
+in tmux; at05:33UTC2753/4237, recent-progress ETA05:45UTC, then six epochs whose
+duration is not measured yet. Replaced watcher only to exclude long clock gaps
+from ETA; trainer untouched. Next fixed semantic-role evaluation and timing
+free-decoding qualification; lyric fusion remains off.
+See docs/PARALLEL_TIMING_REVIEW_AND_SEMANTIC_CONTROLS_2026-10-07.md for local paths
+and review URLs. No deployment, publication or pin changes.
