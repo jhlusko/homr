@@ -16402,3 +16402,23 @@ decoder symbols observed, 317/320 final note/rest symbols retain timing predicti
 Three missing observations are audited and must abstain. Complete v7 symbol
 objects must be retained for the subsequent candidate-export replay; the observation
 JSON alone is insufficient. No page-level candidate or promotion claim yet.
+
+## 2026-10-07 — Complete accepted-stack selective timing replay
+
+Captured full v7 export objects and replayed four accepted pages (Haydn, Glazunov,
+IMSLP154086, IMSLP89797) in persistent tmux, four one-thread workers. All archived
+accepted controls reproduce exactly. Timing observation coverage is 317/320,
+364/364, 255/255 and 479/479 respectively. Missing observations abstain.
+
+Selective policy made zero changes; all recognition metrics remain unchanged.
+Haydn has usable independent meter; other pages refuse conflicting/missing/changing
+meter or mixed staff. This demonstrates safe abstention, not a full-stack timing
+improvement. Fixed a plain-versus-compressed MusicXML reference reader failure and
+reran only cached serialization/scoring. Both runs and executed sources retained.
+Five focused tests and scoped lint pass. Jobs finished, no active ETA.
+
+Results/local paths and next priorities: `docs/SELECTIVE_TIMING_EXPORT_2026-10-07.md`.
+Next is complete-page qualification for known positive duplet/full-rest crop cases,
+with certified native reference windows. Timing remains research-only; do not
+loosen safeguards based on these already-inspected pages. C1 semantic routing
+remains separately unqualified and automatic lyric fusion stays off.

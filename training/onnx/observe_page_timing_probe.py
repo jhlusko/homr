@@ -1,7 +1,9 @@
 """Passive research timing observations on an exactly matched accepted page replay."""
 
 import argparse
+import copy
 import json
+import pickle
 from pathlib import Path
 
 from training.onnx.qualify_joint_export import setup, sha, write
@@ -59,6 +61,9 @@ def main():
     original_generate = generator.generate_xml
 
     def capture(arguments, voices, title):
+        # Local trusted artifact: retain v7 notation and all cleanup state exactly.
+        with (args.out / "final-export-input.pkl").open("wb") as handle:
+            pickle.dump((arguments, copy.deepcopy(voices), title), handle)
         write(
             args.out / "final-voices-timing.json",
             [
