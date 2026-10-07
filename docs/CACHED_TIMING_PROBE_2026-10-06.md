@@ -114,3 +114,18 @@ triplet recall and full-measure rests versus majority-class behavior. If the
 common classes learn, evaluate on real free-decoded features and expand held-out
 OSSQ coverage before duration/export integration. Unsupported rare classes,
 the small OSSQ validation set and single-score training are explicit limitations.
+
+## Completion and sparse-mask fix — 2026-10-07
+
+All4237 feature crops and six epochs finished. A false assertion stopped the first
+training attempt at next_batch16: no full-rest labels in either source meant a
+legitimately absent gradient. Fixed to check supervision before requiring a
+gradient; nonfinite gradients still fail. Explicit hash-bound migration retained
+optimizer/weights/batch position and running losses; original run archived in
+`full-first-attempt`, receipt in `full/resume-migration.json`. Cached extraction
+identity stays bound to its original source; reuse it for training without
+rerunning extraction under the changed code. Nine focused tests pass.
+Lieder epoch6 accuracy97.60% elapsed,99.19% written,98.88% ratio,99.56% full-rest.
+Ratio minorities remain64.44% duplet/60.61% triplet; free-decoding evidence pending.
+See docs/C1_SEMANTIC_BASELINE_AND_TIMING_RESULTS_2026-10-07.md for class support,
+local report paths and next gates.

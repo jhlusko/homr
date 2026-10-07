@@ -16334,3 +16334,29 @@ from ETA; trainer untouched. Next fixed semantic-role evaluation and timing
 free-decoding qualification; lyric fusion remains off.
 See docs/PARALLEL_TIMING_REVIEW_AND_SEMANTIC_CONTROLS_2026-10-07.md for local paths
 and review URLs. No deployment, publication or pin changes.
+
+### 2026-10-07 — Six timing epochs complete; semantic baseline underway
+
+Completed4237 frozen features. First training stopped at update17 because both
+sources had zero full-rest labels and an overstrict gradient check rejected the
+legitimate absent gradient. Confirmed other three gradients finite. Fixed sparse
+check; exact hash-bound migration retained16 updates,optimizer,epoch/batch and
+running losses. Archived original full run; no cache regeneration. All six epochs
+then completed. Lieder epoch6 accuracy97.60/99.19/98.88/99.56% for elapsed/written/
+ratio/full-rest. Ratio duplet64.44%,triplet60.61%; OSSQ121 events and19 negative-only
+rest flags cannot establish generalization. Teacher-forced only; runtime rejects
+probe bundles. Local class/curve report in timing-probe-20261006/teacher-forced-summary-v2.
+Launched fixed pinned-e2/area200/10%-coverage baseline on eight new calibration
+pages; references only enter scoring. No existing trained semantic-role classifier
+was found. Persistent watcher automatically scores42 inspected regions and serves
+http://localhost:8765/c1-semantic-baseline-20261007/ after completion. Nine focused
+tests pass. Next semantic-role gap assessment and research-only free decoding,
+with independent broader OSSQ qualification. No pins, deployment or fusion changes.
+Details: docs/C1_SEMANTIC_BASELINE_AND_TIMING_RESULTS_2026-10-07.md.
+
+Completion05:54UTC: all eight baseline pages scored and review published.26/26
+inspected lyrics selected;2/15 directions falsely selected(`Etwas geschwind.`,
+`Assez lent`);12 direction abstentions,one direction OCR miss;credit abstained.
+No shared OCR rows in42-region sample. Region selection only,not final attachment
+or whole-page precision. All84 comparison images and report.json served; completed
+epoch6 remains inference-rejected. Both experiment jobs now complete.

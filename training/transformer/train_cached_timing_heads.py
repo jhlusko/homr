@@ -411,6 +411,7 @@ def train(args):
             heads.train()
             optimizer.zero_grad(set_to_none=True)
             source_losses = []
+            batch_support = Counter()
             running = state.setdefault("running", {})
             for source in ("ossq", "lieder"):
                 payloads = [
@@ -423,14 +424,20 @@ def train(args):
                 measured = timing_loss(heads(hidden), targets, weights=identity["weights"])
                 source_losses.append(measured.total)
                 for item in measured.heads:
+                    batch_support[item.name] += item.supervised
                     key = source + "/" + item.name
                     totals = running.setdefault(key, dict(loss_sum=0.0, support=0))
                     totals["loss_sum"] += float(item.loss.detach()) * item.supervised
                     totals["support"] += item.supervised
             loss = torch.stack(source_losses).mean()
             loss.backward()
-            if any(p.grad is None or not torch.isfinite(p.grad).all() for p in heads.parameters()):
-                raise ValueError("Missing/nonfinite timing-head gradients")
+            for head in HEADS:
+                for parameter in heads.projections[head.replace(".", "_")].parameters():
+                    if parameter.grad is None:
+                        if batch_support[head]:
+                            raise ValueError("Missing supervised timing-head gradients: " + head)
+                    elif not torch.isfinite(parameter.grad).all():
+                        raise ValueError("Nonfinite timing-head gradients: " + head)
             optimizer.step()
             bundle.update(heads=heads.state_dict(), trainingStatus="probe-trained")
             state.update(
