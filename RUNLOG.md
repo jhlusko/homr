@@ -16555,3 +16555,15 @@ corpus-specific; testedlocalworktree has other uncommitted work hashed inidentit
 Docs `docs/TREMOLO_FRESH_SMOKE_2026-10-07.md`; local artifacts:
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-fresh-smoke-20261007/`. Alljobsdone, Ruffpasses. Next localservice/provider
 flag configuration/smoke, then C1 semanticqualification andsettled E3 examples.
+
+
+## 2026-10-07 — Dedicated scanner paired-tremolo policy wiring
+
+Explicit default-off service policy reaches both workers, image export and review
+regeneration. Enabled identity/capabilities reports peer-span-v1; disabled shape
+unchanged. Unsupported old runtime rejects opt-in before weight loading. 26 focused
+service tests and scoped lint pass, including real XML generation via HTTP TestClient.
+Not a live model-loading or full provider latency test. Deployed Modal source is old;
+next prepare a compatible isolated runtime-source candidate, then full service smoke.
+No model pin, deploy, push or .env changes. All jobs complete.
+Details: docs/TREMOLO_SERVICE_WIRING_2026-10-07.md.
