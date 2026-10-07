@@ -16360,3 +16360,25 @@ inspected lyrics selected;2/15 directions falsely selected(`Etwas geschwind.`,
 No shared OCR rows in42-region sample. Region selection only,not final attachment
 or whole-page precision. All84 comparison images and report.json served; completed
 epoch6 remains inference-rejected. Both experiment jobs now complete.
+
+### 2026-10-07 — Image-only timing benchmark complete
+
+Built reproducible separate image-only/evaluation manifests and resumable eager
+decoder-hidden capture.21-crop pilot confirms exact unhooked recognition parity;
+full299 crops(291 Lieder,8 OSSQ) completed06:09UTC in persistent tmux,4 workers x2
+threads. Epoch4/6 share one greedy sequence; passive timing labels only,no runtime
+activation. Strict measure/pitch/rest/chord pairing keeps unmatched targets visible.
+Lieder epoch6 elapsed72 improvements/29 regressions;written7/14;ratio77/8;
+full-rest63/1.63 matched positive full-rest flags correct,73/114 matched duplets
+correct;triplet86→83/152 raw legacy→epoch6. OSSQ elapsed/ratio each3/0,small sample.
+Do not replace all timing labels. Next conservative capability-specific policy,
+internal consistency,predicted meter/boundaries and accepted full-policy MusicXML
+comparison,then independent broader OSSQ checks. Raw crop baseline differs from
+shipping policy and previous canonical-chord recognition metrics.
+Metadata-only semantic pool audit:451 unused Lieder calibration pages/102scores,
+4771 lyrics/45 directions(37scores);no complete negative/title/credit class. Need
+representative separately verified non-lyric text before semantic fitting.
+Four focused tests and Black/Ruff/JS/HTTP checks pass. All workers exited0; no
+remaining benchmark job. No deployment/publication/pin/fusion change.
+Details/local artifact paths: docs/FREE_TIMING_PROBE_2026-10-07.md.
+Review: http://localhost:8765/timing-free-decode-20261007/ .
