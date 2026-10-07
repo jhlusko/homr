@@ -215,6 +215,26 @@ def apply(voices, edits):
     return result
 
 
+def certified_window(page):
+    if "boundary_certified" in page:
+        return page["boundary_certified"] is True
+    systems = page.get("systems", [])
+    return (
+        bool(systems)
+        and all(
+            row.get("status") == "aligned"
+            and row.get("boundary_certified")
+            and row.get("count_exact")
+            for row in systems
+        )
+        and all(a["end_measure"] == b["start_measure"] for a, b in zip(systems, systems[1:]))
+        and (
+            systems[0]["start_measure"] == page["start_measure"]
+            and systems[-1]["end_measure"] == page["end_measure"]
+        )
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", type=Path, required=True)
@@ -369,7 +389,7 @@ def main():
     from training.onnx.score_paired_page_diagnostic import read_reference
 
     page = identity["page"]
-    if not page["boundary_certified"] or sha(page["reference"]) != page["reference_sha256"]:
+    if not certified_window(page) or sha(page["reference"]) != page["reference_sha256"]:
         raise ValueError("Uncertified or changed reference")
     reference = staff_events(
         read_reference(page["reference"]), page["start_measure"], page["end_measure"]

@@ -15,12 +15,20 @@ def main():
     parser.add_argument("--probe-models", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--control-only", action="store_true")
+    parser.add_argument(
+        "--skip-selective",
+        action="store_true",
+        help="Capture full accepted objects without the separate timing-head policy",
+    )
     args = parser.parse_args()
     page = json.loads(args.pages.read_text())[args.index]
     if args.control_only:
         from training.onnx import qualify_joint_pages as worker
 
-        worker.POLICY.update(HOMR_STEM_ARBITRATION="1", HOMR_SLUR_SIDE="0")
+        worker.POLICY.update(
+            HOMR_STEM_ARBITRATION="ossq-v7" if page["source"] == "ossq" else "1",
+            HOMR_SLUR_SIDE="ossq-rule" if page["source"] == "ossq" else "0",
+        )
         worker.process(page, json.loads(args.models.read_text()), "accepted", args.out / "accepted")
         return
     if args.out.exists():
@@ -57,6 +65,8 @@ def main():
         ],
         check=True,
     )
+    if args.skip_selective:
+        return
     command = [
         sys.executable,
         "training/onnx/replay_selective_page_timing.py",

@@ -16476,3 +16476,20 @@ Details, executed sources and final local artifact paths:
 of cached/free/selective timing docs. Next priority is broader positive/negative
 OSSQ/Lieder qualification of paired-tremolo export handling, then a flagged runtime
 patch. Genuine duplets need their own examples. C1 semantic routing remains separate.
+
+
+## 2026-10-07 — Broader fixed-policy tremolo qualification and peer-context diagnostic
+
+Completed all13 selected pages (six new scores, seven cached controls), zero edits,
+zero native-measure regressions, zero failed jobs. New Lieder rhythm154/1388 and
+OSSQ67/835 unchanged. This is abstention/replay evidence, not positive repairs or
+promotion. Four new Lieder pages have no decoded meter declarations; new paired
+OSSQ fails missing/changing meter. Single-note OSSQ negative remains unchanged.
+Source-free peer-bar audit finds strong modal spans3,4.5,4, but these coarse votes
+include candidate bars and do not authorize meter inference. Next: separate frozen
+prediction-only context experiment with candidate-excluded votes, aligned bar
+counts, original meter preserved and full timeline/negative guards. Runtime unchanged.
+
+Added reproducible selection/runner/auditor and context diagnostic scripts; cached
+window certification checks aligned contiguous exact native systems. Details in
+`docs/TREMOLO_SCORE_VALIDATION_2026-10-07.md`. Local results: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-score-validation-20261007/`.

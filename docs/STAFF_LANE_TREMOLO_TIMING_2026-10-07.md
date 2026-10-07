@@ -1,5 +1,9 @@
 # Staff-lane timing investigation — 2026-10-07
 
+Latest broader qualification: all 13 pages completed with zero edits; safe
+abstention only, no new positive repair evidence. See
+[TREMOLO_SCORE_VALIDATION_2026-10-07.md](TREMOLO_SCORE_VALIDATION_2026-10-07.md).
+
 The apparent “duplet” gains in this timing probe are **two-note tremolo timing**.
 All 135 validation targets carrying ratio 2:1 belong to tremolo-bearing co-onset
 groups: 133 in Schubert Der Zwerg and two in IMSLP557088. Unmarked chord members

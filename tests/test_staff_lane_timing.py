@@ -158,3 +158,55 @@ def test_legacy_tremolo_rule_does_not_depend_on_timing_head_values():
         lane_proposal(groups, "upper", Fraction(4), tremolo_only=True, legacy_tremolo_rule=True)[0]
         == expected
     )
+
+
+def test_cached_page_requires_certified_contiguous_native_window():
+    from training.onnx.probe_staff_lane_timing import certified_window
+
+    page = dict(
+        start_measure=2,
+        end_measure=8,
+        systems=[
+            dict(
+                start_measure=2,
+                end_measure=5,
+                status="aligned",
+                boundary_certified=True,
+                count_exact=True,
+            ),
+            dict(
+                start_measure=5,
+                end_measure=8,
+                status="aligned",
+                boundary_certified=True,
+                count_exact=True,
+            ),
+        ],
+    )
+    assert certified_window(page)
+    page["systems"][1]["start_measure"] = 6
+    assert not certified_window(page)
+    page["systems"][1]["start_measure"] = 5
+    page["boundary_certified"] = False
+    assert not certified_window(page)
+
+
+def test_legacy_rule_preserves_single_note_tremolo_timing_and_existing_triplets():
+    singles = []
+    for i in range(4):
+        symbol = EncodedSymbol("note_4", pitch="C4", position="upper", articulation="tremolo")
+        symbol.probe_index = i
+        singles.append(generator.SymbolChord([symbol]))
+    assert (
+        lane_proposal(singles, "upper", Fraction(4), tremolo_only=True, legacy_tremolo_rule=True)[0]
+        == []
+    )
+    triplets = []
+    for i in range(12):
+        symbol = EncodedSymbol("note_12", pitch="C4", position="upper", articulation="tremolo")
+        symbol.probe_index = i
+        triplets.append(generator.SymbolChord([symbol]))
+    indices, reason = lane_proposal(
+        triplets, "upper", Fraction(4), tremolo_only=True, legacy_tremolo_rule=True
+    )
+    assert indices == [] and reason == "unsupported-legacy-tremolo-duration"
