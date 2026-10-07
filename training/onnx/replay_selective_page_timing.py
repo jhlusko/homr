@@ -48,6 +48,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--observation", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--skip-reference-scoring", action="store_true")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
     identity = json.loads((args.observation / "identity.json").read_text())
@@ -132,6 +133,16 @@ def main():
             xml_sha256={a: sha(args.out / (a + ".musicxml")) for a in ("control", "selective")},
         ),
     )
+    if args.skip_reference_scoring:
+        write(
+            args.out / "report.json",
+            dict(
+                changes=changes,
+                reference_scoring="blocked: uncertified page window",
+                reference_opened=False,
+            ),
+        )
+        return
     # All proposals and XML bytes are frozen before reference scoring.
     from training.onnx.score_full_page_musicxml import compare, staff_events
     from training.onnx.score_paired_page_diagnostic import read_reference

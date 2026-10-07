@@ -16422,3 +16422,29 @@ Next is complete-page qualification for known positive duplet/full-rest crop cas
 with certified native reference windows. Timing remains research-only; do not
 loosen safeguards based on these already-inspected pages. C1 semantic routing
 remains separately unqualified and automatic lyric fusion stays off.
+
+## 2026-10-07 — Positive timing pages: five accepted-stack full-rest flag gains
+
+Ran accepted controls plus observed replays for Aubade IMSLP154110 p001, Der Zwerg
+IMSLP16369 p004, Chrysa IMSLP578231 p002 and Jugend IMSLP621832 p003. All four
+control XML outputs match exactly. Five source-confirmed full-rest flag improvements,
+zero regressions; pitch, rhythm, accidentals, meter, strict event locations and v7
+notation unchanged. Fixed native rest matching covers 53/66 rests, retaining 13
+unmatched in denominator. These selected, already-inspected validation pages are
+diagnostics, not independent promotion evidence.
+
+Resolved Der Zwerg's leading five-bar ambiguous window by counting back from the
+immediately following independently aligned source anchor (69 -> 64), requiring
+certified counts/boundaries, contiguous systems and existing endpoint agreement.
+Preserved original alignment/provenance. No recognizer predictions used. Expanded
+this diagnostic's pixel budget to 14 million without resizing for Aubade.
+
+All jobs and watcher finished; eight focused tests and scoped lint pass. Local
+results and limitations: `docs/SELECTIVE_TIMING_EXPORT_2026-10-07.md`, artifacts
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/timing-positive-pages-20261007/`.
+
+Next: staff/voice-aware duplet timing context. Der Zwerg has 89 event-level 2:1
+predictions, but mixed piano staff and missing-meter guards reject every change.
+Keep timing research-only; do not broadly weaken guards. Full-rest metadata gains
+are established on these pages and do not imply recognition gains. C1 semantic
+routing remains an independent release blocker.

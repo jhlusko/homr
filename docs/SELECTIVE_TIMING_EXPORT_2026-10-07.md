@@ -106,3 +106,69 @@ duplet/full-rest positives and certify their native reference windows. Do not
 weaken meter safeguards simply to force edits on this four-page cohort. If broader
 page tests still abstain, report the coverage limitation and keep this timing policy
 research-only. C1 semantic lyric routing remains a separate release blocker.
+
+## Positive-case complete pages — accepted-stack gains confirmed
+
+Ran four additional complete pages, selected from previously inspected positive
+crop cases. Each page received an unchanged accepted control run and a passive
+head-observed replay; all four XML controls match exactly. Exported both policy
+arms before reference scoring. A persistent watcher completed the strict-location
+and explicit-rest-flag audits. All jobs finished; eight focused tests and lint pass.
+
+| Page | Final timing coverage | Correct flag gains | Flag regressions | Reference rests matched / total |
+|---|---:|---:|---:|---:|
+| Chaminade Aubade, IMSLP154110 p001 | 250/250 | 1 | 0 | 6/6 |
+| Schubert Der Zwerg, IMSLP16369 p004 | 478/478 | 0 | 0 | 10/12 |
+| Grandval Chrysa, IMSLP578231 p002 | 393/396 | 3 | 0 | 22/33 |
+| Faisst Jugend, IMSLP621832 p003 | 184/184 | 1 | 0 | 15/15 |
+
+**Five correct full-rest metadata improvements, zero regressions.** Across these
+pages, 53/66 source rests match uniquely at fixed physical staff, native measure,
+onset and duration; 13 unmatched rests remain in the denominator. Correct matched
+flags increase from 47 to 52. The five edits match explicit source
+`<rest measure="yes">` flags. No written length or elapsed duration changes occur,
+so pitch/rhythm/accidental metrics, strict onset metrics, meter and v7 notation
+remain unchanged. This is a real accepted-stack **metadata** gain, not improved
+recognition accuracy. Selection after crop results means it is diagnostic rather
+than an independent promotion test.
+
+Three pages already had complete certified alignment. Der Zwerg's leading system
+was ambiguous, although its five native bars and boundaries were certified. The
+immediately following aligned system begins at source index 69; five bars count
+back to index 64. Existing candidate boundaries already agree with 64–69. Recorded
+this adjacent-anchor derivation, preserved original alignment rows, and required
+certified counts, contiguous systems and exact candidate agreement. No recognizer
+prediction or reference-note matching was used to certify that boundary. Full page
+window is source indices [64,87), zero-based. Tests reject uncertain counts,
+uncertain anchors, gaps and contradictory endpoints. Other windows are [0,9),
+[0,20), and [0,12) respectively.
+
+The diagnostic pixel budget expands explicitly from 10 to 14 million original
+pixels to include Aubade's 3048×4299 scan; no resizing. Models and runtime policies
+remain pinned to the accepted stack. These are previously used validation scores,
+not untouched test. Boundary certification does not establish lack of training
+exposure.
+
+Local results:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/timing-positive-pages-20261007/`.
+Use `summary.json`, `pages.json`, `receipt.json`, each score's `selective/report.json`
+and `selective/timing-context-and-flags.json`. Sources executed, original alignment
+rows, complete final v7 objects, frozen proposal/XML hashes and watcher completion
+receipts are retained. Temporary jobs ran in `timing-positive-pages` and
+`timing-positive-watcher`; both completed.
+
+### Next priority
+
+Full-rest flag-only handling has a useful diagnostic result. Keep the bundle
+research-only until broader score-disjoint qualification; no review of nearly
+identical glyphs is needed for metadata edits.
+
+Duplets need a separate staff/voice-context investigation. Der Zwerg's piano voice
+contains 89 event predictions of ratio 2:1, but crosses both physical staves; its
+page also lacks usable meter declarations. The current policy abstains on every
+edit. Do not remove these guards wholesale. Next retain and validate a per-staff,
+per-voice timing timeline, using prediction-only meter/boundary evidence. A proposed
+duplet must preserve chord simultaneity and untargeted durations, form a complete
+run, and fit its own voice's independently established bar context. Freeze exports
+before scoring against the certified native window. Report written type, consumed
+time, triplet preservation and recognition errors separately.
