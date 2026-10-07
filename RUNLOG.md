@@ -16382,3 +16382,23 @@ Four focused tests and Black/Ruff/JS/HTTP checks pass. All workers exited0; no
 remaining benchmark job. No deployment/publication/pin/fusion change.
 Details/local artifact paths: docs/FREE_TIMING_PROBE_2026-10-07.md.
 Review: http://localhost:8765/timing-free-decode-20261007/ .
+
+## 2026-10-07 — Selective timing serialization and accepted-page observation
+
+Completed the source-free 299-crop serialization probe: seven correct Lieder
+full-rest flags, zero regressions, no eligible duplet changes. Only 16 crops had
+independent neighboring meter context; 283 abstained. Written types, durations,
+triplets, pitch, and notation are preserved. This isolated exporter probe lacks
+accepted v7/page execution and is not a promotion result. Corrected an empty-XML-
+container comparison artifact; preserved the initial run and corrected v2 results.
+
+Details and local artifact paths: `docs/SELECTIVE_TIMING_EXPORT_2026-10-07.md`.
+Started a passive accepted Haydn page replay in persistent tmux `timing-page-probe`:
+unchanged accepted core/v7, epoch-6 observations, exact archived XML control check,
+and final-symbol observation coverage. No reference input enters inference.
+
+The Haydn passive page replay completed: exact accepted XML SHA match, 593
+decoder symbols observed, 317/320 final note/rest symbols retain timing predictions.
+Three missing observations are audited and must abstain. Complete v7 symbol
+objects must be retained for the subsequent candidate-export replay; the observation
+JSON alone is insufficient. No page-level candidate or promotion claim yet.
