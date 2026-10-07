@@ -16514,3 +16514,26 @@ and meter-repeat opt-in. Focused24 tests pass and Ruff clean. See
 `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-peer-span-validation-20261007-v2/`. Next: freeze and qualify
 additional controls, then default-off runtime extraction/parity, separate from
 timing-head promotion and C1 semantic routing. All jobs finished.
+
+
+## 2026-10-07 — Additional controls and default-off paired-tremolo runtime
+
+New source-selected, distinct-score controls: IMSLP89026p002 changing meter,
+IMSLP617260p006 single-note tremolo/grace, IMSLP154289p001 grace/triplets,
+IMSLP558609p006 ordinary chords. New4+cached7 complete11/11, zero edits or native
+regressions; newcontrolrhythm56/1377 unchanged. Historical exposure retained.
+
+Added runtime rule `homr/tremolo_timing.py` and exporter default-off environment
+`HOMR_PAIRED_TREMOLO_TIMING=1`; explicitXmlGeneratorArguments bool overridesenv.
+No new weights/pin or timing-head decisions. Per-render traces, no global patches
+or training/reference imports. Copy caller symbols; preserve accepted output on
+protected invariants. Final flag-off/on XML exactly matches frozen references
+on17/17 unique cached pages. Positive93 edits/20 measures/4 scores unchanged.
+71 focusedtests pass, full scopedRuff and focusedtypes clean. Singleexportoverhead
+median0.244s,max1.066s (not end-to-end). Alljobsdone; runtimeflagdefaultoff.
+
+Details `docs/TREMOLO_RUNTIME_2026-10-07.md`. Local controlaudit:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-additional-controls-20261007/audit-report.json`; final runtimeparity:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/tremolo-runtime-parity-20261007-v2/report.json`. Source snapshots retained.
+Next: fresh image-first OSSQ/Lieder on/off smoke withacceptedpins, measurelatency,
+then localreleasecandidate revision/flagdecision. No production change/deploy.

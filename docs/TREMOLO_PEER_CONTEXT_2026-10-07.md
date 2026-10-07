@@ -1,5 +1,9 @@
 # Prediction-only tremolo context experiment — 2026-10-07
 
+Runtime follow-up: four new negative controls pass, and a default-off exporter
+implementation matches all 17 unique frozen page exports exactly. See
+[TREMOLO_RUNTIME_2026-10-07.md](TREMOLO_RUNTIME_2026-10-07.md).
+
 Two separate frozen replays completed all 13 previously selected pages. Independent
 predicted bar spans unblock three Lieder scores; accepting identical complete
 repeated meter declarations additionally unblocks OSSQ sq9631717. The final

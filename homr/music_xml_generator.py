@@ -4,6 +4,7 @@ import math
 import os
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from fractions import Fraction
 
@@ -90,6 +91,9 @@ class ConversionState:
         self.tremolo_state = "stop"
         self.volta_number = 1
         self.last_volta_measure = -10
+        # Per-render tracing is private and never shared between concurrent exports.
+        self.note_trace: Callable[[EncodedSymbol, ET.Element, str], None] | None = None
+        self.note_marks: dict[int, str] | None = None
 
     def _release(self, number: int) -> int:
         """Free `number` everywhere and hand it back to the caller writing the stop.
@@ -261,11 +265,18 @@ class SymbolChord:
 
 class XmlGeneratorArguments:
     def __init__(
-        self, large_page: bool | None = None, metronome: int | None = None, tempo: int | None = None
+        self,
+        large_page: bool | None = None,
+        metronome: int | None = None,
+        tempo: int | None = None,
+        paired_tremolo_timing: bool | None = None,
     ):
         self.large_page = large_page
         self.metronome = metronome
         self.tempo = tempo
+        self.paired_tremolo_timing = paired_tremolo_timing
+        self._note_trace: Callable[[EncodedSymbol, ET.Element, str], None] | None = None
+        self._note_marks: dict[int, str] | None = None
 
 
 def build_identification() -> ET.Element:
@@ -276,6 +287,20 @@ def build_identification() -> ET.Element:
 
 
 def generate_xml(
+    args: XmlGeneratorArguments, staffs: list[list[EncodedSymbol]], title: str
+) -> ET.Element:
+    """Export the accepted path unless paired-tremolo timing is explicitly enabled."""
+    enabled = getattr(args, "paired_tremolo_timing", None)
+    if enabled is None:
+        enabled = os.environ.get("HOMR_PAIRED_TREMOLO_TIMING") == "1"
+    if enabled:
+        from homr.tremolo_timing import generate  # noqa: PLC0415 - optional policy import
+
+        return generate(_generate_xml, args, staffs, title)
+    return _generate_xml(args, staffs, title)
+
+
+def _generate_xml(
     args: XmlGeneratorArguments, staffs: list[list[EncodedSymbol]], title: str
 ) -> ET.Element:
     root = ET.Element("score-partwise", version="4.0")
@@ -347,6 +372,8 @@ def build_measures(
     groups = add_tuplet_start_stop(group_into_chords(voice))
     division, nominator = find_division_and_time_signature_nominator(groups)
     state = ConversionState(division, nominator)
+    state.note_trace = getattr(args, "_note_trace", None)
+    state.note_marks = getattr(args, "_note_marks", None)
     state.modal_bar = modal_measure_duration(groups)
     state.distrust_stated = stated_numerator_contradicts_bars(voice, state.modal_bar)
     measures: list[ET.Element] = []
@@ -1123,9 +1150,13 @@ def build_note_or_rest(
     # <beam> ahead of it.
     build_beams(note, model_note)
 
+    if state.note_marks is not None:
+        tuplet_mark = state.note_marks.get(id(model_note), tuplet_mark)
     build_articulations(note, model_note.articulation, tuplet_mark, state)
     build_tied_notations(note, model_note)
     build_slurs(note, model_note, state)
+    if state.note_trace is not None:
+        state.note_trace(model_note, note, tuplet_mark)
 
     return note
 
@@ -1277,8 +1308,7 @@ def find_division_and_time_signature_nominator(voice: list[SymbolChord]) -> tupl
         durations.extend(
             symbol.get_duration().fraction
             for symbol in chord.symbols
-            if symbol.rhythm.startswith(("note", "rest"))
-            and symbol.get_duration().fraction > 0
+            if symbol.rhythm.startswith(("note", "rest")) and symbol.get_duration().fraction > 0
         )
         if chord.is_barline() and duration_in_measure > Fraction(0):
             measure_duration.append(duration_in_measure)
