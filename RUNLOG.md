@@ -16567,3 +16567,16 @@ Not a live model-loading or full provider latency test. Deployed Modal source is
 next prepare a compatible isolated runtime-source candidate, then full service smoke.
 No model pin, deploy, push or .env changes. All jobs complete.
 Details: docs/TREMOLO_SERVICE_WIRING_2026-10-07.md.
+
+
+## 2026-10-07 — Isolated provider tremolo source candidate
+
+Actual builder base is b6eca7 archive plus runtime glue, not the README historical
+997b70 recipe. Prepared additive exporter/rule patch, no shipping builder changes.
+Clean application succeeds; four synthetic flag-off XML parity probes, three
+enabled negative guards, five runtime tests and 26 service tests pass against
+isolated candidate. No model loading or full provider latency claim. Reproducible
+verifier and patch committed locally in OTS; all jobs complete. Next isolated
+candidate service build/configuration and model-loaded on/off qualification.
+Details: docs/TREMOLO_PROVIDER_SOURCE_2026-10-07.md. Local receipt:
+/home/jhlusko/workspace/homr-artifacts/provider-tremolo-source-20261007/source-candidate-report.json
