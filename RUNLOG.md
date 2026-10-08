@@ -17246,3 +17246,32 @@ GPU run, 3 Lieder pages, all succeeded (provider 41 s on the last, ~8 s more tha
 ("106", "19.") but also real words ("to", "dance."), consistent with the ~96% retention target; proposed
 rows read as lyrics ("He doesn't love me.", "wish -ing", "Juch - hei - ssa,"). No OCR accuracy was
 measured on these pages. Review-assisted only; automatic attachment still off. Test app stopped.
+
+
+## 2026-10-08 — OCR qualification against source lyrics; note anchoring and its evaluation
+
+**OCR + gate vs source lyrics** (OTS `3990528`+; `calibration/lyric-ocr-qualification.json`). 173 calibration Lieder pages / 89 scores,
+local CPU, the shipped pipeline (RapidOCR rows covered by e2 regions, frozen semantic gate). A row is
+LYRIC-LIKE when >= 60% of its tokens (>= 2 chars) match the score's source syllables exactly or within one
+edit. 3,757 rows (3,679 scored). Proposed rows lyric-like 87.6% (clean strata 91.5% / 85.5%, possibly-trained 87.2%);
+gate retention of lyric-like rows 96.7% (clean 98.2% / 97.1%): the 95% target is met on an independent,
+source-based measure; 104 lyric-like rows were withheld. Exact token share inside lyric-like rows 94.0%
+(2.2% within one edit). Proposed-but-not-lyric-like are mostly OCR slips (`ith`, `e8`, `Be - trog'ne`) and
+titles/credits (`Gedicht von August Grafen Platen.`, `FRANZ SCHUBERT.`): the gate does not exclude titles.
+Limits: lyric-likeness is agreement with source syllables (coincidental common words can inflate it);
+source lyrics are per score so there is no per-page recall.
+
+**Anchoring** (`scanner-lyric-anchors.ts`, backend only; no provider change). Row -> staff (region reaching
+the row, nearest bottom edge), printed line (rank of the row's y cluster under its staff; NOT verse identity),
+measure (bar lines) and nearest note (decoder attention x, interpolated across pruned symbols), per syllable
+(proportional split of the row). First pass used "closest staff above" and failed (a staff's region already
+includes its lyric lines); the rule was changed after seeing that on IMSLP556523, so these are development
+numbers on pages that informed it, not independent accuracy.
+Evaluation on the owner-confirmed placements (97 after the duplicate exclusion; 4 pages re-run through the GPU
+scanner): anchoring from the confirmed syllable positions: 97/97 anchored, printed line 96/97, measure 97/97
+(per-page constant offset allowed), exact note 96/97, within one note 97/97. Through the scanner's own OCR
+rows: 72/97 syllables fall in an anchored row, 67 match by text; of those printed line 66/67, measure 66/67,
+exact note 62/67 (92.5%), within one note 66/67. End to end 62/97 confirmed syllables (64%) get an exactly
+right note proposal; the rest are OCR misses/merges. Scripts: `evaluate_lyric_anchors.cjs`,
+`evaluate_ocr_row_anchors.cjs`. The review page shows the proposal as "Proposed placement (unconfirmed)" and
+exports it as `proposedPlacement`; nothing is attached to a score. Test app stopped; nothing deployed.
