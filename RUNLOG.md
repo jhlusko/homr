@@ -17330,3 +17330,18 @@ Reproduced local job creation for IMSLP83316 (446,975 bytes) and IMSLP19490 (202
 The indicated historical backend log was overwritten on restart: its current first entry is Oct8 14:03 local. The retained submission log only contains parser KeyErrors for all four missing pages. Durable evidence: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-fresh2-upload-audit-20261008/, including full retry responses, original submission log/scripts/page list, and copied fresh2 inventories/reviews. These are now outside the temporary agent directory.
 
 The available homr-artifacts/lyric-anchor-judgements.json still contains the first 132-item export (items SHA 118da216d74ff84ca9a6a2bcf25e2d7eadf0828d4ec0a73b20a0fe57d4fbce8d); do not score it as the second sample. The second review has 120 cases on ten pages. Next: collect that review export. Retry the missing four only after the rolling quota has capacity or the owner explicitly requests a local quota change; no quota change has been made.
+
+
+## 2026-10-08 — Second fresh placement sample (owner judged) and the footer rule
+
+10 further pages, 120 proposed placements, rules as of OTS f9122ea (not tuned on these): 109 correct, 7 wrong, 4 unsure
+(unsure = wrong, per the owner) -> 90.8% (90% Wilson 0.856-0.943), vs 93.9% on sample 1; the intervals overlap. Both
+samples together: 233/252 = 92.5%. Failures: 3 imprint/footer words (`J.`, `England`, `Philadelphia`, IMSLP542017), 3 lone `.`
+pieces (judged wrong here, but 2 lone `.` were judged correct in sample 1: the owner's convention for punctuation-only
+pieces is undecided), and 5 real placement/fragment errors (`Da` 97 px from its note, `be`, `trunk'.`, `her`, `sé`).
+A "dominant vocal part" rule was tested and rejected (it would remove 10 and 11 correct items).
+Footer rule (OTS this commit): a gate-approved row whose centre is below 92% of the raster height is withheld (`footer`).
+Across all 483 OCR rows on the 21 fresh pages, every row below 88% of the page height was page furniture (imprints, plate
+numbers, `P2`, `409`) and none was a lyric; it would have removed all 8 imprint/footer failures of both samples and no
+correct item. DEVELOPMENT rule (derived from these same samples): after it sample 2 is 109/117 = 93.2%. A third sample
+is the way to confirm it. Record: `calibration/lyric-anchor-fresh-evaluation-2.json`.

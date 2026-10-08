@@ -71,7 +71,10 @@ evaluation record); homr RUNLOG `2433617`. Run `git log --oneline -30` in OTS fo
   right note. `DUPONT`/`Bouloi.` were left to the credit-like rule. Width-weighting letters was tried and
   DROPPED (it moved confirmed placements).
 
-## 4. Second fresh sample: built, awaiting the owner's judgement
+## 4. Second fresh sample: DONE (owner judged: 109/120 = 90.8%); see RUNLOG 2026-10-08 'Second fresh placement sample'
+
+(The text below is kept for the record of how it was run. Results, failure types and the new `footer` rule are in the
+RUNLOG entry and `calibration/lyric-anchor-fresh-evaluation-2.json`; the next sample, if wanted, is a THIRD one.)
 
 14 new pages were submitted (`$J/fresh2-pages.txt`, 5 clean-score and 9 possibly-trained scores; anchoring does not
 depend on detector training). **10 succeeded; 4 never became jobs.** IMSLP80521 (3.2 MB) and IMSLP637242 (2.9 MB)
@@ -93,7 +96,7 @@ The per-page rows/withheld counts from the build: 61112 21/22 proposed, 43630 40
 
 ## 5. Open items, in priority order
 
-1. Collect and score the owner's judgements of the second fresh sample (above).
+1. A third fresh sample to confirm the footer rule and the other post-hoc rules; decide with the owner how lone punctuation pieces (`.`) should be treated (judged correct twice in sample 1, wrong three times in sample 2).
 2. Owner decisions pending: merge/deploy of any of this (never assumed); whether the raw 0.7 accept line stays;
    whether to build per-syllable x from the e2 boxes (needs the provider to return ALL e2 boxes; today the stored
    artifact lists only accepted and the top review regions, so counts match the OCR tokens in only 35/91 rows).
