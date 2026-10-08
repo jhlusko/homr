@@ -16883,3 +16883,54 @@ controls is not a qualification strategy. Full calibrated text-path/GPU280second
 latency/provider image qualification remains separate from C1. No deployment,
 modelpin,backend.env,push or automatic lyric attachment change. No running-job ETA.
 
+
+
+## 2026-10-07 — Approved semantic retention target; recall-oriented pilot result
+
+Owner accepted the proposed semantic-filter target: retain at least95% of genuine
+lyric candidates supplied by e2. Denominator is unique fullpage OCR candidate IDs
+selected by e2 and matched to true lyric references; numerator is those retained
+aslyrics after the semantic gate. This is conditional retention, not whole-page
+lyric detection recall, OCR transcription accuracy or correct note-attachment recall.
+OCR/detection misses still count in separate end-to-end metrics. Numeric acceptable
+false-direction attachment rate and end-to-end read/attach bar remain unresolved.
+Prior zero-observed-direction-error rule was an experimental constraint, not the
+owner-approved release requirement. Classifier thresholds .95/.99 are uncalibrated
+scores, not95/99% recall or demonstrated precision.
+
+New training-only selection policy uses at least95% nonempty GT-crop lyric retention
+as DEVELOPMENT PROXY, minimizing false direction selections among eligible fixed
+model/grid candidates. Training GTcrops do not establish actual e2/fullpage gate.
+Twenty score-grouped fits from expanded241Lieder+99OSSQ packet chooselambda0.001,
+threshold0.5:115/118 usable training lyrics retained(97.46%),115/144 full-support
+lyrics(79.86%) including26OCRempties;23/121 directions falselyselected. Already
+inspected calibration43/45 usablelyrics(95.56%),43/52 fullsupport(82.69%),6/23
+false-direction selections. No calibration/control data used for model selection.
+Historical zero-error mode stays available for exact reproduction of prior pilots.
+
+Frozen external fullpage574-row inference now retains25/26 genuine e2 lyric
+candidates(96.15%), meeting the OBSERVED approved95%retention target. Only26lyric
+candidates from reviewed development pages: not independent qualification or a
+confidence-bound guarantee. One true lyric lost: IMSLP12778 OCR `an.`. Expanded
+15directionrefs combined false selections2→1 (`Etwas geschwind.` survives; Assez
+lent blocked); one preexistingOCRmiss. Original6human-confirmed directions e2false
+selections4→1: `Revenez au 1. mouv!` survives; `a tempo.` blocked. The1credit ref
+remains unselected by combined e2+semanticgate despite semantic-only misclassification.
+Unmatched text remains unadjudicated. Conditional vetoes of old traces are not new
+note-attachment results. Fusion staysdisabled; no model or runtime promotion.
+
+Review: http://localhost:8765/c1-semantic-retain95-20261007/ (48cases,90assets verified).
+Pilot `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-semantic-retain95-20261007/`.
+External adjacent `c1-semantic-retain95-external-20261007/`, report.json and
+approved-retention-gate.json. Frozen source/input/model hashes and expanded score
+exclusion checks preserved.14focused grouped/pilot/external tests pass; lintpasses.
+
+Next: preserve this recall-oriented candidate as the research baseline; use actual
+fullpage OCR on training-only annotations and broader existing direction phrases,
+then score retention plus false directions bycorpus/score on independent evidence.
+Focus actual finalattachment checks on remainingperformance-instruction controls;
+no exact-string exceptions or tuning against these already-reviewed failures.
+Full calibrated detector/text fusion, model-loaded GPU/280second latency and capable
+direction routing remain separate gates. No backend.env,modelpin,push,deployment or
+automaticlyrics change. Allcompute done; no running-job ETA.
+
