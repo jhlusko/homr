@@ -17,23 +17,26 @@ def split_positioned_text(text, characters):
     def finish():
         if not current:
             return
+        if all(row["text"] == "_" for row in current):
+            current.clear()
+            return
         polygons = [np.asarray(row["box"], dtype=float) for row in current]
         if any(p.shape != (4, 2) or not np.isfinite(p).all() for p in polygons):
             raise ValueError("Character geometry must be finite quadrilaterals")
         points = np.concatenate(polygons)
         result.append(
-            dict(
-                text="".join(row["text"] for row in current),
-                center=np.mean([p.mean(axis=0) for p in polygons], axis=0).tolist(),
-                bounds=[
+            {
+                "text": "".join(row["text"] for row in current),
+                "center": np.mean([p.mean(axis=0) for p in polygons], axis=0).tolist(),
+                "bounds": [
                     float(points[:, 0].min()),
                     float(points[:, 1].min()),
                     float(points[:, 0].max()),
                     float(points[:, 1].max()),
                 ],
-                character_indices=[row["index"] for row in current],
-                geometry="approximate CTC character cells",
-            )
+                "character_indices": [row["index"] for row in current],
+                "geometry": "approximate CTC character cells",
+            }
         )
         current.clear()
 
@@ -93,11 +96,31 @@ def propose_spatial_splits(text, characters, min_gap_ratio=2.5):
             pieces.append(value)
         result.extend(pieces)
         proposals.append(
-            dict(
-                original=syllable["text"],
-                proposed=[p["text"] for p in pieces],
-                boundaries=cuts,
-                gap_ratios=[float(gaps[cut - 1] / median) for cut in cuts],
-            )
+            {
+                "original": syllable["text"],
+                "proposed": [p["text"] for p in pieces],
+                "boundaries": cuts,
+                "gap_ratios": [float(gaps[cut - 1] / median) for cut in cuts],
+            }
         )
-    return dict(syllables=result, proposals=proposals, production_qualified=False)
+    return {"syllables": result, "proposals": proposals, "production_qualified": False}
+
+
+def reviewed_substring_position(original_text, characters, reviewed_text):
+    """Recover CTC geometry for one explicitly reviewed, unique literal substring.
+
+    Does not infer missing glyphs, separators or ownership of discarded text.
+    """
+    split_positioned_text(original_text, characters)
+    if not reviewed_text or any(c.isspace() for c in reviewed_text):
+        raise ValueError("Review must select a nonempty contiguous syllable")
+    visible = "".join(row["text"] for row in characters)
+    starts = [i for i in range(len(visible)) if visible.startswith(reviewed_text, i)]
+    if len(starts) != 1:
+        raise ValueError("Reviewed substring has no unique character geometry")
+    start = starts[0]
+    selected = characters[start : start + len(reviewed_text)]
+    result = split_positioned_text(reviewed_text, selected)
+    if len(result) != 1:
+        raise ValueError("Reviewed text does not identify one lyric syllable")
+    return result[0]

@@ -1,13 +1,17 @@
 import pytest
 
-from training.onnx.lyric_syllable_positions import propose_spatial_splits, split_positioned_text
+from training.onnx.lyric_syllable_positions import (
+    propose_spatial_splits,
+    reviewed_substring_position,
+    split_positioned_text,
+)
 
 
 def chars(text, centers=None):
     visible = [c for c in text if not c.isspace()]
     positions = centers or list(range(len(visible)))
     return [
-        dict(index=i, text=c, box=[[x - 1, 0], [x + 1, 0], [x + 1, 2], [x - 1, 2]])
+        {"index": i, "text": c, "box": [[x - 1, 0], [x + 1, 0], [x + 1, 2], [x - 1, 2]]}
         for i, (c, x) in enumerate(zip(visible, positions))
     ]
 
@@ -48,3 +52,21 @@ def test_regular_spacing_short_words_and_nonmonotonic_positions_remain_intact():
         ("health", [10, 30, 50, 49, 70, 90]),
     ]:
         assert propose_spatial_splits(text, chars(text, positions))["proposals"] == []
+
+
+def test_standalone_underscore_is_not_a_lyric_but_embedded_text_is_preserved():
+    assert [r["text"] for r in split_positioned_text("con _ fi", chars("con _ fi"))] == [
+        "con",
+        "fi",
+    ]
+    assert split_positioned_text("ly_", chars("ly_"))[0]["text"] == "ly_"
+
+
+def test_reviewed_substring_uses_only_selected_character_geometry():
+    result = reviewed_substring_position("moment,sans", chars("moment,sans"), "moment")
+    assert result["character_indices"] == list(range(6))
+    assert result["center"][0] == 2.5
+    with pytest.raises(ValueError, match="unique"):
+        reviewed_substring_position("withwith", chars("withwith"), "with")
+    with pytest.raises(ValueError, match="unique"):
+        reviewed_substring_position("_", chars("_"), "fi")
