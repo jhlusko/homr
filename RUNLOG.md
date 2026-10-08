@@ -17189,3 +17189,19 @@ sample. No new human judgements on the test set.
 Caveats unchanged: detector training membership unverified; below-0.5 boxes unsampled; one
 checkpoint at area-4 plus the size gate; fusion flags off; nothing deployed. Evaluation:
 `services/ots-homr-modal/calibration/fusion-v1-heldout-evaluation.json`.
+
+
+## 2026-10-08 — fusion-v1 accept line moved to raw 0.7 (owner decision, post-hoc)
+
+Owner moved the lyric accept line from the prespecified raw 0.6 to 0.7 after seeing held-out
+instrumental false positives. Recorded in the manifest as `owner-override-post-hoc`. A first attempt
+changed nothing: PAV had pooled raw 0.6-0.8 into one calibrated value, so the calibrated accept
+threshold passed everything at 0.6+. The fit now pools all bands below an overridden line into the
+lowest band so the line binds: bins [0.5, 0.7, 0.8, 0.9] -> [0.861 (CI 0.80-0.92), 0.9315, 0.9315, 0.9869];
+accept threshold 0.9315. New manifest revision c2bfa72e10543e1b4e1818056c5f404da1c643bb6c1f2a66ec5a24e1d6e1d31e
+(supersedes fb1e5902…; OTS commit follows 6a509c8).
+Same evaluation code, nothing else refitted:
+- calibration partition: 2,663 accepted vocal boxes, matched 52.2%, projected precision 95.7%, 0.62 instrumental FP/page
+- held-out partition: 1,941 accepted, matched 53.8%, projected 95.8%, 0.80 instrumental FP/page (19 -> 12 on 15 pages)
+Accepted boxes fall about 14% versus raw 0.6. The GPU provider was NOT re-run with this revision; the
+earlier 34/23/23 accepted-region counts are for fb1e5902 (raw 0.6) and will be lower. Caveats unchanged.
