@@ -16597,3 +16597,25 @@ Next investigate Lieder conservative-rule abstention against older exporter; new
 pipeline improved30→10. Token replay finds span9/2 and20 candidate notes, so
 missing peer context alone is not established as the cause. Preserve guards.
 Details: docs/TREMOLO_LOCAL_SERVICE_2026-10-07.md. No deploy/push/.env/pin changes.
+
+
+## 2026-10-07 — Lieder service abstention traced and candidate policy corrected
+
+Actual supervised export snapshot reproduces original XML exactly. Unlike six-field
+token replay, original objects carry head notation; unset structured-export policy
+permits rhythmic advance. Actual proposed timelines overflow/use multiple voices.
+Explicit accepted mask beam,stem,tie,slur makes all four proposal guards pass.
+Separate source defect: head-path env ignored, both first-candidate workers loaded
+sidecar. Added isolated routing patch and optional explicit worker family mask,
+shipping defaults/builder unchanged. Corrected localv2 gives genuine core-only
+(0 structured symbols) and heads(385 Lieder/514 OSSQ), excludes advance.
+Four fresh HTTP scans: both candidates Lieder rhythm30→10/357, OSSQ46→2/380;
+pitch/accidentals each3/333 and2/372 unchanged, no decoded-token/written-note/measure
+changes or native regressions. HTTPseconds50.72→47.17 and94.23→106.95, local CPU
+without OCR/text fusion; no production latency/new independent accuracy claim.
+27 service tests +5 runtime guards/lint pass. Alljobsdone. Extra cached-negative
+replay blocked by newer VoiceClass pickle schema; no new negative result claimed.
+Next fresh negative controls, candidate source/policies into provider qualification,
+full OCR/text fusion latency, C1 and E3. No rule weakening, training/deploy/push/.env
+change. Details docs/TREMOLO_SERVICE_POLICY_AUDIT_2026-10-07.md. Receipts:
+/home/jhlusko/workspace/homr-artifacts/local-tremolo-service-20261007-v2/
