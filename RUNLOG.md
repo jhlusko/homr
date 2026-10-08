@@ -17275,3 +17275,26 @@ exact note 62/67 (92.5%), within one note 66/67. End to end 62/97 confirmed syll
 right note proposal; the rest are OCR misses/merges. Scripts: `evaluate_lyric_anchors.cjs`,
 `evaluate_ocr_row_anchors.cjs`. The review page shows the proposal as "Proposed placement (unconfirmed)" and
 exports it as `proposedPlacement`; nothing is attached to a score. Test app stopped; nothing deployed.
+
+
+## 2026-10-08 — Fresh-page anchoring check set up; titles withheld; scanner rows -> placement inventory -> copy
+
+**Fresh-page verification (awaiting owner judgement).** 11 more clean-score Lieder pages through the GPU scanner (a 12th,
+IMSLP396671, failed `provider_unavailable`, transient): 132 proposed syllable placements (<=12 per page, stable hash
+sample). Judge at `http://localhost:8765/lyric-anchor-judgement-20261008/` (orange box = syllable, blue line = proposed
+note; Correct / Wrong / Unsure; key kept outside the served dir). Accuracy is not claimed until the export is scored.
+Anchor output now includes the chosen note's x (OTS fd1709f).
+
+**Titles/credits (OTS fed011c).** With the page's staves known, a gate-approved OCR row that no staff reaches is withheld
+(`withheldReason: no-staff`). On the 11 fresh pages all 5 such proposed rows were a title, composer or page number
+(`Ständchen`, `FRANZ SCHUBERT.`, `LE VOILE`, `DANS UNE MUSETTE.`, `129`). Rows under a staff are unaffected; the
+qualification pages had no staves, so this rule is not part of the 96.7% retention figure.
+
+**Scanner rows -> placement -> copy.** `build_scanner_placement_inventory.py` turns accepted, unedited OCR rows with a
+proposed placement into the placement-confirmation inventory: it aligns the part's note tokens with its MusicXML note
+elements exactly (count and rest/note kind must agree, pitch mismatches <= 2%) to get measure/ordinal/onset/pitch, keeps one
+syllable per note per printed line (nearest wins; the writer refuses duplicates), and crops each case. Fresh page
+IMSLP10602: 18 accepted rows -> 26 placement rows (1 same-note conflict dropped) -> fixture confirmations (NOT approvals)
+-> copy with 26 lyrics, all non-lyric XML unchanged. The confirmation page for it is
+`http://localhost:8765/lyric-placement-scanner-IMSLP10602-20261008/`. Edited text, rows without a placement and unaligned
+parts are skipped and counted. Not deployed; no automatic attachment.
