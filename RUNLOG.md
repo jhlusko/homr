@@ -17315,3 +17315,10 @@ the 124 correct placements (largest correct distance 83 page px), leaving 129 pl
 100 px cutoff was chosen after seeing these judgements, so 96.1% is development accuracy, not held out; `DUPONT` and `Bouloi.`
 still pass, and OCR fragments are unaddressed. The 97 owner-confirmed placements re-score identically (97 anchored,
 measure 97, exact note 96). Evaluation record: `calibration/lyric-anchor-fresh-evaluation.json`.
+
+
+## 2026-10-08 — Handoff written
+
+`docs/HANDOFF_LYRIC_REVIEW_2026-10-08.md` records the lyric review / fusion-v1 / anchoring state, results with their caveats,
+the in-flight second fresh sample (GPU test app may still be deployed: `modal app stop --yes ourtextscores-ots-homr-fusion-localtest`),
+open items, run instructions and a cleanup list.
