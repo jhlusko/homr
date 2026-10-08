@@ -65,3 +65,33 @@ pilot with score-disjoint evaluation and actual false-attachment measurement.
 The prepared fp16 provider still needs model-loaded GPU/OCR/text-path accuracy and
 latency qualification; automatic lyric fusion remains disabled. E3 examples use
 settled candidates after these gates. No timing-head/beam promotion is implied.
+
+## 2026-10-07 — Private fp16 positive and negative CPU qualification complete
+
+Fresh private-fp16 negative controls finished actual exit0: fivepages × two genuine
+plain/heads candidates, explicit off/on, all10 XML comparisons byte-identical.
+No token/written-note/measure changes, zero native measure regressions, correct
+worker routing. Same aggregate residual errors for each candidate: Lieder rhythm
+39/1377,pitch27/1301,accidental7/1301; OSSQ21/455,3/383,1/383. No duplicated support
+by adding the two candidates over identical pages. Controls historically exposed,
+not independent corpus accuracy. Exact private graph hashes verified before run.
+
+Negative CPU HTTP seconds off→on in fixed page order:26.30→37.26,34.08→45.53,
+19.63→22.88,29.81→34.81,60.03→68.09. Both workers; OCR/detectors/fusion off.
+Single sequential runs cannot isolate precise overhead or establish production
+GPU280-second margin. Prior private positive results remain Lieder30→10/357 and
+OSSQ46→2/380 with unchanged pitch/accidentals and zero measure regressions.
+The private recognition graph compatibility gate now has direct local evidence;
+full GPU/calibrated text-path accuracy and latency gates remain open.
+
+Final comparison/native-score-report/watch-status/run-exit receipts:
+`/home/jhlusko/workspace/homr-artifacts/local-tremolo-private-fp16-negatives-20261007/`.
+All compute jobs and their watchers finished; only review serving persists.
+
+Next priorities:1) assemble and qualify the complete calibrated OCR/detector/text
+path, with automatic lyric attachment disabled pending C1;2) broaden C1 annotated
+non-lyric training coverage (current score-grouped text sweep found no useful
+zero-observed-direction-error policy);3) actual model-loaded GPU/provider build
+and280-second latency check;4) settle E3 examples against qualified candidates.
+Keep deployment/publication separate from these local preparations. No model pin,
+backend environment, production deployment or push changed. No running-job ETA.

@@ -16753,3 +16753,75 @@ is computing; reviewserver continues. Next inspect completion, then full calibra
 OCR/text path and GPU latency qualification; C1 needs a new training-only calibrated
 pilot rather than lowering thresholds on already inspected controls.
 
+
+
+## 2026-10-07 — Training-only grouped C1 sweep finds no useful safe policy
+
+Ran20 fits: five deterministic score-disjoint training folds for each fixed
+L2lambda0.0001/0.001/0.01/0.1. Character TF-IDF vocabulary/IDF and logistic model
+are learned only from each fold's nonempty training OCR; no held-score text in fit.
+Every configuration has178 unique out-of-fold predictions (144lyrics,34directions),
+including26emptylyrics asUnknown. Calibration/external controls not used to select.
+
+Fixed development criterion: zero observed direction-to-lyric errors while retaining
+at least one lyric, then maximize full-support lyric recall across fixed thresholds
+0.5/0.6/0.7/0.8/0.9/0.95/0.99. No configuration meets it. At0.7, lambdas0.0001/0.001/
+0.01 select115/112/60lyrics with3/2/1 false directions respectively;0.1 selectsnone.
+No useful policy/model selected; no further calibration or external rescoring in
+this attempt. Zero observed errors is an experimental constraint, not an accepted
+numeric release threshold or statistically established precision.
+
+Artifacts: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-semantic-grouped-pilot-20261007-v2/`.
+report.json, out-of-fold.json, selected-policy.json(null), model-receipt.json and
+independent verification.json bind code/input hashes, packages and disjoint folds.
+Earlier first attempt kept in adjacent unsuffixed directory: it selected only the
+all-abstaining fallback; v2 explicitly rejects that vacuous operating point, without
+changing feature/model/grid candidates. No threshold chosen against reviewed pages.
+Five focused pilot/selection tests pass, source lint/format pass; code committed locally.
+
+Next C1 priority is more varied annotated non-lyric training evidence (performance
+directions, title/credit and real OSSQ), not another threshold sweep on these controls.
+The current available pool has45 directions across37scores total;34 are training.
+More of its4,771 lyric boxes alone does not fill this non-lyric coverage gap. Partial
+annotations and unannotated regions must not be treated as negatives. Preserve24
+score exclusions and100-score internal split; keep actual final attachment gates
+separate. Automatic lyric fusion remains disabled.
+
+Private-fp16 negative audit still running in existing persistent tmux/watchers;
+allfiveoffpages HTTP200, onarm underway; ETA2–3min at this update. Receipt:
+`/home/jhlusko/workspace/homr-artifacts/local-tremolo-private-fp16-negatives-20261007/watch-status.json`.
+No production/pin/environment/push changes. Inspect finalnativeaudit next, then
+qualify full calibrated OCR/text path and model-loaded GPU latency.
+
+
+
+## 2026-10-07 — Private fp16 positive and negative CPU qualification complete
+
+Fresh private-fp16 negative controls finished actual exit0: fivepages × two genuine
+plain/heads candidates, explicit off/on, all10 XML comparisons byte-identical.
+No token/written-note/measure changes, zero native measure regressions, correct
+worker routing. Same aggregate residual errors for each candidate: Lieder rhythm
+39/1377,pitch27/1301,accidental7/1301; OSSQ21/455,3/383,1/383. No duplicated support
+by adding the two candidates over identical pages. Controls historically exposed,
+not independent corpus accuracy. Exact private graph hashes verified before run.
+
+Negative CPU HTTP seconds off→on in fixed page order:26.30→37.26,34.08→45.53,
+19.63→22.88,29.81→34.81,60.03→68.09. Both workers; OCR/detectors/fusion off.
+Single sequential runs cannot isolate precise overhead or establish production
+GPU280-second margin. Prior private positive results remain Lieder30→10/357 and
+OSSQ46→2/380 with unchanged pitch/accidentals and zero measure regressions.
+The private recognition graph compatibility gate now has direct local evidence;
+full GPU/calibrated text-path accuracy and latency gates remain open.
+
+Final comparison/native-score-report/watch-status/run-exit receipts:
+`/home/jhlusko/workspace/homr-artifacts/local-tremolo-private-fp16-negatives-20261007/`.
+All compute jobs and their watchers finished; only review serving persists.
+
+Next priorities:1) assemble and qualify the complete calibrated OCR/detector/text
+path, with automatic lyric attachment disabled pending C1;2) broaden C1 annotated
+non-lyric training coverage (current score-grouped text sweep found no useful
+zero-observed-direction-error policy);3) actual model-loaded GPU/provider build
+and280-second latency check;4) settle E3 examples against qualified candidates.
+Keep deployment/publication separate from these local preparations. No model pin,
+backend environment, production deployment or push changed. No running-job ETA.
+
