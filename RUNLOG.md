@@ -17205,3 +17205,12 @@ Same evaluation code, nothing else refitted:
 - held-out partition: 1,941 accepted, matched 53.8%, projected 95.8%, 0.80 instrumental FP/page (19 -> 12 on 15 pages)
 Accepted boxes fall about 14% versus raw 0.6. The GPU provider was NOT re-run with this revision; the
 earlier 34/23/23 accepted-region counts are for fb1e5902 (raw 0.6) and will be lower. Caveats unchanged.
+
+
+## 2026-10-08 — GPU re-run with the raw-0.7 manifest (c2bfa72e)
+
+Same three Lieder pages through the local backend/worker and the separate test provider (revision
+`ots-homr-fusion-calibrated-localtest-20261008-v1`, calibration c2bfa72e confirmed in each artifact's
+textPolicy). All succeeded. Auto-accepted lyric regions: 32 / 20 / 16 (raw 0.6 manifest: 34 / 23 / 23).
+Review 494 (294 omitted) / 202 (2 omitted) / 240 (40 omitted); provider ~34 s on the last page.
+Test app stopped. No deployment, no flag change.
