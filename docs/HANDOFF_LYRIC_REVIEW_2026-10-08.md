@@ -146,3 +146,11 @@ three pre-existing prettier errors in `scanner.service.ts` are not ours.
 - A shell variable used inside an unquoted heredoc is expanded by bash, not python (it once made four dumps identical).
 - The backend job JWT from `tok.sh` lives ~50 minutes; long loops must call it per request (submit.sh does).
 - A mid-session API error interrupted the owner's flow once; resume from this document, not from memory.
+
+## Follow-up: upload failures investigated (2026-10-08, 23:28 UTC)
+
+Reproduced local job creation for IMSLP83316 (446,975 bytes) and IMSLP19490 (202,639 bytes), without starting processing. Both returned HTTP 413 with the exact message `This upload would exceed the 50-page rolling 24-hour quota`. No jobs were created and no GPU app was restarted. This is a page quota, not file size. The original four error bodies were discarded by submit.sh, so this reproduction does not conclusively prove their original responses. The original claim that the larger two failed specifically on file size is not established by the retained log; the backend default file limit is 25 MiB.
+
+The indicated historical backend log was overwritten on restart: its current first entry is Oct8 14:03 local. The retained submission log only contains parser KeyErrors for all four missing pages. Durable evidence: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-fresh2-upload-audit-20261008/, including full retry responses, original submission log/scripts/page list, and copied fresh2 inventories/reviews. These are now outside the temporary agent directory.
+
+The available homr-artifacts/lyric-anchor-judgements.json still contains the first 132-item export (items SHA 118da216d74ff84ca9a6a2bcf25e2d7eadf0828d4ec0a73b20a0fe57d4fbce8d); do not score it as the second sample. The second review has 120 cases on ten pages. Next: collect that review export. Retry the missing four only after the rolling quota has capacity or the owner explicitly requests a local quota change; no quota change has been made.
