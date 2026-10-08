@@ -17400,3 +17400,12 @@ Next: qualify detected-head associations on accepted Lieder/OSSQ controls, prese
 
 
 2026-10-08: Added optional Correct syllable textbox to the active clear-marker judgement page (http://localhost:8765/lyric-anchor-clear-markers-20261008/). Stores corrections by frozen item ID, preserves browser judgements, exports original/edited text in a separate syllableCorrections map. Typing cannot trigger C/W/U or navigation shortcuts. Verified typing isolation, reload persistence, JSON export and clearing in an isolated browser; no test decisions imported as user approvals. Text edits do not automatically change note placement or judgement. Saved pre-textbox HTML/receipt beside the current page; original frozen reviews remain unchanged.
+
+
+### 2026-10-08 — Corrected-syllable export validated
+
+Received lyric-anchor-judgements-w-corrections.json: exact 120-ID inventory/ordered-ID hash; five explicit corrections, each originalText matches the frozen key: IMSLP575893 pourton→ton and eon→con; IMSLP43630 Da→du and a→zen; IMSLP16259 .→ge. All stored as reviewed text requiring position refresh, not confirmed attachments. New scorer validates correction membership/original text/nonempty replacement; five tests and lint pass. Separate durable raw export and scored report: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-anchor-fresh2-scored-20261008/review-with-corrections-report-v2.json. Unsuffixed report predates final lint change; v2 binds final source.
+
+Raw new export has 108 correct, 10 wrong, 2 unsure (90% if unsure counts wrong). It still carries trunk'/her unsure and sé wrong despite earlier verbal clarifications; keep explicit verbal clarifications separate rather than silently overriding the newly exported labels. This is a revisited development review, not a new fresh sample.
+
+The .→ge correction reveals a genuine OCR-lost syllable, so punctuation filtering must withhold automatic placement but retain the original row/fragment for manual recovery. Do not claim every punctuation rejection is a true negative or delete the row. Da also needs the user-confirmed du text, in addition to fixing displaced attention. Next: reconstruct positions for these five edited syllables from fresh character/glyph geometry; retain ambiguous replacements for manual placement rather than applying string swaps at old centers. Frozen evaluations, source scores and production unchanged; GPU stopped.
