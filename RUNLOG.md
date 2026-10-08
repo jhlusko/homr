@@ -16825,3 +16825,61 @@ and280-second latency check;4) settle E3 examples against qualified candidates.
 Keep deployment/publication separate from these local preparations. No model pin,
 backend environment, production deployment or push changed. No running-job ETA.
 
+
+
+## 2026-10-07 — Existing OSSQ direction GT expands C1; full-page recall still fails
+
+Correction to the prior data-gap wording: existing original calibration manifest
+already contains800 positive OSSQ DirectionText boxes across9scores. The earlier
+training-pool audit explicitly filtered to Lieder; it did not establish that OSSQ
+non-lyric ground truth was absent. No new manual labels were requested. Titles and
+credits still lack training coverage; partial annotations remain partial positives.
+
+Prepared deterministic bounded sample99 OSSQ regions acrossall9scores, up to12per
+score with source-label diversity:35Tempo,36Expression,28StaffText, collapsed to
+DirectionText per accepted policy. Original241 Lieder inventory records/split and
+24prior exclusions unchanged; formal-test manifest not read. New8training scores
+(87regions),1internal-calibration score sq7103818(12regions). Existing annotations
+used as positive roles, not newly fully adjudicated; one tempo crop spot-checked.
+Review: http://localhost:8765/c1-semantic-gt-packet-20261007/ossq-expansion-20261007/
+All198crop/contextassets+index verified overHTTP.
+
+Four one-thread OCR workers completed99newcrops inabout90seconds, exit0. Original
+241OCR results retained byte-for-byte, same model/package/parameter identities.
+Total340regions:139/144directions nonempty,5empty;163/196lyrics nonempty,33empty.
+No exceptions. Missing OCR remainsUnknown/counts in full support. Currenttraining
+265regions (144lyrics,121directions), calibration75regions (52lyrics,23directions).
+No source roles/text entered OCR or inference; source annotation strings not used.
+
+Training-score grouped sweep20fits, prespecified same model/grid/zero-observed-error
+criterion, now selectslambda0.0001/threshold0.99:14/144out-of-fold lyrics retained,
+0/121direction false lyric selections. Already-inspected calibration8/52lyrics,
+0/23directions falselyselected. All23direction positives include12boxes fromone
+OSSQscore; box counts do not establish independent precision. Lieder/OSSQ curves
+reported separately; OSSQ has no positive lyrics and must not dominate a pooled
+claim. All109development scores disjoint from10external control scores.
+
+Frozen fullpage574OCR-row control inference then retains only1/26reviewedlyrics,
+versus26/26 prior e2 selections.0/15 expanded directions and0/6human-confirmed
+directions selectedaslyrics; one existingOCRmiss preserved. OtherText credit1
+abstained. This is not useful automatic fusion; no model promoted/runtime wired.
+No thresholds were changed after external results. These controls/calibration were
+previously inspected, not untouched qualification; unmatched lines unadjudicated.
+No new final note-attachment accuracy claimed.
+Review: http://localhost:8765/c1-semantic-ossq-pilot-20261007/
+
+Artifacts: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-semantic-ossq-expanded-20261007/`
+contains inventory/receipt/verification, exact launched source, OCRshards+receipt,
+grouped-pilot/report.json, source-report.json and frozenmodel/model-receipt.json.
+External: adjacent `c1-semantic-ossq-expanded-external-20261007/report.json`.
+Source/tests committed locally; sevenfocused expansion/grouped/pilot tests pass,
+scopedlint passes. Jobs/watchers finished; only local reviewserver remains.
+
+Next: broaden direction phrase diversity using remaining calibration-only annotated
+OSSQ positives, and improve training representation of actual fullpage OCR rows
+versus GT-selected crops; preserve score-level separation and positive-only label
+matching. Titles/credits remain a gap. More threshold fitting on already-reviewed
+controls is not a qualification strategy. Full calibrated text-path/GPU280second
+latency/provider image qualification remains separate from C1. No deployment,
+modelpin,backend.env,push or automatic lyric attachment change. No running-job ETA.
+
