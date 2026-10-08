@@ -71,29 +71,29 @@ evaluation record); homr RUNLOG `2433617`. Run `git log --oneline -30` in OTS fo
   right note. `DUPONT`/`Bouloi.` were left to the credit-like rule. Width-weighting letters was tried and
   DROPPED (it moved confirmed placements).
 
-## 4. In flight when this was written
+## 4. Second fresh sample: built, awaiting the owner's judgement
 
-**Second fresh sample (confirms the rules above on pages they were not tuned on)**:
-- Script `$J/fresh2-run.sh` (J = `/home/jhlusko/.claude/jobs/3ec74772/tmp`) deploys the test Modal app, submits 14
-  pages from `$J/fresh2-pages.txt` through the local scanner one by one, then stops the app.
-- At last look 9 of 14 had succeeded; 3 submissions died with `KeyError: 'status'` in the polling loop
-  (IMSLP83316, IMSLP19490, IMSLP80521: the create call returned no job; cause not investigated - check
-  `$J/be.log` / `$J/worker.log` and the `submit.sh` output; a rate limit or an expired token are the first guesses);
-  one or two pages were still running.
-- Job ids are in `$J/fresh2-run.log` (`SCORE ...` / `job ...`). **If the script is dead or stuck, stop the app:**
-  `modal app stop --yes ourtextscores-ots-homr-fusion-localtest`.
-- Next steps once it ends: for each succeeded job fetch `GET /api/scanner/jobs/<id>/pages/1/lyric-candidates`
-  (save as `$J/fresh2/inventory-<score>.json`) and dump `review.staves` from Mongo into
-  `$J/fresh2/review-<score>.json` (see `$J/fresh/` for the exact format and the python used), write
-  `$J/fresh2/pages.txt` (`<score> <image path>`), then
-  `python build_anchor_judgement_review.py --work $J/fresh2 --pages $J/fresh2/pages.txt --out $W/guarded-tuplet-20261004/review/lyric-anchor-judgement-2-20261008 --per-page 10`
-  and give the owner `http://localhost:8765/lyric-anchor-judgement-2-20261008/`. The owner's convention: C = correct, W = wrong, U = unsure
-  **which means wrong**. Score the export with the same arithmetic as `calibration/lyric-anchor-fresh-evaluation.json`
-  and report the 90% Wilson interval. Do not retune rules on the second sample and then call it held out.
+14 new pages were submitted (`$J/fresh2-pages.txt`, 5 clean-score and 9 possibly-trained scores; anchoring does not
+depend on detector training). **10 succeeded; 4 never became jobs.** IMSLP80521 (3.2 MB) and IMSLP637242 (2.9 MB)
+were rejected with HTTP 413 (the scanner's upload size limit, not a code bug); IMSLP83316 and IMSLP19490 are small and
+also produced no job (cause not investigated; check `$J/be.log` around 22:30-23:10 UTC for their POSTs). The test GPU
+app was stopped by the script (verify with `modal app list`).
+
+The judgement page for the 10 jobs is built: 120 syllable placements (<= 12 per page), current rules
+(no-staff, far-from-notes 100 px, clipped consonant, ellipsis split, credit-like):
+`http://localhost:8765/lyric-anchor-judgement-2-20261008/` (key beside the served dir:
+`$W/guarded-tuplet-20261004/review/lyric-anchor-judgement-2-20261008-key.json`). Owner convention: C = correct, W = wrong,
+U = unsure **= wrong**. When the owner exports (`lyric-anchor-judgements.json` lands in `homr-artifacts/`, overwriting
+the first sample's export of the same name, so copy the first one aside first - it is also summarised in
+`calibration/lyric-anchor-fresh-evaluation.json`): score with the same arithmetic as that file (accuracy and a 90%
+Wilson interval), report failures by type, and do NOT retune the rules on this sample and then call it held out.
+The per-page rows/withheld counts from the build: 61112 21/22 proposed, 43630 40/42, 12778 23/23, 16259 21/21,
+622104 10/12 (1 no-staff, 1 credit-like), 542017 18/23 (3 no-staff, 1 far-from-notes), 154289 20/21, 44341 51/56,
+575893 7/8 (1 no-staff), 97202 18/20.
 
 ## 5. Open items, in priority order
 
-1. Finish and report the second fresh sample (above).
+1. Collect and score the owner's judgements of the second fresh sample (above).
 2. Owner decisions pending: merge/deploy of any of this (never assumed); whether the raw 0.7 accept line stays;
    whether to build per-syllable x from the e2 boxes (needs the provider to return ALL e2 boxes; today the stored
    artifact lists only accepted and the top review regions, so counts match the OCR tokens in only 35/91 rows).
