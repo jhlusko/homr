@@ -17125,3 +17125,16 @@ Findings:
 3. Scanner lyric-candidate inventories built from the real artifacts; crops show real lyric
    syllables ("love", "for what's", "He's", "be,", "me,"). Review page loaded 37 candidates, no errors.
 Still no OCR, semantic gate or note anchors in the provider. Not a calibrated or accuracy result.
+
+
+## 2026-10-07 — Region cap fixed: rejected fusion candidates are tallied, not listed
+
+`fuse_page` now returns regions for accepted/review work only and puts rejected candidates in
+`summary.rejected` with `rejectedByReason` and `rejectedByClass` (OTS `cd51ec6`). The backend
+verifies regions == accepted+review, no listed rejected region, and that both tallies sum to
+`rejected`. Contract change on both sides; no shipping provider could run fusion, so no skew.
+Re-ran the two real pages that previously failed or needed the test drop on the GPU test app, with
+no test accommodation: both jobs succeeded; the 1,148-box page returned 22 review regions plus
+{unsupported-class: 1126; Fingering 455, MeasureNumber 466, Lyrics 204, Dynamic 1}. App stopped.
+Python 20 tests and backend 8 provider tests pass (`test_provider.py` could not run locally: no
+fastapi in this venv). Still uncalibrated; no OCR, gate or anchors.
