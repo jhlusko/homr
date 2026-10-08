@@ -157,3 +157,12 @@ Reproduced local job creation for IMSLP83316 (446,975 bytes) and IMSLP19490 (202
 The indicated historical backend log was overwritten on restart: its current first entry is Oct8 14:03 local. The retained submission log only contains parser KeyErrors for all four missing pages. Durable evidence: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-fresh2-upload-audit-20261008/, including full retry responses, original submission log/scripts/page list, and copied fresh2 inventories/reviews. These are now outside the temporary agent directory.
 
 The available homr-artifacts/lyric-anchor-judgements.json still contains the first 132-item export (items SHA 118da216d74ff84ca9a6a2bcf25e2d7eadf0828d4ec0a73b20a0fe57d4fbce8d); do not score it as the second sample. The second review has 120 cases on ten pages. Next: collect that review export. Retry the missing four only after the rolling quota has capacity or the owner explicitly requests a local quota change; no quota change has been made.
+
+
+### 2026-10-08 — Second fresh lyric-anchor review scored
+
+Owner export lyric-anchor-judgements-v2.json exactly matches the second sample inventory (120/120 IDs and ordered-ID SHA). Frozen rules: 109 correct, 7 wrong, 4 unsure; unsure counts wrong, yielding 109/120 = 90.83% with descriptive 90% Wilson interval 85.55–94.31% (does not account for page clustering). Ten pages, 12 sampled proposed placements/page; this is conditional correctness, not end-to-end lyric recall, and the four failed uploads are outside the result. First sample remains separately recorded at 124/132 = 93.94%; different samples do not establish a regression or rule improvement.
+
+Failure triage: three standalone dots, three publisher-credit fragments (J., England, Philadelphia), five lyric-text/placement failures (Da, be, trunk', her, sé). Local complete result and raw export: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-anchor-fresh2-scored-20261008/REPORT.md and lyric-anchor-fresh-evaluation-v2.json. Scoring code and two provenance/completeness tests committed in OTS. No retuning on this frozen result.
+
+Next priorities: punctuation-only suppression; whole-row publisher-credit diagnosis; exact text/ownership checks for the five lyric failures. Any replayed improvement on these judged pages is development evidence and needs a new frozen-rule sample. Review-assisted attachment remains appropriate; unattended attachment remains unqualified. GPU app remains stopped; no production changes.

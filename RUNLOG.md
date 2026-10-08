@@ -17345,3 +17345,12 @@ Across all 483 OCR rows on the 21 fresh pages, every row below 88% of the page h
 numbers, `P2`, `409`) and none was a lyric; it would have removed all 8 imprint/footer failures of both samples and no
 correct item. DEVELOPMENT rule (derived from these same samples): after it sample 2 is 109/117 = 93.2%. A third sample
 is the way to confirm it. Record: `calibration/lyric-anchor-fresh-evaluation-2.json`.
+
+
+### 2026-10-08 — Second fresh lyric-anchor review scored
+
+Owner export lyric-anchor-judgements-v2.json exactly matches the second sample inventory (120/120 IDs and ordered-ID SHA). Frozen rules: 109 correct, 7 wrong, 4 unsure; unsure counts wrong, yielding 109/120 = 90.83% with descriptive 90% Wilson interval 85.55–94.31% (does not account for page clustering). Ten pages, 12 sampled proposed placements/page; this is conditional correctness, not end-to-end lyric recall, and the four failed uploads are outside the result. First sample remains separately recorded at 124/132 = 93.94%; different samples do not establish a regression or rule improvement.
+
+Failure triage: three standalone dots, three publisher-credit fragments (J., England, Philadelphia), five lyric-text/placement failures (Da, be, trunk', her, sé). Local complete result and raw export: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-anchor-fresh2-scored-20261008/REPORT.md and lyric-anchor-fresh-evaluation-v2.json. Scoring code and two provenance/completeness tests committed in OTS. No retuning on this frozen result.
+
+Next priorities: punctuation-only suppression; whole-row publisher-credit diagnosis; exact text/ownership checks for the five lyric failures. Any replayed improvement on these judged pages is development evidence and needs a new frozen-rule sample. Review-assisted attachment remains appropriate; unattended attachment remains unqualified. GPU app remains stopped; no production changes.
