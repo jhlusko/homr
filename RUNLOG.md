@@ -16580,3 +16580,20 @@ verifier and patch committed locally in OTS; all jobs complete. Next isolated
 candidate service build/configuration and model-loaded on/off qualification.
 Details: docs/TREMOLO_PROVIDER_SOURCE_2026-10-07.md. Local receipt:
 /home/jhlusko/workspace/homr-artifacts/provider-tremolo-source-20261007/source-candidate-report.json
+
+
+## 2026-10-07 — Isolated local CPU HTTP candidate completed
+
+Prepared pinned b6eca7 + glue + additive rule source with copied accepted experimental
+graphs, distinct model paths and explicit local identities. Four image-first HTTP
+scans completed, both supervised core/heads workers per page. OSSQ rhythm46→2/380
+for both candidates; Lieder30→30/357 with identical XML. Pitch, accidentals, written
+notes, decoded tokens and measure counts unchanged; no native-measure regressions.
+HTTP seconds Lieder59.63→53.08, OSSQ98.09→102.82, localCPU/no OCR/no text fusion.
+26 focused tests/lint pass; all jobs/watchers done. No production latency or
+independent accuracy claim. Local receipts/XML/native audits:
+/home/jhlusko/workspace/homr-artifacts/local-tremolo-service-20261007/
+Next investigate Lieder conservative-rule abstention against older exporter; newer
+pipeline improved30→10. Token replay finds span9/2 and20 candidate notes, so
+missing peer context alone is not established as the cause. Preserve guards.
+Details: docs/TREMOLO_LOCAL_SERVICE_2026-10-07.md. No deploy/push/.env/pin changes.
