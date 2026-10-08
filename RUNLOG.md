@@ -17161,3 +17161,31 @@ Caveats: detector training membership of these pages is unverified (precision ma
 the held-out test partition has NOT been run; below-0.5 boxes unsampled; calibration is on one
 checkpoint at the provider's area-4 protocol. Not deployed; fusion flags still off; the backend needs
 SCANNER_EXPECTED_OTS_HOMR_FUSION_CALIBRATION_REVISION set to the revision above to use it.
+
+
+## 2026-10-08 — fusion-v1 gate fixes, GPU run with the calibrated manifest, held-out evaluation
+
+Judging confound (owner): some judged boxes span several lyrics or lines. Recorded, not corrected:
+precision is P(box contains lyric text); a geometric proxy finds 3.6% of vocal-page boxes >= raw 0.6
+taller than 1.6x their page median (3.2% on the held-out set); multi-word single-line boxes are not
+visible to it.
+GPU run with the first calibrated manifest accepted NOTHING on 3 Lieder pages: uncalibrated e4 emits
+~1,000-2,400 Tempo/Dynamic boxes per page (median area 16-24 px, plus one ~5M px page-sized box),
+which chain every lyric into one `uncalibrated-conflict` component. Fix (OTS 94fe104): the manifest
+pins a size gate (minBoxArea Lyrics/Tempo/StaffText/Expression 200, Dynamic 50; maxPageAreaFraction
+0.25) applied in `gate`; the lyric fit sees the same boxes (calibration barely moves: accept raw 0.6,
+calibrated 0.9326). A second failure (526 regions > 500 cap) led to a bounded review list: accepted
+regions + the 200 strongest review regions, `reviewOmitted` counts the rest (backend verifies
+regions == accepted + review - reviewOmitted).
+Final GPU run (manifest fb1e5902c22e3608af8c830a0047a76e7226ae514093ea0b17b68a0f72308b14), all 3 pages succeeded: accepted
+lyric regions 34 / 23 / 23, review 492 (292 omitted) / 199 / 233 (33 omitted); provider 37-42 s. App stopped.
+Held-out test partition (143 pages, 128 vocal / 15 instrumental, 64 scores with >=5 accepted boxes,
+no score overlap with calibration), same gate and accept line, nothing refitted: accepted vocal boxes
+2,264, matched to OCR-confirmed lyrics 1,166 (51.5%; calibration partition 49.9%). Projected precision
+95.5% (calibration 95.3%) applies the CALIBRATION judged lyric rate (0.907) to the unmatched boxes, so
+only the matched share is independent evidence; per-score matched share min 0.0 / median 0.52 / max 1.0.
+Instrumental false positives 1.27 per page (19 on 15 pages; calibration 0.98 per page on 45) -- small
+sample. No new human judgements on the test set.
+Caveats unchanged: detector training membership unverified; below-0.5 boxes unsampled; one
+checkpoint at area-4 plus the size gate; fusion flags off; nothing deployed. Evaluation:
+`services/ots-homr-modal/calibration/fusion-v1-heldout-evaluation.json`.
