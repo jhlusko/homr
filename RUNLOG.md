@@ -17095,3 +17095,32 @@ lets a person transcribe, accept or exclude each region and exports `ots.lyric-c
 Backend 608 scanner tests and frontend scanner tests pass. Not deployed, not pushed, no job link
 to the page yet. Still missing for the placement stage: OCR in the provider, the semantic gate, and
 note anchors/printed-line identity per candidate.
+
+
+## 2026-10-07 — First real GPU fusion run through the scanner (uncalibrated local-test provider)
+
+No `calibration/fusion-v1.json` exists (only the stale `lyrics-only-v1`, pinned to an older e2),
+so enabling fusion on the shipping provider cannot start. Owner chose a separate local test:
+`modal_fusion_test.py` (app `ourtextscores-ots-homr-fusion-localtest`, revision
+`ots-homr-fusion-uncalibrated-localtest-20261007-v1`, L4) with an UNCALIBRATED manifest generated
+from the shipping detector pins (`make_local_test_fusion_manifest.py`, policyRevision 6a42b965…):
+no calibration, no accept thresholds, so nothing is ever accepted. Shipping apps untouched; only the
+local backend/worker pointed at it; app stopped afterwards. Source commits 3adec2e, then two
+test-engine logging commits.
+
+Three Lieder pages (IMSLP286659/617260/89796) submitted as real scanner jobs (ots-homr, textPolicy
+fusion-v1) through backend + worker: all succeeded. Provider wall time 68 s, ~39 s, ~? (cold start
+first; execution 47 s / 37 s; one sample each, not a latency qualification vs 280 s).
+
+Findings:
+1. The first run FAILED: a real page yields >500 fusion regions (1148 and 1738 seen) and the provider
+   caps responses at 500 (`inference_failed`, "exceeded review limit"). Breakdown: ~450 Fingering and
+   ~450 MeasureNumber boxes from e4, 200-900 Lyrics boxes from e4, all `rejected|unsupported-class`.
+   Rejected regions are the bulk; fusion-v1 cannot carry a normal page until they are summarised or
+   dropped. The test engine drops rejected regions and sets rejected=0 (test accommodation only).
+2. With no calibration every non-rejected region is `review|below-threshold`. e2 Lyrics boxes: 37, 44,
+   55 per page, 100% of them sit in a component with an e4 direction box (e4 over-prediction), so the
+   scanner's `competingText` flag is true for every candidate here and carries no information.
+3. Scanner lyric-candidate inventories built from the real artifacts; crops show real lyric
+   syllables ("love", "for what's", "He's", "be,", "me,"). Review page loaded 37 candidates, no errors.
+Still no OCR, semantic gate or note anchors in the provider. Not a calibrated or accuracy result.
