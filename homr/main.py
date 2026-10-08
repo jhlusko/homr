@@ -283,7 +283,9 @@ def process_image(
 
         if transformer_config.stem_arbitration:
             for voice in result_staffs:
-                report = arbitrate_stems(voice)
+                report = arbitrate_stems(
+                    voice, threshold=transformer_config.stem_arbitration_threshold
+                )
                 if report.rule_applied:
                     eprint(report.describe())
 
@@ -291,7 +293,9 @@ def process_image(
         # stems, so it has to read the stem that will actually be rendered.
         if transformer_config.slur_side:
             for voice in result_staffs:
-                slur_report = choose_slur_sides(voice)
+                slur_report = choose_slur_sides(
+                    voice, threshold=transformer_config.slur_side_threshold
+                )
                 if slur_report.rule_applied:
                     eprint(slur_report.describe())
 

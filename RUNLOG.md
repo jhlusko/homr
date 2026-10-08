@@ -17109,8 +17109,9 @@ local backend/worker pointed at it; app stopped afterwards. Source commits 3adec
 test-engine logging commits.
 
 Three Lieder pages (IMSLP286659/617260/89796) submitted as real scanner jobs (ots-homr, textPolicy
-fusion-v1) through backend + worker: all succeeded. Provider wall time 68 s, ~39 s, ~? (cold start
-first; execution 47 s / 37 s; one sample each, not a latency qualification vs 280 s).
+fusion-v1) through backend + worker: all succeeded. Provider wall time 68 s (cold start, 47 s
+execution) for the first page and 39 s (37 s execution) for the last; the middle page was not logged.
+One sample each, not a latency qualification against 280 s.
 
 Findings:
 1. The first run FAILED: a real page yields >500 fusion regions (1148 and 1738 seen) and the provider

@@ -52,6 +52,9 @@ class FreezeCallback(TrainerCallback):
     def __init__(self, epochs_to_freeze: int = 2):
         self.epochs_to_freeze = epochs_to_freeze
         self._backbone_frozen = False
+        self._unfrozen_weight: torch.nn.Parameter | None = None
+        self._unfrozen_snapshot: torch.Tensor | None = None
+        self._unfrozen_steps_without_update = 0
 
     def on_train_begin(
         self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs: Any
@@ -70,6 +73,27 @@ class FreezeCallback(TrainerCallback):
             eprint(f"Unfreezing backbone at epoch {state.epoch}")
             model.unfreeze_backbone()
             self._backbone_frozen = False
+            # `torch.compile` can keep using a graph captured while the backbone
+            # was frozen.  The flag then says trainable but gradients stay None.
+            # Fail during the first unfrozen epoch instead of saving a bad run.
+            self._unfrozen_weight = next(model.encoder.model.parameters())
+            self._unfrozen_snapshot = self._unfrozen_weight.detach().clone()
+            self._unfrozen_steps_without_update = 0
+
+    def on_step_end(
+        self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs: Any
+    ) -> None:
+        if self._unfrozen_weight is None or self._unfrozen_snapshot is None:
+            return
+        if not torch.equal(self._unfrozen_weight.detach(), self._unfrozen_snapshot):
+            self._unfrozen_weight = None
+            self._unfrozen_snapshot = None
+            return
+        self._unfrozen_steps_without_update += 1
+        if self._unfrozen_steps_without_update >= 2:
+            raise RuntimeError(
+                "Backbone did not update after unfreezing: aborting this training run"
+            )
 
 
 def load_training_index(file_path: str) -> list[str]:
@@ -237,9 +261,15 @@ def train_transformer(
         datasets = load_dataset(train_index, config, val_split=0.1)
 
     compile_threshold = 50000
-    compile_model = (
+    compile_requested = (
         number_of_files < 0 or number_of_files * number_of_epochs >= compile_threshold
     )  # Compiling needs time, but pays off for large datasets
+    # E1's PyTorch 2.6 compiled graph retained the frozen ConvNeXt weights after
+    # FreezeCallback unfroze them.  With eager execution the same HF Trainer path
+    # updates them.  Keep compilation only for fine-tuning, which has no callback.
+    compile_model = compile_requested and fine_tune
+    if compile_requested and not compile_model:
+        eprint("Disabling torch.compile for backbone freeze/unfreeze")
     if compile_model:
         eprint("Compiling model")
 

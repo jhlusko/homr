@@ -33,6 +33,10 @@ from homr.transformer.vocabulary import EncodedSymbol
 #: sweep was tuned on half the staves and reported on the other half, so this number is
 #: not fitted to what it is quoted against.
 HEAD_CONFIDENCE_THRESHOLD = 0.9
+#: v7's OSSQ-v2 sweep selected 0.8 on the tuning half of 1,734 staves; on the
+#: reporting half it scored 94.89% against 93.95% for the rule alone. This is
+#: deliberately opt-in until the v7 checkpoint is selected for inference.
+OSSQ_V7_HEAD_CONFIDENCE_THRESHOLD = 0.8
 
 _STEPS = {"C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6}
 #: What pitch each clef sign fixes to its own line.

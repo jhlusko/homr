@@ -57,6 +57,31 @@ class TestPostDecodeWiring(unittest.TestCase):
             with self.subTest(flag=flag):
                 self.assertIn(f"self.{flag} = ", configs)
 
+    def test_stem_and_slur_calls_use_the_configured_policy(self) -> None:
+        """A measured threshold has no effect if main keeps calling the defaults."""
+        expected = {
+            "arbitrate_stems": "stem_arbitration_threshold",
+            "choose_slur_sides": "slur_side_threshold",
+        }
+        for path in (
+            ROOT / "homr" / "main.py",
+            ROOT / "training" / "transformer" / "end_to_end_passes.py",
+        ):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            missing = expected.copy()
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+                    continue
+                if node.func.id not in missing:
+                    continue
+                threshold = next(
+                    (arg.value for arg in node.keywords if arg.arg == "threshold"), None
+                )
+                self.assertIsInstance(threshold, ast.Attribute)
+                self.assertEqual(missing[node.func.id], threshold.attr)
+                missing.pop(node.func.id)
+            self.assertFalse(missing, f"policy passes missing from {path}: {missing}")
+
 
 class TestTheVerificationHarnessReplaysTheSameSequence(unittest.TestCase):
     """The harness that verifies these passes must run all of them.

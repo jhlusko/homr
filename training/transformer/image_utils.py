@@ -304,7 +304,13 @@ def distort_image(image: NDArray, allow_occlusions: bool = False) -> NDArray:
     # Geometric
     if allow_occlusions not in _geometric_transforms:
         _geometric_transforms[allow_occlusions] = _make_geometric_transforms(allow_occlusions)
-    image = _geometric_transforms[allow_occlusions](image=image)["image"]
+    transforms = _geometric_transforms[allow_occlusions]
+    # Albumentations 2 owns RNGs independent of random/np.random. The validation
+    # loader seeds NumPy per sample, and training workers seed it per epoch;
+    # derive the geometric seed from that stream too. Reseed on every call so
+    # cached transforms and intervening samples cannot change validation pixels.
+    transforms.set_random_seed(int(np.random.randint(0, 2**32, dtype=np.uint32)))
+    image = transforms(image=image)["image"]
 
     # Capture ink locations after geometry, before brightness augmentation
     _pre_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if image.ndim == 3 else image

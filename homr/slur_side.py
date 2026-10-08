@@ -1,7 +1,8 @@
 """Choose which side of the noteheads a slur sits on, between the head and a convention.
 
-**This pass is off by default.** `HOMR_SLUR_SIDE=1` enables it. Read the scope below
-before turning it on.
+**This pass is off by default.** `HOMR_SLUR_SIDE=1` retains the legacy
+confidence-gated pass; `HOMR_SLUR_SIDE=ossq-rule` applies the accepted OSSQ
+opposite-stem rule. Read the scope below before turning either on.
 
 Engravers place a slur opposite the stems: stems up, slur below the noteheads; stems down,
 slur above. Measured against engraved placements, that convention holds on one corpus and
@@ -30,6 +31,9 @@ the labels. That was not settled here.
 Runs after `arbitrate_stems`, and must: the stem it reads is the arbitrated one, and
 deriving a side from a stem the pipeline is about to change would describe a score nobody
 renders.
+
+The v7 paired OSSQ evaluation scored the head at .906 macro-F1 and the rule at .946
+on 5,998 endpoints. The `ossq-rule` mode uses the rule regardless of head confidence.
 """
 
 from collections.abc import Sequence
@@ -78,14 +82,15 @@ def _confidence(symbol: EncodedSymbol, slot: int) -> float | None:
 
 
 def choose_slur_sides(
-    staff: Sequence[EncodedSymbol], threshold: float = HEAD_CONFIDENCE_THRESHOLD
+    staff: Sequence[EncodedSymbol], threshold: float | None = HEAD_CONFIDENCE_THRESHOLD
 ) -> SlurArbitration:
-    """Apply the opposite-the-stem convention where the head is unsure, in place.
+    """Apply the opposite-the-stem convention in place.
 
     Only slots carrying an actual span are touched. A slot with no event has no side to
     place, and a note whose stem is unknown gives the rule nothing to derive from - in
     both cases the head's own answer stands, because an invented side is worse than an
-    uncertain one.
+    uncertain one. ``threshold=None`` applies the accepted OSSQ rule to every scorable
+    side; a numeric threshold preserves the older head-confidence arbitration.
     """
     report = SlurArbitration()
     for symbol in staff:
@@ -103,7 +108,7 @@ def choose_slur_sides(
                 continue
             report.sides += 1
             confidence = _confidence(symbol, slot)
-            if confidence is not None and confidence >= threshold:
+            if threshold is not None and confidence is not None and confidence >= threshold:
                 report.head_kept += 1
                 continue
             report.rule_applied += 1

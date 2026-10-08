@@ -114,6 +114,12 @@ class TestTheThreshold(unittest.TestCase):
         note = _note(StemDirection.UP, side=SlurSide.ABOVE)
         self.assertEqual(1, choose_slur_sides([note]).rule_applied)
 
+    def test_ossq_rule_overrides_even_a_confident_head(self) -> None:
+        note = _note(StemDirection.UP, side=SlurSide.ABOVE, confidence=0.99)
+        report = choose_slur_sides([note], threshold=None)
+        self.assertEqual(1, report.rule_applied)
+        self.assertEqual(SlurSide.BELOW, _side(note))
+
 
 class TestTheSecondSlot(unittest.TestCase):
     def test_a_span_in_slot_two_is_placed_by_its_own_confidence(self) -> None:
@@ -148,3 +154,25 @@ class TestItIsOffByDefault(unittest.TestCase):
 
         with mock.patch.dict(os.environ, {"HOMR_SLUR_SIDE": "1"}):
             self.assertTrue(Config().slur_side)
+            self.assertEqual(HEAD_CONFIDENCE_THRESHOLD, Config().slur_side_threshold)
+
+    def test_ossq_rule_mode_is_explicit(self) -> None:
+        import os
+        from unittest import mock
+
+        from homr.transformer.configs import Config
+
+        with mock.patch.dict(os.environ, {"HOMR_SLUR_SIDE": "ossq-rule"}):
+            config = Config()
+        self.assertTrue(config.slur_side)
+        self.assertIsNone(config.slur_side_threshold)
+
+    def test_unknown_mode_fails_closed(self) -> None:
+        import os
+        from unittest import mock
+
+        from homr.transformer.configs import Config
+
+        with mock.patch.dict(os.environ, {"HOMR_SLUR_SIDE": "ossq"}):
+            with self.assertRaisesRegex(ValueError, "HOMR_SLUR_SIDE"):
+                Config()

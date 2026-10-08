@@ -13,6 +13,8 @@ from training.transformer.train_structured_heads import (
     EpochReport,
     collate,
     heads_with_support,
+    load_epoch_checkpoint,
+    save_epoch_checkpoint,
     set_probe_mode,
     structured_parameters,
     train_epoch,
@@ -121,6 +123,38 @@ class TestFrozenCoreStep(unittest.TestCase):
 
         self.assertIn("no targets all epoch", report.describe())
         self.assertIn("beam.level.2", report.describe())
+
+    def test_epoch_checkpoint_restores_heads_optimizer_and_rejects_changed_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "epoch.pt"
+            optimizer = torch.optim.Adam(structured_parameters(self.model), lr=0.01)
+            report = train_epoch(self.model, [_batch()], optimizer, HEADS, epoch=1)
+            expected_head = {
+                key: value.detach().clone()
+                for key, value in self.model.decoder.structured_heads.state_dict().items()
+            }
+            expected_identity = {"index_sha256": "index", "lr": 0.01}
+            save_epoch_checkpoint(
+                path, self.model, optimizer, 1, [report], expected_identity
+            )
+
+            resumed = _Model()
+            for name, parameter in resumed.named_parameters():
+                parameter.requires_grad = name.startswith("decoder.structured_heads.")
+            resumed_optimizer = torch.optim.Adam(structured_parameters(resumed), lr=0.01)
+            completed, reports = load_epoch_checkpoint(
+                path, resumed, resumed_optimizer, expected_identity
+            )
+
+            self.assertEqual(completed, 1)
+            self.assertEqual(reports, [report])
+            for key, value in expected_head.items():
+                self.assertTrue(torch.equal(value, resumed.decoder.structured_heads.state_dict()[key]))
+            self.assertEqual(len(resumed_optimizer.state), len(optimizer.state))
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                load_epoch_checkpoint(
+                    path, resumed, resumed_optimizer, {"index_sha256": "changed"}
+                )
 
 
 class TestCollate(unittest.TestCase):

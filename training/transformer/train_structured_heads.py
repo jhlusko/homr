@@ -23,7 +23,10 @@ any targets at all.
 # flake8: noqa: T201
 
 import argparse
+import hashlib
 import json
+import os
+import random
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -31,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+import numpy as np
 from torch import nn
 from torch.utils.data import DataLoader as TorchDataLoader
 
@@ -188,7 +192,10 @@ def train_epoch(
     count = 0
 
     for raw in batches:  # type: ignore[attr-defined]
-        batch = {k: v.to(device) if hasattr(v, "to") else v for k, v in raw.items()}
+        batch = {
+            k: v.to(device, non_blocking=device.startswith("cuda")) if hasattr(v, "to") else v
+            for k, v in raw.items()
+        }
         targets = {name: batch[name] for name in head_targets if name in batch}
         if not targets:
             # Nothing to learn from this batch: a corpus without sidecars, or a crop with
@@ -256,6 +263,60 @@ def heads_with_support(reports: list[EpochReport]) -> tuple[str, ...]:
         for name, count in report.support.items():
             seen[name] = seen.get(name, 0) + count
     return tuple(name for name, count in sorted(seen.items()) if count > 0)
+
+
+def _index_fingerprint(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def save_epoch_checkpoint(
+    path: Path,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    completed_epoch: int,
+    reports: list[EpochReport],
+    identity: dict[str, Any],
+) -> None:
+    """Atomically persist enough state to continue at the next epoch."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    payload = {
+        "format_version": 1,
+        "completed_epoch": completed_epoch,
+        "heads": model.decoder.structured_heads.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "reports": [report.__dict__ for report in reports],
+        "identity": identity,
+        "python_rng": random.getstate(),
+        "numpy_rng": np.random.get_state(),
+        "torch_rng": torch.get_rng_state(),
+        "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+    }
+    torch.save(payload, temporary)
+    os.replace(temporary, path)
+
+
+def load_epoch_checkpoint(
+    path: Path,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    expected_identity: dict[str, Any],
+) -> tuple[int, list[EpochReport]]:
+    """Restore a saved epoch boundary, rejecting changed data or training settings."""
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    if payload.get("format_version") != 1:
+        raise ValueError(f"unsupported resume checkpoint format: {path}")
+    if payload.get("identity") != expected_identity:
+        raise ValueError("resume checkpoint does not match this index/model/training configuration")
+    model.decoder.structured_heads.load_state_dict(payload["heads"], strict=True)
+    optimizer.load_state_dict(payload["optimizer"])
+    random.setstate(payload["python_rng"])
+    np.random.set_state(payload["numpy_rng"])
+    torch.set_rng_state(payload["torch_rng"])
+    if torch.cuda.is_available() and payload.get("cuda_rng") is not None:
+        torch.cuda.set_rng_state_all(payload["cuda_rng"])
+    reports = [EpochReport(**report) for report in payload["reports"]]
+    return int(payload["completed_epoch"]), reports
 
 
 def collate(items: list[dict[str, Any]], head_targets: Sequence[str]) -> dict[str, Any]:
@@ -331,9 +392,19 @@ def build_batches(
         # the mixed corpus.  These workers have no epoch-local state, so keep them
         # alive and retain their filesystem/image caches between passes.
         persistent_workers=workers > 0,
+        worker_init_fn=_limit_worker_threads if workers > 0 else None,
+        pin_memory=torch.cuda.is_available(),
         collate_fn=lambda items: collate(items, names),
     )
     return loader, len(wrapped)
+
+
+def _limit_worker_threads(_worker_id: int) -> None:
+    """Avoid OpenCV/PyTorch creating a full CPU thread pool in every loader worker."""
+    import cv2
+
+    cv2.setNumThreads(1)
+    torch.set_num_threads(1)
 
 
 def main() -> None:
@@ -342,10 +413,26 @@ def main() -> None:
     parser.add_argument("--checkpoint", type=Path, required=True, help="Pinned .pth to start from.")
     parser.add_argument("--out", type=Path, required=True, help="Where to write the manifest.")
     parser.add_argument("--weights", type=Path, help="Where to write the trained head weights.")
+    parser.add_argument(
+        "--resume-checkpoint",
+        type=Path,
+        help="Atomically updated full training state saved after each epoch.",
+    )
+    parser.add_argument(
+        "--resume-from",
+        type=Path,
+        help="Resume model, Adam state, RNG state and reports from an epoch checkpoint.",
+    )
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument(
+        "--cpu-threads",
+        type=int,
+        default=1,
+        help="Limit PyTorch intra-op threads; profiling showed the 255-thread default stalls CPU-side batch preparation.",
+    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--run-id", default="")
     parser.add_argument(
@@ -381,6 +468,9 @@ def main() -> None:
         "31.6%% at 200; uncapped is 75%%, where 293 examples carry a quarter of it.",
     )
     args = parser.parse_args()
+    if args.cpu_threads < 1:
+        raise ValueError("--cpu-threads must be at least 1")
+    torch.set_num_threads(args.cpu_threads)
 
     from homr.transformer.configs import Config
     from training.architecture.transformer.tromr_arch import TrOMR
@@ -409,14 +499,39 @@ def main() -> None:
             print(f"  {name}: class weights spread {spread:.1f}x")
 
     optimizer = torch.optim.Adam(structured_parameters(model), lr=args.lr)
-    reports = []
-    for epoch in range(1, args.epochs + 1):
-        gamma: float | dict[str, float] = args.focal_gamma
-        if args.focal_gamma_head:
-            gamma = {}
-            for entry in args.focal_gamma_head:
-                head_name, _, value = entry.partition("=")
-                gamma[head_name] = float(value)
+    gamma: float | dict[str, float] = args.focal_gamma
+    if args.focal_gamma_head:
+        gamma = {}
+        for entry in args.focal_gamma_head:
+            head_name, _, value = entry.partition("=")
+            gamma[head_name] = float(value)
+    resume_path = args.resume_checkpoint
+    if resume_path is None and args.weights is not None:
+        resume_path = args.weights.with_suffix(args.weights.suffix + ".resume.pt")
+    identity = {
+        "index_sha256": _index_fingerprint(args.index),
+        "checkpoint_sha256": _index_fingerprint(args.checkpoint),
+        "lr": args.lr,
+        "batch_size": args.batch_size,
+        "workers": args.workers,
+        "cpu_threads": args.cpu_threads,
+        "focal_gamma": gamma,
+        "class_weights": args.class_weights,
+        "weight_cap": args.weight_cap,
+    }
+    reports: list[EpochReport] = []
+    completed_epoch = 0
+    if args.resume_from is not None:
+        completed_epoch, reports = load_epoch_checkpoint(
+            args.resume_from, model, optimizer, identity
+        )
+        if completed_epoch > args.epochs:
+            raise ValueError(
+                f"checkpoint already completed {completed_epoch} epochs, beyond requested {args.epochs}"
+            )
+        print(f"resumed after epoch {completed_epoch} from {args.resume_from}")
+
+    for epoch in range(completed_epoch + 1, args.epochs + 1):
         report = train_epoch(
             model,
             batches,
@@ -429,6 +544,11 @@ def main() -> None:
         )
         print(report.describe())
         reports.append(report)
+        if resume_path is not None:
+            save_epoch_checkpoint(
+                resume_path, model, optimizer, epoch, reports, identity
+            )
+            print(f"resume checkpoint: epoch {epoch} -> {resume_path}")
 
     trained = heads_with_support(reports)
     if args.weights:

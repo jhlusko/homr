@@ -433,7 +433,9 @@ def _interior_findings(
     return counts
 
 
-def _post_decode(symbols: list[EncodedSymbol], *, passes: bool) -> list[EncodedSymbol]:
+def _post_decode(
+    symbols: list[EncodedSymbol], *, passes: bool, config: Config | None = None
+) -> list[EncodedSymbol]:
     """`homr/main.py`'s sequence, on a copy, with the passes on or off.
 
     Tuplet repair runs in both arms because it runs in both configurations of the thing
@@ -448,11 +450,12 @@ def _post_decode(symbols: list[EncodedSymbol], *, passes: bool) -> list[EncodedS
     voice = copy.deepcopy(symbols)
     voice = repair_symbols(voice)[0]
     if passes:
+        policy = config or Config()
         repair_beams(voice)
-        arbitrate_stems(voice)
+        arbitrate_stems(voice, threshold=policy.stem_arbitration_threshold)
         # After the stems, as in main.py: the convention reads the arbitrated stem.
         repair_ties(voice)
-        choose_slur_sides(voice)
+        choose_slur_sides(voice, threshold=policy.slur_side_threshold)
         repair_crossings(voice)
     return voice
 
@@ -514,8 +517,8 @@ def main() -> None:
             continue
         predicted = inference.predict(add_image_into_tr_omr_canvas(image))
 
-        without = _post_decode(predicted, passes=False)
-        with_passes = _post_decode(predicted, passes=True)
+        without = _post_decode(predicted, passes=False, config=config)
+        with_passes = _post_decode(predicted, passes=True, config=config)
         was_valid = _score(without, engraved, off)
         is_valid = _score(with_passes, engraved, on)
         if was_valid and not is_valid:

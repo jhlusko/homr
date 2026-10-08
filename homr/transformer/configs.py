@@ -196,19 +196,34 @@ class Config:
         #: would disagree with - a beam spanning a rest, say - is left exactly as decoded.
         #: See `homr.beam_repair`.
         self.beam_repair = os.environ.get("HOMR_BEAM_REPAIR", "1") != "0"
-        #: Take stem direction from the beam-group rule where the head is unsure. 27.27
-        #: measured the rule at 94.4% with no parameters against the head's 94.3%, and
-        #: 27.28 found they fail on nearly disjoint notes: choosing per note from the
-        #: head's own confidence scored 95.92%. See `homr.stem_arbitration`.
-        self.stem_arbitration = os.environ.get("HOMR_STEM_ARBITRATION", "1") != "0"
+        #: Take stem direction from the beam-group rule where the head is unsure.
+        #: `1` retains the legacy 0.9 cutoff; `ossq-v7` opts into the cutoff of
+        #: 0.8 selected on OSSQ v2 with the v7 heads. Do not use that mode with
+        #: the released older head checkpoint. See `homr.stem_arbitration`.
+        stem_policy = os.environ.get("HOMR_STEM_ARBITRATION", "1")
+        if stem_policy not in {"0", "1", "ossq-v7"}:
+            raise ValueError(f"unsupported HOMR_STEM_ARBITRATION policy {stem_policy!r}")
+        self.stem_arbitration = stem_policy != "0"
+        # The v7 OSSQ policy is opt-in: the released provider still pins older
+        # heads and must keep their previously measured 0.9 cutoff.
+        self.stem_arbitration_threshold = 0.8 if stem_policy == "ossq-v7" else 0.9
 
         #: Slur side from the engraving convention - opposite the stems - where the
         #: slur-side head is unsure. **Off by default since 2026-09-13**: the convention
         #: holds on the corpus it was measured on (94.8% on OSSQ) and is chance on
         #: another (51.3% on Lieder), and no property visible at inference separates
-        #: them. Set `HOMR_SLUR_SIDE=1` only for material the rule has been validated
-        #: on. See `homr.slur_side`.
-        self.slur_side = os.environ.get("HOMR_SLUR_SIDE", "0") != "0"
+        #: them. `1` retains legacy confidence arbitration; `ossq-rule` uses
+        #: the accepted rule on every scorable OSSQ side. Neither is inferred
+        #: from instrumentation, which cannot establish corpus provenance.
+        #: See `homr.slur_side`.
+        slur_policy = os.environ.get("HOMR_SLUR_SIDE", "0")
+        if slur_policy not in {"0", "1", "ossq-rule"}:
+            raise ValueError(f"unsupported HOMR_SLUR_SIDE policy {slur_policy!r}")
+        self.slur_side = slur_policy != "0"
+        # v7's OSSQ head scored .906 macro-F1 on paired endpoints, while the
+        # opposite-stem rule scored .946. The accepted policy uses the rule on
+        # every scorable side; the legacy opt-in still uses a 0.9 cutoff.
+        self.slur_side_threshold = None if slur_policy == "ossq-rule" else 0.9
 
         #: Re-pair slurs whose spans cross, which no engraver draws. Measured over 400
         #: Lieder systems: the decode draws 69 crossings on 9.50% of staves against the

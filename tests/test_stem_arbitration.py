@@ -1,7 +1,14 @@
 import unittest
+from dataclasses import replace
+from unittest import mock
 
-from homr.stem_arbitration import HEAD_CONFIDENCE_THRESHOLD, arbitrate_stems
-from homr.transformer.structured_decode import STEM_HEAD, HeadChoice
+from homr.slur_side import choose_slur_sides
+from homr.stem_arbitration import (
+    HEAD_CONFIDENCE_THRESHOLD,
+    OSSQ_V7_HEAD_CONFIDENCE_THRESHOLD,
+    arbitrate_stems,
+)
+from homr.transformer.structured_decode import SLUR_SIDE_HEAD, STEM_HEAD, HeadChoice
 from homr.transformer.structured_notation import (
     AdvanceClass,
     BeamLevelState,
@@ -140,6 +147,60 @@ class TestStemArbitration(unittest.TestCase):
     def test_the_threshold_is_the_measured_one(self) -> None:
         """0.9 is 27.28's swept value, tuned on one half and reported on the other."""
         self.assertEqual(0.9, HEAD_CONFIDENCE_THRESHOLD)
+
+    def test_v7_cutoff_keeps_a_head_the_legacy_cutoff_would_replace(self) -> None:
+        staff = [
+            _clef(),
+            _note("C4", BeamLevelState.BEGIN, StemDirection.DOWN, 0.85),
+            _note("D4", BeamLevelState.END, StemDirection.DOWN, 0.85),
+        ]
+        report = arbitrate_stems(staff, threshold=OSSQ_V7_HEAD_CONFIDENCE_THRESHOLD)
+        self.assertEqual(2, report.head_kept)
+        self.assertEqual(StemDirection.DOWN, staff[1].notation.stem)
+
+    def test_ossq_slur_rule_reads_the_arbitrated_stem(self) -> None:
+        staff = [
+            _clef(),
+            _note("C4", BeamLevelState.BEGIN, StemDirection.DOWN, 0.4),
+            _note("D4", BeamLevelState.END, StemDirection.DOWN, 0.4),
+        ]
+        first = staff[1]
+        first.notation = replace(
+            first.notation,
+            slurs=((SlurEvent.START, SlurSide.ABOVE),) + first.notation.slurs[1:],
+        )
+        first.structured_choices += (
+            HeadChoice(head=SLUR_SIDE_HEAD.format(slot=1), value="above", probability=0.99),
+        )
+        arbitrate_stems(staff, threshold=OSSQ_V7_HEAD_CONFIDENCE_THRESHOLD)
+        report = choose_slur_sides(staff, threshold=None)
+        self.assertEqual(StemDirection.UP, first.notation.stem)
+        self.assertEqual(SlurSide.BELOW, first.notation.slurs[0][1])
+        self.assertEqual(1, report.rule_applied)
+        self.assertEqual(1, report.changed)
+
+
+class TestStemPolicyConfiguration(unittest.TestCase):
+    def test_v7_mode_is_explicit(self) -> None:
+        from homr.transformer.configs import Config
+
+        with mock.patch.dict("os.environ", {"HOMR_STEM_ARBITRATION": "ossq-v7"}):
+            config = Config()
+        self.assertTrue(config.stem_arbitration)
+        self.assertEqual(OSSQ_V7_HEAD_CONFIDENCE_THRESHOLD, config.stem_arbitration_threshold)
+
+    def test_legacy_default_keeps_its_cutoff(self) -> None:
+        from homr.transformer.configs import Config
+
+        with mock.patch.dict("os.environ", {"HOMR_STEM_ARBITRATION": "1"}):
+            self.assertEqual(HEAD_CONFIDENCE_THRESHOLD, Config().stem_arbitration_threshold)
+
+    def test_unknown_mode_fails_closed(self) -> None:
+        from homr.transformer.configs import Config
+
+        with mock.patch.dict("os.environ", {"HOMR_STEM_ARBITRATION": "v7"}):
+            with self.assertRaisesRegex(ValueError, "HOMR_STEM_ARBITRATION"):
+                Config()
 
 
 if __name__ == "__main__":

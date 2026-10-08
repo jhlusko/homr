@@ -1,5 +1,7 @@
 # Fresh music-recognition training — 2026-09-29
 
+**Current status (2026-10-01):** paused at epoch 81 / update 102,060; epoch 80 last fully validated. Decoding epochs 73/80 completed and neither is promoted. Selected checkpoints, full resume, results and code/environment records are verified locally. This document preserves the chronological recipe changes; initial corpus/ETA statements are historical. See [local follow-up plan](POST_GPU_NEXT_STEPS_2026-10-01.md).
+
 Owner authorized training the recognition model and all notation heads from scratch, then explicitly allowed ImageNet pretraining. The selected initialization is **ImageNet ConvNeXt encoder + random music decoder and notation heads**. No HOMR/core checkpoint is loaded. This is distinct from the stopped public-core-initialized joint run; it does not replace its epoch-27 candidate or accepted runtime pins.
 
 Reproducible runner: `training/transformer/train_joint_random.py`, code commit `d55f5d9`. Encoder pretraining is explicitly controlled by `--encoder-pretrained`; the default encoder behavior for existing runners is retained. Existing instance environments/drivers are preserved.

@@ -92,11 +92,57 @@ Against pinned upstream `pytorch_model_426`, free-running, paired bootstrap over
 Per-branch on OSSQ: pitch 90.41→94.55, rhythm 87.50→93.11, lift 90.00→95.50,
 articulation 92.65→94.93, slur 93.15→95.30, position 95.25→96.91.
 
-**Caveat that is easy to drop and must not be.** 426 predates the time-signature
-numerator and naturals vocabulary. Comparisons suppress `timeSignatureBeats_` on both
-sides, but 426 has no `N` lift class, and a missing early class shifts later positional
-tokens. This is end-to-end evidence of pipeline difference, not attribution of gain to
-training data.
+**Vocabulary caveat, corrected 2026-09-28.** 426 predates the explicit time-signature
+numerator vocabulary. Historical comparisons suppress `timeSignatureBeats_` on both
+sides. The earlier claim that 426 has no natural-sign class was incorrect: its matching
+commit defines `N` at lift index 4, and the saved checkpoint has all seven lift classes.
+The historical figures above describe the earlier evaluation; they do not establish
+the newly rebuilt public-input candidate's direct advantage over upstream.
+
+A direct comparison completed **2026-09-28 06:04 UTC** for **upstream 426**, the pinned OTS core, and
+**public-rareNum-20260927**, using one FP32 PyTorch decoder/preprocessing path and each
+model's native vocabulary, with strict checkpoint loading. It covers 792 OSSQ, 3,422
+PDMX and 300 Lieder v8 staves. Shared-vocabulary aligned symbol errors are the primary
+metric; full-vocabulary errors and numerator recognition are reported separately.
+Confidence intervals resample complete scores (2,000 paired bootstrap replicates).
+All 13,542 predictions have matching crop hashes/references across models; no decoding
+failures or sequence-limit hits. Local archive checksums passed and the report was
+regenerated locally at 09:05 UTC.
+
+| Validation corpus | Staves / scores | Upstream symbol error | Public core symbol error | Change, pp (95% CI) |
+| --- | --- | --- | --- | --- |
+| OSSQ scans | 792 / 9 | 14.47% | 5.22% | −9.25 (−12.13, −7.23) |
+| PDMX | 3,422 / 632 | 7.44% | 4.69% | −2.75 (−3.81, −1.95) |
+| Lieder v8 | 300 / 13 | 5.76% | 2.53% | −3.23 (−5.02, −1.71) |
+
+An error is an insertion, deletion or substitution of a symbol represented by its six
+attributes. Numerator symbols are removed from both sequences for this primary metric.
+Lower is better; these are not the historical positional-accuracy figures above.
+Pitch-plus-accidental note error rates also improve: OSSQ 9.59→0.92%, PDMX 7.32→4.47%,
+Lieder 5.93→1.20%. Exact shared-vocabulary staves improve 146→466/792, 1,460→2,152/3,422,
+97→162/300. Every branch's error rate is lower than upstream on every corpus.
+
+Differences from the pinned OTS core are inconclusive: shared-symbol error changes
+OSSQ −0.03 pp (−0.59, +0.48), PDMX +0.17 pp (−0.40, +0.74), Lieder −0.06 pp
+(−0.25, +0.19). This does not establish superiority or statistical equivalence to the
+pinned model. On PDMX, exact-position numerator recognition is 5/x 45/84 and 12/x 60/115,
+versus upstream 0/84 and 0/115, and pinned 48/84 and 70/115. Numerators are a vocabulary
+extension, not a shared-vocabulary gain. This benchmark's pinned 5/x count differs by
+one from the prior runtime's 49/84; keep results attached to their inference path.
+
+This is staff recognition through a common runtime, not whole-page detector/MusicXML
+quality, a comparison against every upstream release, or an attribution to cross-staff
+reranking/heads (both disabled). Previously inspected validation data limits claims of
+fresh generalization; OSSQ represents only nine scores. Concurrent timings support no
+latency claim. The public-input core is a candidate, not the deployed stack; no tested
+new-core head refit has cleared non-regression. Its 572-row PDMX replay omits 226 planned
+GrandStaff rows, so it is a published-input rebuild, not exact historical reproduction.
+Original core training also predates the Albumentations Compose RNG fix found during
+head investigation; identical seeds do not promise identical checkpoint bytes. The
+recorded recipe, source/environment/input identities and verified weights are packaged
+locally; see `PUBLIC_CORE_REPRODUCIBILITY_2026-09-28.md`.
+Local protocol, full report, predictions and per-case deltas:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/train-20260928/public-core-vs-upstream/`.
 
 Attribution arm (numerator-neutral): Arm A retains the scan result while recovering
 PDMX (OSSQ −0.09pp ns, PDMX +1.10pp, Lieder +0.13pp ns against `scans_v4`). Arm B, which
