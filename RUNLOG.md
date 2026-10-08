@@ -16632,3 +16632,40 @@ Outputs /home/jhlusko/workspace/homr-artifacts/local-tremolo-negative-pages-2026
 No results yet, no prod/pin/.env change. Summarizer now supports declared page count
 rather than hardcoded two-page positive smoke. Next inspect controls and proceed
 to concrete provider qualification, full OCR/text latency, C1/E3.
+
+
+## 2026-10-07 — Negative controls complete; provider recipe and C1 OCR prepared
+
+All five frozen fresh real-scan negative pages completed both timing states through
+actual plain/heads HTTP workers: 10/10 comparisons byte-identical, no token,
+written-note or measure changes and zero native measure regressions. Lieder errors
+remain rhythm39/1377, pitch27/1301, accidental7/1301; OSSQ21/455,3/383,1/383.
+Historically exposed controls establish abstention, not independent accuracy.
+Local CPU runs exclude OCR/fusion and do not qualify production GPU latency.
+Results: `/home/jhlusko/workspace/homr-artifacts/local-tremolo-negative-pages-20261007/`.
+Details: `homr/docs/TREMOLO_NEGATIVE_SERVICE_CONTROLS_2026-10-07.md`.
+
+Separate isolated Modal on/off candidate recipe committed in OTS cce457e. Offline
+recipe tests verify source hashes, copied inputs, namespaces and actual worker
+policy propagation. Existing private fp16 pins remain explicitly unqualified;
+experimental fp32 evidence does not transfer. No image built/deployed or shipping
+pin/environment changed. Provider still needs model-loaded fp16 accuracy and
+full OCR/text-path GPU latency qualification before promotion.
+
+C1 GT packet:241 regions,100 scores,45 directions +196 lyrics; previous24 score
+exclusions preserved. Score-disjoint internal development split73/27 scores,
+not untouched qualification. Scan-only OCR complete:45/45 directions and163/196
+lyrics nonempty;33 lyrics empty (16.84%), zero exceptions. All241 IDs/hashes
+verified;53 existing results preserved and188 processed by four one-thread workers.
+Empty inputs must remain in evaluation; high OCR confidence is not transcription
+correctness. No semantic classifier trained, threshold chosen or fusion enabled.
+Review: http://localhost:8765/c1-semantic-gt-packet-20261007/
+Receipt: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-semantic-gt-packet-20261007/ocr-scan-only-sharded/receipt.json`.
+
+Next priorities: an abstaining C1 semantic pilot with score-disjoint evaluation,
+including empty-input coverage and final false attachments; fill missing title,
+credit and OSSQ direction controls. Independently qualify prepared private-fp16
+provider and full text-path latency when GPU execution is available, then settle
+E3 release examples. No timing-head/ordinary-beam promotion implied. All compute
+jobs finished; only local review serving persists. No remaining running-job ETA.
+
