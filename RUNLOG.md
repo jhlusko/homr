@@ -16977,3 +16977,48 @@ attachment remainsdisabled; no productionpin,.env,deployment/push or frontend
 integration performed. Existing unrelated frontend edits preserved. Only persistent
 local reviewserver isrunning; no compute-job ETA.
 
+
+
+## 2026-10-07 — Review decision handoff and explicit verse-number audit
+
+Added local review-record validator/CLI lyric_review_handoff.py. Checks schema,
+model/page image identity, exact candidate membership/no duplicates, originalOCR,
+box andsemanticproposal evidence, explicitpending/accept/excludestate and nonempty
+acceptedtext. Accepting withheldlyrics is allowed via explicitreview. Onlyaccepted
+text advances; excluded/pending text doesnot. Editedtext markspositionRefreshRequired.
+Allacceptedtext stayspending-verse-note-placement, verse/noteconfirmedfalse,
+attachments empty andMusicXMLunchanged. No actual userdecision export imported;
+fixturetests are not userapprovals. Ten meaningful stale/forged/duplicate/empty,
+withheld-recovery andpending/exclusion tests pass; lintpasses. No runtimewiring.
+
+Audited existing fourpage exact-export-traced sourcefree predictions with fixed
+physical-row-order=nativeverse-number DIAGNOSTIC assumption, no oraclemapping:
+50/145 literalnote/text/verse matches versus82/145 with bestpage-globalverse
+permutation(also82ignoringverse). ChaminadeIMSLP154059 contributes0/42fixedversus
+32/42oracle; otherpagesremain5/48,25/29,20/26. This mayreflect nativeedition verse
+IDs versus printedroworder; it doesnotprove32visuallywrong placements. NativeGT
+used only for evaluation, never toselect reverseverse numbering for inference.
+Ninetyfive cachedattachments have source-free exporter/head association evidence;
+independentpixelownership and nativeverseidentity stillunqualified. These earlier
+pages/predictions are not a freshrun ofacceptedsemanticcandidate or reviewedinserts.
+
+Audit: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-review-verse-audit-20261007-v2/report.json`.
+Originalscoringinputs/nativehashes reverified; cachedpredictionhashes bound. One
+regressiontest checks explicitverse mismatch andduplicatecapping; lintpasses.
+Earlier preformat report/source retained in adjacentunsuffixeddirectory.
+
+Placementreview: http://localhost:8765/lyric-placement-20261007-v2/
+95originalscancrops: blue associateddetectednotehead, orange positionedsyllable.
+Labels generatedmeasure,pitch,quarter-noteonsetoffset andphysicalprintedroworder;
+nativeverseidentity unconfirmed. Source-free cachedoutputs only; noGTreverse mapping,
+manualtextapproval,modelpromotion orMusicXMLwrite. All95images+index HTTPverified;
+one Chaminadecrop visuallychecked. Generatorandreceipt/inputoutputinventory retained
+under `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/review/lyric-placement-20261007-v2/`.
+
+Next: explicitprintedverse/note-confirmation controls, linking reviewedtext to
+verifiedruntimeanchors while keepingeditedsyllablegeometry unresolved untilfresh
+positioning. Then localOTS integrationbehindflag. The ownerapprovedreviewassisted
+texttradeoff and95%retentionbar, not unattendedverse/note insertion. No frontend,
+backend.env,pin,deployment,push orproductiondefaults changed. Allcompute done;
+only reviewserverpersists, no runningjobETA.
+
