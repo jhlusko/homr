@@ -17080,3 +17080,18 @@ decisions only; five jest tests, typecheck and lint pass. Not scanner-wired: the
 static inventory, since the scanner does not yet emit candidate inventories. No push/deploy.
 
 2026-10-07 owner confirmed `wings` (E4) and `ev` (F4) anchors from the merged `withwingsev` token. Rebuilt as `c1-reviewed-import-20261007-v2`: 97 placements written (37/11/28/21), none pending. v1 retained.
+
+
+## 2026-10-07 — Scanner emits lyric candidate inventories (OTS branch lyric-review-integration)
+
+Backend (`0db2598`): `GET scanner/jobs/:id/pages/:n/lyric-candidates` and `.../:candidateId/crop`,
+both 404 unless `SCANNER_OTS_HOMR_LYRIC_REVIEW_ENABLED=1`. Inventory is derived only from the
+stored `text-fusion-review` artifact (Lyrics-labelled candidates of accepted/review regions, reading
+order, boxes validated against the stored recognition raster; crops verify the raster checksum).
+No provider or model change. Candidates carry NO OCR text, semantic gate result or note anchor,
+because the production provider has none of those yet; `text` is empty and `textSource: none`.
+Frontend: `/scanner/:jobId/pages/:n/lyric-review` (flag `NEXT_PUBLIC_OTS_HOMR_LYRIC_REVIEW_ENABLED=1`)
+lets a person transcribe, accept or exclude each region and exports `ots.lyric-candidate-decisions.v1`.
+Backend 608 scanner tests and frontend scanner tests pass. Not deployed, not pushed, no job link
+to the page yet. Still missing for the placement stage: OCR in the provider, the semantic gate, and
+note anchors/printed-line identity per candidate.
