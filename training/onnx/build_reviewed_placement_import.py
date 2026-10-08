@@ -17,7 +17,7 @@ from training.onnx.qualify_joint_export import sha, write
 PAGES = ["IMSLP154059", "IMSLP24047", "IMSLP476183", "IMSLP556523"]
 
 
-def build(inventory, summary, audit):
+def build(inventory, summary, audit, confirmed_pending=()):
     rows = {r["id"]: deepcopy(r) for r in inventory}
     confirmed = {r["id"] for r in inventory}
     out_rows = []
@@ -55,7 +55,7 @@ def build(inventory, summary, audit):
             out_rows.append(extra)
             by_id[extra["id"]] = extra
             confirmed.add(extra["id"])
-            if proposal["pending_user_confirmation"]:
+            if proposal["pending_user_confirmation"] and extra["id"] not in confirmed_pending:
                 pending.add(extra["id"])
     decisions = []
     for row in out_rows:
@@ -88,6 +88,7 @@ def main():
     parser.add_argument("--base", type=Path, required=True)
     parser.add_argument("--service", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--confirm-pending", nargs="*", default=[], help="owner-confirmed pending ids")
     args = parser.parse_args()
     sys.path.insert(0, str(args.service))
     from import_reviewed_lyric_copy import import_copy
@@ -104,7 +105,7 @@ def main():
     audit = json.loads(audit_path.read_text())
     if sha(inventory_path) != summary["inventorySha256"]:
         raise ValueError("Reviewed inventory changed")
-    rows, review = build(inventory, summary, audit)
+    rows, review = build(inventory, summary, audit, set(args.confirm_pending))
     args.out.mkdir(parents=True, exist_ok=False)
     write(args.out / "reviewed-inventory.json", rows)
     write(args.out / "reviewed-decisions.json", review)
@@ -135,6 +136,7 @@ def main():
             "source_sha256": sha(__file__),
             "scores": receipts,
             "automatic_attachment": False,
+            "owner_confirmed_pending": sorted(args.confirm_pending),
             "pending_unconfirmed": sorted(
                 d["id"] for d in review["decisions"] if not d["noteConfirmed"]
             ),

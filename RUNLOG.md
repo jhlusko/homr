@@ -17078,3 +17078,5 @@ OTS integration (worktree `OurTextScores-lyric-review`, branch `lyric-review-int
 `/scanner/lyric-review`, off unless `NEXT_PUBLIC_OTS_HOMR_LYRIC_REVIEW_ENABLED=1`, exports v2
 decisions only; five jest tests, typecheck and lint pass. Not scanner-wired: the page reads a
 static inventory, since the scanner does not yet emit candidate inventories. No push/deploy.
+
+2026-10-07 owner confirmed `wings` (E4) and `ev` (F4) anchors from the merged `withwingsev` token. Rebuilt as `c1-reviewed-import-20261007-v2`: 97 placements written (37/11/28/21), none pending. v1 retained.
