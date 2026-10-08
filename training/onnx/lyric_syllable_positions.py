@@ -6,6 +6,9 @@ import numpy as np
 def split_positioned_text(text, characters):
     """Keep apostrophes/punctuation; spaces and printed hyphens delimit candidates.
 
+    A comma or semicolon directly between two letters is a dropped word space,
+    so it delimits (and is dropped); leading/trailing punctuation is unchanged.
+
     Boxes are approximate CTC cells, not certified glyph boundaries. Refuse any
     disagreement between visible character records and the recognizer's text.
     """
@@ -41,13 +44,18 @@ def split_positioned_text(text, characters):
         current.clear()
 
     index = 0
-    for char in text:
+    for position, char in enumerate(text):
         if char.isspace():
             finish()
             continue
         row = characters[index]
         index += 1
-        if char in "-–—":
+        if char in "-–—" or (
+            char in ",;"
+            and 0 < position < len(text) - 1
+            and text[position - 1].isalpha()
+            and text[position + 1].isalpha()
+        ):
             finish()
         else:
             current.append(row)

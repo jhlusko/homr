@@ -13,6 +13,11 @@ from training.onnx.qualify_joint_export import sha, write
 from training.onnx.score_expanded_lyric_attachments import note_events
 
 
+# Words the user did not enumerate but that are literal, unique substrings of the same merged
+# OCR token. They are proposals needing explicit confirmation, never reviewed text.
+PENDING_SEPARATE = {"IMSLP154059:9": ["wings", "ev"]}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", type=Path, required=True)
@@ -93,8 +98,9 @@ def main():
         exported = note_events(
             ET.parse(folder / "page.musicxml").getroot().findall("part")[part_index]
         )
+        pending = PENDING_SEPARATE.get(correction["id"], [])
         proposals = []
-        for word in words:
+        for word in words + pending:
             geometry = reviewed_substring_position(row["text"], row["characters"], word)
             distances = sorted(
                 (abs(geometry["center"][0] - x), j) for j, x in enumerate(system["head_xs"])
@@ -120,6 +126,7 @@ def main():
                     "note": note,
                     "distance_pixels": distances[0][0],
                     "matches_original_anchor": note == item["generatedNote"],
+                    "pending_user_confirmation": word in pending,
                 }
             )
         cases.append(

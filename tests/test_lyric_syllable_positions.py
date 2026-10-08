@@ -70,3 +70,14 @@ def test_reviewed_substring_uses_only_selected_character_geometry():
         reviewed_substring_position("withwith", chars("withwith"), "with")
     with pytest.raises(ValueError, match="unique"):
         reviewed_substring_position("_", chars("_"), "fi")
+
+
+def test_comma_between_letters_is_a_dropped_space_but_edge_commas_survive():
+    text = "span,with moment,sans, ,x,"
+    assert [r["text"] for r in split_positioned_text(text, chars(text))] == [
+        "span",
+        "with",
+        "moment",
+        "sans,",
+        ",x,",
+    ]
