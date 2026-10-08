@@ -17055,3 +17055,26 @@ Added an explicit-plan MusicXML copy writer in OurTextScores/services/ots-homr-m
 Mechanical integration fixtures inserted `moment`, `sans`, `with` and `fi` into two generated score copies. Both source files retained identical SHA-256; all non-lyric XML content was identical. Test-only printed-row verse labels were used, not inferred user approvals or native verse identifiers. Local receipt and score copies: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/c1-reviewed-lyric-copy-smoke-20261007/report.json. Twenty-one service tests pass (copy writer, placement handoff, text handoff), and scoped lint passes.
 
 Next: replace the confusing verse-confirmation UI with visible printed-line selection and stable export labels, then connect validated review exports to the copy writer locally. General missing-separator recognition and end-to-end detector recall remain open; this smoke test supplies no new accuracy claim. Production/provider qualification and GPU latency remain separate release gates.
+
+
+## 2026-10-07 — Owner-confirmed placement import, merged-token fixes, flag-gated OTS review page
+
+Owner reported printed lyric lines were correct for all reviewed cases (no verse-line
+corrections). Splitter now treats a comma/semicolon directly between two letters as a dropped
+word space (dropped from the text; edge punctuation unchanged): replay changes only the two
+reviewed Chaminade rows (`span,withwingsev`, `moment,sans`) beyond the earlier separator fix.
+No-space merges (`withwingsev`) have no gap signal and stay an unqualified general case; the
+audit locates literal-substring anchors for them: `with` D4 (ordinal 7, reviewed), `wings` E4
+(8) and `ev` F4 (9) PENDING owner confirmation, `sans` D4 (7) per the owner's statement.
+
+`training/onnx/build_reviewed_placement_import.py` turns the review into a reviewed inventory,
+v2 decisions and four new score copies via the OTS copy writer: 95 placements applied
+(35/11/28/21); `IMSLP556523:2` excluded as a duplicate of `:3` `fi` (the writer's occupied-slot
+check caught it); `wings`/`ev` remain pending, unwritten. Verse labels are `printed-line-N`, not
+native verse identity. Evidence basis is the owner's statement, not an independent accuracy
+estimate. Output: `homr-artifacts/.../workspace/c1-reviewed-import-20261007/`.
+
+OTS integration (worktree `OurTextScores-lyric-review`, branch `lyric-review-integration`):
+`/scanner/lyric-review`, off unless `NEXT_PUBLIC_OTS_HOMR_LYRIC_REVIEW_ENABLED=1`, exports v2
+decisions only; five jest tests, typecheck and lint pass. Not scanner-wired: the page reads a
+static inventory, since the scanner does not yet emit candidate inventories. No push/deploy.
