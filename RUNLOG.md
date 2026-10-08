@@ -17138,3 +17138,26 @@ no test accommodation: both jobs succeeded; the 1,148-box page returned 22 revie
 {unsupported-class: 1126; Fingering 455, MeasureNumber 466, Lyrics 204, Dynamic 1}. App stopped.
 Python 20 tests and backend 8 provider tests pass (`test_provider.py` could not run locally: no
 fastapi in this venv). Still uncalibrated; no OCR, gate or anchors.
+
+
+## 2026-10-08 — Calibrated fusion-v1 manifest (lyrics calibrated; directions/dynamics review-only)
+
+Pinned e2 run on 218 calibration-partition pages (173 Lieder pages with OCR-confirmed lyric positives,
+98 scores total with 45 instrumental OSSQ pages), CPU, area-4 provider protocol, 3 shards. Boxes at
+raw >= 0.5: matched (>=50% covered by OCR-confirmed lyric positives) 1,728; unmatched on vocal pages
+2,002; verified negatives (instrumental pages) 84. Owner judged 150 sampled unmatched boxes (30 per
+band, <=3 per score; confidence hidden): 128 lyric, 21 not lyric, 1 unsure. Per-band vocal-page
+precision, PAV-pooled: 0.50 -> 0.760 [0.65,0.86], 0.60-0.80 -> 0.933 ([0.87,0.96], [0.89,0.97],
+[0.90,0.98] per band), 0.90 -> 0.987 [0.96,1.0] (90% score-grouped bootstrap). Prespecified accept
+rule (lowest band >= 0.90 calibrated) gives raw 0.60 / calibrated 0.9333.
+Instrumental false positives per page at or above raw 0.5/0.6/0.7/0.8/0.9: 1.87/1.07/0.62/0.44/0.11.
+Applied to the same pages through fuse_page: 3,030 accepted, 2,593 review; 47 accepted boxes on the
+45 instrumental pages (1.04/page). Raw 0.7 would cut that to 0.62/page at similar calibrated
+precision; the prespecified rule was not changed after seeing results.
+Manifest: `calibration/fusion-v1.json` (policyRevision a579f17d63a9e7595ecbbd0d8b64751d9788ba2b29f9b2ea1380f8ea1add3395),
+fit report beside it; OTS `c3d9253` + manifest commit. e4 directions/dynamics are pinned but have no
+calibration or threshold, so they always stay in review.
+Caveats: detector training membership of these pages is unverified (precision may be optimistic);
+the held-out test partition has NOT been run; below-0.5 boxes unsampled; calibration is on one
+checkpoint at the provider's area-4 protocol. Not deployed; fusion flags still off; the backend needs
+SCANNER_EXPECTED_OTS_HOMR_FUSION_CALIBRATION_REVISION set to the revision above to use it.
