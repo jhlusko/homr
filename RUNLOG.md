@@ -16619,3 +16619,16 @@ Next fresh negative controls, candidate source/policies into provider qualificat
 full OCR/text fusion latency, C1 and E3. No rule weakening, training/deploy/push/.env
 change. Details docs/TREMOLO_SERVICE_POLICY_AUDIT_2026-10-07.md. Receipts:
 /home/jhlusko/workspace/homr-artifacts/local-tremolo-service-20261007-v2/
+
+
+## 2026-10-07 — Fresh negative-control HTTP qualification launched
+
+Five fixed historically exposed pages, no source-label selection after outcomes:
+LiederIMSLP89026/617260/154289/558609 and OSSQsq8071278. Fresh actual core-only
+and heads inference perpage, explicit corrected masks and timingflagoff/on.
+Both arms run persistenttmux tremolo-negative-off/on, automatic frozen comparison
+and native-audit watcher tremolo-negative-watcher. ETA8–15min at launch.
+Outputs /home/jhlusko/workspace/homr-artifacts/local-tremolo-negative-pages-20261007/
+No results yet, no prod/pin/.env change. Summarizer now supports declared page count
+rather than hardcoded two-page positive smoke. Next inspect controls and proceed
+to concrete provider qualification, full OCR/text latency, C1/E3.
