@@ -212,3 +212,46 @@ Full calibrated detector/text fusion, model-loaded GPU/280second latency and cap
 direction routing remain separate gates. No backend.env,modelpin,push,deployment or
 automaticlyrics change. Allcompute done; no running-job ETA.
 
+
+
+## 2026-10-07 — Owner accepts review-assisted lyric candidate; local tool prepared
+
+Owner accepted the observed tradeoff for a REVIEW-ASSISTED feature: recall-oriented
+semantic candidate retains25/26 genuine e2 lyric candidates(96.15%), while `Etwas
+geschwind.` and `Revenez au 1. mouv!` remainfalse lyric suggestions and `an.` is
+withheld. This authorizes the review-assisted direction; it does not accept those
+errors for unattended MusicXML attachment or authorize production deployment.
+95%conditional semantic retention target remains; final verse/note attachment,
+calibrated fusion and production latency remain separate gates.
+
+Built local text-suggestion review using ALLactual e2-selected OCR rows on10original
+control pages, rather than only48GT-selected regions:310unique candidates,293
+proposedlyrics and17withheld. Those are unadjudicated suggestion counts, not
+precision/recall. Suggestions contain original scan crops/context, actualOCRtext,
+model-based proposed/withheld status and no source reference text/GTrole fields.
+All620crop/contextassets,index anddata verifiedoverHTTP. Existing reviews untouched.
+
+Tool: http://localhost:8765/lyric-suggestions-20261007/
+Editable text, explicitAccept/Exclude/Reset, explicitbatchaccept of unreviewed
+proposals on currentpage, model+pageidentity-scoped browser persistence and JSON
+review-record download. Editing previouslyacceptedtext resets it to pending;
+empty text cannot beaccepted. Bulk does not overwrite prior edits/exclusions.
+Export contains originalOCR,correctedtext,explicitpending/accept/excludestate,
+sourcepagehash/box/ID andmodelhash. No importer, MusicXML write, guessed note/verse
+attachment or new server-side account state. Textconfirmation alone is not note
+placement confirmation. No request for310newmanual labels; existingGTalready
+establishes measured errors. This is a functional local preparation for laterOTS
+integration, not deployed/scanner-enabled fusion.
+
+Browser smoke passes editing,acceptance,reloadpersistence,emptyrejection,bulk
+preserving edits andexport; noJSerrors. Source generator/template committed locally,
+scopedlint passes. Model `82da7a641985d4c2baf75e57efe06dbe9bf57f5a49c9186cfd30f50a8887d5d1`.
+Output/data/receipt:
+`/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/review/lyric-suggestions-20261007/`.
+
+Next: validate source-free verse/note placement for explicitlyreviewed lyric rows,
+then integrate the review record with localOTS behindthefeatureflag. Automatic
+attachment remainsdisabled; no productionpin,.env,deployment/push or frontend
+integration performed. Existing unrelated frontend edits preserved. Only persistent
+local reviewserver isrunning; no compute-job ETA.
+
