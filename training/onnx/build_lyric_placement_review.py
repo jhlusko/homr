@@ -1,9 +1,7 @@
 """Show cached source-free lyric/note proposals; no ground-truth verse mapping."""
 
 import argparse
-import html
 import json
-from fractions import Fraction
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -25,7 +23,6 @@ def main():
             raise ValueError("Cached input changed")
     pages = json.loads(args.pages.read_text())
     args.out.mkdir(parents=True, exist_ok=False)
-    cards = []
     inventory = []
     for index, page in enumerate(pages):
         prediction_path = args.predictions / (page["score"] + "-predictions.json")
@@ -75,20 +72,12 @@ def main():
                 name = f'{page["score"]}-{number}.jpg'
                 crop.save(args.out / name, quality=90)
                 note = prediction["note"]
-                offset = str(Fraction(note["onset_quarters"]))
-                label = (
-                    f'Generated measure {note["physical_measure"]}, +{offset} quarter notes '
-                    f'— {note["pitch"]}'
-                )
                 row = prediction["physical_row_order"]
-                cards.append(
-                    f'<article><h2>{html.escape(page["score"])}: '
-                    f'{html.escape(prediction["text"])}</h2><p>{html.escape(label)}; '
-                    f"printed lyric row {row}. Verse identity unconfirmed.</p>"
-                    f'<img src="{name}" alt="Blue note anchor and orange lyric position"></article>'
-                )
                 inventory.append(
                     {
+                        "id": f'{page["score"]}:{number}',
+                        "pageSha256": sha(image),
+                        "musicXmlSha256": sha(folder / "page.musicxml"),
                         "score": page["score"],
                         "text": prediction["text"],
                         "physicalRowOrder": row,
@@ -100,26 +89,16 @@ def main():
                         "manualTextReviewed": False,
                     }
                 )
-    header = (
-        '<!doctype html><meta charset="utf-8"><title>Lyric placement proposals<'
-        "/title><style>body{font:16px system-ui;margin:2rem;max-width:1300px}ar"
-        "ticle{border-top:1px solid #aaa;padding:1rem}img{max-width:100%;max-he"
-        "ight:420px}</style><h1>Lyric placement proposals</h1><p>Blue marks the"
-        " associated detected notehead; orange marks the predicted syllable pos"
-        "ition. Labels use generated measure numbers and quarter-note offsets, "
-        "not native-source numbering. Printed lyric row order is not a confirme"
-        "d native verse identity.</p><p>These are cached placement diagnostics "
-        "on four earlier calibration pages, not a fresh run of the accepted sem"
-        "antic filter or human-approved insertions. No MusicXML changes or grou"
-        "nd-truth verse mapping.</p>"
-    )
-    (args.out / "index.html").write_text(header + "".join(cards))
+    template = Path(__file__).with_name("lyric_placement_review.html")
+    (args.out / "index.html").write_bytes(template.read_bytes())
     write(args.out / "inventory.json", inventory)
     write(
         args.out / "receipt.json",
         {
             "cases": len(inventory),
             "source_sha256": sha(__file__),
+            "template_sha256": sha(template),
+            "inventory_sha256": sha(args.out / "inventory.json"),
             "original_score_report_sha256": sha(args.predictions / "report.json"),
             "ground_truth_verse_mapping_used": False,
             "musicxml_modified": False,

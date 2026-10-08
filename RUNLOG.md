@@ -17022,3 +17022,8 @@ texttradeoff and95%retentionbar, not unattendedverse/note insertion. No frontend
 backend.env,pin,deployment,push orproductiondefaults changed. Allcompute done;
 only reviewserverpersists, no runningjobETA.
 
+
+
+### 2026-10-07 — Explicit lyric placement review
+
+Added a local 95-case placement confirmation page at http://localhost:8765/lyric-placement-confirmation-20261007-v3/. This is the four-page cached calibration cohort, separate from the 310-candidate semantic review. Text, user-entered verse label, and proposed note require independent confirmation; printed row order never supplies verse identity. Edited text requires fresh positioning. Exports are validated against original page, generated MusicXML, prediction hashes and exact runtime note anchors. The result is a review plan only: no MusicXML writes, automatic attachment remains disabled, and no user decisions have been imported. Six placement validator tests and ten existing text-handoff tests pass. Browser checks cover all 95 cards, separate confirmations, edit invalidation, persistence and an exported fixture validated as one confirmed/94 pending (test fixture only, not user approvals). The receipt binds generator, HTML template and inventory hashes. Next: connect the validated review plan to the local attachment path, then exercise explicit approvals on a copied score before any provider qualification.
