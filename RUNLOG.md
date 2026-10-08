@@ -17214,3 +17214,35 @@ Same three Lieder pages through the local backend/worker and the separate test p
 textPolicy). All succeeded. Auto-accepted lyric regions: 32 / 20 / 16 (raw 0.6 manifest: 34 / 23 / 23).
 Review 494 (294 omitted) / 202 (2 omitted) / 240 (40 omitted); provider ~34 s on the last page.
 Test app stopped. No deployment, no flag change.
+
+
+## 2026-10-08 — Detector training membership reconstructed; OCR rows + semantic gate through the fusion path
+
+**Membership (OTS f746a16).** The pinned e2/e4 weights are byte-identical (SHA-256) to the 2026-08-30
+`detector_e2.pth` / `detector_e4.pth`. They trained on a synthetic patch bank plus scan patches from
+the OCR-first Lieder pool (`ocrshard_0*` 8 lists + `ocr121shard_0*` 4 lists = 442 score ids), split by
+score with `sha256("0:<score>")[:8]/0xFFFFFFFF < 0.1` (detector_split.is_valid, folder-name score id).
+The surviving patch indexes carry no score ids (earlier audit), but the split is a deterministic hash, so
+membership is recoverable as an upper bound. Calibration partition: 99 of 124 Lieder scores in the
+pool and on the training side; test partition 77 of 88. So the "held-out" partition was NOT independent
+of detector training; the earlier "untouched" wording is withdrawn. Verifiably clean (outside the pool or
+hash-validation side): 29 scores / 57 pages. Matched share at the accept line: clean 57.8% vs
+possibly-trained 51.3%; judged lyric rate at raw >= 0.7: clean 18/19 vs possibly-trained 63/70. No sign of
+inflation, but the clean judged sample is 19 boxes. OSSQ is not in the scan-mask pool; its appearance in
+the synthetic bank is unverified. Manifest rebuilt with this caveat: revision
+fadb96afaa0a3a1dac76d8dc57290c5ecb53744faf5aa782edf476f13525a270 (supersedes c2bfa72e); audit in
+`calibration/fusion-v1-training-membership-audit.json`.
+
+**OCR + semantic gate (OTS cb5a4ef, 9df1212; test provider only, shipping image unchanged).**
+`semantic_gate.py`: pure-Python port of the frozen C1 recall-oriented classifier (model sha 82da7a64…),
+numpy-parity tested. `lyric_ocr.py`: RapidOCR 3.9.2 (hash-pinned wheels in `ocr-requirements.txt`,
+bundled PP-OCRv6 small det/rec + mobile cls verified by SHA) reads the page; rows >= 10% covered by e2
+Lyrics regions (raw >= 0.5, area >= 200) are kept and gated. The engine attaches `lyricText` (failure is
+reported, never fatal); the backend validates it, stores it in the text-fusion artifact and exposes
+`ocrRows`/`ocrStatus` in the lyric candidate inventory; the review page shows OCR text prefilled with the
+gate's suggestion.
+GPU run, 3 Lieder pages, all succeeded (provider 41 s on the last, ~8 s more than without OCR):
+35 / 34 / 37 OCR rows, 33 / 34 / 34 proposed lyrics, 2 / 0 / 3 withheld. Withheld include page numbers
+("106", "19.") but also real words ("to", "dance."), consistent with the ~96% retention target; proposed
+rows read as lyrics ("He doesn't love me.", "wish -ing", "Juch - hei - ssa,"). No OCR accuracy was
+measured on these pages. Review-assisted only; automatic attachment still off. Test app stopped.
