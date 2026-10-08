@@ -17298,3 +17298,20 @@ IMSLP10602: 18 accepted rows -> 26 placement rows (1 same-note conflict dropped)
 -> copy with 26 lyrics, all non-lyric XML unchanged. The confirmation page for it is
 `http://localhost:8765/lyric-placement-scanner-IMSLP10602-20261008/`. Edited text, rows without a placement and unaligned
 parts are skipped and counted. Not deployed; no automatic attachment.
+
+
+## 2026-10-08 — Fresh-page placement judgement (owner) and the far-from-notes rule
+
+Owner judged all 132 proposed syllable placements on 11 fresh clean-score Lieder pages (not used to build the anchoring):
+124 correct, 8 "unsure". The owner clarified "unsure" means WRONG (the row is a spliced/partial lyric, splits two
+adjacent words, or is not a lyric); no item was marked wrong outright. Accuracy 124/132 = 93.9% (90% Wilson interval
+0.896-0.966). Per page: 12/12 on 8 pages, 11/12, 10/12, 10/12, 9/12. By how the note x was found: attention 121/129,
+interpolated 3/3. The 8 failures: three OCR-side fragments/splits (`n`, `f`, `jetzt`) and five NOT-lyric credits that
+the title rule missed because they sit under the last staff: `B.&`, `H.20327` (plate numbers, 430/563 px from any note),
+`PAUL` (186 px), `DUPONT` (77 px), `Bouloi.` (14 px).
+Rule added (OTS this commit): a syllable more than 100 raster px from every note of its measure gets no note; a gate-approved
+row left with no placed syllable is withheld (`far-from-notes`). It would have removed `B.&`, `H.20327` and `PAUL` and none of
+the 124 correct placements (largest correct distance 83 page px), leaving 129 placements, 124 correct (96.1%). CAUTION: the
+100 px cutoff was chosen after seeing these judgements, so 96.1% is development accuracy, not held out; `DUPONT` and `Bouloi.`
+still pass, and OCR fragments are unaddressed. The 97 owner-confirmed placements re-score identically (97 anchored,
+measure 97, exact note 96). Evaluation record: `calibration/lyric-anchor-fresh-evaluation.json`.
