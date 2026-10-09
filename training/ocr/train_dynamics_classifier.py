@@ -52,6 +52,11 @@ def train(args: argparse.Namespace) -> dict:
     labels = labels_of(train_samples)
 
     model = DynamicsCNN(len(labels)).to(args.device)
+    if args.init:
+        start = torch.load(args.init, map_location=args.device, weights_only=True)
+        if start["labels"] != labels.labels:
+            raise SystemExit(f"--init labels {start['labels']} differ from the training labels {labels.labels}")
+        model.load_state_dict(start["model"])
     train_set = DynamicsCrops(train_samples, labels)
     valid_set = DynamicsCrops(valid_samples, labels)
     print(f"train {len(train_set):,} crops, valid {len(valid_set):,}")
@@ -126,6 +131,7 @@ def main() -> None:
     )
     parser.add_argument("--valid", type=Path, required=True)
     parser.add_argument("--weights", type=Path)
+    parser.add_argument("--init", type=Path, help="Fine-tune from these weights (same label set)")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument("--lr", type=float, default=1e-3)
