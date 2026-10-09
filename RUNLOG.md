@@ -17575,3 +17575,10 @@ Source fix now includes doublebarline while preserving existing barline variants
 
 Next: diagnose im·Trau; collect all 25 baseline fusion/filter outputs and OSSQ negative-control survival; compare a separately bound fixed-anchor replay, checking both retention and changed note placements. The approved 95% gate requires genuine lyric candidate IDs matched to references, not 150/156 or 153/156. No recall/attachment promotion claim, deployment, push, provider pin or .env change.
 
+
+### 2026-10-08 — Repeat-boundary audit and shared predicate
+
+Owner requested repeat-sign audit after the double-barline finding. Confirmed the same lyric-anchor omission for repeatStart, repeatEnd, repeatEndStart and bolddoublebarline. The separate review locator recognized repeats but omitted both double-bar variants. Both paths now use scanner-barline.ts, covering HOMR's full boundary vocabulary and legacy barline forms. Volta annotations are not counted as additional measure boundaries. Regression tests exercise note interpolation/ownership after each boundary plus fallback review location and non-boundary exclusions: five suites, 73 tests passed.
+
+Frozen decoded contexts contain five repeatEnd, one repeatStart and four bolddoublebarline tokens across five pages (not a ground-truth repeat accuracy score). Local inventory: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-partial-filter-seven-20261008/repeat-boundary-audit.json. Source fix is committed but compiled backend and running baseline qualification remain unchanged; subsequent corrected replay must bind its own helper hashes and include the new shared module. Preserve baseline outputs for comparison. No deployment/push/pin/env changes.
+
