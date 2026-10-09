@@ -17670,3 +17670,15 @@ OTS (`bffab83`): the shipping provider's HOMR still emits the old message, so th
 the profile's merged-grand-staff total, both on ingestion and when presenting existing jobs (so the owner's job no longer shows it; real deviations such as
 3 vs 4 stay). Deploying the homr fix itself needs a new provider source pin and is not done. Backend scanner 671 tests pass.
 Not claimed: the other findings on that page (dangling slurs, a measure-duration mismatch in the last system) are separate and untouched.
+
+### 2026-10-08 — detector confidence audit and rejected glyph filters
+
+Fixed a connected-component confidence bug in HOMR runtime, training inference, and the vendored OTS detector: confidence now averages only pixels belonging to that component, excluding disconnected same-class pixels inside its bounding rectangle. Geometry, classes and weights remain unchanged. Regression tests passed (HOMR 22 tests plus 17 subtests; vendored regression 1 test). This source fix is not deployed; calibration/source bindings require requalification.
+
+On the actual scanner-prepared IMSLP508574 page, 57 of 337 box scores changed, none crossed 0.5. The “kissed,” score stayed 0.499666899: the bug does not explain that miss. Local audit: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/detector-component-score-audit-20261008/prepared508574/report.json`.
+
+Two offline glyph filters were rejected. The five-staff-line prototype caught neither false glyph. The competing-detector prototype caught the OSSQ false positives but also flagged 151/203 retained original-resolution Lieder suggestions and 46/56 prepared-control suggestions, including genuine lyrics. Broad non-lyric component boxes span lyric areas, sometimes nearly whole pages; coverage and high scores are insufficient exclusion evidence. Synthetic tests (4 geometry, 5 competing-context) establish mechanics only. No filtering policy or cutoff changed. Reports: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/notation-glyph-context-pilot-20261008/report.json` and `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/competing-detector-context-pilot-20261008/report.json`.
+
+Correction to earlier descriptions: original-resolution OCR “Ω” is a non-lyric music glyph; its exact notation type is not established. The prepared-control “0” is a different glyph/location, visually a notehead below a staff. Do not treat them as the same detection.
+
+Priorities: (1) keep accepted review-assisted copying and corrected boundary anchors; (2) qualify the confidence fix and assess detector component geometry on actual scanner-prepared inputs; (3) measure the 95% conditional genuine-candidate retention gate against matched ground truth, independently of OCR and note-ownership quality. The original 25-page replay and five prepared controls remain distinct development evidence. The text-context pilot remains unshipped; unattended attachment and final production latency/pin qualification remain open. No compute job remains running from these diagnostics.
