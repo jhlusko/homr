@@ -17593,3 +17593,17 @@ Local final reports: homr-artifacts/gpu-roadmap-20260919/instance-results/worksp
 
 Next priorities: (1) diagnose remaining three genuine row misses and test contextual handling of two OSSQ false suggestions, preserving short genuine lyrics; (2) bind genuine reference matches to score the 95% conditional gate and report separate OCR/ownership metrics; (3) finish production GPU/HTTP latency/final pinned-stack checks; (4) refresh examples/public claims and obtain deployment approval. Review-assisted lyric copying remains the release scope. No unattended-attachment or whole-page-recall claim.
 
+
+
+## 2026-10-08 — Lyric review reworked after the owner's first hands-on try (OTS commit after a283cae)
+
+Owner feedback on a real job: every prompt was already right, but after accepting/excluding the only visible action was "Export
+decisions"; "Back to scan" showed no lyrics; and the review decided text only, not note attachment.
+Reworked: each card now carries the note decision (numbered note lines on a placement crop, proposed notes in blue, a note choice per
+syllable with "Leave out", editable syllables, lyric line); Accept covers them; "Accept all suggested rows"; one primary action
+"Add accepted lyrics to the score" -> one confirmation -> `POST save-lyrics`, which stores the writer's output as the page's
+reviewed score, so the scan's job-level MusicXML now carries the lyrics (verified: 25 lyrics, non-lyric content identical to the
+recognised score; engine output untouched; saving twice replaces rather than collides) and the page links back to the scan.
+"Download a copy instead" and the by-hand editor remain. Real-browser run on the GPU test stack and the opt-in spec pass; backend
+scanner 669 and frontend scanner 193 tests pass. Limits: a later token-level note correction regenerates the page score and drops
+the lyrics (documented in the UI); the PDF preview is not produced by the local stack, so only the MusicXML was verified.
