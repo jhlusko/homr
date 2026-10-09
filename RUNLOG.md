@@ -17540,3 +17540,8 @@ Qualification: all ten Lieder recognition contexts succeeded. OSSQ controls are 
 
 Release priorities remain: complete and assess those filtered outputs on Lieder and OSSQ; measure meaningful ground-truth syllable/note ownership separately from passage approval; finish production GPU/HTTP latency and final pinned-stack checks; then refresh public examples/claims and obtain deployment approval. Native whole-set approval covers passage correspondence, not exact syllable pixels or an independent unseen test. Review-assisted lyrics are the accepted release scope; unattended attachment remains unqualified.
 
+
+### 2026-10-08 — Docker validation completed
+
+Frontend Docker build completed EXIT 0 as ots-lyric-review-local-20261008 (compile, public-link guard and image assembly passed). Authenticated copy browser smoke also passed; no existing service containers were rebuilt or replaced. Additional backend lyric/anchor/alignment regression: 43 tests passed. Subsequent shared-workspace duplicate-slot UI updates passed the two frontend suites again (14 tests); those active UI edits are preserved separately and are newer than the Docker build input. Qualification remains running: OSSQ recognition 9/15 successful, approximately 10–20 minutes left; fusion 6/25, approximately 2–4 hours. Persistent final watcher handles fresh OCR and backend filters after prerequisites. No new accuracy or promotion claim.
+
