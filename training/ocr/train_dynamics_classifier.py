@@ -72,6 +72,8 @@ def train(args: argparse.Namespace) -> dict:
         ),
     }
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(1, args.epochs))
+    best = {"exact": -1.0, "state": None, "epoch": 0}
     loss_fn = torch.nn.CrossEntropyLoss()
 
     history = []
@@ -87,6 +89,7 @@ def train(args: argparse.Namespace) -> dict:
             total_loss += float(loss.item())
             batches += 1
 
+        scheduler.step()
         result = evaluate(model, loaders["valid"], labels, args.device)
         valid_total = sum(result["total"].values())
         valid_correct = sum(result["correct"].values())
@@ -94,6 +97,8 @@ def train(args: argparse.Namespace) -> dict:
             f"epoch {epoch}: loss {total_loss / max(1, batches):.4f}  "
             f"valid {valid_correct}/{valid_total} ({valid_correct / max(1, valid_total):.1%})"
         )
+        if valid_correct / max(1, valid_total) > best["exact"]:
+            best = {"exact": valid_correct / max(1, valid_total), "epoch": epoch, "state": {k: v.detach().clone() for k, v in model.state_dict().items()}}
         history.append(
             {
                 "epoch": epoch,
@@ -102,10 +107,15 @@ def train(args: argparse.Namespace) -> dict:
             }
         )
 
+    if best["state"] is not None:
+        # The best validation epoch, not the last: a small set makes late epochs noisy.
+        model.load_state_dict(best["state"])
+        result = evaluate(model, loaders["valid"], labels, args.device)
+        print(f"best epoch {best['epoch']} ({best['exact']:.1%})")
     print(describe(result))
     if args.weights:
         args.weights.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({"model": model.state_dict(), "labels": labels.labels}, args.weights)
+        torch.save({"model": model.state_dict(), "labels": labels.labels, "bestEpoch": best["epoch"]}, args.weights)
     return {"history": history, "labels": labels.labels}
 
 
