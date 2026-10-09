@@ -17627,3 +17627,13 @@ Actual scanner-style five prepared PNG controls generated with Sharp rotate/resi
 
 Next: assess fresh prepared-image outputs before changing the 100px guard or treating original-resolution misses as production defects; investigate glyph false suggestion in actual prepared context; qualify any context policy on new evidence; bind genuine candidate reference matches for the 95% gate. GPU/HTTP latency and final pinned-stack checks still remain.
 
+
+
+## 2026-10-08 — Review cards: a text box per notehead (split/move a lyric)
+
+Owner request after trying the review: be able to split a lyric, shown as blanks for the other noteheads. Each placeable card now has a
+text box under every recognised notehead around the row (numbered like the placement picture, filled where a syllable is proposed,
+blank elsewhere); typing parts under neighbouring notes splits a word, clearing/typing moves one; syllables with no note of their own
+show as "not placed". Decisions are now per-note slots (older per-token decisions convert on load). Real browser on the GPU-scanned test
+job: typed `SPLIT` into a blank note box, accepted, saved: the scan's score gained exactly that lyric on that note (26 lyrics), then the
+test job was restored to its 25. Frontend lyric tests (25), scanner frontend suite and the opt-in spec pass.
