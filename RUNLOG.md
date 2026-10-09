@@ -17545,3 +17545,22 @@ Release priorities remain: complete and assess those filtered outputs on Lieder 
 
 Frontend Docker build completed EXIT 0 as ots-lyric-review-local-20261008 (compile, public-link guard and image assembly passed). Authenticated copy browser smoke also passed; no existing service containers were rebuilt or replaced. Additional backend lyric/anchor/alignment regression: 43 tests passed. Subsequent shared-workspace duplicate-slot UI updates passed the two frontend suites again (14 tests); those active UI edits are preserved separately and are newer than the Docker build input. Qualification remains running: OSSQ recognition 9/15 successful, approximately 10–20 minutes left; fusion 6/25, approximately 2–4 hours. Persistent final watcher handles fresh OCR and backend filters after prerequisites. No new accuracy or promotion claim.
 
+
+
+## 2026-10-08 — Review-assisted lyrics integrated into OTS; checkbox -> review -> corrected score tested end to end
+
+Another session had left the corrected-copy implementation uncommitted in the OTS tree (TypeScript writer with identity/occupancy/non-lyric
+checks, `scan`/`notes`/`corrected-copy` routes, review section); its backend (47) and frontend (15) suites passed and it was committed unchanged
+(OTS `60001da`). Added on top (OTS `2255c7a`, `a283cae`): exact token <-> MusicXML note alignment in the backend (a part that does not align
+exactly gets no proposals), "Add N proposed syllables from accepted rows" in the review (unconfirmed, with note and printed line), a
+"Review lyrics for this page" link on the job page, one-syllable-per-note-per-line filtering of proposals and duplicate flagging, and the
+opt-in Playwright spec `smoke/e2e/scanner-lyric-checkbox-flow.spec.cjs`.
+Real run through the browser (test provider on the L4, flag `NEXT_PUBLIC_OTS_HOMR_FUSION_ENABLED=1`): upload IMSLP10602 with "This score has
+lyrics" ticked -> Start -> scan done in ~1.5 min -> review link -> 18 OCR rows, 17 suggested -> 26 proposals -> confirm each (test fixture, not a
+person) -> download. The e2e exposed two real defects, both fixed: (1) a draft restored from localStorage replaced rows the reviewer had
+already added (race with the note-choices fetch) and (2) proposals that shared a note and line made the writer refuse the whole copy (409
+"Unknown note or occupied lyric line"). Final copy: 25 lyrics on printed line 1, non-lyric content identical to the recognised score after
+stripping lyrics, original untouched; the spec also passes when re-run on that completed job. The 17 "suggested" rows included OCR noise
+(`80`), so the reviewer must still exclude non-lyrics; nothing is automatic.
+Also corrected: the earlier "413 = upload size" diagnosis was wrong; it was the 50-page rolling daily quota (raised locally via
+`SCANNER_ROLLING_24H_PAGE_QUOTA=500` in the test stack only). Test GPU app stopped. Nothing pushed or deployed.

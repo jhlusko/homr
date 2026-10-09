@@ -78,8 +78,7 @@ RUNLOG entry and `calibration/lyric-anchor-fresh-evaluation-2.json`; the next sa
 
 14 new pages were submitted (`$J/fresh2-pages.txt`, 5 clean-score and 9 possibly-trained scores; anchoring does not
 depend on detector training). **10 succeeded; 4 never became jobs.** IMSLP80521 (3.2 MB) and IMSLP637242 (2.9 MB)
-were rejected with HTTP 413 (the scanner's upload size limit, not a code bug); IMSLP83316 and IMSLP19490 are small and
-also produced no job (cause not investigated; check `$J/be.log` around 22:30-23:10 UTC for their POSTs). The test GPU
+were rejected with HTTP 413 (CORRECTION, found later: not a size limit but the scanner's 50-page rolling 24-hour quota, which a day of test uploads had used up; the local test stack now sets `SCANNER_ROLLING_24H_PAGE_QUOTA=500` in `$J/gpu-env.sh`); IMSLP83316 and IMSLP19490 almost certainly hit the same quota (their POSTs were 413 too). The test GPU
 app was stopped by the script (verify with `modal app list`).
 
 The judgement page for the 10 jobs is built: 120 syllable placements (<= 12 per page), current rules
