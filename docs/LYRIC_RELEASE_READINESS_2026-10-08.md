@@ -25,14 +25,15 @@ The completed recognition qualification used the private CPU FP16 plain core wit
 
 The calibration manifest currently binds model weights and its policy body, but does not bind the code that extracts raw confidence. Component confidence extraction has been corrected. A five-control audit found 12 changed e2 Lyrics scores and zero calibration-band transitions; this does not certify calibration on the corrected source. Before promoting that fix, bind confidence-extraction source identity and requalify the calibration evidence. Do not silently claim that unchanged weight pins establish unchanged score semantics.
 
-## Remaining release work
+## Remaining release work (2026-10-09)
 
-1. Keep the context rule offline unless broader labelled evidence supports its use; the completed direction controls expose an existing vocal direction false suggestion that needs explicit review/class correction.
-2. Bind the confidence-extraction implementation to the calibration/release identity and requalify score semantics. Any change must preserve compatibility with existing pinned manifests deliberately, rather than silently altering their meaning.
-3. Complete lyric acceptance/PDF rerender and OCR-first direction review integration with the other agent; test accepted text in exported XML and rendered output.
-4. Match genuine lyric candidates to references to score the conditional 95% retention gate; measure OCR text and note ownership separately. Review-assisted acceptance does not require inventing automatic certainty for ambiguous rows.
-5. Run final pinned-stack GPU HTTP and per-page timeout checks, including active notation heads and the actual scanner preparation path.
-6. Update public examples and copy from that final evidence; keep current historical metrics tied to their specific detector, input preparation and evaluation scope. Publishing/deployment remains a separate action.
+1. DONE locally: combined lyric/direction/unplaced-mark review through save, XML, PDF and same-browser reopen/resave; prior edits survive. See the dated verification evidence below.
+2. Diagnose part alignment failures and recognition-core crashes; keep uncertain placement explicitly reviewer-chosen.
+3. Freeze and audit the actual candidate, including dynamics weights/direction code. Bind/requalify confidence-extraction source semantics before shipping that fix.
+4. Final active-heads pinned-stack GPU HTTP latency/timeouts using actual scanner-prepared inputs.
+5. Refresh public examples and measured claims, then seek deployment approval.
+
+Direction review, dynamics retraining, unplaced rows and the reviewed-XML PDF renderer now exist locally/test-provider-side. Further classifier training and the offline lyric-context pilot are optional follow-ups. The 95% conditional lyric-retention measurement is distinct from direction availability and remains unclosed; publish no claim that it passed. Shipping provider changes remain unperformed.
 
 ## Local evidence
 
@@ -42,3 +43,11 @@ The calibration manifest currently binds model weights and its policy body, but 
 - [Additional-page assessment](/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-context-additional8-20261008/ASSESSMENT.md)
 - [Calibration-band stability](/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/detector-component-calibration-drift-20261008/report.json)
 - [Owner-confirmed direction watcher](/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-context-direction6-20261008/watch-status.json)
+
+### 2026-10-09 — priority 1 combined review flow verified
+
+PASS on a disposable copy of IMSLP44645-p017. Browser edits accepted a lyric (`verifica`), placed direction (`dolce`) and an unplaced dynamic (`mf`, requiring explicit note selection). Save generated reviewed MusicXML and a regenerated PDF containing the edited lyric/direction. Reopening in the same browser preserved decisions; resaving `molto dolce` preserved the lyric/dynamic, produced exactly two review directions (no duplicates), and regenerated the PDF again. Parsed XML with review additions removed was unchanged; original user-job XML SHA was unchanged. Headless Chromium has no embedded PDF viewer; PDF downloads/content were verified separately. This is one mixed-content end-to-end smoke test, not corpus recall qualification or cross-device decision persistence.
+
+Fixed three defects discovered during verification: explicit engine XML downloads ignored reviewed copies; explicit engine PDF downloads lacked review-input signature validation; an older reassembly could overwrite a newer reviewed XML locator. Reassembly now guards reviewed checksum snapshots before publishing pages, releases a rejected snapshot's lease, and review saves renew a pending rebuild even during rendering. Service/worker regression suites: 124 passing; earlier copy/candidate/worker suites: 92 passing; frontend lyric/direction suites: 27 passing. Backend build passed. Test renders used the production worker method on a reserved local clone and the existing Docker MuseScore wrapper; no paid inference, production changes or pin/env changes.
+
+Local evidence: `/home/jhlusko/workspace/homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/review-flow-verification-20261009/report.json`, with both MusicXML/PDF revisions, browser script and screenshots beside it. The disposable Mongo job is removed directly after verification to protect shared original inputs from scanner cleanup. Next priority: alignment/recognition failures, then actual-candidate freeze/calibration binding, final pinned GPU HTTP/latency, public examples and deployment approval.
