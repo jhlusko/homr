@@ -17637,3 +17637,6 @@ blank elsewhere); typing parts under neighbouring notes splits a word, clearing/
 show as "not placed". Decisions are now per-note slots (older per-token decisions convert on load). Real browser on the GPU-scanned test
 job: typed `SPLIT` into a blank note box, accepted, saved: the scan's score gained exactly that lyric on that note (26 lyrics), then the
 test job was restored to its 25. Frontend lyric tests (25), scanner frontend suite and the opt-in spec pass.
+
+Correction to the entry above: the opt-in spec did NOT pass at the moment it was committed (it counted the new per-note boxes as listed
+syllables); it passes after the one-line selector fix (OTS commit following d170a8d), re-run on the completed test job.
