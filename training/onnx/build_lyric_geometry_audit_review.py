@@ -107,7 +107,36 @@ def main():
         "Text shown is original OCR, including errors; "
         "these positions have not been human-confirmed. No runtime or score changes.</p>"
     )
-    (args.out / "index.html").write_text(markup + "\n".join(cards))
+    unresolved_cards = []
+    for record in report["records"]:
+        if record["status"] != "unresolved":
+            continue
+        prefix = f"{record['score']}-staff{record['staffIndex']}"
+        source = args.report.parent / f"{prefix}-source.png"
+        if not source.exists():
+            continue
+        image = cv2.imread(str(source))
+        for head in record.get("rawHeadComponents", []):
+            x, y = head["center"]
+            cv2.circle(image, (round(x), round(y)), 8, (180, 0, 180), 2)
+        name = f"{prefix}-unresolved.png"
+        cv2.imwrite(str(args.out / name), image)
+        unresolved_cards.append(
+            f'<article><h2>{html.escape(record["score"])} — unresolved staff '
+            f'{record["staffIndex"] + 1}</h2><p>{html.escape(record["reason"])}. '
+            "Purple circles are raw components, including possible artifacts. "
+            "They are not confirmed notes or incorrect placements.</p>"
+            f'<a href="{name}"><img src="{name}" alt="Unresolved staff geometry"></a>'
+            "</article>"
+        )
+    markup += "\n".join(cards)
+    markup += (
+        "<h1>Unresolved staff geometry</h1>"
+        "<p>Click an image to inspect it at full size. "
+        "These diagnostic refusals are not a request to approve uncertain associations.</p>"
+    )
+    markup += "\n".join(unresolved_cards)
+    (args.out / "index.html").write_text(markup)
     (args.out / "items.json").write_text(json.dumps(selected, indent=2) + "\n")
     (args.out / "audit-report.json").write_bytes(args.report.read_bytes())
     (args.out / Path(__file__).name).write_bytes(Path(__file__).read_bytes())

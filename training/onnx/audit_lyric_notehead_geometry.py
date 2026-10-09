@@ -43,35 +43,80 @@ def active_clef(staves, staff):
     raise ValueError("Audited staff missing from decoded part")
 
 
+def local_staff_candidates(mask, x, y, half_width):
+    lo, hi = max(0, int(x) - half_width), min(mask.shape[1], int(x) + half_width)
+    projection = np.count_nonzero(mask[:, lo:hi], axis=1)
+    groups = []
+    for z in np.where(projection > (hi - lo) / 4)[0]:
+        if not groups or z > groups[-1][-1] + 1:
+            groups.append([])
+        groups[-1].append(int(z))
+    lines = [float(np.average(g, weights=projection[g])) for g in groups]
+    candidates = []
+    for start in range(len(lines) - 4):
+        five = lines[start : start + 5]
+        gaps = np.diff(five)
+        if min(gaps) > 3 and max(gaps) / min(gaps) < 1.3:
+            spacing = float(np.median(gaps))
+            if five[0] - 3 * spacing <= y <= five[-1] + 3 * spacing:
+                candidates.append(five)
+    return candidates
+
+
 def staff_positions(mask, heads):
     records = []
+    central_candidates = local_staff_candidates(
+        mask, mask.shape[1] / 2, mask.shape[0] / 2, mask.shape[1]
+    )
+    frame = central_candidates[0] if len(central_candidates) == 1 else None
     for head in heads:
         x, y = head["center"]
-        lo, hi = max(0, int(x) - 40), min(mask.shape[1], int(x) + 40)
-        projection = np.count_nonzero(mask[:, lo:hi], axis=1)
-        groups = []
-        for z in np.where(projection > 20)[0]:
-            if not groups or z > groups[-1][-1] + 1:
-                groups.append([])
-            groups[-1].append(int(z))
-        lines = [float(np.average(g, weights=projection[g])) for g in groups]
-        candidates = []
-        for start in range(len(lines) - 4):
-            five = lines[start : start + 5]
-            gaps = np.diff(five)
-            if min(gaps) > 3 and max(gaps) / min(gaps) < 1.3:
-                spacing = float(np.median(gaps))
-                if five[0] - 3 * spacing <= y <= five[-1] + 3 * spacing:
-                    candidates.append(five)
-        if len(candidates) != 1:
-            # Missing or competing staff geometry is never guessed.
-            raise ValueError("Missing or ambiguous local five-line staff")
-        five = candidates[0]
+        if frame is not None:
+            spacing = float(np.median(np.diff(frame)))
+            if not frame[0] - 3 * spacing <= y <= frame[-1] + 3 * spacing:
+                # A crop can contain clipped heads from its neighbouring staff.
+                # Exclusion is geometry-only; the decoded sequence still must agree.
+                continue
+        observations = []
+        global_candidates = local_staff_candidates(mask, x, y, mask.shape[1])
+        reference = global_candidates[0] if len(global_candidates) == 1 else None
+        for width in (40, 80, 120):
+            candidates = local_staff_candidates(mask, x, y, width)
+            if reference is not None:
+                tolerance = float(np.median(np.diff(reference))) * 0.6
+                candidates = [
+                    lines
+                    for lines in candidates
+                    if max(abs(a - b) for a, b in zip(lines, reference)) < tolerance
+                ]
+            if len(candidates) > 1:
+                raise ValueError("Competing five-line staff candidates")
+            if candidates:
+                observations.append(candidates[0])
+        if len(observations) < 2:
+            raise ValueError("Insufficient staff-window support")
+        five = observations[0]
+        tolerance = float(np.median(np.diff(five))) * 0.3
+        if any(
+            max(abs(a - b) for a, b in zip(five, lines)) > tolerance for lines in observations[1:]
+        ):
+            raise ValueError("Staff lines disagree across context windows")
         spacing = float(np.median(np.diff(five)))
         position_float = 1 + (five[-1] - y) / (spacing / 2)
         if abs(position_float - round(position_float)) > 0.35:
             raise ValueError("Head too far from a diatonic position")
-        records.append(dict(head, staffPosition=round(position_float), staffLines=five))
+        for lines in observations[1:]:
+            other = 1 + (lines[-1] - y) / (float(np.median(np.diff(lines))) / 2)
+            if round(other) != round(position_float) or abs(other - round(other)) > 0.35:
+                raise ValueError("Head position disagrees across staff windows")
+        records.append(
+            dict(
+                head,
+                staffPosition=round(position_float),
+                staffLines=five,
+                supportingWindows=len(observations),
+            )
+        )
     return records
 
 
@@ -79,8 +124,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--reuse-masks", type=Path)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
+    reused = None
+    if args.reuse_masks:
+        reused = json.loads((args.reuse_masks / "report.json").read_text())
+        if reused["modelSha256"] != digest(Path(segnet_path_onnx)):
+            raise ValueError("Cached masks use another segmentation model")
     cv2.setNumThreads(4)
     options = ort.SessionOptions()
     options.intra_op_num_threads = 4
@@ -129,9 +180,27 @@ def main():
         prefix = f"{score}-staff{staff_index}"
         result = {"score": score, "staffIndex": staff_index, "targets": [], "status": "unresolved"}
         try:
-            staff_mask, _, _, head_mask, _ = seg.inference(
-                crop, use_gpu_inference=False, batch_size=4, step_size=160, win_size=320
-            )
+            if args.reuse_masks:
+                for path in (page, reviewfile, inventory_file, keyfile):
+                    if reused["inputSha256"].get(str(path)) != digest(path):
+                        raise ValueError("Cached mask input differs")
+                mask_paths = [
+                    args.reuse_masks / f"{prefix}-{kind}-mask.png" for kind in ("staff", "head")
+                ]
+                masks = []
+                for path in mask_paths:
+                    inputs[str(path)] = digest(path)
+                    masks.append((cv2.imread(str(path), 0) > 0).astype(np.uint8))
+                staff_mask, head_mask = masks
+                if staff_mask.shape != crop.shape or head_mask.shape != crop.shape:
+                    raise ValueError("Cached mask dimensions differ")
+            else:
+                staff_mask, _, _, head_mask, _ = seg.inference(
+                    crop, use_gpu_inference=False, batch_size=4, step_size=160, win_size=320
+                )
+            cv2.imwrite(str(args.out / f"{prefix}-staff-mask.png"), staff_mask * 255)
+            cv2.imwrite(str(args.out / f"{prefix}-head-mask.png"), head_mask * 255)
+            cv2.imwrite(str(args.out / f"{prefix}-source.png"), crop)
             _, _, stats, centers = cv2.connectedComponentsWithStats(head_mask)
             heads = [
                 {"center": c.tolist(), "bbox": s[:4].tolist(), "area": int(s[4])}
@@ -139,7 +208,11 @@ def main():
                 if s[4] >= 120 and 10 <= s[2] <= 30 and 10 <= s[3] <= 24
             ]
             heads.sort(key=lambda h: h["center"][0])
+            result["rawHeadComponents"] = heads
             detected = staff_positions(staff_mask, heads)
+            result["outsideStaffFrameComponents"] = [
+                h for h in heads if h["center"] not in [d["center"] for d in detected]
+            ]
             notes = [(i, t) for i, t in enumerate(staff["tokens"]) if t[0].startswith("note_")]
             clef = active_clef(review["staves"], staff)
             positions = [pitch_staff_position(t[1], clef) for _, t in notes]
