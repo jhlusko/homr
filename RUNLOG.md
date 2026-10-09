@@ -17564,3 +17564,14 @@ stripping lyrics, original untouched; the spec also passes when re-run on that c
 (`80`), so the reviewer must still exclude non-lyrics; nothing is automatic.
 Also corrected: the earlier "413 = upload size" diagnosis was wrong; it was the 50-page rolling daily quota (raised locally via
 `SCANNER_ROLLING_24H_PAGE_QUOTA=500` in the test stack only). Test GPU app stopped. Nothing pushed or deployed.
+
+### 2026-10-08 — Recognition complete; partial replay finds double-bar anchor bug
+
+All frozen recognition contexts succeeded: 10/10 Lieder and 15/15 OSSQ; source-local receipts under homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-recognition-context-20261008/results/complete.json and lyric-recognition-context-ossq-20261008/results/complete.json. Full detector fusion remains running (7/25 at this checkpoint; roughly 2–4 hours). Final persistent watcher still waits for the full fusion receipt before fresh OCR and backend filtering.
+
+An immutable seven-page Lieder snapshot was replayed through fresh production OCR and actual backend filtering: 156 semantic proposals, 150 retained. These counts are not true-lyric recall. Inspection found six withheld rows: four genuine lyric rows and two non-lyrics (* Ped. and footer F. S. 918.). Three true-lyric rows on IMSLP588989 follow a double barline; the anchor boundary predicate omitted doublebarline, shifting both interpolation and measure token lookup. An isolated compiled-helper diagnostic restores all three, retaining 153 proposals, with other six pages' retention unchanged and both non-lyrics still withheld. Remaining true-lyric miss: IMSLP621593 im·Trau, pending diagnosis. Native scan context inspected for both failures.
+
+Source fix now includes doublebarline while preserving existing barline variants, with a regression covering interpolation and note ownership after a rest-only measure. Three focused backend suites pass (41 tests). Deliberately not rebuilt/restarted into the queued frozen qualification: its baseline compiled helper remains unchanged; assess the fix as a separate versioned replay after the full baseline lands. Evidence and hash-bound diagnosis: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-partial-filter-seven-20261008/{diagnosis.json,filtered/report.json,doublebar-filtered/report.json}. Interim six-page report preserved separately; the completed seven-page reports have no missing recognition/OCR pages.
+
+Next: diagnose im·Trau; collect all 25 baseline fusion/filter outputs and OSSQ negative-control survival; compare a separately bound fixed-anchor replay, checking both retention and changed note placements. The approved 95% gate requires genuine lyric candidate IDs matched to references, not 150/156 or 153/156. No recall/attachment promotion claim, deployment, push, provider pin or .env change.
+
