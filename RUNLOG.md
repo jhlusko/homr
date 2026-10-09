@@ -17653,3 +17653,20 @@ Local consolidated assessment: homr-artifacts/gpu-roadmap-20260919/instance-resu
 
 Next priorities: investigate detector region-score behavior/coverage and notation-glyph OCR; separate text review availability from uncertain note anchoring without automatic attachment; broaden prepared-image evaluation and bind genuine candidate references for the 95% gate; then production GPU/HTTP latency/final stack checks and public examples. Source/debug evidence is local. No new release gate claimed.
 
+
+
+## 2026-10-08 — "profile layout deviation: expects 3, detected 2" on voice+piano was a false alarm (fixed)
+
+Owner set the profile to piano+voice and saw `profile expects 3 staff(s) per system, detected geometry implies 2` on every system. Verified on their
+job: profile = voice (1) + piano (`expectedStaffCount: 2`) = 3 physical staves; the page decoded as 10 staves = 5 systems x 2 units: the voice staff
+(~136 px high) and one tall piano unit (258-298 px) whose tokens carry both `upper` and `lower`, i.e. `MultiStaff.create_grandstaffs` had merged the
+grand staff into ONE decoded `Staff`. `staff_parsing._report_cross_staff_findings` compared `len(slots)` (decoded units) with
+`profile.expected_staff_pattern` (physical staves). Same count was also used by `staff_to_part_by_system`, which returned an empty mapping whenever the
+unit count differed, silently disabling the clef-vs-profile and part-order checks for piano scores.
+Fix in homr (`40fe6a6`): `ScoreProfile.merged_grand_staff_pattern` / `unit_pattern_for(count)`; `propose_part_assignment` and `staff_to_part_by_system` accept
+either reading (physical total, or each multi-staff part's pairs merged: ceil(count/2)); a count that fits neither is still reported, now naming both
+("expects 3 (or 2 with each grand staff read as one staff)"). 45 profile/layout tests pass; a few unrelated homr test files cannot be collected in this venv.
+OTS (`bffab83`): the shipping provider's HOMR still emits the old message, so the backend drops `profile_layout_deviation` findings whose implied count equals
+the profile's merged-grand-staff total, both on ingestion and when presenting existing jobs (so the owner's job no longer shows it; real deviations such as
+3 vs 4 stay). Deploying the homr fix itself needs a new provider source pin and is not done. Backend scanner 671 tests pass.
+Not claimed: the other findings on that page (dangling slurs, a measure-duration mismatch in the last system) are separate and untouched.
