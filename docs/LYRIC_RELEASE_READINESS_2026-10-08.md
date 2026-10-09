@@ -13,7 +13,7 @@ Publish only after the final pinned service and local acceptance/rerender flow a
 - Fresh scanner-prepared replay: 10 Lieder vocal pages and 15 instrumental OSSQ pages; all 25 completed recognition, both detectors, OCR and corrected backend filtering. The baseline retained 157 vocal suggestions and no instrumental suggestions. These are suggestion counts, not lyric recall or exact note-placement scores.
 - An offline lyric-line context pilot restored four scan-confirmed lyric rows, raising vocal suggestions to 161 with zero retained instrumental suggestions. All 157 original retained rows and anchors were unchanged. No context rule is shipped from this evidence.
 - On eight additional pages with previously inspected partial labels, selected OCR rows covered by lyric references improved from 19/20 retained to 20/20 under the one-peer pilot. Both covered direction rows remained excluded. These pages previously evaluated the semantic classifier; they are new to context-policy development, not an untouched end-to-end test. Thirteen other direction references were outside that selected-row denominator.
-- A separate two-page/six-owner-confirmed-direction replay is running. Do not publish a result before its completion and inspection.
+- The two-page/six-owner-confirmed-direction replay completed. Only two reference-covered selected OCR rows entered the scored denominator: one existing false lyric suggestion (Revenez au 1. mouv!) remains under baseline and both variants; tremolando. stays excluded. The context rule restores the genuine lyric syllable ro without new labelled direction leakage. This does not test exclusion of all six reference directions.
 
 Do not advertise 95% end-to-end recall, 100% lyric recognition, automatic lyric attachment, exact syllable ownership, or a qualified final GPU/provider stack on these results. The 398 native targets have approved passage correspondence; ambiguous or unassigned pixel/candidate links remain unscored.
 
@@ -27,7 +27,7 @@ The calibration manifest currently binds model weights and its policy body, but 
 
 ## Remaining release work
 
-1. Finish and inspect the owner-confirmed direction controls; keep the context rule offline unless broader labelled evidence supports its use.
+1. Keep the context rule offline unless broader labelled evidence supports its use; the completed direction controls expose an existing vocal direction false suggestion that needs explicit review/class correction.
 2. Bind the confidence-extraction implementation to the calibration/release identity and requalify score semantics. Any change must preserve compatibility with existing pinned manifests deliberately, rather than silently altering their meaning.
 3. Complete lyric acceptance/PDF rerender and OCR-first direction review integration with the other agent; test accepted text in exported XML and rendered output.
 4. Match genuine lyric candidates to references to score the conditional 95% retention gate; measure OCR text and note ownership separately. Review-assisted acceptance does not require inventing automatic certainty for ambiguous rows.
