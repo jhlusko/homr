@@ -52,7 +52,6 @@ def propose_part_assignment(
     function against a hand-built voice-slot pattern) never pays for or has to fake the
     geometry twice.
     """
-    expected_pattern = profile.expected_staff_pattern
     assignments = []
     for group, slots in zip(partition.groups, voice_slots, strict=True):
         if slots is None:
@@ -64,12 +63,23 @@ def propose_part_assignment(
                 )
             )
             continue
-        if len(expected_pattern) != partition.staves_per_system:
+        # A system matches when its decoded staves equal the profile's physical staves OR the count
+        # with each grand staff read as one unit (the detector merges a piano's two staves into one
+        # decoded staff; comparing that unit count to the physical total reported a false deviation).
+        expected_pattern = profile.unit_pattern_for(partition.staves_per_system)
+        if expected_pattern is None:
+            physical = len(profile.expected_staff_pattern)
+            merged = len(profile.merged_grand_staff_pattern)
+            expected_text = (
+                f"{physical}"
+                if merged == physical
+                else f"{physical} (or {merged} with each grand staff read as one staff)"
+            )
             assignments.append(
                 SystemPartAssignment(
                     staff_to_part={},
                     deviations=(
-                        f"profile expects {len(expected_pattern)} staff(s) per system, "
+                        f"profile expects {expected_text} staff(s) per system, "
                         f"detected geometry implies {partition.staves_per_system}",
                     ),
                     evidence_score=0.0,
@@ -124,9 +134,9 @@ def staff_to_part_by_system(
     checking a decoded clef against the wrong instrument entirely is worse than a
     caller checking nothing.
     """
-    pattern = profile.expected_staff_pattern
     voices = len(voice_present_by_system[0]) if voice_present_by_system else 0
-    if len(pattern) != voices:
+    pattern = profile.unit_pattern_for(voices)
+    if pattern is None:
         return [{} for _ in voice_present_by_system]
 
     results = []

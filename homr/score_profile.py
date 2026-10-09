@@ -98,6 +98,31 @@ class ScoreProfile:
             pattern.extend([part.stable_id] * max(part.expected_staff_count, 0))
         return tuple(pattern)
 
+    @property
+    def merged_grand_staff_pattern(self) -> tuple[str, ...]:
+        """The same top-to-bottom pattern when each pair of adjacent staves of a multi-staff part is
+        read as ONE unit, which is how a piano grand staff arrives once `MultiStaff.create_grandstaffs`
+        has merged its two staves into a single decoded `Staff` (its tokens carry both the upper and
+        the lower hand). A part with `expectedStaffCount=2` contributes its `stableId` once, 3 staves
+        twice (one pair, one single), and so on: `ceil(count / 2)` units."""
+        pattern: list[str] = []
+        for part in self.parts:
+            pattern.extend([part.stable_id] * ((max(part.expected_staff_count, 0) + 1) // 2))
+        return tuple(pattern)
+
+    def unit_pattern_for(self, detected_units: int) -> tuple[str, ...] | None:
+        """The expected pattern a system of `detected_units` decoded staves is compared against.
+
+        The detector may hand back every physical staff separately or merge each grand staff into one
+        unit; both are legitimate readings of a correct page, so a system matches the profile when its
+        count equals either the physical pattern's length or the merged pattern's. Anything else is a
+        genuine mismatch (None). When the two lengths coincide (no multi-staff part) they are the same
+        pattern, so nothing changes for quartets and other single-staff parts."""
+        for pattern in (self.expected_staff_pattern, self.merged_grand_staff_pattern):
+            if len(pattern) == detected_units:
+                return pattern
+        return None
+
     def part_by_id(self, stable_id: str) -> ScorePart | None:
         return next((part for part in self.parts if part.stable_id == stable_id), None)
 

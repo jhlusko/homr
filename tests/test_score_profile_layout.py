@@ -32,6 +32,54 @@ def _partition(groups: tuple[tuple[int, ...], ...], staves_per_system: int) -> S
     )
 
 
+class TestMergedGrandStaff(unittest.TestCase):
+    """The detector merges a piano's two staves into one decoded staff, so a correct voice+piano page has
+    two units per system while the profile expects three physical staves. Both readings are fine."""
+
+    def test_a_system_with_the_grand_staff_merged_matches_voice_and_piano(self) -> None:
+        partition = _partition(((0, 1),), staves_per_system=2)
+
+        (assignment,) = propose_part_assignment(VOICE_AND_PIANO, partition, [(0, 1)])
+
+        self.assertEqual(assignment.deviations, ())
+        self.assertEqual(assignment.staff_to_part, {0: "voice", 1: "piano"})
+        self.assertEqual(assignment.evidence_score, 1.0)
+
+    def test_the_separately_detected_reading_still_matches(self) -> None:
+        partition = _partition(((0, 1, 2),), staves_per_system=3)
+
+        (assignment,) = propose_part_assignment(VOICE_AND_PIANO, partition, [(0, 1, 2)])
+
+        self.assertEqual(assignment.staff_to_part, {0: "voice", 1: "piano", 2: "piano"})
+
+    def test_a_count_that_fits_neither_reading_is_still_a_deviation_naming_both(self) -> None:
+        partition = _partition(((0, 1, 2, 3),), staves_per_system=4)
+
+        (assignment,) = propose_part_assignment(VOICE_AND_PIANO, partition, [(0, 1, 2, 3)])
+
+        self.assertEqual(assignment.staff_to_part, {})
+        self.assertIn("expects 3 (or 2 with each grand staff read as one staff)", assignment.deviations[0])
+        self.assertIn("implies 4", assignment.deviations[0])
+
+    def test_unit_patterns(self) -> None:
+        self.assertEqual(VOICE_AND_PIANO.merged_grand_staff_pattern, ("voice", "piano"))
+        self.assertEqual(VOICE_AND_PIANO.unit_pattern_for(3), ("voice", "piano", "piano"))
+        self.assertEqual(VOICE_AND_PIANO.unit_pattern_for(2), ("voice", "piano"))
+        self.assertIsNone(VOICE_AND_PIANO.unit_pattern_for(1))
+        # Single-staff parts: both readings are the same pattern.
+        self.assertEqual(QUARTET.merged_grand_staff_pattern, QUARTET.expected_staff_pattern)
+        organ = ScoreProfile(parts=(ScorePart("organ", expected_staff_count=3),))
+        self.assertEqual(organ.merged_grand_staff_pattern, ("organ", "organ"))
+
+    def test_the_page_map_works_for_a_merged_grand_staff_page(self) -> None:
+        # Two units per system (voice, merged piano); a voice missing from the second system keeps its
+        # neighbour's identity, exactly as for a quartet.
+        results = staff_to_part_by_system(VOICE_AND_PIANO, [[True, True], [False, True]])
+
+        self.assertEqual([m[0].stable_id for m in results], ["voice", "piano"])
+        self.assertEqual(results[1][0].stable_id, "piano")
+
+
 class TestExactMatch(unittest.TestCase):
     def test_a_full_matching_system_maps_every_staff(self) -> None:
         partition = _partition(((0, 1, 2, 3),), staves_per_system=4)
