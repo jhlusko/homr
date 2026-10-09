@@ -17496,3 +17496,10 @@ Local evidence: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/g
 
 Next, in order: compare the cached build-page pixels to the two frozen scans and establish any exact coordinate transform from evidence; finish their seven passage checks; verify the three OSSQ instrumental source/scan controls; freeze the admissible reference links and score the frozen pipeline with text exceptions reported separately. Native timing/part/note identities are evaluation-only. Historical imperfect-box approvals remain provisional; five separately confirmed corrections unchanged. No release gate passed, runtime/provider/pins/env/prod unchanged.
 
+
+### 2026-10-08 — Owner reviewed first half of native linkage page
+
+Owner reports: “i reviewed the first half found no mistakes”. Recorded against the rendered report SHA in homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/review/lyric-native-linkage-20261008-v2/owner-review-first-half.json. Exact last reviewed case was unspecified, so this is partial review evidence, not individual-case or whole-set approval. Remaining review and reference qualification stay open.
+
+Compared both mismatched frozen scans to the corresponding cached build-page files. IMSLP621598 differs in actual pixels under both top and bottom alignment, despite only one pixel of height difference; dimensions alone do not justify reusing coordinates. IMSLP508574 also has different dimensions/aspect ratio. Saved cached file hashes and comparison results in cached-page-pixel-comparison.json beside the review. Seven system links remain pending verified registration or fresh scan geometry; do not silently rescale.
+
