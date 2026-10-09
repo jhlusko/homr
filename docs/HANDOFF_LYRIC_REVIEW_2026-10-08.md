@@ -396,3 +396,16 @@ Actual scanner-style five prepared PNG controls generated with Sharp rotate/resi
 
 Next: assess fresh prepared-image outputs before changing the 100px guard or treating original-resolution misses as production defects; investigate glyph false suggestion in actual prepared context; qualify any context policy on new evidence; bind genuine candidate reference matches for the 95% gate. GPU/HTTP latency and final pinned-stack checks still remain.
 
+
+### 2026-10-08 — Five prepared controls complete; threshold alone is insufficient
+
+Fresh scanner-style prepared PNG replay completed on all five controls: 5/5 recognition successes, pinned detector/fusion, production OCR and isolated corrected backend filters. At e2 cutoff 0.5, prepared retained rows are IMSLP621593 29 (original 39), IMSLP508574 3 (original 9), IMSLP154241 16 (original 14); segmentation/selection changes prevent interpreting these counts as recall. Foi and im·Trau are retained, but the latter still merges syllables. No prior OSSQ false suggestion survives on the two prepared controls. This is bounded development evidence, not broad accuracy or GPU-latency qualification.
+
+Kissed, remains a real selection/placement issue: full OCR reads it at 0.99987 confidence; e2 box fully covers the word but scores 0.4996669, just below 0.5. A separately bound five-page sweep at 0.5/0.49/0.45/0.4/0.35 finds: 0.5 -> 48 retained Lieder suggestions, zero OSSQ; 0.49 and lower -> 56 Lieder and one false OSSQ 0 (whole-note glyph). Kissed, becomes selected but is still withheld by the distance filter. Do not lower runtime threshold on these counts. Sweep source lint fixed after execution; exact pre-fix executed source preserved and verified against runner hash in the sweep artifact.
+
+Unshipped original-resolution context pilot remains 203 -> 203 retained Lieder and 2 -> 1 OSSQ, removing only a tempo fragment. Five short-syllable/neighbor/line regression tests pass. No runtime context rule, cutoff, guard, .env, provider pin, deployment or push changed. Earlier completed original-resolution comparison remains preserved with its preparation caveat.
+
+Local consolidated assessment: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-prepared-controls-20261008/ASSESSMENT.md. Prepared receipts/results in that directory; threshold sweep in sibling lyric-prepared-selection-sweep-20261008/{report.json,inventories.json,input-binding.json,executed-sweep.py}; context pilot in sibling lyric-direction-context-pilot-20261008/. All compute for these investigations finished; no running-job ETA.
+
+Next priorities: investigate detector region-score behavior/coverage and notation-glyph OCR; separate text review availability from uncertain note anchoring without automatic attachment; broaden prepared-image evaluation and bind genuine candidate references for the 95% gate; then production GPU/HTTP latency/final stack checks and public examples. Source/debug evidence is local. No new release gate claimed.
+
