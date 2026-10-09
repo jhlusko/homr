@@ -17607,3 +17607,12 @@ recognised score; engine output untouched; saving twice replaces rather than col
 "Download a copy instead" and the by-hand editor remain. Real-browser run on the GPU test stack and the opt-in spec pass; backend
 scanner 669 and frontend scanner 193 tests pass. Limits: a later token-level note correction regenerates the page score and drops
 the lyrics (documented in the UI); the PDF preview is not produced by the local stack, so only the MusicXML was verified.
+
+
+## 2026-10-08 — Review cards lost their syllables for older saved decisions (fixed)
+
+Owner reported seeing only a dropdown and Accept/Exclude with no lyric to review. Cause: decisions saved in the browser by the
+previous page version had no per-syllable entries, so a placeable card rendered the note/line controls over an empty syllable list.
+Fix: `withDefaults` upgrades such decisions with the row's defaults (keeping saved state and text) and every card now also shows
+"Read from the scan: <text>". Regression test seeds an old-format decision; checked in a real browser on the owner's job with
+legacy decisions seeded: 14 cards, 42 syllable boxes, 14 text lines (read-only; nothing saved). OTS commit follows 2484f8c.
