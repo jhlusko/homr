@@ -232,3 +232,10 @@ Fresh CPU OCR character boxes recover ton, con, zen and ge at unique positions s
 Local evidence: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/lyric-corrected-crop-geometry-wide-20261008/report.json, placement-comparison.json and du-word-ink-report.json. The focused review folder contains the generator, images, items and SHA-256 receipt. Narrow-run evidence remains in lyric-corrected-crop-geometry-20261008. These are selected development diagnostics, not independent accuracy results or certified character boundaries. No MusicXML edits, runtime promotion, provider changes or paid GPU starts.
 
 Next priorities: owner checks the five revised positions; validate/import those explicit confirmations before any reviewed MusicXML copy; qualify detected-head association on accepted controls and new Lieder/OSSQ samples; then complete local copy integration and provider latency gates. Preserve withheld punctuation/row context for recovery: the period-to-ge correction demonstrates that punctuation suppression can hide a genuine lyric.
+
+
+### 2026-10-08 — Owner confirms all five corrected placements
+
+Owner explicitly stated "all the updates are correct" after the focused five-case review. Recorded all five text/note confirmations separately, bound to the exact items.json SHA-256: homr-artifacts/gpu-roadmap-20260919/instance-results/workspace/guarded-tuplet-20261004/review/lyric-corrected-syllables-20261008/owner-confirmations.json. This is a chat-derived confirmation, not a browser export or independent evaluation; original pending inventory, frozen scores and review receipts remain unchanged. No further owner review of these five is required.
+
+Next: connect this corrected-placement confirmation format to the validated local score-copy importer, preserving source hashes, explicit printed-line identity and all non-lyric content. The existing importer accepts a different placement-handoff schema; do not bypass it or treat the new confirmation JSON as already importable. Then qualify geometry on accepted controls and fresh Lieder/OSSQ samples before runtime promotion. No MusicXML written, GPU started or production changed.
