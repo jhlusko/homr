@@ -27,7 +27,7 @@ recognition. This document separates the agreed target from currently implemente
 |---|---|---|
 | Music recognition core and notation heads | Notes, rhythm and structural notation | Public core plus joint heads under evaluation |
 | Lyrics detector | Locate lyric regions when the user requests lyrics | Released e2 / calibrated lyrics-only-v1 route |
-| Direction detector | Locate non-lyric written directions | Released e4; collapsed DirectionText successor not promoted |
+| Direction detector | Locate non-lyric written directions | Released e4; collapsed DirectionText successor not promoted. **2026-10-08: not needed for review-assisted direction text; OCR rows + gate outperformed it (24/37 vs 8/37 on 10 Lieder pages)** |
 | Dynamics detector | Locate musical dynamic glyph regions | Reuse e4's Dynamic channel initially; separate logical identity |
 | Fusion | Class allowlists, calibrated overlap handling, provenance and ambiguity handling | Local fusion-v1 box-review implementation; disabled |
 
