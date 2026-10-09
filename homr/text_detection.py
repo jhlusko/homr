@@ -38,8 +38,8 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
-from homr.type_definitions import NDArray
 from homr.text_detector_classes import LEGACY_CLASS_ORDER, read_class_order
+from homr.type_definitions import NDArray
 
 #: Compatibility aliases for the pinned e2/e4 detectors and pure geometry helpers.
 #: TextDetector itself always uses the order attached to its model.

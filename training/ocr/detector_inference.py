@@ -26,8 +26,8 @@ import cv2
 import numpy as np
 import torch
 
-from training.architecture.segmentation.model import CamVidModel
 from homr.text_detector_classes import read_class_order
+from training.architecture.segmentation.model import CamVidModel
 from training.ocr.detector_masks import CLASS_ORDER
 from training.ocr.detector_patches import PATCH_SIZE, extract_patch
 
