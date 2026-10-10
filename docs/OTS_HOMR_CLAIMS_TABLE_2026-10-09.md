@@ -24,6 +24,7 @@ from the encoded score, which understates availability). "Unsure" always counts 
 | 8 | Alignment of recognised notes to the score file is exact for almost all parts, and withheld otherwise. | 167 of 171 parts (97.7%) on 83 real pages; four parts withheld (one-rest count differences); never guessed. | A | `alignment-crash-audit-20261009/report.json` | Lieder scanner pages only. |
 | 9 | Pages are processed in about a minute; a title page fails clearly. | Live GPU provider, direct HTTP, scanner-prepared pages: warm p50 58 s, p90 85 s, max 136 s (Lieder p50 27 s; OSSQ quartets p50 64 s); cold start 56-65 s; 3 simultaneous requests finish in 85-124 s; a no-staff page returns "no staff lines detected" in 4 s. All 31 notation requests succeeded. | H (single session) | `latency-run-20261009/results.jsonl` | 32 requests, one session, two cold starts; one container, so batches queue; not a load test; excludes the scanner's own queueing, storage and PDF rendering. |
 | 10 | The provider and its models are pinned and checked. | The scanner refuses a provider whose detector, calibration, OCR, gate, dynamics-classifier or row-selection identity differs from its pin; the calibration is bound to the confidence extraction it was fitted on (requalified: every band moved at most 0.01, accept line unchanged). | tests | `scanner-review-text-identity`, `confidence_extraction.py`, runbook 4a | Local and test-provider evidence; the hosted service is not live. |
+| 11 | On lyric-free instrumental scores the scanner rarely suggests lyrics. | 41 pages from 12 OSSQ scores (string quartets, one corpus), through the scanner after its filtering: 3 suggested rows on 2 pages (4.9% of pages; 0.07 rows per page); 39 pages none. The three rows are not words: two whole-rest glyphs read as "0" and "T" and one measure number ("11"). Before the backend filter the gate called 19 rows on 10 pages lyrics; the filter withheld 16 (12 no-staff, 3 footer, 1 far from notes). The 17 pages of the latency run: none. | A (verified lyric-free pages) | `instrumental-check-20261009/report.json` | One corpus and one instrument family; 24 of the pages (8 scores) come from the calibration set, 17 from the frozen replay; the filter rules were designed on Lieder rows. Fusion also accepted 46 lyric-text regions on these pages (1.1 per page; the calibration estimate was 0.8), which become suggestions only when OCR reads a lyric-like row inside them. |
 
 ## B. Claims not to make
 
@@ -36,7 +37,7 @@ from the encoded score, which understates availability). "Unsure" always counts 
 | Any precision or recall for instrumental, orchestral or non-Lieder scores. | Evidence is Lieder (voice and piano); instrumental pages were used for latency and negative controls only. |
 | "Handles every page" / failure-free. | About 5% of audited pages are not scoreable (cover, text-only, white-on-black notation: 4 of 83); two inverted pages need an offline fix that is not shipped. |
 | Anything that treats the development figures (7, parts of 2-5) as untouched test results. | Rules and filters were fitted after seeing judgements; a confirming fresh set exists only for rows 5 and part of 2. |
-| "Zero lyric suggestions on instrumental pages." | True for the 25-page replay after backend filtering (readiness doc); the 17 instrumental pages in the latency run returned 35 OCR lyric rows on 10 pages that were not classified as proposed or withheld. Check before claiming. |
+| "No false lyric suggestions on instrumental scores" as an absolute. | Measured below (row 11): 3 false suggestions on 2 of 41 lyric-free pages, so the supportable statement is a rate with its sample, not zero. |
 | "In production", "available", "live". | OTS-HOMR is not deployed to production. |
 
 ## C. Draft public copy (built only from section A)
@@ -53,8 +54,8 @@ from the encoded score, which understates availability). "Unsure" always counts 
 1. A fresh, untouched set for the direction and dynamics filters and the unplaced rows (the only confirming set for the
    filters is the confirmation set; recall, rows 7, is development).
 2. The 95% conditional lyric-retention measurement (readiness doc) or an explicit decision to drop that claim.
-3. Classify the 35 OCR lyric rows seen on instrumental pages (proposed or withheld) before any "no false lyrics on
-   instrumental scores" statement.
+3. ~~Classify the 35 OCR lyric rows on instrumental pages~~ Done 2026-10-09 (row 11): none of the latency pages' rows was a
+   suggestion; across 41 pages the scanner suggested 3 non-lyric rows on 2 pages.
 4. A latency note refreshed on the frozen candidate if anything in the pinned digest changes (any edit to the ten
    provider modules or the extraction files changes it).
 5. Product decision: public wording for "Lyric and staff text review", the Lieder-only scope, and whether examples show
