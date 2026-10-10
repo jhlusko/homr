@@ -133,7 +133,7 @@ one from the prior runtime's 49/84; keep results attached to their inference pat
 This is staff recognition through a common runtime, not whole-page detector/MusicXML
 quality, a comparison against every upstream release, or an attribution to cross-staff
 reranking/heads (both disabled). Previously inspected validation data limits claims of
-fresh generalization; OSSQ represents only nine scores. Concurrent timings support no
+fresh generalization; the OSSQ validation set is only nine scores (792 staves) of the 84 with corrected scanned staves. Concurrent timings support no
 latency claim. The public-input core is a candidate, not the deployed stack; no tested
 new-core head refit has cleared non-regression. Its 572-row PDMX replay omits 226 planned
 GrandStaff rows, so it is a published-input rebuild, not exact historical reproduction.
